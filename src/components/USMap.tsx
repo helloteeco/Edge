@@ -25,19 +25,19 @@ const statePositions: Record<string, { row: number; col: number }> = {
 };
 
 const getAppreciationColor = (value: number) => {
-  if (value < 0) return "bg-red-200";
-  if (value < 2) return "bg-yellow-200";
-  if (value < 4) return "bg-emerald-200";
-  if (value < 5.5) return "bg-emerald-400";
-  return "bg-emerald-600";
+  if (value < 0) return "bg-red-400 text-white";
+  if (value < 2) return "bg-amber-300 text-amber-900";
+  if (value < 4) return "bg-emerald-300 text-emerald-900";
+  if (value < 5.5) return "bg-emerald-500 text-white";
+  return "bg-emerald-600 text-white";
 };
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return "bg-emerald-600";
-  if (score >= 70) return "bg-emerald-400";
-  if (score >= 60) return "bg-emerald-200";
-  if (score >= 50) return "bg-yellow-200";
-  return "bg-red-200";
+  if (score >= 80) return "bg-emerald-600 text-white";
+  if (score >= 70) return "bg-emerald-500 text-white";
+  if (score >= 60) return "bg-emerald-300 text-emerald-900";
+  if (score >= 50) return "bg-amber-300 text-amber-900";
+  return "bg-red-400 text-white";
 };
 
 export function USMap() {
@@ -46,7 +46,7 @@ export function USMap() {
 
   const getStateColor = (stateCode: string) => {
     const state = getStateByCode(stateCode);
-    if (!state) return "bg-gray-200";
+    if (!state) return "bg-slate-200 text-slate-600";
     
     switch (mapView) {
       case "appreciation":
@@ -54,19 +54,19 @@ export function USMap() {
       case "strScore":
         return getScoreColor(state.marketScore);
       case "homeValue":
-        if (state.medianHomeValue < 200000) return "bg-emerald-600";
-        if (state.medianHomeValue < 300000) return "bg-emerald-400";
-        if (state.medianHomeValue < 400000) return "bg-emerald-200";
-        if (state.medianHomeValue < 500000) return "bg-yellow-200";
-        return "bg-red-200";
+        if (state.medianHomeValue < 200000) return "bg-emerald-600 text-white";
+        if (state.medianHomeValue < 300000) return "bg-emerald-500 text-white";
+        if (state.medianHomeValue < 400000) return "bg-emerald-300 text-emerald-900";
+        if (state.medianHomeValue < 500000) return "bg-amber-300 text-amber-900";
+        return "bg-red-400 text-white";
       case "migration":
-        if (state.netMigration > 100000) return "bg-emerald-600";
-        if (state.netMigration > 50000) return "bg-emerald-400";
-        if (state.netMigration > 0) return "bg-emerald-200";
-        if (state.netMigration > -50000) return "bg-yellow-200";
-        return "bg-red-200";
+        if (state.netMigration > 100000) return "bg-emerald-600 text-white";
+        if (state.netMigration > 50000) return "bg-emerald-500 text-white";
+        if (state.netMigration > 0) return "bg-emerald-300 text-emerald-900";
+        if (state.netMigration > -50000) return "bg-amber-300 text-amber-900";
+        return "bg-red-400 text-white";
       default:
-        return "bg-gray-200";
+        return "bg-slate-200 text-slate-600";
     }
   };
 
@@ -75,90 +75,101 @@ export function USMap() {
     : null;
 
   const getVerdict = (score: number) => {
-    if (score >= 80) return { text: "STRONG BUY", color: "bg-emerald-600" };
-    if (score >= 70) return { text: "BUY", color: "bg-emerald-500" };
-    if (score >= 60) return { text: "HOLD", color: "bg-yellow-500" };
-    return { text: "AVOID", color: "bg-red-500" };
+    if (score >= 80) return { text: "STRONG BUY", color: "bg-emerald-500", textColor: "text-emerald-700" };
+    if (score >= 70) return { text: "BUY", color: "bg-green-500", textColor: "text-green-700" };
+    if (score >= 60) return { text: "HOLD", color: "bg-amber-500", textColor: "text-amber-700" };
+    return { text: "AVOID", color: "bg-red-500", textColor: "text-red-700" };
   };
 
+  const views = [
+    { key: "strScore", label: "STR Score", icon: "📊" },
+    { key: "appreciation", label: "Appreciation", icon: "📈" },
+    { key: "migration", label: "Migration", icon: "🚚" },
+    { key: "homeValue", label: "Home Value", icon: "🏠" },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Map View Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {[
-          { key: "strScore", label: "STR Score" },
-          { key: "appreciation", label: "Appreciation" },
-          { key: "migration", label: "Migration" },
-          { key: "homeValue", label: "Home Value" },
-        ].map((view) => (
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {views.map((view) => (
           <button
             key={view.key}
             onClick={() => setMapView(view.key as MapView)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
               mapView === view.key
-                ? "bg-primary text-white"
-                : "bg-surface text-foreground hover:bg-border"
+                ? "bg-teal-600 text-white shadow-md"
+                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
-            {view.label}
+            <span>{view.icon}</span>
+            <span>{view.label}</span>
           </button>
         ))}
       </div>
 
       {/* Map Grid */}
-      <div className="grid grid-cols-11 gap-1 max-w-2xl mx-auto">
-        {Object.entries(statePositions).map(([stateCode, pos]) => (
-          <button
-            key={stateCode}
-            onClick={() => setSelectedState(stateCode === selectedState ? null : stateCode)}
-            className={`aspect-square flex items-center justify-center text-xs font-medium rounded transition-all ${getStateColor(stateCode)} ${
-              selectedState === stateCode ? "ring-2 ring-primary ring-offset-2" : ""
-            } hover:opacity-80`}
-            style={{
-              gridRow: pos.row + 1,
-              gridColumn: pos.col + 1,
-            }}
-          >
-            {stateCode}
-          </button>
-        ))}
+      <div className="bg-slate-100 rounded-2xl p-4 sm:p-6">
+        <div className="grid grid-cols-11 gap-1.5 sm:gap-2 max-w-xl mx-auto">
+          {Object.entries(statePositions).map(([stateCode, pos]) => (
+            <button
+              key={stateCode}
+              onClick={() => setSelectedState(stateCode === selectedState ? null : stateCode)}
+              className={`aspect-square flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-lg transition-all transform hover:scale-105 ${getStateColor(stateCode)} ${
+                selectedState === stateCode 
+                  ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-slate-100 scale-110 shadow-lg z-10" 
+                  : "shadow-sm hover:shadow-md"
+              }`}
+              style={{
+                gridRow: pos.row + 1,
+                gridColumn: pos.col + 1,
+              }}
+            >
+              {stateCode}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted">
-        <span className="font-medium">Legend:</span>
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs">
+        <span className="font-semibold text-slate-700">Legend:</span>
         {mapView === "strScore" ? (
           <>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-red-200 rounded" />
-              <span>&lt;50</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span className="text-slate-600">&lt;50</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-yellow-200 rounded" />
-              <span>50-60</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span className="text-slate-600">50-60</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-emerald-200 rounded" />
-              <span>60-70</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span className="text-slate-600">60-70</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-emerald-400 rounded" />
-              <span>70-80</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span className="text-slate-600">70-80</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-emerald-600 rounded" />
-              <span>80+</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span className="text-slate-600">80+</span>
             </div>
           </>
         ) : (
           <>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-red-200 rounded" />
-              <span>Low</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span className="text-slate-600">Low</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-emerald-600 rounded" />
-              <span>High</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span className="text-slate-600">Medium</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span className="text-slate-600">High</span>
             </div>
           </>
         )}
@@ -166,58 +177,75 @@ export function USMap() {
 
       {/* Selected State Card */}
       {selectedStateData && (
-        <div className="bg-white border border-border rounded-2xl p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-            <div>
-              <h3 className="text-xl font-bold">{selectedStateData.name}</h3>
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium text-white mt-2 ${getVerdict(selectedStateData.marketScore).color}`}>
-                {getVerdict(selectedStateData.marketScore).text}
-              </span>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">{selectedStateData.marketScore}</div>
-              <div className="text-xs text-muted">STR Score</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <div className="text-xs text-muted">Regulation</div>
-              <div className={`font-medium ${selectedStateData.regulation === "Legal" ? "text-emerald-600" : "text-yellow-600"}`}>
-                {selectedStateData.regulation}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-card animate-scale-in">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 sm:p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold">{selectedStateData.name}</h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getVerdict(selectedStateData.marketScore).color} text-white`}>
+                    {getVerdict(selectedStateData.marketScore).text}
+                  </span>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                    selectedStateData.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
+                  } text-white`}>
+                    {selectedStateData.regulation}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-xs text-muted">Avg ADR</div>
-              <div className="font-medium">${selectedStateData.avgADR}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted">Median Home Value</div>
-              <div className="font-medium">${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted">1-Year Appreciation</div>
-              <div className={`font-medium ${selectedStateData.appreciation >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                {selectedStateData.appreciation >= 0 ? "+" : ""}{selectedStateData.appreciation}%
+              <div className="text-center bg-white/10 backdrop-blur rounded-xl px-4 py-2">
+                <div className="text-3xl font-bold">{selectedStateData.marketScore}</div>
+                <div className="text-xs text-slate-300">Score</div>
               </div>
             </div>
           </div>
 
-          <Link
-            href={`/state/${selectedStateData.abbreviation.toLowerCase()}`}
-            className="block w-full py-3 bg-primary text-white text-center rounded-xl font-medium hover:bg-primary-dark transition-colors"
-          >
-            View Cities & Counties ({selectedStateData.cityCount})
-          </Link>
+          {/* Stats Grid */}
+          <div className="p-4 sm:p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-slate-900">${selectedStateData.avgADR}</div>
+                <div className="text-xs text-slate-500 mt-0.5">Avg ADR</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-slate-900">${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K</div>
+                <div className="text-xs text-slate-500 mt-0.5">Median Home</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <div className={`text-lg sm:text-xl font-bold ${selectedStateData.appreciation >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {selectedStateData.appreciation >= 0 ? "+" : ""}{selectedStateData.appreciation}%
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">1Y Appreciation</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-teal-600">{selectedStateData.cityCount}</div>
+                <div className="text-xs text-slate-500 mt-0.5">Markets</div>
+              </div>
+            </div>
+
+            <Link
+              href={`/state/${selectedStateData.abbreviation.toLowerCase()}`}
+              className="flex items-center justify-center gap-2 w-full mt-4 py-3.5 bg-teal-600 text-white text-center rounded-xl font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+            >
+              <span>Explore {selectedStateData.cityCount} Markets</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       )}
 
       {/* Default Card */}
       {!selectedStateData && (
-        <div className="bg-white border border-border rounded-2xl p-6 text-center">
-          <h3 className="text-lg font-semibold mb-2">Find Your Next STR Investment</h3>
-          <p className="text-muted text-sm">
-            Select a state on the map to view STR opportunity scores, regulations, rental income data, and investment analysis.
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-6 sm:p-8 text-center">
+          <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🗺️</span>
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">Select a State to Begin</h3>
+          <p className="text-slate-500 text-sm max-w-md mx-auto">
+            Click any state on the map above to view STR opportunity scores, regulations, rental income data, and detailed investment analysis.
           </p>
         </div>
       )}
