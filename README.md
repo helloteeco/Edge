@@ -2,7 +2,7 @@
 
 A Next.js web application for analyzing short-term rental (STR) investment opportunities across the United States. Built for deployment at https://edge.teeco.co
 
-## Features
+## Features 
 
 - **Interactive US Map**: Visual heat map showing market scores by state
 - **Market Search**: Search and filter cities/states by various metrics
