@@ -7,21 +7,31 @@ import { getStateByCode } from "@/data/helpers";
 type MapView = "appreciation" | "migration" | "homeValue" | "strScore";
 
 const statePositions: Record<string, { row: number; col: number }> = {
-  WA: { row: 0, col: 0 }, MT: { row: 0, col: 1 }, ND: { row: 0, col: 2 }, MN: { row: 0, col: 3 },
-  WI: { row: 0, col: 4 }, MI: { row: 0, col: 5 }, VT: { row: 0, col: 8 }, NH: { row: 0, col: 9 },
+  // Row 0: ME at top (shifted everything else down by 1)
   ME: { row: 0, col: 10 },
-  OR: { row: 1, col: 0 }, ID: { row: 1, col: 1 }, SD: { row: 1, col: 2 }, IA: { row: 1, col: 3 },
-  IL: { row: 1, col: 4 }, IN: { row: 1, col: 5 }, OH: { row: 1, col: 6 }, PA: { row: 1, col: 7 },
-  NY: { row: 1, col: 8 }, MA: { row: 1, col: 9 }, RI: { row: 1, col: 10 },
-  NV: { row: 2, col: 0 }, WY: { row: 2, col: 1 }, NE: { row: 2, col: 2 }, MO: { row: 2, col: 3 },
-  KY: { row: 2, col: 4 }, WV: { row: 2, col: 5 }, VA: { row: 2, col: 6 }, MD: { row: 2, col: 7 },
-  NJ: { row: 2, col: 8 }, CT: { row: 2, col: 9 },
-  CA: { row: 3, col: 0 }, UT: { row: 3, col: 1 }, CO: { row: 3, col: 2 }, KS: { row: 3, col: 3 },
-  TN: { row: 3, col: 4 }, NC: { row: 3, col: 5 }, SC: { row: 3, col: 6 }, DE: { row: 3, col: 7 },
-  AZ: { row: 4, col: 0 }, NM: { row: 4, col: 1 }, OK: { row: 4, col: 2 }, AR: { row: 4, col: 3 },
-  MS: { row: 4, col: 4 }, AL: { row: 4, col: 5 }, GA: { row: 4, col: 6 },
-  TX: { row: 5, col: 0 }, LA: { row: 5, col: 1 }, FL: { row: 5, col: 4 },
-  AK: { row: 6, col: 0 }, HI: { row: 6, col: 4 },
+  // Row 1: Pacific Northwest to Northeast
+  WA: { row: 1, col: 0 }, MT: { row: 1, col: 1 }, ND: { row: 1, col: 2 }, MN: { row: 1, col: 3 },
+  WI: { row: 1, col: 4 }, MI: { row: 1, col: 5 }, VT: { row: 1, col: 8 }, NH: { row: 1, col: 9 },
+  // Row 2: Oregon to Rhode Island
+  OR: { row: 2, col: 0 }, ID: { row: 2, col: 1 }, SD: { row: 2, col: 2 }, IA: { row: 2, col: 3 },
+  IL: { row: 2, col: 4 }, IN: { row: 2, col: 5 }, OH: { row: 2, col: 6 }, PA: { row: 2, col: 7 },
+  NY: { row: 2, col: 8 }, MA: { row: 2, col: 9 }, RI: { row: 2, col: 10 },
+  // Row 3: Nevada to Connecticut
+  NV: { row: 3, col: 0 }, WY: { row: 3, col: 1 }, NE: { row: 3, col: 2 }, MO: { row: 3, col: 3 },
+  KY: { row: 3, col: 4 }, WV: { row: 3, col: 5 }, VA: { row: 3, col: 6 }, MD: { row: 3, col: 7 },
+  NJ: { row: 3, col: 8 }, CT: { row: 3, col: 9 },
+  // Row 4: California to Delaware
+  CA: { row: 4, col: 0 }, UT: { row: 4, col: 1 }, CO: { row: 4, col: 2 }, KS: { row: 4, col: 3 },
+  TN: { row: 4, col: 4 }, NC: { row: 4, col: 5 }, SC: { row: 4, col: 6 }, DE: { row: 4, col: 7 },
+  // Row 5: Arizona to Georgia
+  AZ: { row: 5, col: 0 }, NM: { row: 5, col: 1 }, OK: { row: 5, col: 2 }, AR: { row: 5, col: 3 },
+  MS: { row: 5, col: 4 }, AL: { row: 5, col: 5 }, GA: { row: 5, col: 6 },
+  // Row 6: TX and LA moved right by 2 tiles, FL stays
+  TX: { row: 6, col: 2 }, LA: { row: 6, col: 3 }, FL: { row: 6, col: 5 },
+  // Row 7: AK moved down by 1 (was row 6)
+  AK: { row: 7, col: 0 },
+  // Row 8: HI moved down 1 and right 4 (was row 6, col 4 -> now row 7+1=8, col 4+4=8)
+  HI: { row: 8, col: 8 },
 };
 
 const getAppreciationColor = (value: number) => {
