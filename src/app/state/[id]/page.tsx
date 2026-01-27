@@ -69,34 +69,44 @@ export default function StatePage({ params }: { params: { id: string } }) {
     }
   });
 
-  const getVerdict = (score: number) => {
-    if (score >= 80) return { text: "STRONG BUY", color: "bg-emerald-500" };
-    if (score >= 70) return { text: "BUY", color: "bg-green-500" };
-    if (score >= 60) return { text: "HOLD", color: "bg-amber-500" };
-    return { text: "AVOID", color: "bg-red-500" };
+  const getGradeColor = (grade: string) => {
+    switch (grade) {
+      case 'A+': return 'bg-emerald-500';
+      case 'A': return 'bg-emerald-400';
+      case 'B+': return 'bg-teal-500';
+      case 'B': return 'bg-teal-400';
+      case 'C': return 'bg-amber-500';
+      case 'D': return 'bg-orange-500';
+      default: return 'bg-red-500';
+    }
   };
 
-  const getRPRGrade = (rpr: number) => {
-    if (rpr >= 0.20) return { grade: "A+", color: "bg-emerald-500", bgLight: "bg-emerald-50" };
-    if (rpr >= 0.18) return { grade: "A", color: "bg-emerald-500", bgLight: "bg-emerald-50" };
-    if (rpr >= 0.15) return { grade: "B+", color: "bg-green-500", bgLight: "bg-green-50" };
-    if (rpr >= 0.12) return { grade: "C", color: "bg-amber-500", bgLight: "bg-amber-50" };
-    return { grade: "F", color: "bg-red-500", bgLight: "bg-red-50" };
+  const getVerdictText = (verdict: string) => {
+    switch (verdict) {
+      case 'strong-buy': return 'STRONG BUY';
+      case 'buy': return 'BUY';
+      case 'hold': return 'HOLD';
+      case 'caution': return 'CAUTION';
+      default: return 'AVOID';
+    }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-emerald-600";
-    if (score >= 70) return "text-green-600";
-    if (score >= 60) return "text-amber-600";
+    if (score >= 85) return "text-emerald-600";
+    if (score >= 75) return "text-emerald-500";
+    if (score >= 65) return "text-teal-600";
+    if (score >= 55) return "text-teal-500";
+    if (score >= 45) return "text-amber-600";
+    if (score >= 35) return "text-orange-500";
     return "text-red-600";
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 text-white">
+      <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 text-white">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <Link href="/" className="inline-flex items-center gap-1 text-slate-300 text-sm hover:text-white mb-4 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-1 text-teal-200 text-sm hover:text-white mb-4 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -107,8 +117,8 @@ export default function StatePage({ params }: { params: { id: string } }) {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">{state.name}</h1>
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${getVerdict(state.marketScore).color}`}>
-                  {getVerdict(state.marketScore).text}
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${getGradeColor(state.grade)}`}>
+                  {getVerdictText(state.verdict)}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
                   state.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
@@ -129,40 +139,56 @@ export default function StatePage({ params }: { params: { id: string } }) {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Score Card */}
+        {/* Score Card with Grade Distribution */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 shadow-card">
-          <h3 className="font-semibold text-slate-900 mb-4">STR Opportunity Score</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-slate-900">State Investment Grade</h3>
+            <span className="text-sm text-slate-500">Based on city averages</span>
+          </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="flex items-center gap-4 sm:flex-col sm:text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-                <div className="text-3xl font-bold">{state.marketScore}</div>
-                <div className="text-xs opacity-80">/100</div>
+              <div className={`w-20 h-20 ${getGradeColor(state.grade)} rounded-2xl flex flex-col items-center justify-center text-white shadow-lg`}>
+                <div className="text-3xl font-bold">{state.grade}</div>
+              </div>
+              <div className="sm:mt-2">
+                <div className="text-2xl font-bold text-slate-900">{state.marketScore}/100</div>
+                <div className="text-sm text-slate-500">{getVerdictText(state.verdict)}</div>
               </div>
             </div>
-            <div className="flex-1 space-y-3 w-full">
-              {[
-                { label: "Demand", value: state.scores.demand, icon: "📈" },
-                { label: "Affordability", value: state.scores.affordability, icon: "💰" },
-                { label: "Regulation", value: state.scores.regulation, icon: "📋" },
-                { label: "Seasonality", value: state.scores.seasonality, icon: "🌤️" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-3">
-                  <span className="text-sm">{item.icon}</span>
-                  <span className="text-sm text-slate-600 w-24">{item.label}</span>
-                  <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-teal-400 to-teal-600 rounded-full transition-all duration-500"
-                      style={{ width: `${item.value}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-700 w-8 text-right">{item.value}</span>
-                </div>
-              ))}
+            
+            {/* City Grade Distribution */}
+            <div className="flex-1 w-full">
+              <div className="text-sm font-medium text-slate-700 mb-3">Market Grade Distribution</div>
+              <div className="space-y-2">
+                {state.cityGrades.map(({ grade, count }) => {
+                  const percentage = (count / cities.length) * 100;
+                  return (
+                    <div key={grade} className="flex items-center gap-3">
+                      <span className={`w-8 h-8 ${getGradeColor(grade)} rounded-lg flex items-center justify-center text-white text-sm font-bold`}>
+                        {grade}
+                      </span>
+                      <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${getGradeColor(grade)} rounded-full`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700 w-16 text-right">
+                        {count} ({percentage.toFixed(0)}%)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-          <p className="text-sm text-slate-500 mt-4 text-center bg-slate-50 rounded-xl p-3">
-            State scores show overall market health. Tap a city below for detailed deal analysis including RPR and DSI.
-          </p>
+          
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <p className="text-sm text-slate-500 text-center bg-slate-50 rounded-xl p-3">
+              State grade is calculated as the average of the top 50% performing cities. 
+              This prevents a few poor markets from unfairly penalizing an otherwise strong state.
+            </p>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -187,7 +213,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
               <div className="text-xs text-slate-500 mb-2 font-medium">Sort by</div>
               <div className="flex gap-2 flex-wrap">
                 {[
-                  { key: "score", label: "Score", icon: "📊" },
+                  { key: "score", label: "Grade", icon: "📊" },
                   { key: "adr", label: "ADR", icon: "💵" },
                   { key: "revenue", label: "Revenue", icon: "📈" },
                   { key: "price", label: "Price ↓", icon: "🏠" },
@@ -246,66 +272,73 @@ export default function StatePage({ params }: { params: { id: string } }) {
         </div>
 
         <div className="space-y-3">
-          {filteredCities.map((city) => {
-            const grade = getRPRGrade(city.rpr);
-            return (
-              <Link
-                key={city.id}
-                href={`/city/${city.id}`}
-                className="block bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-slate-300 transition-all group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">
-                      {city.name}
-                    </div>
-                    <div className="text-sm text-slate-500">{city.county}</div>
+          {filteredCities.map((city) => (
+            <Link
+              key={city.id}
+              href={`/city/${city.id}`}
+              className="block bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-slate-300 transition-all group"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">
+                    {city.name}
                   </div>
-                  <div className="text-right">
-                    <div className={`text-2xl font-bold ${getScoreColor(city.marketScore)}`}>
+                  <div className="text-sm text-slate-500">{city.county}</div>
+                </div>
+                <div className="text-right flex items-center gap-3">
+                  <div className={`w-10 h-10 ${getGradeColor(city.grade)} rounded-lg flex items-center justify-center text-white font-bold`}>
+                    {city.grade}
+                  </div>
+                  <div>
+                    <div className={`text-xl font-bold ${getScoreColor(city.marketScore)}`}>
                       {city.marketScore}
                     </div>
                     <div className="text-xs text-slate-400">Score</div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-4 gap-2 mb-3">
-                  {[
-                    { label: "ADR", value: `$${city.avgADR}` },
-                    { label: "Occupancy", value: `${city.occupancy}%` },
-                    { label: "Monthly", value: `$${city.strMonthlyRevenue.toLocaleString()}`, highlight: true },
-                    { label: "Price", value: `$${(city.medianHomeValue / 1000).toFixed(0)}K` },
-                  ].map((stat) => (
-                    <div key={stat.label} className="bg-slate-50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-slate-400 uppercase tracking-wide">{stat.label}</div>
-                      <div className={`text-sm font-semibold ${stat.highlight ? "text-emerald-600" : "text-slate-700"}`}>
-                        {stat.value}
-                      </div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {[
+                  { label: "ADR", value: `$${city.avgADR}` },
+                  { label: "Occupancy", value: `${city.occupancy}%` },
+                  { label: "Monthly", value: `$${city.strMonthlyRevenue.toLocaleString()}`, highlight: true },
+                  { label: "Price", value: `$${(city.medianHomeValue / 1000).toFixed(0)}K` },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-slate-50 rounded-lg p-2 text-center">
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide">{stat.label}</div>
+                    <div className={`text-sm font-semibold ${stat.highlight ? "text-emerald-600" : "text-slate-700"}`}>
+                      {stat.value}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${grade.color}`}>
-                      {grade.grade} Deal
-                    </span>
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${
-                      city.dsi ? "bg-emerald-500" : "bg-red-500"
-                    }`}>
-                      {city.dsi ? "✓ Pays Bills" : "✗ Bills Risk"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-teal-600 text-sm font-medium group-hover:gap-2 transition-all">
-                    View
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${getGradeColor(city.grade)}`}>
+                    {city.scoring.cashOnCash.rating.split(' ')[0]}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${
+                    city.dsi ? "bg-emerald-500" : "bg-red-500"
+                  }`}>
+                    {city.dsi ? "✓ Pays Bills" : "✗ Bills Risk"}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${
+                    city.regulation === "Legal" ? "bg-teal-500" : "bg-amber-500"
+                  }`}>
+                    {city.regulation}
+                  </span>
                 </div>
-              </Link>
-            );
-          })}
+                <div className="flex items-center gap-1 text-teal-600 text-sm font-medium group-hover:gap-2 transition-all">
+                  View
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          ))}
 
           {filteredCities.length === 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">

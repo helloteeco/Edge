@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { USMap } from "@/components/USMap";
 import { TopMarkets } from "@/components/TopMarkets";
 
@@ -63,9 +64,35 @@ export default function HomePage() {
               <h3 className="text-lg font-semibold mb-1">Ready to Start Investing?</h3>
               <p className="text-teal-100 text-sm">Get personalized guidance from our STR mentorship program</p>
             </div>
-            <button className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-100 text-teal-700 font-medium rounded-xl transition-colors shadow-sm">
+            <Link 
+              href="https://teeco.co/fund-your-financial-freedom"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-100 text-teal-700 font-medium rounded-xl transition-colors shadow-sm text-center"
+            >
               Learn More
-            </button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Address Calculator CTA */}
+        <div className="mt-6 bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                <span className="text-2xl">📍</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Have an Address in Mind?</h3>
+                <p className="text-slate-500 text-sm">Get instant STR analysis for any US property</p>
+              </div>
+            </div>
+            <Link 
+              href="/calculator"
+              className="w-full sm:w-auto px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors text-center"
+            >
+              Try Address Calculator
+            </Link>
           </div>
         </div>
       </div>

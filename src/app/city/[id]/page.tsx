@@ -28,7 +28,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
   };
 
   const handleShare = () => {
-    const text = `Check out ${city?.name}, ${city?.stateCode} on Edge by Teeco!\n\nMarket Score: ${city?.marketScore}/100\nDeal Grade: ${getRPRGrade(city?.rpr || 0).grade}\nMonthly Revenue: $${city?.strMonthlyRevenue.toLocaleString()}\nMedian Price: $${city?.medianHomeValue.toLocaleString()}\n\n${window.location.href}`;
+    const text = `Check out ${city?.name}, ${city?.stateCode} on Edge by Teeco!\n\nGrade: ${city?.grade}\nScore: ${city?.marketScore}/100\nMonthly Revenue: $${city?.strMonthlyRevenue.toLocaleString()}\nMedian Price: $${city?.medianHomeValue.toLocaleString()}\n\n${window.location.href}`;
     
     if (navigator.share) {
       navigator.share({ title: `${city?.name} STR Analysis`, text, url: window.location.href });
@@ -54,23 +54,29 @@ export default function CityPage({ params }: { params: { id: string } }) {
     );
   }
 
-  const getVerdict = (score: number) => {
-    if (score >= 80) return { text: "STRONG BUY", color: "bg-emerald-500", emoji: "🚀" };
-    if (score >= 70) return { text: "BUY", color: "bg-green-500", emoji: "✅" };
-    if (score >= 60) return { text: "HOLD", color: "bg-amber-500", emoji: "⚠️" };
-    return { text: "AVOID", color: "bg-red-500", emoji: "❌" };
+  const getGradeColor = (grade: string) => {
+    switch (grade) {
+      case 'A+': return 'bg-emerald-500';
+      case 'A': return 'bg-emerald-400';
+      case 'B+': return 'bg-teal-500';
+      case 'B': return 'bg-teal-400';
+      case 'C': return 'bg-amber-500';
+      case 'D': return 'bg-orange-500';
+      default: return 'bg-red-500';
+    }
   };
 
-  const getRPRGrade = (rpr: number) => {
-    if (rpr >= 0.20) return { grade: "A+", color: "bg-emerald-500", label: "GREAT DEAL" };
-    if (rpr >= 0.18) return { grade: "A", color: "bg-emerald-500", label: "GREAT DEAL" };
-    if (rpr >= 0.15) return { grade: "B+", color: "bg-green-500", label: "GOOD DEAL" };
-    if (rpr >= 0.12) return { grade: "C", color: "bg-amber-500", label: "OKAY DEAL" };
-    return { grade: "F", color: "bg-red-500", label: "BAD DEAL" };
+  const getVerdictText = (verdict: string) => {
+    switch (verdict) {
+      case 'strong-buy': return { text: 'STRONG BUY', emoji: '🚀' };
+      case 'buy': return { text: 'BUY', emoji: '✅' };
+      case 'hold': return { text: 'HOLD', emoji: '⚠️' };
+      case 'caution': return { text: 'CAUTION', emoji: '⚠️' };
+      default: return { text: 'AVOID', emoji: '❌' };
+    }
   };
 
-  const verdict = getVerdict(city.marketScore);
-  const rprGrade = getRPRGrade(city.rpr);
+  const verdictInfo = getVerdictText(city.verdict);
 
   // Find best bedroom size
   const incomeBySize = city.incomeBySize || { "1BR": 2000, "2BR": 2800, "3BR": 3500, "4BR": 4200, "5BR": 4800, "6BR+": 5500 };
@@ -86,7 +92,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 text-white">
         <div className="max-w-4xl mx-auto px-4 py-6">
@@ -102,8 +108,8 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <h1 className="text-2xl sm:text-3xl font-bold mb-1">{city.name}</h1>
               <p className="text-teal-200">{city.county}, {city.stateCode}</p>
               <div className="flex items-center gap-2 mt-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${verdict.color}`}>
-                  {verdict.text}
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${getGradeColor(city.grade)}`}>
+                  {verdictInfo.text}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
                   city.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
@@ -135,38 +141,123 @@ export default function CityPage({ params }: { params: { id: string } }) {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Overall Score */}
+        {/* Overall Grade & Score */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-900">STR Opportunity Score</h3>
+            <h3 className="font-semibold text-slate-900">STR Investment Grade</h3>
+            <span className="text-sm text-slate-500">Transparent Scoring</span>
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="flex items-center gap-4 sm:flex-col sm:text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-                <div className="text-3xl font-bold">{city.marketScore}</div>
-                <div className="text-xs opacity-80">/100</div>
+              <div className={`w-20 h-20 ${getGradeColor(city.grade)} rounded-2xl flex flex-col items-center justify-center text-white shadow-lg`}>
+                <div className="text-3xl font-bold">{city.grade}</div>
+              </div>
+              <div className="sm:mt-2">
+                <div className="text-2xl font-bold text-slate-900">{city.marketScore}/100</div>
+                <div className="text-sm text-slate-500">{verdictInfo.emoji} {verdictInfo.text}</div>
               </div>
             </div>
+            
+            {/* Transparent Score Breakdown */}
             <div className="flex-1 space-y-3 w-full">
-              {[
-                { label: "Demand", value: city.scores.demand, icon: "📈" },
-                { label: "Affordability", value: city.scores.affordability, icon: "💰" },
-                { label: "Regulation", value: city.scores.regulation, icon: "📋" },
-                { label: "Seasonality", value: city.scores.seasonality, icon: "🌤️" },
-                { label: "Saturation", value: city.scores.saturation, icon: "📊" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-3">
-                  <span className="text-sm">{item.icon}</span>
-                  <span className="text-sm text-slate-600 w-24">{item.label}</span>
-                  <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-teal-400 to-teal-600 rounded-full transition-all duration-500"
-                      style={{ width: `${item.value}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-700 w-8 text-right">{item.value}</span>
+              <div className="text-sm font-medium text-slate-700 mb-2">Score Breakdown</div>
+              
+              {/* Cash-on-Cash */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm">💰</span>
+                <span className="text-sm text-slate-600 w-32">Cash-on-Cash</span>
+                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full"
+                    style={{ width: `${(city.scoring.cashOnCash.score / 35) * 100}%` }}
+                  />
                 </div>
-              ))}
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.cashOnCash.score}/35</span>
+              </div>
+              
+              {/* Affordability */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm">🏠</span>
+                <span className="text-sm text-slate-600 w-32">Affordability</span>
+                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: `${(city.scoring.affordability.score / 25) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.affordability.score}/25</span>
+              </div>
+              
+              {/* Legality */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm">⚖️</span>
+                <span className="text-sm text-slate-600 w-32">STR Legality</span>
+                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-purple-500 rounded-full"
+                    style={{ width: `${(city.scoring.legality.score / 15) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.legality.score}/15</span>
+              </div>
+              
+              {/* Landlord Friendly */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm">🤝</span>
+                <span className="text-sm text-slate-600 w-32">Landlord Friendly</span>
+                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 rounded-full"
+                    style={{ width: `${(city.scoring.landlordFriendly.score / 10) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.landlordFriendly.score}/10</span>
+              </div>
+              
+              {/* Saturation */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm">📊</span>
+                <span className="text-sm text-slate-600 w-32">Low Saturation</span>
+                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-400 rounded-full"
+                    style={{ width: `${(city.scoring.saturation.score / 10) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.saturation.score}/10</span>
+              </div>
+              
+              {/* Appreciation */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm">📈</span>
+                <span className="text-sm text-slate-600 w-32">Appreciation</span>
+                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-teal-500 rounded-full"
+                    style={{ width: `${(city.scoring.appreciation.score / 5) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.appreciation.score}/5</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Score Details */}
+          <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+            <div className="bg-slate-50 rounded-lg p-3">
+              <div className="text-slate-500">Cash-on-Cash (RPR)</div>
+              <div className="font-semibold text-slate-900">{city.scoring.cashOnCash.value.toFixed(1)}%</div>
+              <div className="text-xs text-slate-400">{city.scoring.cashOnCash.rating}</div>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <div className="text-slate-500">Median Home</div>
+              <div className="font-semibold text-slate-900">${(city.medianHomeValue / 1000).toFixed(0)}K</div>
+              <div className="text-xs text-slate-400">{city.scoring.affordability.rating}</div>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <div className="text-slate-500">Saturation</div>
+              <div className="font-semibold text-slate-900">{city.listingsPerThousand.toFixed(1)}/1K</div>
+              <div className="text-xs text-slate-400">{city.scoring.saturation.rating}</div>
             </div>
           </div>
         </div>
@@ -176,14 +267,14 @@ export default function CityPage({ params }: { params: { id: string } }) {
           <h3 className="font-semibold text-slate-900 mb-4">Will This Deal Work?</h3>
           
           <div className="grid grid-cols-2 gap-4 mb-4">
-            {/* RPR Gauge */}
+            {/* Grade Gauge */}
             <div className="text-center p-4 bg-slate-50 rounded-xl">
-              <div className="text-sm text-slate-500 mb-2">Money You Make vs. Price You Pay</div>
-              <div className={`text-4xl font-bold text-white rounded-xl py-3 ${rprGrade.color} shadow-sm`}>
-                {rprGrade.grade}
+              <div className="text-sm text-slate-500 mb-2">Investment Grade</div>
+              <div className={`text-4xl font-bold text-white rounded-xl py-3 ${getGradeColor(city.grade)} shadow-sm`}>
+                {city.grade}
               </div>
-              <div className="text-xs font-semibold text-slate-700 mt-2">{rprGrade.label}</div>
-              <div className="text-xs text-slate-400 mt-1">RPR: {(city.rpr * 100).toFixed(1)}%</div>
+              <div className="text-xs font-semibold text-slate-700 mt-2">{city.scoring.cashOnCash.rating}</div>
+              <div className="text-xs text-slate-400 mt-1">RPR: {city.scoring.cashOnCash.value.toFixed(1)}%</div>
             </div>
 
             {/* DSI Gauge */}
@@ -198,18 +289,23 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Bottom Line */}
-          <div className={`rounded-xl p-4 ${city.dsi && city.rpr >= 0.15 ? "bg-emerald-50 border border-emerald-200" : city.dsi ? "bg-amber-50 border border-amber-200" : "bg-red-50 border border-red-200"}`}>
-            <div className="font-semibold text-slate-900 mb-1">THE BOTTOM LINE {verdict.emoji}</div>
+          <div className={`rounded-xl p-4 ${
+            city.grade === 'A+' || city.grade === 'A' ? "bg-emerald-50 border border-emerald-200" :
+            city.grade === 'B+' || city.grade === 'B' ? "bg-teal-50 border border-teal-200" :
+            city.grade === 'C' ? "bg-amber-50 border border-amber-200" :
+            "bg-red-50 border border-red-200"
+          }`}>
+            <div className="font-semibold text-slate-900 mb-1">THE BOTTOM LINE {verdictInfo.emoji}</div>
             <p className="text-sm text-slate-600">
-              {city.dsi && city.rpr >= 0.18
-                ? "This is a great deal! You'll make good money and easily pay your bills."
-                : city.dsi && city.rpr >= 0.15
-                ? "Good deal! You'll make decent money and cover your expenses."
-                : city.dsi && city.rpr >= 0.12
-                ? "Okay deal. It pays the bills but returns could be better."
-                : !city.dsi
-                ? "Skip this one. You might struggle to cover your expenses."
-                : "Marginal deal. Consider negotiating a lower price."}
+              {city.grade === 'A+' || city.grade === 'A'
+                ? "Excellent opportunity! Strong cash flow potential with favorable market conditions."
+                : city.grade === 'B+' || city.grade === 'B'
+                ? "Good opportunity. Solid fundamentals but may require careful property selection."
+                : city.grade === 'C'
+                ? "Marginal opportunity. Returns may be limited - consider negotiating or other markets."
+                : city.grade === 'D'
+                ? "Below average. Significant challenges may impact profitability."
+                : "Not recommended. High risk factors outweigh potential returns."}
             </p>
           </div>
         </div>
@@ -276,42 +372,6 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        {/* Saturation Risk */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-card">
-          <h3 className="font-semibold text-slate-900 mb-4">📈 Market Saturation</h3>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-slate-500">Competition Level</span>
-            <span className={`px-3 py-1 rounded-lg text-xs font-semibold text-white ${
-              city.saturation < 30 ? "bg-emerald-500" :
-              city.saturation < 50 ? "bg-amber-500" :
-              city.saturation < 70 ? "bg-orange-500" : "bg-red-500"
-            }`}>
-              {city.saturation < 30 ? "LOW" :
-               city.saturation < 50 ? "MODERATE" :
-               city.saturation < 70 ? "HIGH" : "VERY HIGH"}
-            </span>
-          </div>
-          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                city.saturation < 30 ? "bg-emerald-500" :
-                city.saturation < 50 ? "bg-amber-500" :
-                city.saturation < 70 ? "bg-orange-500" : "bg-red-500"
-              }`}
-              style={{ width: `${city.saturation}%` }}
-            />
-          </div>
-          <p className="text-sm text-slate-500 mt-3">
-            {city.saturation < 30
-              ? "Low competition - great opportunity to enter this market!"
-              : city.saturation < 50
-              ? "Moderate competition - room for well-positioned properties."
-              : city.saturation < 70
-              ? "High competition - focus on unique amenities to stand out."
-              : "Very high competition - consider other markets."}
-          </p>
-        </div>
-
         {/* Your Next Steps */}
         <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5 mb-4">
           <h3 className="font-semibold text-teal-800 mb-4">🎯 Your Next Steps</h3>
@@ -349,6 +409,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             }`}>
               {city.regulation}
             </span>
+            <span className="text-sm text-slate-500">({city.scoring.legality.rating})</span>
           </div>
           <p className="text-sm text-slate-500">
             {city.regulation === "Legal"
@@ -358,14 +419,16 @@ export default function CityPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* CTA */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-center text-white">
+        <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 text-center text-white">
           <h3 className="font-semibold text-lg mb-2">Ready to Invest?</h3>
-          <p className="text-slate-300 text-sm mb-4">
+          <p className="text-teal-100 text-sm mb-4">
             Get personalized guidance from our STR mentorship program.
           </p>
           <Link
-            href="/funding"
-            className="inline-block px-6 py-3 bg-teal-500 hover:bg-teal-400 text-white rounded-xl font-semibold transition-colors shadow-lg"
+            href="https://teeco.co/fund-your-financial-freedom"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-6 py-3 bg-white hover:bg-slate-100 text-teal-700 rounded-xl font-semibold transition-colors shadow-lg"
           >
             Explore Funding Options
           </Link>

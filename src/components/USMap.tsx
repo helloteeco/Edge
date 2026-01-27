@@ -41,12 +41,28 @@ const getAppreciationColor = (value: number) => {
   return "bg-emerald-600 text-white";
 };
 
-const getScoreColor = (score: number) => {
-  if (score >= 80) return "bg-emerald-600 text-white";
-  if (score >= 70) return "bg-emerald-500 text-white";
-  if (score >= 60) return "bg-emerald-300 text-emerald-900";
-  if (score >= 50) return "bg-amber-300 text-amber-900";
-  return "bg-red-400 text-white";
+const getGradeColor = (grade: string) => {
+  switch (grade) {
+    case 'A+': return 'bg-emerald-600 text-white';
+    case 'A': return 'bg-emerald-500 text-white';
+    case 'B+': return 'bg-teal-500 text-white';
+    case 'B': return 'bg-teal-400 text-white';
+    case 'C': return 'bg-amber-400 text-amber-900';
+    case 'D': return 'bg-orange-400 text-white';
+    default: return 'bg-red-400 text-white';
+  }
+};
+
+const getGradeBgColor = (grade: string) => {
+  switch (grade) {
+    case 'A+': return 'bg-emerald-500';
+    case 'A': return 'bg-emerald-400';
+    case 'B+': return 'bg-teal-500';
+    case 'B': return 'bg-teal-400';
+    case 'C': return 'bg-amber-500';
+    case 'D': return 'bg-orange-500';
+    default: return 'bg-red-500';
+  }
 };
 
 export function USMap() {
@@ -61,7 +77,7 @@ export function USMap() {
       case "appreciation":
         return getAppreciationColor(state.appreciation);
       case "strScore":
-        return getScoreColor(state.marketScore);
+        return getGradeColor(state.grade);
       case "homeValue":
         if (state.medianHomeValue < 200000) return "bg-emerald-600 text-white";
         if (state.medianHomeValue < 300000) return "bg-emerald-500 text-white";
@@ -83,15 +99,18 @@ export function USMap() {
     ? getStateByCode(selectedState) 
     : null;
 
-  const getVerdict = (score: number) => {
-    if (score >= 80) return { text: "STRONG BUY", color: "bg-emerald-500", textColor: "text-emerald-700" };
-    if (score >= 70) return { text: "BUY", color: "bg-green-500", textColor: "text-green-700" };
-    if (score >= 60) return { text: "HOLD", color: "bg-amber-500", textColor: "text-amber-700" };
-    return { text: "AVOID", color: "bg-red-500", textColor: "text-red-700" };
+  const getVerdictText = (verdict: string) => {
+    switch (verdict) {
+      case 'strong-buy': return { text: 'STRONG BUY', emoji: '🚀' };
+      case 'buy': return { text: 'BUY', emoji: '✅' };
+      case 'hold': return { text: 'HOLD', emoji: '⚠️' };
+      case 'caution': return { text: 'CAUTION', emoji: '⚠️' };
+      default: return { text: 'AVOID', emoji: '❌' };
+    }
   };
 
   const views = [
-    { key: "strScore", label: "STR Score", icon: "📊" },
+    { key: "strScore", label: "STR Grade", icon: "📊" },
     { key: "appreciation", label: "Appreciation", icon: "📈" },
     { key: "migration", label: "Migration", icon: "🚚" },
     { key: "homeValue", label: "Home Value", icon: "🏠" },
@@ -147,23 +166,23 @@ export function USMap() {
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">&lt;50</span>
+              <span className="text-slate-600">F</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span className="text-slate-600">50-60</span>
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span className="text-slate-600">D</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
-              <span className="text-slate-600">60-70</span>
+              <div className="w-5 h-5 bg-amber-400 rounded-md shadow-sm" />
+              <span className="text-slate-600">C</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-teal-400 rounded-md shadow-sm" />
+              <span className="text-slate-600">B/B+</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
-              <span className="text-slate-600">70-80</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span className="text-slate-600">80+</span>
+              <span className="text-slate-600">A/A+</span>
             </div>
           </>
         ) : (
@@ -193,8 +212,8 @@ export function USMap() {
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold">{selectedStateData.name}</h3>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getVerdict(selectedStateData.marketScore).color} text-white`}>
-                    {getVerdict(selectedStateData.marketScore).text}
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getGradeBgColor(selectedStateData.grade)} text-white`}>
+                    {getVerdictText(selectedStateData.verdict).text}
                   </span>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                     selectedStateData.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
@@ -204,8 +223,10 @@ export function USMap() {
                 </div>
               </div>
               <div className="text-center bg-white rounded-xl px-4 py-2 shadow-sm">
-                <div className="text-3xl font-bold text-teal-700">{selectedStateData.marketScore}</div>
-                <div className="text-xs text-slate-500">Score</div>
+                <div className={`text-3xl font-bold ${getGradeBgColor(selectedStateData.grade)} text-white rounded-lg px-3 py-1`}>
+                  {selectedStateData.grade}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">{selectedStateData.marketScore}/100</div>
               </div>
             </div>
           </div>
@@ -232,6 +253,25 @@ export function USMap() {
                 <div className="text-xs text-slate-500 mt-0.5">Markets</div>
               </div>
             </div>
+            
+            {/* City Grade Distribution Preview */}
+            <div className="mt-4 p-3 bg-slate-50 rounded-xl">
+              <div className="text-xs font-medium text-slate-500 mb-2">Market Grade Distribution</div>
+              <div className="flex gap-1">
+                {selectedStateData.cityGrades.map(({ grade, count }) => {
+                  const total = selectedStateData.cityGrades.reduce((sum, g) => sum + g.count, 0);
+                  const width = (count / total) * 100;
+                  return width > 0 ? (
+                    <div
+                      key={grade}
+                      className={`h-3 ${getGradeBgColor(grade)} rounded-full`}
+                      style={{ width: `${width}%` }}
+                      title={`${grade}: ${count} markets`}
+                    />
+                  ) : null;
+                })}
+              </div>
+            </div>
 
             <Link
               href={`/state/${selectedStateData.abbreviation.toLowerCase()}`}
@@ -254,7 +294,7 @@ export function USMap() {
           </div>
           <h3 className="text-lg font-semibold text-slate-900 mb-2">Select a State to Begin</h3>
           <p className="text-slate-500 text-sm max-w-md mx-auto">
-            Click any state on the map above to view STR opportunity scores, regulations, rental income data, and detailed investment analysis.
+            Click any state on the map above to view STR investment grades, regulations, rental income data, and detailed market analysis.
           </p>
         </div>
       )}
