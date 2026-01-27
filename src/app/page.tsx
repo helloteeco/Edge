@@ -57,13 +57,13 @@ export default function HomePage() {
         </div>
         
         {/* CTA Section */}
-        <div className="mt-6 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white">
+        <div className="mt-6 bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 text-white">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold mb-1">Ready to Start Investing?</h3>
-              <p className="text-slate-300 text-sm">Get personalized guidance from our STR mentorship program</p>
+              <p className="text-teal-100 text-sm">Get personalized guidance from our STR mentorship program</p>
             </div>
-            <button className="w-full sm:w-auto px-6 py-3 bg-teal-500 hover:bg-teal-400 text-white font-medium rounded-xl transition-colors">
+            <button className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-100 text-teal-700 font-medium rounded-xl transition-colors shadow-sm">
               Learn More
             </button>
           </div>

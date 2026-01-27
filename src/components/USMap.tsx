@@ -28,9 +28,8 @@ const statePositions: Record<string, { row: number; col: number }> = {
   MS: { row: 5, col: 4 }, AL: { row: 5, col: 5 }, GA: { row: 5, col: 6 },
   // Row 6: TX and LA moved right by 2 tiles, FL stays
   TX: { row: 6, col: 2 }, LA: { row: 6, col: 3 }, FL: { row: 6, col: 5 },
-  // Row 7: AK moved down by 1 (was row 6)
-  AK: { row: 7, col: 0 },
-  // Row 8: HI moved down 1 and right 4 (was row 6, col 4 -> now row 7+1=8, col 4+4=8)
+  // Row 8: AK and HI on the same row
+  AK: { row: 8, col: 0 },
   HI: { row: 8, col: 8 },
 };
 
@@ -189,7 +188,7 @@ export function USMap() {
       {selectedStateData && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-card animate-scale-in">
           {/* Header */}
-          <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 sm:p-5">
+          <div className="bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 sm:p-5">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold">{selectedStateData.name}</h3>
@@ -204,9 +203,9 @@ export function USMap() {
                   </span>
                 </div>
               </div>
-              <div className="text-center bg-white/10 backdrop-blur rounded-xl px-4 py-2">
-                <div className="text-3xl font-bold">{selectedStateData.marketScore}</div>
-                <div className="text-xs text-slate-300">Score</div>
+              <div className="text-center bg-white rounded-xl px-4 py-2 shadow-sm">
+                <div className="text-3xl font-bold text-teal-700">{selectedStateData.marketScore}</div>
+                <div className="text-xs text-slate-500">Score</div>
               </div>
             </div>
           </div>
