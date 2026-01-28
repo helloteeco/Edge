@@ -79,10 +79,11 @@ export function USMap() {
       case "strScore":
         return getGradeColor(state.grade);
       case "homeValue":
+        // Low prices = green (more affordable = better for investors)
         if (state.medianHomeValue < 200000) return "bg-emerald-600 text-white";
-        if (state.medianHomeValue < 300000) return "bg-emerald-500 text-white";
-        if (state.medianHomeValue < 400000) return "bg-emerald-300 text-emerald-900";
-        if (state.medianHomeValue < 500000) return "bg-amber-300 text-amber-900";
+        if (state.medianHomeValue < 250000) return "bg-emerald-500 text-white";
+        if (state.medianHomeValue < 300000) return "bg-emerald-300 text-emerald-900";
+        if (state.medianHomeValue < 400000) return "bg-amber-300 text-amber-900";
         return "bg-red-400 text-white";
       case "migration":
         if (state.netMigration > 100000) return "bg-emerald-600 text-white";
@@ -113,7 +114,7 @@ export function USMap() {
     { key: "strScore", label: "STR Grade", icon: "📊" },
     { key: "appreciation", label: "Appreciation", icon: "📈" },
     { key: "migration", label: "Migration", icon: "🚚" },
-    { key: "homeValue", label: "Home Value", icon: "🏠" },
+    { key: "homeValue", label: "Home Prices", icon: "💰" },
   ];
 
   return (
@@ -183,6 +184,25 @@ export function USMap() {
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
               <span className="text-slate-600">A/A+</span>
+            </div>
+          </>
+        ) : mapView === "homeValue" ? (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span className="text-slate-600">&lt;$200K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span className="text-slate-600">$200-300K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span className="text-slate-600">$300-400K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span className="text-slate-600">&gt;$400K</span>
             </div>
           </>
         ) : (
