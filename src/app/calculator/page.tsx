@@ -36,6 +36,14 @@ export default function AddressCalculatorPage() {
     }
   };
 
+  const openInRabbu = () => {
+    if (!address.trim()) return;
+    // Encode the address for URL and redirect to Rabbu's Airbnb Calculator
+    const encodedAddress = encodeURIComponent(address.trim());
+    const rabbuUrl = `https://www.rabbu.com/airbnb-calculator?address=${encodedAddress}`;
+    window.open(rabbuUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const getGradeColor = (grade: string) => {
     switch (grade) {
       case 'A+': return 'bg-emerald-500 text-white';
@@ -118,6 +126,23 @@ export default function AddressCalculatorPage() {
           <p className="text-xs text-slate-500 mt-2">
             Enter a full address including city and state (e.g., &quot;123 Main St, Kissimmee, FL&quot;)
           </p>
+          
+          {/* Rabbu Redirect Button */}
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <button
+              onClick={openInRabbu}
+              disabled={!address.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open in Rabbu (third-party site)
+            </button>
+            <p className="text-xs text-slate-400 mt-2 text-center">
+              Get detailed Airbnb revenue estimates from Rabbu.com
+            </p>
+          </div>
         </div>
 
         {/* Not Found Message */}
