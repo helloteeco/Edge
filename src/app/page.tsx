@@ -71,18 +71,32 @@ export default function HomePage() {
         
         {/* CTA Section */}
         <div className="mt-6 bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 text-white">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div>
-              <h3 className="text-lg font-semibold mb-1">Ready to Start Investing?</h3>
-              <p className="text-teal-100 text-sm">Get personalized guidance from our STR mentorship program</p>
+              <h3 className="text-xl font-semibold mb-2">Ready to Start Investing?</h3>
+              <p className="text-teal-100 text-sm mb-3">Get personalized guidance from our STR mentorship program</p>
+              
+              {/* Expanded Mentorship Details */}
+              <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">⏱️</span>
+                  <span className="font-semibold">Only ~3 hours/week to manage once set up</span>
+                </div>
+                <ul className="text-teal-100 text-sm space-y-1.5 ml-7">
+                  <li>• <strong>Full guided experience:</strong> 9 total calls</li>
+                  <li>• <strong>Complete journey:</strong> Deal → Setup & Design → Live STR</li>
+                  <li>• <strong>Remote setup:</strong> We can set up your Airbnb while you keep your job</li>
+                  <li>• <strong>Flexible options:</strong> Programs tailored to your available time</li>
+                </ul>
+              </div>
             </div>
             <Link 
               href="https://teeco.co/fund-your-financial-freedom"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-100 text-teal-700 font-medium rounded-xl transition-colors shadow-sm text-center"
+              className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-100 text-teal-700 font-semibold rounded-xl transition-colors shadow-sm text-center"
             >
-              Learn More
+              Learn More About Mentorship
             </Link>
           </div>
         </div>
