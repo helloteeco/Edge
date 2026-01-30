@@ -8,6 +8,18 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Informational Banner */}
+      <div className="bg-gradient-to-r from-amber-50 to-amber-100 border-b border-amber-200">
+        <div className="max-w-5xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-amber-800">
+            <span className="text-lg">💡</span>
+            <p className="text-sm sm:text-base font-medium">
+              Most successful students start with around <span className="font-bold">$65K</span> for the smoothest journey to their first STR.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 text-white">
         <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">

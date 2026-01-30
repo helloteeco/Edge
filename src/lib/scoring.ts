@@ -186,9 +186,9 @@ export function getVerdict(grade: string): 'strong-buy' | 'buy' | 'hold' | 'caut
   switch (grade) {
     case 'A+': return 'strong-buy';
     case 'A': return 'buy';
-    case 'B+': return 'hold';
+    case 'B+': return 'buy';
     case 'B': return 'hold';
-    case 'C': return 'caution';
+    case 'C': return 'hold';
     case 'D': return 'caution';
     default: return 'avoid';
   }

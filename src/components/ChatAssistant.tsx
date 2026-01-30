@@ -135,15 +135,16 @@ export function ChatAssistant() {
                 </button>
                 <button
                   onClick={() => { setMode("survey"); setSurveyStep("budget"); }}
-                  className="w-full p-4 bg-slate-50 rounded-xl text-left hover:bg-slate-100 transition-all group"
+                  className="w-full p-4 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl text-left hover:from-purple-100 hover:to-purple-150 transition-all group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-purple-200 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform flex-shrink-0">
                       🎓
                     </div>
                     <div>
                       <div className="font-semibold text-slate-900">Mentorship Program</div>
-                      <div className="text-sm text-slate-500">1:1 guidance from experts</div>
+                      <div className="text-sm text-purple-700 font-medium">Only ~3 hours/week once set up</div>
+                      <div className="text-xs text-slate-500 mt-1">9 guided calls: Deal → Setup & Design → Live STR. We can set up your Airbnb remotely while you keep your job.</div>
                     </div>
                   </div>
                 </button>
@@ -304,8 +305,17 @@ export function ChatAssistant() {
                     <h4 className="font-semibold text-slate-900 mb-2">Thanks for your interest!</h4>
                     {isQualified ? (
                       <div className="space-y-3">
+                        <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-left">
+                          <p className="text-sm text-purple-800 font-medium mb-2">✅ You qualify for our Mentorship Program!</p>
+                          <ul className="text-xs text-purple-700 space-y-1">
+                            <li>• Full guided experience: 9 total calls</li>
+                            <li>• Deal → Setup & Design → Live STR</li>
+                            <li>• We can set up your Airbnb remotely</li>
+                            <li>• Only ~3 hours/week to manage once live</li>
+                          </ul>
+                        </div>
                         <p className="text-sm text-slate-500">
-                          You qualify for our Mentorship Program! Reach out to get started:
+                          Reach out to get started:
                         </p>
                         <a
                           href="mailto:hello@teeco.co"

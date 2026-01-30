@@ -111,11 +111,16 @@ export function USMap() {
   };
 
   const views = [
-    { key: "strScore", label: "STR Grade", icon: "📊" },
-    { key: "appreciation", label: "Appreciation", icon: "📈" },
-    { key: "migration", label: "Migration", icon: "🚚" },
-    { key: "homeValue", label: "Home Prices", icon: "💰" },
+    { key: "strScore", label: "STR Grade", icon: "📊", description: "Our overall investment score based on cash flow, affordability, and legality." },
+    { key: "appreciation", label: "Appreciation", icon: "📈", description: "Higher appreciation means your property value grows faster over time." },
+    { key: "migration", label: "Migration", icon: "🚚", description: "More people moving in often leads to rising home prices and rental demand." },
+    { key: "homeValue", label: "Home Prices", icon: "💰", description: "Lower prices mean easier entry and better cash-on-cash returns." },
   ];
+
+  const getFilterDescription = () => {
+    const view = views.find(v => v.key === mapView);
+    return view?.description || "";
+  };
 
   return (
     <div className="space-y-5">
@@ -135,6 +140,11 @@ export function USMap() {
             <span>{view.label}</span>
           </button>
         ))}
+      </div>
+      
+      {/* Filter Explanation */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center">
+        <p className="text-sm text-slate-600">{getFilterDescription()}</p>
       </div>
 
       {/* Map Grid */}
