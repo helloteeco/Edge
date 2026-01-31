@@ -105,12 +105,27 @@ export function ChatAssistant() {
           {/* Header */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-xl">🏠</span>
-              </div>
+              {mode !== "menu" && (
+                <button
+                  onClick={resetChat}
+                  className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+                  title="Back to menu"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+              {mode === "menu" && (
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🏠</span>
+                </div>
+              )}
               <div>
                 <h3 className="font-semibold">Edge Assistant</h3>
-                <p className="text-sm text-teal-100">How can I help you today?</p>
+                <p className="text-sm text-teal-100">
+                  {mode === "menu" ? "How can I help you today?" : mode === "chat" ? "Ask me anything" : "Mentorship Survey"}
+                </p>
               </div>
             </div>
           </div>
