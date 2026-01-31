@@ -1,28 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Source+Serif+Pro:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Primary brand colors */
-  --primary: #0D9488;
-  --primary-dark: #0F766E;
-  --primary-light: #14B8A6;
+  /* Teeco Brand Colors */
+  --black: #000000;
+  --gray-brand: #2b2823;
+  --mocha: #787060;
+  --cream: #e5e3da;
+  --cream-dark: #d8d6cd;
+  --white: #ffffff;
+  
+  /* Teeco Teal (from website) */
+  --teeco-teal: #3d6b6b;
+  --teeco-teal-light: #4a7a7a;
+  --teeco-teal-dark: #2f5555;
+  
+  /* Primary brand colors (mapped to Teeco) */
+  --primary: #3d6b6b;
+  --primary-dark: #2f5555;
+  --primary-light: #4a7a7a;
   
   /* Background colors */
-  --background: #F8FAFC;
-  --background-alt: #FFFFFF;
-  --surface: #FFFFFF;
-  --surface-hover: #F1F5F9;
+  --background: #e5e3da;
+  --background-alt: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #f5f4f1;
   
   /* Text colors */
-  --foreground: #0F172A;
-  --foreground-secondary: #334155;
-  --muted: #64748B;
-  --muted-light: #94A3B8;
+  --foreground: #2b2823;
+  --foreground-secondary: #3d3a34;
+  --muted: #787060;
+  --muted-light: #9a9488;
   
   /* Border colors */
-  --border: #E2E8F0;
-  --border-light: #F1F5F9;
+  --border: #d8d6cd;
+  --border-light: #e5e3da;
   
   /* Status colors */
   --success: #10B981;
@@ -61,7 +76,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--background);
   color: var(--foreground);
   line-height: 1.6;
@@ -71,6 +86,7 @@ body {
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
+  font-family: 'Source Serif Pro', Georgia, serif;
   font-weight: 600;
   line-height: 1.3;
   color: var(--foreground);
@@ -104,32 +120,38 @@ h4 { font-size: 1.125rem; }
 @layer components {
   /* Cards */
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+    @apply bg-white rounded-xl border border-mocha/10 shadow-sm;
   }
   
   .card-hover {
-    @apply card transition-all duration-200 hover:shadow-md hover:border-slate-300;
+    @apply card transition-all duration-200 hover:shadow-md hover:border-mocha/20;
   }
   
-  /* Buttons */
+  /* Buttons - Updated to Teeco teal */
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200;
   }
   
   .btn-primary {
-    @apply btn bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-800;
+    @apply btn text-white hover:opacity-90 active:opacity-80;
+    background-color: var(--teeco-teal);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--teeco-teal-light);
   }
   
   .btn-secondary {
-    @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300;
+    @apply btn bg-cream text-gray-brand hover:bg-cream-dark active:bg-mocha/20;
   }
   
   .btn-outline {
-    @apply btn border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100;
+    @apply btn border text-gray-brand hover:bg-cream active:bg-cream-dark;
+    border-color: var(--mocha);
   }
   
   .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100 active:bg-slate-200;
+    @apply btn text-gray-brand hover:bg-cream active:bg-cream-dark;
   }
   
   /* Badges */
@@ -154,7 +176,7 @@ h4 { font-size: 1.125rem; }
   }
   
   .badge-neutral {
-    @apply badge bg-slate-100 text-slate-700;
+    @apply badge bg-cream text-gray-brand;
   }
   
   /* Score badges */
@@ -180,8 +202,13 @@ h4 { font-size: 1.125rem; }
   
   /* Inputs */
   .input {
-    @apply w-full px-4 py-3 rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 
-           focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-lg border bg-white text-gray-brand placeholder-mocha 
+           focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200;
+    border-color: var(--mocha);
+  }
+  
+  .input:focus {
+    --tw-ring-color: var(--teeco-teal);
   }
   
   .input-sm {
@@ -190,45 +217,46 @@ h4 { font-size: 1.125rem; }
   
   /* Section headers */
   .section-title {
-    @apply text-xl font-semibold text-slate-900 mb-1;
+    @apply text-xl font-semibold text-gray-brand mb-1;
   }
   
   .section-subtitle {
-    @apply text-sm text-slate-500;
+    @apply text-sm text-mocha;
   }
   
   /* Stat cards */
   .stat-card {
-    @apply bg-white rounded-xl p-4 border border-slate-200;
+    @apply bg-white rounded-xl p-4 border border-mocha/10;
   }
   
   .stat-value {
-    @apply text-2xl font-bold text-slate-900;
+    @apply text-2xl font-bold text-gray-brand;
   }
   
   .stat-label {
-    @apply text-sm text-slate-500 mt-1;
+    @apply text-sm text-mocha mt-1;
   }
   
   /* List items */
   .list-item {
-    @apply flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 
-           transition-all duration-200 hover:shadow-md hover:border-slate-300;
+    @apply flex items-center gap-4 p-4 bg-white rounded-xl border border-mocha/10 
+           transition-all duration-200 hover:shadow-md hover:border-mocha/20;
   }
   
-  /* Pills/Chips */
+  /* Pills/Chips - Updated to Teeco teal */
   .pill {
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium 
-           bg-slate-100 text-slate-700 transition-all duration-200;
+           bg-cream text-gray-brand transition-all duration-200;
   }
   
   .pill-active {
-    @apply pill bg-teal-600 text-white;
+    @apply pill text-white;
+    background-color: var(--teeco-teal);
   }
   
   /* Progress bars */
   .progress-bar {
-    @apply h-2 bg-slate-200 rounded-full overflow-hidden;
+    @apply h-2 bg-cream rounded-full overflow-hidden;
   }
   
   .progress-fill {
@@ -237,7 +265,7 @@ h4 { font-size: 1.125rem; }
   
   /* Dividers */
   .divider {
-    @apply border-t border-slate-200 my-4;
+    @apply border-t border-mocha/20 my-4;
   }
   
   /* Empty states */
@@ -246,15 +274,15 @@ h4 { font-size: 1.125rem; }
   }
   
   .empty-state-icon {
-    @apply w-16 h-16 mb-4 text-slate-300;
+    @apply w-16 h-16 mb-4 text-mocha/50;
   }
   
   .empty-state-title {
-    @apply text-lg font-semibold text-slate-900 mb-2;
+    @apply text-lg font-semibold text-gray-brand mb-2;
   }
   
   .empty-state-text {
-    @apply text-sm text-slate-500 max-w-sm;
+    @apply text-sm text-mocha max-w-sm;
   }
 }
 
@@ -315,13 +343,13 @@ h4 { font-size: 1.125rem; }
 
 /* Focus states */
 *:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--teeco-teal);
   outline-offset: 2px;
 }
 
 /* Selection */
 ::selection {
-  background-color: var(--primary-light);
+  background-color: var(--teeco-teal-light);
   color: white;
 }
 

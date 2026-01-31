@@ -45,8 +45,8 @@ const getGradeColor = (grade: string) => {
   switch (grade) {
     case 'A+': return 'bg-emerald-600 text-white';
     case 'A': return 'bg-emerald-500 text-white';
-    case 'B+': return 'bg-teal-500 text-white';
-    case 'B': return 'bg-teal-400 text-white';
+    case 'B+': return 'bg-[#3d6b6b] text-white';
+    case 'B': return 'bg-[#4a7a7a] text-white';
     case 'C': return 'bg-amber-400 text-amber-900';
     case 'D': return 'bg-orange-400 text-white';
     default: return 'bg-red-400 text-white';
@@ -57,8 +57,8 @@ const getGradeBgColor = (grade: string) => {
   switch (grade) {
     case 'A+': return 'bg-emerald-500';
     case 'A': return 'bg-emerald-400';
-    case 'B+': return 'bg-teal-500';
-    case 'B': return 'bg-teal-400';
+    case 'B+': return 'bg-[#3d6b6b]';
+    case 'B': return 'bg-[#4a7a7a]';
     case 'C': return 'bg-amber-500';
     case 'D': return 'bg-orange-500';
     default: return 'bg-red-500';
@@ -71,7 +71,7 @@ export function USMap() {
 
   const getStateColor = (stateCode: string) => {
     const state = getStateByCode(stateCode);
-    if (!state) return "bg-slate-200 text-slate-600";
+    if (!state) return "bg-cream text-mocha";
     
     switch (mapView) {
       case "appreciation":
@@ -92,7 +92,7 @@ export function USMap() {
         if (state.netMigration > -50000) return "bg-amber-300 text-amber-900";
         return "bg-red-400 text-white";
       default:
-        return "bg-slate-200 text-slate-600";
+        return "bg-cream text-mocha";
     }
   };
 
@@ -132,8 +132,8 @@ export function USMap() {
             onClick={() => setMapView(view.key as MapView)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
               mapView === view.key
-                ? "bg-teal-600 text-white shadow-md"
-                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                ? "bg-[#3d6b6b] text-white shadow-md"
+                : "bg-white text-gray-brand border border-mocha/20 hover:border-mocha/40 hover:bg-cream"
             }`}
           >
             <span>{view.icon}</span>
@@ -143,12 +143,12 @@ export function USMap() {
       </div>
       
       {/* Filter Explanation */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center">
-        <p className="text-sm text-slate-600">{getFilterDescription()}</p>
+      <div className="bg-cream border border-mocha/10 rounded-xl px-4 py-2.5 text-center">
+        <p className="text-sm text-mocha">{getFilterDescription()}</p>
       </div>
 
       {/* Map Grid */}
-      <div className="bg-slate-100 rounded-2xl p-4 sm:p-6">
+      <div className="bg-cream rounded-2xl p-4 sm:p-6">
         <div className="grid grid-cols-11 gap-1.5 sm:gap-2 max-w-xl mx-auto">
           {Object.entries(statePositions).map(([stateCode, pos]) => (
             <button
@@ -156,7 +156,7 @@ export function USMap() {
               onClick={() => setSelectedState(stateCode === selectedState ? null : stateCode)}
               className={`aspect-square flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-lg transition-all transform hover:scale-105 ${getStateColor(stateCode)} ${
                 selectedState === stateCode 
-                  ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-slate-100 scale-110 shadow-lg z-10" 
+                  ? "ring-2 ring-[#3d6b6b] ring-offset-2 ring-offset-cream scale-110 shadow-lg z-10" 
                   : "shadow-sm hover:shadow-md"
               }`}
               style={{
@@ -172,62 +172,62 @@ export function USMap() {
 
       {/* Legend */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs">
-        <span className="font-semibold text-slate-700">Legend:</span>
+        <span className="font-semibold text-gray-brand">Legend:</span>
         {mapView === "strScore" ? (
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">F</span>
+              <span className="text-mocha">F</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">D</span>
+              <span className="text-mocha">D</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">C</span>
+              <span className="text-mocha">C</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-teal-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">B/B+</span>
+              <div className="w-5 h-5 bg-[#4a7a7a] rounded-md shadow-sm" />
+              <span className="text-mocha">B/B+</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
-              <span className="text-slate-600">A/A+</span>
+              <span className="text-mocha">A/A+</span>
             </div>
           </>
         ) : mapView === "homeValue" ? (
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span className="text-slate-600">&lt;$200K</span>
+              <span className="text-mocha">&lt;$200K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
-              <span className="text-slate-600">$200-300K</span>
+              <span className="text-mocha">$200-300K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span className="text-slate-600">$300-400K</span>
+              <span className="text-mocha">$300-400K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">&gt;$400K</span>
+              <span className="text-mocha">&gt;$400K</span>
             </div>
           </>
         ) : (
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-slate-600">Low</span>
+              <span className="text-mocha">Low</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span className="text-slate-600">Medium</span>
+              <span className="text-mocha">Medium</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span className="text-slate-600">High</span>
+              <span className="text-mocha">High</span>
             </div>
           </>
         )}
@@ -235,9 +235,9 @@ export function USMap() {
 
       {/* Selected State Card */}
       {selectedStateData && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-card animate-scale-in">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4 sm:p-5">
+        <div className="bg-white border border-mocha/10 rounded-2xl overflow-hidden shadow-card animate-scale-in">
+          {/* Header - Updated to Teeco teal */}
+          <div className="bg-gradient-to-r from-[#3d6b6b] to-[#4a7a7a] text-white p-4 sm:p-5">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold">{selectedStateData.name}</h3>
@@ -256,7 +256,7 @@ export function USMap() {
                 <div className={`text-3xl font-bold ${getGradeBgColor(selectedStateData.grade)} text-white rounded-lg px-3 py-1`}>
                   {selectedStateData.grade}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">{selectedStateData.marketScore}/100</div>
+                <div className="text-xs text-mocha mt-1">{selectedStateData.marketScore}/100</div>
               </div>
             </div>
           </div>
@@ -264,29 +264,29 @@ export function USMap() {
           {/* Stats Grid */}
           <div className="p-4 sm:p-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-slate-900">${selectedStateData.avgADR}</div>
-                <div className="text-xs text-slate-500 mt-0.5">Avg ADR</div>
+              <div className="bg-cream rounded-xl p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-gray-brand">${selectedStateData.avgADR}</div>
+                <div className="text-xs text-mocha mt-0.5">Avg ADR</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-slate-900">${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K</div>
-                <div className="text-xs text-slate-500 mt-0.5">Median Home</div>
+              <div className="bg-cream rounded-xl p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-gray-brand">${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K</div>
+                <div className="text-xs text-mocha mt-0.5">Median Home</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <div className="bg-cream rounded-xl p-3 text-center">
                 <div className={`text-lg sm:text-xl font-bold ${selectedStateData.appreciation >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {selectedStateData.appreciation >= 0 ? "+" : ""}{selectedStateData.appreciation}%
                 </div>
-                <div className="text-xs text-slate-500 mt-0.5">1Y Appreciation</div>
+                <div className="text-xs text-mocha mt-0.5">1Y Appreciation</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-teal-600">{selectedStateData.cityCount}</div>
-                <div className="text-xs text-slate-500 mt-0.5">Markets</div>
+              <div className="bg-cream rounded-xl p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-[#3d6b6b]">{selectedStateData.cityCount}</div>
+                <div className="text-xs text-mocha mt-0.5">Markets</div>
               </div>
             </div>
             
             {/* City Grade Distribution Preview */}
-            <div className="mt-4 p-3 bg-slate-50 rounded-xl">
-              <div className="text-xs font-medium text-slate-500 mb-2">Market Grade Distribution</div>
+            <div className="mt-4 p-3 bg-cream rounded-xl">
+              <div className="text-xs font-medium text-mocha mb-2">Market Grade Distribution</div>
               <div className="flex gap-1">
                 {selectedStateData.cityGrades.map(({ grade, count }) => {
                   const total = selectedStateData.cityGrades.reduce((sum, g) => sum + g.count, 0);
@@ -305,7 +305,7 @@ export function USMap() {
 
             <Link
               href={`/state/${selectedStateData.abbreviation.toLowerCase()}`}
-              className="flex items-center justify-center gap-2 w-full mt-4 py-3.5 bg-teal-600 text-white text-center rounded-xl font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 w-full mt-4 py-3.5 bg-[#3d6b6b] text-white text-center rounded-xl font-semibold hover:bg-[#4a7a7a] transition-colors shadow-sm"
             >
               <span>Explore {selectedStateData.cityCount} Markets</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,12 +318,12 @@ export function USMap() {
 
       {/* Default Card */}
       {!selectedStateData && (
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="bg-gradient-to-br from-cream to-cream-dark border border-mocha/10 rounded-2xl p-6 sm:p-8 text-center">
+          <div className="w-16 h-16 bg-[#3d6b6b]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">🗺️</span>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Select a State to Begin</h3>
-          <p className="text-slate-500 text-sm max-w-md mx-auto">
+          <h3 className="text-lg font-semibold text-gray-brand mb-2">Select a State to Begin</h3>
+          <p className="text-mocha text-sm max-w-md mx-auto">
             Click any state on the map above to view STR investment grades, regulations, rental income data, and detailed market analysis.
           </p>
         </div>
