@@ -8,45 +8,37 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Teeco Brand Colors
-        'gray-brand': '#2b2823',  // Dark olive/charcoal - primary text
-        'mocha': '#787060',       // Olive/tan - secondary text
-        'cream': '#e5e3da',       // Light beige - backgrounds
-        'cream-dark': '#d8d6cd',  // Slightly darker cream
+        // Teeco Brand Colors (ONLY these 5 colors)
+        'teeco-black': '#000000',    // Black - strong accents, headers
+        'teeco-gray': '#2b2823',     // Gray - primary text, dark backgrounds
+        'teeco-mocha': '#787060',    // Mocha - secondary text, muted elements
+        'teeco-cream': '#e5e3da',    // Cream - primary backgrounds
+        'teeco-white': '#ffffff',    // White - cards, surfaces
         
-        // Teeco Teal (derived from website header)
-        'teeco-teal': {
-          DEFAULT: '#3d6b6b',
-          light: '#4a7a7a',
-          dark: '#2f5555',
-        },
+        // Semantic aliases for easier usage
+        background: '#e5e3da',       // Cream
+        surface: '#ffffff',          // White
+        foreground: '#2b2823',       // Gray
+        muted: '#787060',            // Mocha
+        border: '#d8d6cd',           // Slightly darker cream for borders
+        accent: '#2b2823',           // Gray for accents (buttons, links)
         
-        // Legacy primary colors (keeping for compatibility)
-        primary: {
-          DEFAULT: "#3d6b6b",
-          dark: "#2f5555",
-          light: "#4a7a7a",
-          50: "#f0f7f7",
-          100: "#d9ebeb",
-          200: "#b3d7d7",
-          300: "#8dc3c3",
-          400: "#67afaf",
-          500: "#4a9a9a",
-          600: "#3d6b6b",
-          700: "#2f5555",
-          800: "#234040",
-          900: "#172a2a",
+        // Grade colors (kept for scoring displays - these are functional, not brand)
+        grade: {
+          'a-plus': '#2b2823',       // Gray for A+ (premium feel)
+          'a': '#3d5c3d',            // Muted green
+          'b-plus': '#4a6b4a',       // Lighter muted green
+          'b': '#787060',            // Mocha
+          'c': '#8a7a60',            // Warmer mocha
+          'd': '#9a6a50',            // Muted terracotta
+          'f': '#8a5040',            // Muted rust
         },
-        background: "#e5e3da",  // Cream
-        surface: "#FFFFFF",
-        foreground: "#2b2823",  // Gray brand
-        muted: "#787060",       // Mocha
-        border: "#d8d6cd",      // Cream dark
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        'elevated': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        'card': '0 1px 3px 0 rgb(0 0 0 / 0.08)',
+        'card-hover': '0 4px 12px -2px rgb(0 0 0 / 0.12)',
+        'elevated': '0 8px 24px -4px rgb(0 0 0 / 0.12)',
+        'subtle': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
       },
       borderRadius: {
         'xl': '12px',
@@ -55,16 +47,22 @@ module.exports = {
       },
       fontSize: {
         'xxs': '0.625rem',
+        'display': ['3.5rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        'headline': ['2rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
       },
       fontFamily: {
-        'serif': ['Source Serif Pro', 'Georgia', 'serif'],
-        'sans': ['Raleway', 'Inter', 'system-ui', 'sans-serif'],
+        'serif': ['Source Serif Pro', 'Georgia', 'Cambria', 'serif'],
+        'sans': ['Raleway', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
+        'fade-in': 'fadeIn 0.4s ease-out',
+        'slide-up': 'slideUp 0.4s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
-        'scale-in': 'scaleIn 0.2s ease-out',
+        'scale-in': 'scaleIn 0.3s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -72,7 +70,7 @@ module.exports = {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideDown: {
@@ -80,7 +78,7 @@ module.exports = {
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         scaleIn: {
-          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '0%': { opacity: '0', transform: 'scale(0.96)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
       },

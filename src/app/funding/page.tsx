@@ -4,7 +4,6 @@ export default function FundingPage() {
       name: "DSCR Loans",
       icon: "📊",
       badge: "Most Popular",
-      badgeColor: "bg-teal-500",
       description: "Debt Service Coverage Ratio loans qualify based on property income, not personal income. Great for investors with multiple properties.",
       minDown: "15-25%",
       rates: "7-9%",
@@ -15,7 +14,6 @@ export default function FundingPage() {
       name: "Conventional Loans",
       icon: "🏦",
       badge: "Best Rates",
-      badgeColor: "bg-emerald-500",
       description: "Traditional mortgages with the best rates, but require income verification and have property limits.",
       minDown: "15-20%",
       rates: "6-7.5%",
@@ -26,7 +24,6 @@ export default function FundingPage() {
       name: "Hard Money Loans",
       icon: "⚡",
       badge: "Fastest",
-      badgeColor: "bg-amber-500",
       description: "Short-term loans for quick purchases or renovations. Higher rates but fast approval.",
       minDown: "20-30%",
       rates: "10-15%",
@@ -37,7 +34,6 @@ export default function FundingPage() {
       name: "Portfolio Loans",
       icon: "🤝",
       badge: "Flexible",
-      badgeColor: "bg-purple-500",
       description: "Loans held by local banks, offering more flexibility for unique situations.",
       minDown: "20-25%",
       rates: "7-8.5%",
@@ -47,24 +43,38 @@ export default function FundingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-teal-700 text-white">
+      <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
+            >
               <span className="text-xl">💰</span>
             </div>
-            <h1 className="text-2xl font-bold">Funding Options</h1>
+            <h1 
+              className="text-2xl font-bold"
+              style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+            >
+              Funding Options
+            </h1>
           </div>
-          <p className="text-teal-100">Explore financing options for your STR investment</p>
+          <p style={{ color: 'rgba(255, 255, 255, 0.75)' }}>Explore financing options for your STR investment</p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Quick Tips */}
-        <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5 mb-6">
-          <h3 className="font-semibold text-teal-800 mb-3 flex items-center gap-2">
+        <div 
+          className="rounded-2xl p-5 mb-6"
+          style={{ backgroundColor: 'rgba(43, 40, 35, 0.04)', border: '1px solid #d8d6cd' }}
+        >
+          <h3 
+            className="font-semibold mb-3 flex items-center gap-2"
+            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
             <span className="text-lg">💡</span> Quick Tips for STR Financing
           </h3>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -74,7 +84,7 @@ export default function FundingPage() {
               { icon: "✅", text: "Get pre-approved before shopping for properties" },
               { icon: "📋", text: "Consider closing costs (2-5% of purchase price)" },
             ].map((tip, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+              <div key={idx} className="flex items-start gap-2 text-sm" style={{ color: '#787060' }}>
                 <span>{tip.icon}</span>
                 <span>{tip.text}</span>
               </div>
@@ -85,41 +95,56 @@ export default function FundingPage() {
         {/* Loan Options */}
         <div className="space-y-4">
           {loanOptions.map((loan) => (
-            <div key={loan.name} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-card hover:shadow-lg transition-all">
+            <div 
+              key={loan.name} 
+              className="rounded-2xl overflow-hidden transition-all"
+              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+            >
               {/* Header */}
-              <div className="p-5 border-b border-slate-100">
+              <div className="p-5" style={{ borderBottom: '1px solid #e5e3da' }}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-2xl">
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                      style={{ backgroundColor: '#e5e3da' }}
+                    >
                       {loan.icon}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg text-slate-900">{loan.name}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold text-white ${loan.badgeColor}`}>
+                        <h3 
+                          className="font-semibold text-lg"
+                          style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                        >
+                          {loan.name}
+                        </h3>
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                          style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                        >
                           {loan.badge}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500 mt-1 max-w-lg">{loan.description}</p>
+                      <p className="text-sm mt-1 max-w-lg" style={{ color: '#787060' }}>{loan.description}</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="text-center bg-slate-50 rounded-xl px-4 py-2">
-                      <div className="text-xs text-slate-500">Down Payment</div>
-                      <div className="font-bold text-teal-600">{loan.minDown}</div>
+                    <div className="text-center rounded-xl px-4 py-2" style={{ backgroundColor: '#e5e3da' }}>
+                      <div className="text-xs" style={{ color: '#787060' }}>Down Payment</div>
+                      <div className="font-bold" style={{ color: '#2b2823' }}>{loan.minDown}</div>
                     </div>
-                    <div className="text-center bg-slate-50 rounded-xl px-4 py-2">
-                      <div className="text-xs text-slate-500">Rates</div>
-                      <div className="font-bold text-teal-600">{loan.rates}</div>
+                    <div className="text-center rounded-xl px-4 py-2" style={{ backgroundColor: '#e5e3da' }}>
+                      <div className="text-xs" style={{ color: '#787060' }}>Rates</div>
+                      <div className="font-bold" style={{ color: '#2b2823' }}>{loan.rates}</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Pros & Cons */}
-              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-                <div className="p-4">
-                  <div className="text-sm font-semibold text-emerald-600 mb-2 flex items-center gap-1">
+              <div className="grid sm:grid-cols-2">
+                <div className="p-4" style={{ borderRight: '1px solid #e5e3da' }}>
+                  <div className="text-sm font-semibold mb-2 flex items-center gap-1" style={{ color: '#2b2823' }}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -127,15 +152,15 @@ export default function FundingPage() {
                   </div>
                   <ul className="space-y-1.5">
                     {loan.pros.map((pro) => (
-                      <li key={pro} className="text-sm text-slate-600 flex items-start gap-2">
-                        <span className="text-emerald-500 mt-0.5">•</span>
+                      <li key={pro} className="text-sm flex items-start gap-2" style={{ color: '#787060' }}>
+                        <span style={{ color: '#2b2823' }} className="mt-0.5">•</span>
                         {pro}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="p-4">
-                  <div className="text-sm font-semibold text-red-500 mb-2 flex items-center gap-1">
+                  <div className="text-sm font-semibold mb-2 flex items-center gap-1" style={{ color: '#787060' }}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -143,8 +168,8 @@ export default function FundingPage() {
                   </div>
                   <ul className="space-y-1.5">
                     {loan.cons.map((con) => (
-                      <li key={con} className="text-sm text-slate-600 flex items-start gap-2">
-                        <span className="text-red-400 mt-0.5">•</span>
+                      <li key={con} className="text-sm flex items-start gap-2" style={{ color: '#787060' }}>
+                        <span style={{ color: '#787060' }} className="mt-0.5">•</span>
                         {con}
                       </li>
                     ))}
@@ -156,14 +181,27 @@ export default function FundingPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-8 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-center text-white">
-          <h3 className="font-semibold text-lg mb-2">Need Help Finding Financing?</h3>
-          <p className="text-slate-300 text-sm mb-4 max-w-md mx-auto">
+        <div 
+          className="mt-8 rounded-2xl p-6 text-center"
+          style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}
+        >
+          <h3 
+            className="font-semibold text-lg mb-2"
+            style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            Need Help Finding Financing?
+          </h3>
+          <p className="text-sm mb-4 max-w-md mx-auto" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
             Our mentorship program includes connections to STR-friendly lenders who understand your investment goals.
           </p>
           <a
             href="mailto:hello@teeco.co"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-teal-500 hover:bg-teal-400 text-white rounded-xl font-semibold transition-colors shadow-lg"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+            style={{ 
+              backgroundColor: '#ffffff', 
+              color: '#2b2823',
+              boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
+            }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

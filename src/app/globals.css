@@ -5,64 +5,38 @@
 @tailwind utilities;
 
 :root {
-  /* Teeco Brand Colors */
-  --black: #000000;
-  --gray-brand: #2b2823;
-  --mocha: #787060;
-  --cream: #e5e3da;
+  /* =============================================
+     TEECO BRAND COLORS - STRICT PALETTE
+     Only these 5 colors should be used
+     ============================================= */
+  --teeco-black: #000000;
+  --teeco-gray: #2b2823;
+  --teeco-mocha: #787060;
+  --teeco-cream: #e5e3da;
+  --teeco-white: #ffffff;
+  
+  /* Derived colors (subtle variations for depth) */
   --cream-dark: #d8d6cd;
-  --white: #ffffff;
+  --cream-light: #f0efe8;
+  --gray-light: #3d3a34;
+  --mocha-light: #9a9488;
   
-  /* Teeco Teal (from website) */
-  --teeco-teal: #3d6b6b;
-  --teeco-teal-light: #4a7a7a;
-  --teeco-teal-dark: #2f5555;
+  /* Semantic mappings */
+  --background: var(--teeco-cream);
+  --surface: var(--teeco-white);
+  --foreground: var(--teeco-gray);
+  --muted: var(--teeco-mocha);
+  --accent: var(--teeco-gray);
+  --border: var(--cream-dark);
   
-  /* Primary brand colors (mapped to Teeco) */
-  --primary: #3d6b6b;
-  --primary-dark: #2f5555;
-  --primary-light: #4a7a7a;
+  /* Shadows - subtle and sophisticated */
+  --shadow-xs: 0 1px 2px 0 rgb(43 40 35 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(43 40 35 / 0.06);
+  --shadow: 0 2px 8px -2px rgb(43 40 35 / 0.08);
+  --shadow-md: 0 4px 16px -4px rgb(43 40 35 / 0.10);
+  --shadow-lg: 0 8px 32px -8px rgb(43 40 35 / 0.12);
   
-  /* Background colors */
-  --background: #e5e3da;
-  --background-alt: #ffffff;
-  --surface: #ffffff;
-  --surface-hover: #f5f4f1;
-  
-  /* Text colors */
-  --foreground: #2b2823;
-  --foreground-secondary: #3d3a34;
-  --muted: #787060;
-  --muted-light: #9a9488;
-  
-  /* Border colors */
-  --border: #d8d6cd;
-  --border-light: #e5e3da;
-  
-  /* Status colors */
-  --success: #10B981;
-  --success-light: #D1FAE5;
-  --warning: #F59E0B;
-  --warning-light: #FEF3C7;
-  --error: #EF4444;
-  --error-light: #FEE2E2;
-  --info: #3B82F6;
-  --info-light: #DBEAFE;
-  
-  /* Score colors */
-  --score-excellent: #10B981;
-  --score-good: #22C55E;
-  --score-average: #F59E0B;
-  --score-poor: #EF4444;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  /* Radius */
+  /* Radius - rounded corners per brand guide */
   --radius-sm: 6px;
   --radius: 8px;
   --radius-md: 12px;
@@ -75,218 +49,375 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--background);
   color: var(--foreground);
-  line-height: 1.6;
+  line-height: 1.65;
+  font-weight: 400;
+  letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography */
+/* =============================================
+   TYPOGRAPHY - Source Serif Pro & Raleway
+   ============================================= */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Source Serif Pro', Georgia, serif;
+  font-family: 'Source Serif Pro', Georgia, Cambria, serif;
   font-weight: 600;
-  line-height: 1.3;
-  color: var(--foreground);
+  line-height: 1.25;
+  color: var(--teeco-gray);
+  letter-spacing: -0.01em;
 }
 
-h1 { font-size: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1.125rem; }
+h1 { 
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+h2 { 
+  font-size: 1.75rem;
+}
+h3 { 
+  font-size: 1.375rem;
+}
+h4 { 
+  font-size: 1.125rem;
+}
 
-/* Custom scrollbar */
+p {
+  color: var(--teeco-gray);
+}
+
+.text-muted {
+  color: var(--teeco-mocha);
+}
+
+/* Small caps for labels (per brand guide) */
+.label-caps {
+  font-family: 'Raleway', sans-serif;
+  font-weight: 300;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teeco-mocha);
+}
+
+/* =============================================
+   CUSTOM SCROLLBAR
+   ============================================= */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--cream-dark);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-light);
+  background: var(--teeco-mocha);
 }
 
-/* Utility classes */
+/* =============================================
+   COMPONENT CLASSES
+   ============================================= */
 @layer components {
-  /* Cards */
+  /* Cards - Clean white surfaces */
   .card {
-    @apply bg-white rounded-xl border border-mocha/10 shadow-sm;
+    @apply bg-white rounded-xl;
+    border: 1px solid var(--cream-dark);
+    box-shadow: var(--shadow-xs);
   }
   
   .card-hover {
-    @apply card transition-all duration-200 hover:shadow-md hover:border-mocha/20;
+    @apply card transition-all duration-300;
   }
   
-  /* Buttons - Updated to Teeco teal */
+  .card-hover:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--teeco-mocha);
+    transform: translateY(-2px);
+  }
+  
+  /* Buttons - Gray primary (sophisticated) */
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200;
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg font-medium transition-all duration-200;
+    font-family: 'Raleway', sans-serif;
   }
   
   .btn-primary {
-    @apply btn text-white hover:opacity-90 active:opacity-80;
-    background-color: var(--teeco-teal);
+    @apply btn text-white;
+    background-color: var(--teeco-gray);
   }
   
   .btn-primary:hover {
-    background-color: var(--teeco-teal-light);
+    background-color: var(--teeco-black);
+  }
+  
+  .btn-primary:active {
+    transform: scale(0.98);
   }
   
   .btn-secondary {
-    @apply btn bg-cream text-gray-brand hover:bg-cream-dark active:bg-mocha/20;
+    @apply btn;
+    background-color: var(--teeco-cream);
+    color: var(--teeco-gray);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--cream-dark);
   }
   
   .btn-outline {
-    @apply btn border text-gray-brand hover:bg-cream active:bg-cream-dark;
-    border-color: var(--mocha);
+    @apply btn;
+    border: 1px solid var(--teeco-mocha);
+    color: var(--teeco-gray);
+    background: transparent;
+  }
+  
+  .btn-outline:hover {
+    background-color: var(--teeco-cream);
+    border-color: var(--teeco-gray);
   }
   
   .btn-ghost {
-    @apply btn text-gray-brand hover:bg-cream active:bg-cream-dark;
+    @apply btn;
+    color: var(--teeco-gray);
+    background: transparent;
   }
   
-  /* Badges */
+  .btn-ghost:hover {
+    background-color: var(--teeco-cream);
+  }
+  
+  /* Badges - Subtle and refined */
   .badge {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
   }
   
-  .badge-success {
-    @apply badge bg-emerald-100 text-emerald-700;
+  .badge-primary {
+    @apply badge;
+    background-color: var(--teeco-gray);
+    color: var(--teeco-white);
   }
   
-  .badge-warning {
-    @apply badge bg-amber-100 text-amber-700;
+  .badge-secondary {
+    @apply badge;
+    background-color: var(--teeco-cream);
+    color: var(--teeco-gray);
   }
   
-  .badge-error {
-    @apply badge bg-red-100 text-red-700;
+  .badge-mocha {
+    @apply badge;
+    background-color: var(--teeco-mocha);
+    color: var(--teeco-white);
   }
   
-  .badge-info {
-    @apply badge bg-blue-100 text-blue-700;
+  /* Grade badges - Using brand colors */
+  .grade-badge {
+    @apply inline-flex items-center justify-center min-w-[3rem] h-10 rounded-lg font-bold text-base;
+    font-family: 'Source Serif Pro', serif;
   }
   
-  .badge-neutral {
-    @apply badge bg-cream text-gray-brand;
+  .grade-a-plus {
+    @apply grade-badge text-white;
+    background-color: var(--teeco-black);
   }
   
-  /* Score badges */
-  .score-badge {
-    @apply inline-flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg;
+  .grade-a {
+    @apply grade-badge text-white;
+    background-color: var(--teeco-gray);
   }
   
-  .score-excellent {
-    @apply score-badge bg-emerald-500 text-white;
+  .grade-b-plus {
+    @apply grade-badge;
+    background-color: var(--gray-light);
+    color: var(--teeco-white);
   }
   
-  .score-good {
-    @apply score-badge bg-green-500 text-white;
+  .grade-b {
+    @apply grade-badge text-white;
+    background-color: var(--teeco-mocha);
   }
   
-  .score-average {
-    @apply score-badge bg-amber-500 text-white;
+  .grade-c {
+    @apply grade-badge;
+    background-color: var(--cream-dark);
+    color: var(--teeco-gray);
   }
   
-  .score-poor {
-    @apply score-badge bg-red-500 text-white;
+  .grade-d {
+    @apply grade-badge;
+    background-color: var(--teeco-cream);
+    color: var(--teeco-mocha);
+    border: 1px solid var(--cream-dark);
   }
   
-  /* Inputs */
+  .grade-f {
+    @apply grade-badge;
+    background-color: var(--teeco-cream);
+    color: var(--teeco-mocha);
+    border: 1px dashed var(--teeco-mocha);
+  }
+  
+  /* Inputs - Clean and minimal */
   .input {
-    @apply w-full px-4 py-3 rounded-lg border bg-white text-gray-brand placeholder-mocha 
-           focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200;
-    border-color: var(--mocha);
+    @apply w-full px-4 py-3 rounded-lg transition-all duration-200;
+    background-color: var(--teeco-white);
+    border: 1px solid var(--cream-dark);
+    color: var(--teeco-gray);
+    font-family: 'Raleway', sans-serif;
+  }
+  
+  .input::placeholder {
+    color: var(--teeco-mocha);
   }
   
   .input:focus {
-    --tw-ring-color: var(--teeco-teal);
+    outline: none;
+    border-color: var(--teeco-gray);
+    box-shadow: 0 0 0 3px rgb(43 40 35 / 0.08);
   }
   
   .input-sm {
     @apply input px-3 py-2 text-sm;
   }
   
-  /* Section headers */
+  /* Section styling */
   .section-title {
-    @apply text-xl font-semibold text-gray-brand mb-1;
+    @apply text-xl font-semibold mb-1;
+    font-family: 'Source Serif Pro', serif;
+    color: var(--teeco-gray);
   }
   
   .section-subtitle {
-    @apply text-sm text-mocha;
+    @apply text-sm;
+    color: var(--teeco-mocha);
   }
   
   /* Stat cards */
   .stat-card {
-    @apply bg-white rounded-xl p-4 border border-mocha/10;
+    @apply bg-white rounded-xl p-5;
+    border: 1px solid var(--cream-dark);
   }
   
   .stat-value {
-    @apply text-2xl font-bold text-gray-brand;
+    @apply text-2xl font-bold;
+    font-family: 'Source Serif Pro', serif;
+    color: var(--teeco-gray);
   }
   
   .stat-label {
-    @apply text-sm text-mocha mt-1;
+    @apply text-sm mt-1;
+    color: var(--teeco-mocha);
   }
   
   /* List items */
   .list-item {
-    @apply flex items-center gap-4 p-4 bg-white rounded-xl border border-mocha/10 
-           transition-all duration-200 hover:shadow-md hover:border-mocha/20;
+    @apply flex items-center gap-4 p-4 bg-white rounded-xl transition-all duration-200;
+    border: 1px solid var(--cream-dark);
   }
   
-  /* Pills/Chips - Updated to Teeco teal */
+  .list-item:hover {
+    border-color: var(--teeco-mocha);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  /* Pills/Chips */
   .pill {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium 
-           bg-cream text-gray-brand transition-all duration-200;
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200;
+    background-color: var(--teeco-cream);
+    color: var(--teeco-gray);
+  }
+  
+  .pill:hover {
+    background-color: var(--cream-dark);
   }
   
   .pill-active {
     @apply pill text-white;
-    background-color: var(--teeco-teal);
+    background-color: var(--teeco-gray);
   }
   
   /* Progress bars */
   .progress-bar {
-    @apply h-2 bg-cream rounded-full overflow-hidden;
+    @apply h-2 rounded-full overflow-hidden;
+    background-color: var(--teeco-cream);
   }
   
   .progress-fill {
     @apply h-full rounded-full transition-all duration-500;
+    background-color: var(--teeco-gray);
   }
   
   /* Dividers */
   .divider {
-    @apply border-t border-mocha/20 my-4;
+    @apply my-4;
+    border-top: 1px solid var(--cream-dark);
+  }
+  
+  .divider-thin {
+    @apply my-2;
+    border-top: 1px solid var(--cream-dark);
   }
   
   /* Empty states */
   .empty-state {
-    @apply flex flex-col items-center justify-center py-12 px-4 text-center;
+    @apply flex flex-col items-center justify-center py-16 px-4 text-center;
   }
   
   .empty-state-icon {
-    @apply w-16 h-16 mb-4 text-mocha/50;
+    @apply w-16 h-16 mb-4;
+    color: var(--cream-dark);
   }
   
   .empty-state-title {
-    @apply text-lg font-semibold text-gray-brand mb-2;
+    @apply text-lg font-semibold mb-2;
+    font-family: 'Source Serif Pro', serif;
+    color: var(--teeco-gray);
   }
   
   .empty-state-text {
-    @apply text-sm text-mocha max-w-sm;
+    @apply text-sm max-w-sm;
+    color: var(--teeco-mocha);
+  }
+  
+  /* Score display - using brand colors */
+  .score-circle {
+    @apply flex items-center justify-center rounded-full font-bold;
+    font-family: 'Source Serif Pro', serif;
+  }
+  
+  .score-high {
+    background-color: var(--teeco-gray);
+    color: var(--teeco-white);
+  }
+  
+  .score-medium {
+    background-color: var(--teeco-mocha);
+    color: var(--teeco-white);
+  }
+  
+  .score-low {
+    background-color: var(--teeco-cream);
+    color: var(--teeco-gray);
+    border: 1px solid var(--cream-dark);
   }
 }
 
-/* Animation utilities */
+/* =============================================
+   ANIMATIONS
+   ============================================= */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -295,7 +426,7 @@ h4 { font-size: 1.125rem; }
 @keyframes slideUp {
   from { 
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(16px);
   }
   to { 
     opacity: 1;
@@ -317,7 +448,7 @@ h4 { font-size: 1.125rem; }
 @keyframes scaleIn {
   from { 
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to { 
     opacity: 1;
@@ -326,11 +457,11 @@ h4 { font-size: 1.125rem; }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.4s ease-out;
 }
 
 .animate-slide-down {
@@ -338,24 +469,62 @@ h4 { font-size: 1.125rem; }
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+  animation: scaleIn 0.3s ease-out;
 }
 
-/* Focus states */
+/* Staggered animations for lists */
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 250ms; }
+.animate-stagger > *:nth-child(7) { animation-delay: 300ms; }
+.animate-stagger > *:nth-child(8) { animation-delay: 350ms; }
+.animate-stagger > *:nth-child(9) { animation-delay: 400ms; }
+.animate-stagger > *:nth-child(10) { animation-delay: 450ms; }
+
+/* =============================================
+   FOCUS & SELECTION
+   ============================================= */
 *:focus-visible {
-  outline: 2px solid var(--teeco-teal);
+  outline: 2px solid var(--teeco-gray);
   outline-offset: 2px;
 }
 
-/* Selection */
 ::selection {
-  background-color: var(--teeco-teal-light);
-  color: white;
+  background-color: var(--teeco-gray);
+  color: var(--teeco-white);
 }
 
-/* Mobile-specific styles */
+/* =============================================
+   RESPONSIVE TYPOGRAPHY
+   ============================================= */
 @media (max-width: 640px) {
-  h1 { font-size: 1.75rem; }
-  h2 { font-size: 1.375rem; }
-  h3 { font-size: 1.125rem; }
+  h1 { font-size: 1.875rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+  
+  body {
+    font-size: 0.9375rem;
+  }
 }
+
+/* =============================================
+   UTILITY OVERRIDES
+   ============================================= */
+.bg-cream { background-color: var(--teeco-cream); }
+.bg-white { background-color: var(--teeco-white); }
+.bg-gray { background-color: var(--teeco-gray); }
+.bg-mocha { background-color: var(--teeco-mocha); }
+.bg-black { background-color: var(--teeco-black); }
+
+.text-gray { color: var(--teeco-gray); }
+.text-mocha { color: var(--teeco-mocha); }
+.text-cream { color: var(--teeco-cream); }
+.text-white { color: var(--teeco-white); }
+.text-black { color: var(--teeco-black); }
+
+.border-cream { border-color: var(--cream-dark); }
+.border-mocha { border-color: var(--teeco-mocha); }
+.border-gray { border-color: var(--teeco-gray); }

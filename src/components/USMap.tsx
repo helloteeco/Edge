@@ -33,6 +33,7 @@ const statePositions: Record<string, { row: number; col: number }> = {
   HI: { row: 8, col: 8 },
 };
 
+// Map colors - keeping map interactive colors for visual distinction
 const getAppreciationColor = (value: number) => {
   if (value < 0) return "bg-red-400 text-white";
   if (value < 2) return "bg-amber-300 text-amber-900";
@@ -45,8 +46,8 @@ const getGradeColor = (grade: string) => {
   switch (grade) {
     case 'A+': return 'bg-emerald-600 text-white';
     case 'A': return 'bg-emerald-500 text-white';
-    case 'B+': return 'bg-[#3d6b6b] text-white';
-    case 'B': return 'bg-[#4a7a7a] text-white';
+    case 'B+': return 'bg-[#2b2823] text-white';
+    case 'B': return 'bg-[#3d3a34] text-white';
     case 'C': return 'bg-amber-400 text-amber-900';
     case 'D': return 'bg-orange-400 text-white';
     default: return 'bg-red-400 text-white';
@@ -57,8 +58,8 @@ const getGradeBgColor = (grade: string) => {
   switch (grade) {
     case 'A+': return 'bg-emerald-500';
     case 'A': return 'bg-emerald-400';
-    case 'B+': return 'bg-[#3d6b6b]';
-    case 'B': return 'bg-[#4a7a7a]';
+    case 'B+': return 'bg-[#2b2823]';
+    case 'B': return 'bg-[#3d3a34]';
     case 'C': return 'bg-amber-500';
     case 'D': return 'bg-orange-500';
     default: return 'bg-red-500';
@@ -71,7 +72,7 @@ export function USMap() {
 
   const getStateColor = (stateCode: string) => {
     const state = getStateByCode(stateCode);
-    if (!state) return "bg-cream text-mocha";
+    if (!state) return "bg-[#e5e3da] text-[#787060]";
     
     switch (mapView) {
       case "appreciation":
@@ -92,7 +93,7 @@ export function USMap() {
         if (state.netMigration > -50000) return "bg-amber-300 text-amber-900";
         return "bg-red-400 text-white";
       default:
-        return "bg-cream text-mocha";
+        return "bg-[#e5e3da] text-[#787060]";
     }
   };
 
@@ -130,11 +131,13 @@ export function USMap() {
           <button
             key={view.key}
             onClick={() => setMapView(view.key as MapView)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              mapView === view.key
-                ? "bg-[#3d6b6b] text-white shadow-md"
-                : "bg-white text-gray-brand border border-mocha/20 hover:border-mocha/40 hover:bg-cream"
-            }`}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all"
+            style={{
+              backgroundColor: mapView === view.key ? '#2b2823' : '#ffffff',
+              color: mapView === view.key ? '#ffffff' : '#2b2823',
+              border: mapView === view.key ? 'none' : '1px solid #d8d6cd',
+              boxShadow: mapView === view.key ? '0 2px 8px -2px rgba(43, 40, 35, 0.2)' : 'none'
+            }}
           >
             <span>{view.icon}</span>
             <span>{view.label}</span>
@@ -143,12 +146,18 @@ export function USMap() {
       </div>
       
       {/* Filter Explanation */}
-      <div className="bg-cream border border-mocha/10 rounded-xl px-4 py-2.5 text-center">
-        <p className="text-sm text-mocha">{getFilterDescription()}</p>
+      <div 
+        className="rounded-xl px-4 py-2.5 text-center"
+        style={{ backgroundColor: '#e5e3da', border: '1px solid #d8d6cd' }}
+      >
+        <p className="text-sm" style={{ color: '#787060' }}>{getFilterDescription()}</p>
       </div>
 
-      {/* Map Grid */}
-      <div className="bg-cream rounded-2xl p-4 sm:p-6">
+      {/* Map Grid - keeping map colors for visual distinction */}
+      <div 
+        className="rounded-2xl p-4 sm:p-6"
+        style={{ backgroundColor: '#e5e3da' }}
+      >
         <div className="grid grid-cols-11 gap-1.5 sm:gap-2 max-w-xl mx-auto">
           {Object.entries(statePositions).map(([stateCode, pos]) => (
             <button
@@ -156,7 +165,7 @@ export function USMap() {
               onClick={() => setSelectedState(stateCode === selectedState ? null : stateCode)}
               className={`aspect-square flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-lg transition-all transform hover:scale-105 ${getStateColor(stateCode)} ${
                 selectedState === stateCode 
-                  ? "ring-2 ring-[#3d6b6b] ring-offset-2 ring-offset-cream scale-110 shadow-lg z-10" 
+                  ? "ring-2 ring-[#2b2823] ring-offset-2 ring-offset-[#e5e3da] scale-110 shadow-lg z-10" 
                   : "shadow-sm hover:shadow-md"
               }`}
               style={{
@@ -170,64 +179,64 @@ export function USMap() {
         </div>
       </div>
 
-      {/* Legend */}
+      {/* Legend - keeping map colors for visual distinction */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs">
-        <span className="font-semibold text-gray-brand">Legend:</span>
+        <span className="font-semibold" style={{ color: '#2b2823' }}>Legend:</span>
         {mapView === "strScore" ? (
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-mocha">F</span>
+              <span style={{ color: '#787060' }}>F</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span className="text-mocha">D</span>
+              <span style={{ color: '#787060' }}>D</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-400 rounded-md shadow-sm" />
-              <span className="text-mocha">C</span>
+              <span style={{ color: '#787060' }}>C</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-[#4a7a7a] rounded-md shadow-sm" />
-              <span className="text-mocha">B/B+</span>
+              <div className="w-5 h-5 rounded-md shadow-sm" style={{ backgroundColor: '#3d3a34' }} />
+              <span style={{ color: '#787060' }}>B/B+</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
-              <span className="text-mocha">A/A+</span>
+              <span style={{ color: '#787060' }}>A/A+</span>
             </div>
           </>
         ) : mapView === "homeValue" ? (
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span className="text-mocha">&lt;$200K</span>
+              <span style={{ color: '#787060' }}>&lt;$200K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
-              <span className="text-mocha">$200-300K</span>
+              <span style={{ color: '#787060' }}>$200-300K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span className="text-mocha">$300-400K</span>
+              <span style={{ color: '#787060' }}>$300-400K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-mocha">&gt;$400K</span>
+              <span style={{ color: '#787060' }}>&gt;$400K</span>
             </div>
           </>
         ) : (
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span className="text-mocha">Low</span>
+              <span style={{ color: '#787060' }}>Low</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span className="text-mocha">Medium</span>
+              <span style={{ color: '#787060' }}>Medium</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span className="text-mocha">High</span>
+              <span style={{ color: '#787060' }}>High</span>
             </div>
           </>
         )}
@@ -235,28 +244,43 @@ export function USMap() {
 
       {/* Selected State Card */}
       {selectedStateData && (
-        <div className="bg-white border border-mocha/10 rounded-2xl overflow-hidden shadow-card animate-scale-in">
-          {/* Header - Updated to Teeco teal */}
-          <div className="bg-gradient-to-r from-[#3d6b6b] to-[#4a7a7a] text-white p-4 sm:p-5">
+        <div 
+          className="rounded-2xl overflow-hidden animate-scale-in"
+          style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 4px 16px -4px rgba(43, 40, 35, 0.12)' }}
+        >
+          {/* Header */}
+          <div 
+            className="p-4 sm:p-5"
+            style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}
+          >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-xl sm:text-2xl font-bold">{selectedStateData.name}</h3>
+                <h3 
+                  className="text-xl sm:text-2xl font-bold"
+                  style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  {selectedStateData.name}
+                </h3>
                 <div className="flex items-center gap-2 mt-2">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getGradeBgColor(selectedStateData.grade)} text-white`}>
                     {getVerdictText(selectedStateData.verdict).text}
                   </span>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                    selectedStateData.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
-                  } text-white`}>
+                  <span 
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white"
+                    style={{ backgroundColor: selectedStateData.regulation === "Legal" ? '#2b2823' : '#787060' }}
+                  >
                     {selectedStateData.regulation}
                   </span>
                 </div>
               </div>
-              <div className="text-center bg-white rounded-xl px-4 py-2 shadow-sm">
-                <div className={`text-3xl font-bold ${getGradeBgColor(selectedStateData.grade)} text-white rounded-lg px-3 py-1`}>
+              <div 
+                className="text-center rounded-xl px-4 py-2"
+                style={{ backgroundColor: '#ffffff' }}
+              >
+                <div className={`text-3xl font-bold ${getGradeBgColor(selectedStateData.grade)} text-white rounded-lg px-3 py-1`} style={{ fontFamily: 'Source Serif Pro, Georgia, serif' }}>
                   {selectedStateData.grade}
                 </div>
-                <div className="text-xs text-mocha mt-1">{selectedStateData.marketScore}/100</div>
+                <div className="text-xs mt-1" style={{ color: '#787060' }}>{selectedStateData.marketScore}/100</div>
               </div>
             </div>
           </div>
@@ -264,29 +288,62 @@ export function USMap() {
           {/* Stats Grid */}
           <div className="p-4 sm:p-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-cream rounded-xl p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-gray-brand">${selectedStateData.avgADR}</div>
-                <div className="text-xs text-mocha mt-0.5">Avg ADR</div>
+              <div 
+                className="rounded-xl p-3 text-center"
+                style={{ backgroundColor: '#e5e3da' }}
+              >
+                <div 
+                  className="text-lg sm:text-xl font-bold"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  ${selectedStateData.avgADR}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Avg ADR</div>
               </div>
-              <div className="bg-cream rounded-xl p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-gray-brand">${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K</div>
-                <div className="text-xs text-mocha mt-0.5">Median Home</div>
+              <div 
+                className="rounded-xl p-3 text-center"
+                style={{ backgroundColor: '#e5e3da' }}
+              >
+                <div 
+                  className="text-lg sm:text-xl font-bold"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  ${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Median Home</div>
               </div>
-              <div className="bg-cream rounded-xl p-3 text-center">
-                <div className={`text-lg sm:text-xl font-bold ${selectedStateData.appreciation >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+              <div 
+                className="rounded-xl p-3 text-center"
+                style={{ backgroundColor: '#e5e3da' }}
+              >
+                <div 
+                  className="text-lg sm:text-xl font-bold"
+                  style={{ color: selectedStateData.appreciation >= 0 ? '#000000' : '#787060' }}
+                >
                   {selectedStateData.appreciation >= 0 ? "+" : ""}{selectedStateData.appreciation}%
                 </div>
-                <div className="text-xs text-mocha mt-0.5">1Y Appreciation</div>
+                <div className="text-xs mt-0.5" style={{ color: '#787060' }}>1Y Appreciation</div>
               </div>
-              <div className="bg-cream rounded-xl p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-[#3d6b6b]">{selectedStateData.cityCount}</div>
-                <div className="text-xs text-mocha mt-0.5">Markets</div>
+              <div 
+                className="rounded-xl p-3 text-center"
+                style={{ backgroundColor: '#e5e3da' }}
+              >
+                <div 
+                  className="text-lg sm:text-xl font-bold"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  {selectedStateData.cityCount}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Markets</div>
               </div>
             </div>
             
             {/* City Grade Distribution Preview */}
-            <div className="mt-4 p-3 bg-cream rounded-xl">
-              <div className="text-xs font-medium text-mocha mb-2">Market Grade Distribution</div>
+            <div 
+              className="mt-4 p-3 rounded-xl"
+              style={{ backgroundColor: '#e5e3da' }}
+            >
+              <div className="text-xs font-medium mb-2" style={{ color: '#787060' }}>Market Grade Distribution</div>
               <div className="flex gap-1">
                 {selectedStateData.cityGrades.map(({ grade, count }) => {
                   const total = selectedStateData.cityGrades.reduce((sum, g) => sum + g.count, 0);
@@ -305,7 +362,8 @@ export function USMap() {
 
             <Link
               href={`/state/${selectedStateData.abbreviation.toLowerCase()}`}
-              className="flex items-center justify-center gap-2 w-full mt-4 py-3.5 bg-[#3d6b6b] text-white text-center rounded-xl font-semibold hover:bg-[#4a7a7a] transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 w-full mt-4 py-3.5 text-center rounded-xl font-semibold transition-all hover:opacity-90"
+              style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
             >
               <span>Explore {selectedStateData.cityCount} Markets</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,12 +376,23 @@ export function USMap() {
 
       {/* Default Card */}
       {!selectedStateData && (
-        <div className="bg-gradient-to-br from-cream to-cream-dark border border-mocha/10 rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 bg-[#3d6b6b]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div 
+          className="rounded-2xl p-6 sm:p-8 text-center"
+          style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}
+        >
+          <div 
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)' }}
+          >
             <span className="text-3xl">🗺️</span>
           </div>
-          <h3 className="text-lg font-semibold text-gray-brand mb-2">Select a State to Begin</h3>
-          <p className="text-mocha text-sm max-w-md mx-auto">
+          <h3 
+            className="text-lg font-semibold mb-2"
+            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            Select a State to Begin
+          </h3>
+          <p className="text-sm max-w-md mx-auto" style={{ color: '#787060' }}>
             Click any state on the map above to view STR investment grades, regulations, rental income data, and detailed market analysis.
           </p>
         </div>

@@ -51,18 +51,25 @@ export default function SearchPage() {
 
   const totalResults = results.cities.length + results.states.length;
 
-  const getVerdict = (score: number) => {
-    if (score >= 80) return { text: "STRONG BUY", color: "bg-emerald-500" };
-    if (score >= 70) return { text: "BUY", color: "bg-green-500" };
-    if (score >= 60) return { text: "HOLD", color: "bg-amber-500" };
-    return { text: "AVOID", color: "bg-red-500" };
+  const getVerdictStyle = (score: number) => {
+    if (score >= 80) return { text: "STRONG BUY", bg: '#2b2823', color: '#ffffff' };
+    if (score >= 70) return { text: "BUY", bg: '#3d3a34', color: '#ffffff' };
+    if (score >= 60) return { text: "HOLD", bg: '#787060', color: '#ffffff' };
+    return { text: "AVOID", bg: '#e5e3da', color: '#787060' };
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-emerald-600";
-    if (score >= 70) return "text-green-600";
-    if (score >= 60) return "text-amber-600";
-    return "text-red-600";
+  const getScoreStyle = (score: number) => {
+    if (score >= 80) return { color: '#000000' };
+    if (score >= 70) return { color: '#2b2823' };
+    if (score >= 60) return { color: '#787060' };
+    return { color: '#9a9488' };
+  };
+
+  const getScoreBgStyle = (score: number) => {
+    if (score >= 80) return { backgroundColor: 'rgba(43, 40, 35, 0.08)' };
+    if (score >= 70) return { backgroundColor: 'rgba(43, 40, 35, 0.06)' };
+    if (score >= 60) return { backgroundColor: 'rgba(120, 112, 96, 0.08)' };
+    return { backgroundColor: 'rgba(120, 112, 96, 0.06)' };
   };
 
   const filters = [
@@ -74,15 +81,27 @@ export default function SearchPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-slate-900 mb-4">Search Markets</h1>
+      <div 
+        className="sticky top-0 z-10"
+        style={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.97)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid #d8d6cd'
+        }}
+      >
+        <div className="max-w-4xl mx-auto px-4 py-5">
+          <h1 
+            className="text-2xl font-bold mb-5"
+            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            Search Markets
+          </h1>
           
           {/* Search Input */}
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#787060' }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -92,12 +111,18 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search states, cities, or counties..."
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+              className="w-full pl-12 pr-4 py-3.5 rounded-xl transition-all"
+              style={{ 
+                backgroundColor: '#ffffff',
+                border: '1px solid #d8d6cd',
+                color: '#2b2823'
+              }}
             />
             {query && (
               <button 
                 onClick={() => setQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+                style={{ color: '#787060' }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -107,18 +132,18 @@ export default function SearchPage() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-2 overflow-x-auto py-3 -mx-4 px-4 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto py-4 -mx-4 px-4 scrollbar-hide">
             {filters.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key as FilterType)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  filter === f.key
-                    ? f.key === "recommended" 
-                      ? "bg-purple-600 text-white shadow-md" 
-                      : "bg-teal-600 text-white shadow-md"
-                    : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
-                }`}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all"
+                style={{ 
+                  backgroundColor: filter === f.key ? '#2b2823' : '#ffffff',
+                  color: filter === f.key ? '#ffffff' : '#787060',
+                  border: filter === f.key ? 'none' : '1px solid #d8d6cd',
+                  boxShadow: filter === f.key ? '0 2px 8px -2px rgba(43, 40, 35, 0.2)' : 'none'
+                }}
               >
                 <span>{f.icon}</span>
                 <span>{f.label}</span>
@@ -129,14 +154,17 @@ export default function SearchPage() {
       </div>
 
       {/* Results */}
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="max-w-4xl mx-auto px-4 py-5">
         {/* Results Count */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-slate-500">
-            <span className="font-semibold text-slate-700">{totalResults}</span> results found
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-sm" style={{ color: '#787060' }}>
+            <span className="font-semibold" style={{ color: '#2b2823' }}>{totalResults}</span> results found
           </p>
           {filter === "recommended" && (
-            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+            <span 
+              className="text-xs px-3 py-1 rounded-full font-medium"
+              style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)', color: '#2b2823' }}
+            >
               High CoC • Low Competition • Legal
             </span>
           )}
@@ -149,16 +177,31 @@ export default function SearchPage() {
             <Link
               key={state.abbreviation}
               href={`/state/${state.abbreviation.toLowerCase()}`}
-              className="block bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-slate-300 transition-all group"
+              className="block rounded-xl p-4 transition-all duration-300 group"
+              style={{ 
+                backgroundColor: '#ffffff',
+                border: '1px solid #d8d6cd',
+                boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(43, 40, 35, 0.12)';
+                e.currentTarget.style.borderColor = '#787060';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(43, 40, 35, 0.04)';
+                e.currentTarget.style.borderColor = '#d8d6cd';
+              }}
             >
               <div className="flex items-center gap-4">
                 {/* Score Circle */}
-                <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center ${
-                  state.marketScore >= 80 ? "bg-emerald-50" : 
-                  state.marketScore >= 70 ? "bg-green-50" : 
-                  state.marketScore >= 60 ? "bg-amber-50" : "bg-red-50"
-                }`}>
-                  <span className={`text-xl font-bold ${getScoreColor(state.marketScore)}`}>
+                <div 
+                  className="w-14 h-14 rounded-xl flex flex-col items-center justify-center"
+                  style={getScoreBgStyle(state.marketScore)}
+                >
+                  <span 
+                    className="text-xl font-bold"
+                    style={{ ...getScoreStyle(state.marketScore), fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
                     {state.marketScore}
                   </span>
                 </div>
@@ -166,28 +209,41 @@ export default function SearchPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 group-hover:text-teal-600 transition-colors">
+                    <span 
+                      className="font-semibold transition-colors"
+                      style={{ color: '#2b2823' }}
+                    >
                       {state.name}
                     </span>
-                    <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                    <span 
+                      className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+                    >
                       State
                     </span>
                   </div>
-                  <div className="text-sm text-slate-500 mt-0.5">{state.abbreviation}</div>
+                  <div className="text-sm mt-0.5" style={{ color: '#787060' }}>{state.abbreviation}</div>
                   <div className="flex gap-2 mt-2">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${getVerdict(state.marketScore).color}`}>
-                      {getVerdict(state.marketScore).text}
+                    <span 
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ backgroundColor: getVerdictStyle(state.marketScore).bg, color: getVerdictStyle(state.marketScore).color }}
+                    >
+                      {getVerdictStyle(state.marketScore).text}
                     </span>
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${
-                      state.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
-                    }`}>
+                    <span 
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ 
+                        backgroundColor: state.regulation === "Legal" ? '#2b2823' : '#787060',
+                        color: '#ffffff'
+                      }}
+                    >
                       {state.regulation}
                     </span>
                   </div>
                 </div>
 
                 {/* Arrow */}
-                <svg className="w-5 h-5 text-slate-300 group-hover:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 transition-colors" style={{ color: '#d8d6cd' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -199,40 +255,65 @@ export default function SearchPage() {
             <Link
               key={city.id}
               href={`/city/${city.id}`}
-              className="block bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-slate-300 transition-all group"
+              className="block rounded-xl p-4 transition-all duration-300 group"
+              style={{ 
+                backgroundColor: '#ffffff',
+                border: '1px solid #d8d6cd',
+                boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(43, 40, 35, 0.12)';
+                e.currentTarget.style.borderColor = '#787060';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(43, 40, 35, 0.04)';
+                e.currentTarget.style.borderColor = '#d8d6cd';
+              }}
             >
               <div className="flex items-center gap-4">
                 {/* Score Circle */}
-                <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center ${
-                  city.marketScore >= 80 ? "bg-emerald-50" : 
-                  city.marketScore >= 70 ? "bg-green-50" : 
-                  city.marketScore >= 60 ? "bg-amber-50" : "bg-red-50"
-                }`}>
-                  <span className={`text-xl font-bold ${getScoreColor(city.marketScore)}`}>
+                <div 
+                  className="w-14 h-14 rounded-xl flex flex-col items-center justify-center"
+                  style={getScoreBgStyle(city.marketScore)}
+                >
+                  <span 
+                    className="text-xl font-bold"
+                    style={{ ...getScoreStyle(city.marketScore), fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
                     {city.marketScore}
                   </span>
                 </div>
                 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-900 group-hover:text-teal-600 transition-colors truncate">
+                  <div 
+                    className="font-semibold transition-colors truncate"
+                    style={{ color: '#2b2823' }}
+                  >
                     {city.name}
                   </div>
-                  <div className="text-sm text-slate-500 truncate">{city.county}, {city.stateCode}</div>
+                  <div className="text-sm truncate" style={{ color: '#787060' }}>{city.county}, {city.stateCode}</div>
                   <div className="flex gap-2 mt-2">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${getVerdict(city.marketScore).color}`}>
-                      {getVerdict(city.marketScore).text}
+                    <span 
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ backgroundColor: getVerdictStyle(city.marketScore).bg, color: getVerdictStyle(city.marketScore).color }}
+                    >
+                      {getVerdictStyle(city.marketScore).text}
                     </span>
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold text-white ${
-                      city.regulation === "Legal" ? "bg-emerald-500" : "bg-amber-500"
-                    }`}>
+                    <span 
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ 
+                        backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
+                        color: '#ffffff'
+                      }}
+                    >
                       {city.regulation}
                     </span>
                   </div>
                 </div>
 
                 {/* Arrow */}
-                <svg className="w-5 h-5 text-slate-300 group-hover:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 transition-colors" style={{ color: '#d8d6cd' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -241,14 +322,25 @@ export default function SearchPage() {
 
           {/* Empty State */}
           {totalResults === 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div 
+              className="rounded-xl p-10 text-center"
+              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}
+            >
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: '#e5e3da' }}
+              >
+                <svg className="w-8 h-8" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No results found</h3>
-              <p className="text-slate-500 text-sm">
+              <h3 
+                className="text-lg font-semibold mb-2"
+                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                No results found
+              </h3>
+              <p className="text-sm" style={{ color: '#787060' }}>
                 Try adjusting your search or filters to find what you&apos;re looking for.
               </p>
             </div>

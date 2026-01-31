@@ -15,7 +15,14 @@ export function Navigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-mocha/10 z-50 safe-area-bottom">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom"
+      style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.97)',
+        backdropFilter: 'blur(12px)',
+        borderTop: '1px solid rgba(120, 112, 96, 0.12)'
+      }}
+    >
       <div className="max-w-screen-xl mx-auto px-2">
         <div className="flex justify-around items-center h-16">
           {tabs.map((tab) => {
@@ -26,23 +33,29 @@ export function Navigation() {
               <Link
                 key={tab.name}
                 href={tab.href}
-                className={`flex flex-col items-center justify-center flex-1 h-full py-2 transition-all ${
-                  isActive 
-                    ? "text-[#3d6b6b]" 
-                    : "text-mocha hover:text-gray-brand"
-                }`}
+                className="flex flex-col items-center justify-center flex-1 h-full py-2 transition-all"
+                style={{ 
+                  color: isActive ? '#2b2823' : '#787060'
+                }}
               >
-                <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
-                  isActive ? "bg-[#3d6b6b]/10" : ""
-                }`}>
+                <div 
+                  className="relative flex items-center justify-center w-10 h-10 rounded-xl transition-all"
+                  style={{ 
+                    backgroundColor: isActive ? 'rgba(43, 40, 35, 0.08)' : 'transparent'
+                  }}
+                >
                   <span className="text-xl">{tab.icon}</span>
                   {isActive && (
-                    <span className="absolute -bottom-1 w-1 h-1 bg-[#3d6b6b] rounded-full"></span>
+                    <span 
+                      className="absolute -bottom-1 w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: '#2b2823' }}
+                    />
                   )}
                 </div>
-                <span className={`text-[10px] font-semibold mt-0.5 ${
-                  isActive ? "text-[#3d6b6b]" : "text-mocha"
-                }`}>
+                <span 
+                  className="text-[10px] font-semibold mt-0.5"
+                  style={{ color: isActive ? '#2b2823' : '#787060' }}
+                >
                   {tab.name}
                 </span>
               </Link>

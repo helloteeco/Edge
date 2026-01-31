@@ -59,7 +59,38 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 # Add Markets and Replace RPR with Cash on Cash
 
-- [ ] Copy all cities/counties from mobile app to web app
-- [ ] Replace Revenue to Price Ratio (RPR) with Cash on Cash return
-- [ ] Update scoring model to use Cash on Cash
-- [ ] Update all UI components to display Cash on Cash
+- [x] Copy all cities/counties from mobile app to web app
+- [x] Replace Revenue to Price Ratio (RPR) with Cash on Cash return
+- [x] Update scoring model to use Cash on Cash
+- [x] Update all UI components to display Cash on Cash
+
+# Brand Redesign & Scoring Fix (January 2026)
+
+## Market Headroom Scoring Fix
+- [x] Fix Market Headroom scoring for small tourism towns (e.g., Berlin, OH)
+- [x] Add population-adjusted scoring that considers tourism context
+- [x] Ensure high listings-per-thousand doesn't unfairly penalize tourism destinations
+
+## Teeco Brand Redesign
+- [x] Update tailwind.config.js with strict Teeco brand colors only
+- [x] Update globals.css with Teeco brand styling
+- [x] Redesign homepage with premium Teeco branding
+- [x] Update Navigation component with Teeco brand colors
+- [x] Update TopMarkets component with Teeco brand styling
+- [x] Update search page with Teeco brand styling
+- [x] Update calculator page with Teeco brand styling
+- [x] Update city detail page with Teeco brand styling
+- [x] Update state page with Teeco brand styling
+- [x] Update saved page with Teeco brand styling
+- [x] Update funding page with Teeco brand styling
+- [x] Update analyzer page with Teeco brand styling
+- [x] Update ChatAssistant component with Teeco brand colors
+- [x] Update USMap component with Teeco brand colors
+
+## Teeco Brand Colors (Strict Palette)
+- Black: #000000 (headlines, primary text)
+- Gray: #2b2823 (dark accents, buttons)
+- Mocha: #787060 (secondary text, muted elements)
+- Cream: #e5e3da (backgrounds, cards)
+- White: #ffffff (clean backgrounds)
+- Border: #d8d6cd (subtle borders)

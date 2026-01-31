@@ -183,13 +183,36 @@ export function scoreLandlordFriendly(stateCode: string): { score: number; ratin
  * Based on STR listings per 1,000 residents
  * Higher score = more room for new STRs (less competition)
  * 
- * Scoring:
+ * IMPORTANT: Small tourism towns (population < 5,000) use adjusted thresholds
+ * because their visitor-to-resident ratio is naturally high. A town of 500 people
+ * with 10 STRs (20 per 1,000) might still have excellent headroom if it hosts
+ * 50,000 visitors annually.
+ * 
+ * Standard Scoring (population >= 5,000):
  * - < 3 listings/1000: 10 points (Excellent Headroom)
  * - < 6 listings/1000: 8 points (Good Headroom)
  * - < 10 listings/1000: 5 points (Limited Headroom)
  * - >= 10 listings/1000: 2 points (Crowded Market)
+ * 
+ * Tourism Town Scoring (population < 5,000):
+ * - < 15 listings/1000: 10 points (Excellent Headroom)
+ * - < 30 listings/1000: 8 points (Good Headroom)
+ * - < 50 listings/1000: 5 points (Limited Headroom)
+ * - >= 50 listings/1000: 2 points (Crowded Market)
  */
-export function scoreMarketHeadroom(listingsPerThousand: number): { score: number; rating: string } {
+export function scoreMarketHeadroom(listingsPerThousand: number, population?: number): { score: number; rating: string } {
+  // Use tourism-adjusted thresholds for small towns (likely tourism destinations)
+  const isTourismTown = population !== undefined && population < 5000;
+  
+  if (isTourismTown) {
+    // Tourism town thresholds (more lenient due to high visitor-to-resident ratio)
+    if (listingsPerThousand < 15) return { score: 10, rating: 'Excellent Headroom' };
+    if (listingsPerThousand < 30) return { score: 8, rating: 'Good Headroom' };
+    if (listingsPerThousand < 50) return { score: 5, rating: 'Limited Headroom' };
+    return { score: 2, rating: 'Crowded Market' };
+  }
+  
+  // Standard thresholds for larger cities
   if (listingsPerThousand < 3) return { score: 10, rating: 'Excellent Headroom' };
   if (listingsPerThousand < 6) return { score: 8, rating: 'Good Headroom' };
   if (listingsPerThousand < 10) return { score: 5, rating: 'Limited Headroom' };
@@ -262,6 +285,7 @@ export interface MarketData {
   stateCode: string;
   listingsPerThousand: number;
   oneYearAppreciation: number;
+  population?: number;
 }
 
 export function calculateScore(data: MarketData): ScoringBreakdown {
@@ -272,7 +296,7 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   const affordability = scoreAffordability(data.medianHomePrice);
   const legality = scoreLegality(data.strStatus, data.permitRequired);
   const landlordFriendly = scoreLandlordFriendly(data.stateCode);
-  const marketHeadroom = scoreMarketHeadroom(data.listingsPerThousand);
+  const marketHeadroom = scoreMarketHeadroom(data.listingsPerThousand, data.population);
   const appreciation = scoreAppreciation(data.oneYearAppreciation);
   
   const totalScore = 

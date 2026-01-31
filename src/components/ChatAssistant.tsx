@@ -80,15 +80,15 @@ export function ChatAssistant() {
 
   return (
     <>
-      {/* Floating Button - Updated to Teeco teal */}
+      {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-24 right-4 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl transition-all z-50 ${
-          isOpen 
-            ? "bg-gray-brand text-white rotate-0" 
-            : "bg-gradient-to-br from-[#3d6b6b] to-[#4a7a7a] text-white hover:from-[#4a7a7a] hover:to-[#5a8a8a]"
-        }`}
-        style={{ boxShadow: isOpen ? "0 4px 20px rgba(0,0,0,0.2)" : "0 4px 20px rgba(61,107,107,0.4)" }}
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all z-50"
+        style={{ 
+          backgroundColor: isOpen ? '#787060' : '#2b2823',
+          color: '#ffffff',
+          boxShadow: isOpen ? '0 4px 20px rgba(43, 40, 35, 0.25)' : '0 4px 20px rgba(43, 40, 35, 0.4)'
+        }}
       >
         {isOpen ? (
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,29 +101,40 @@ export function ChatAssistant() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-40 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-mocha/10 overflow-hidden z-50 animate-scale-in">
-          {/* Header - Updated to Teeco teal */}
-          <div className="bg-gradient-to-r from-[#3d6b6b] to-[#4a7a7a] text-white p-4">
+        <div 
+          className="fixed bottom-40 right-4 w-80 max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden z-50 animate-scale-in"
+          style={{ 
+            backgroundColor: '#ffffff',
+            boxShadow: '0 20px 60px -12px rgba(43, 40, 35, 0.25)',
+            border: '1px solid #d8d6cd'
+          }}
+        >
+          {/* Header */}
+          <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }} className="p-4">
             <div className="flex items-center gap-3">
               {mode !== "menu" && (
                 <button
                   onClick={resetChat}
-                  className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
                   title="Back to menu"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#ffffff' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               )}
               {mode === "menu" && (
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
+                >
                   <span className="text-xl">🏠</span>
                 </div>
               )}
               <div>
-                <h3 className="font-semibold">Edge Assistant</h3>
-                <p className="text-sm text-white/80">
+                <h3 className="font-semibold" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Edge Assistant</h3>
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
                   {mode === "menu" ? "How can I help you today?" : mode === "chat" ? "Ask me anything" : "Mentorship Survey"}
                 </p>
               </div>
@@ -136,44 +147,56 @@ export function ChatAssistant() {
               <div className="p-4 space-y-3">
                 <button
                   onClick={() => setMode("chat")}
-                  className="w-full p-4 bg-cream rounded-xl text-left hover:bg-cream-dark transition-all group"
+                  className="w-full p-4 rounded-xl text-left transition-all group"
+                  style={{ backgroundColor: '#e5e3da' }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#3d6b6b]/20 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
+                    >
                       💬
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-brand">Ask a Question</div>
-                      <div className="text-sm text-mocha">Get help with STR investing</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Ask a Question</div>
+                      <div className="text-sm" style={{ color: '#787060' }}>Get help with STR investing</div>
                     </div>
                   </div>
                 </button>
                 <button
                   onClick={() => { setMode("survey"); setSurveyStep("budget"); }}
-                  className="w-full p-4 bg-gradient-to-r from-[#787060]/10 to-[#787060]/20 border border-mocha/20 rounded-xl text-left hover:from-[#787060]/20 hover:to-[#787060]/30 transition-all group"
+                  className="w-full p-4 rounded-xl text-left transition-all group"
+                  style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-mocha/30 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform flex-shrink-0">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110 flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
+                    >
                       🎓
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-brand">Mentorship Program</div>
-                      <div className="text-sm text-[#3d6b6b] font-medium">Only ~3 hours/week once set up</div>
-                      <div className="text-xs text-mocha mt-1">9 guided calls: Deal → Setup & Design → Live STR. We can set up your Airbnb remotely while you keep your job.</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Mentorship Program</div>
+                      <div className="text-sm font-medium" style={{ color: '#2b2823' }}>Only ~3 hours/week once set up</div>
+                      <div className="text-xs mt-1" style={{ color: '#787060' }}>9 guided calls: Deal → Setup & Design → Live STR. We can set up your Airbnb remotely while you keep your job.</div>
                     </div>
                   </div>
                 </button>
                 <button
                   onClick={() => window.open("https://teeco.co", "_blank")}
-                  className="w-full p-4 bg-cream rounded-xl text-left hover:bg-cream-dark transition-all group"
+                  className="w-full p-4 rounded-xl text-left transition-all group"
+                  style={{ backgroundColor: '#e5e3da' }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#3d6b6b]/20 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
+                    >
                       🏠
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-brand">Co-hosting Services</div>
-                      <div className="text-sm text-mocha">Professional property management</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Co-hosting Services</div>
+                      <div className="text-sm" style={{ color: '#787060' }}>Professional property management</div>
                     </div>
                   </div>
                 </button>
@@ -184,8 +207,11 @@ export function ChatAssistant() {
               <div className="flex flex-col h-full">
                 <div className="flex-1 p-4 space-y-3 overflow-y-auto">
                   {messages.length === 0 && (
-                    <div className="text-center text-mocha py-8">
-                      <div className="w-12 h-12 bg-cream rounded-full flex items-center justify-center mx-auto mb-3">
+                    <div className="text-center py-8" style={{ color: '#787060' }}>
+                      <div 
+                        className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                        style={{ backgroundColor: '#e5e3da' }}
+                      >
                         <span className="text-2xl">💭</span>
                       </div>
                       <p className="text-sm">Ask me anything about STR investing!</p>
@@ -196,27 +222,34 @@ export function ChatAssistant() {
                       key={i}
                       className={`p-3 rounded-2xl max-w-[85%] text-sm ${
                         msg.role === "user"
-                          ? "bg-[#3d6b6b] text-white ml-auto rounded-br-md"
-                          : "bg-cream text-gray-brand rounded-bl-md"
+                          ? "ml-auto rounded-br-md"
+                          : "rounded-bl-md"
                       }`}
+                      style={{
+                        backgroundColor: msg.role === "user" ? '#2b2823' : '#e5e3da',
+                        color: msg.role === "user" ? '#ffffff' : '#2b2823'
+                      }}
                     >
                       {msg.content}
                     </div>
                   ))}
                   {isLoading && (
-                    <div className="bg-cream text-mocha p-3 rounded-2xl rounded-bl-md max-w-[85%] text-sm">
+                    <div 
+                      className="p-3 rounded-2xl rounded-bl-md max-w-[85%] text-sm"
+                      style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+                    >
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-mocha rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                          <span className="w-2 h-2 bg-mocha rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                          <span className="w-2 h-2 bg-mocha rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: "0ms" }}></span>
+                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: "150ms" }}></span>
+                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: "300ms" }}></span>
                         </div>
                         <span>Thinking...</span>
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="p-3 border-t border-mocha/10 bg-white">
+                <div className="p-3 bg-white" style={{ borderTop: '1px solid #d8d6cd' }}>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -224,12 +257,18 @@ export function ChatAssistant() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                       placeholder="Type your question..."
-                      className="flex-1 px-4 py-2.5 bg-cream border border-mocha/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b6b] focus:border-transparent"
+                      className="flex-1 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2"
+                      style={{ 
+                        backgroundColor: '#e5e3da', 
+                        border: '1px solid #d8d6cd',
+                        color: '#2b2823'
+                      }}
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={isLoading}
-                      className="px-4 py-2.5 bg-[#3d6b6b] text-white rounded-xl hover:bg-[#4a7a7a] disabled:opacity-50 transition-colors"
+                      className="px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                      style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -238,7 +277,8 @@ export function ChatAssistant() {
                   </div>
                   <button
                     onClick={resetChat}
-                    className="w-full mt-2 text-sm text-mocha hover:text-gray-brand transition-colors"
+                    className="w-full mt-2 text-sm transition-colors"
+                    style={{ color: '#787060' }}
                   >
                     ← Back to menu
                   </button>
@@ -250,12 +290,13 @@ export function ChatAssistant() {
               <div className="p-4">
                 {surveyStep === "budget" && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-brand">What&apos;s your investment budget?</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>What&apos;s your investment budget?</h4>
                     {["Under $100k", "$100k-250k", "$250k-500k", "$500k+"].map((opt) => (
                       <button
                         key={opt}
                         onClick={() => handleSurveyAnswer(opt)}
-                        className="w-full p-3.5 bg-cream rounded-xl text-left text-gray-brand hover:bg-[#3d6b6b]/10 hover:text-[#3d6b6b] transition-all font-medium"
+                        className="w-full p-3.5 rounded-xl text-left font-medium transition-all"
+                        style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
                       >
                         {opt}
                       </button>
@@ -265,12 +306,13 @@ export function ChatAssistant() {
 
                 {surveyStep === "timeline" && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-brand">When are you looking to invest?</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>When are you looking to invest?</h4>
                     {["Ready now", "3-6 months", "6-12 months", "Just exploring"].map((opt) => (
                       <button
                         key={opt}
                         onClick={() => handleSurveyAnswer(opt)}
-                        className="w-full p-3.5 bg-cream rounded-xl text-left text-gray-brand hover:bg-[#3d6b6b]/10 hover:text-[#3d6b6b] transition-all font-medium"
+                        className="w-full p-3.5 rounded-xl text-left font-medium transition-all"
+                        style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
                       >
                         {opt}
                       </button>
@@ -280,12 +322,13 @@ export function ChatAssistant() {
 
                 {surveyStep === "experience" && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-brand">Your STR experience level?</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Your STR experience level?</h4>
                     {["First-time investor", "1-3 properties", "4+ properties"].map((opt) => (
                       <button
                         key={opt}
                         onClick={() => handleSurveyAnswer(opt)}
-                        className="w-full p-3.5 bg-cream rounded-xl text-left text-gray-brand hover:bg-[#3d6b6b]/10 hover:text-[#3d6b6b] transition-all font-medium"
+                        className="w-full p-3.5 rounded-xl text-left font-medium transition-all"
+                        style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
                       >
                         {opt}
                       </button>
@@ -295,17 +338,19 @@ export function ChatAssistant() {
 
                 {surveyStep === "email" && (
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-brand">Enter your email to continue</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Enter your email to continue</h4>
                     <input
                       type="email"
                       value={surveyData.email}
                       onChange={(e) => setSurveyData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="your@email.com"
-                      className="w-full px-4 py-3 bg-cream border border-mocha/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3d6b6b] focus:border-transparent"
+                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2"
+                      style={{ backgroundColor: '#e5e3da', border: '1px solid #d8d6cd', color: '#2b2823' }}
                     />
                     <button
                       onClick={handleEmailSubmit}
-                      className="w-full py-3 bg-[#3d6b6b] text-white rounded-xl font-semibold hover:bg-[#4a7a7a] transition-colors"
+                      className="w-full py-3 rounded-xl font-semibold transition-colors"
+                      style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                     >
                       Continue
                     </button>
@@ -314,39 +359,47 @@ export function ChatAssistant() {
 
                 {surveyStep === "complete" && (
                   <div className="text-center py-4">
-                    <div className="w-16 h-16 bg-[#3d6b6b]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div 
+                      className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)' }}
+                    >
                       <span className="text-3xl">🎉</span>
                     </div>
-                    <h4 className="font-semibold text-gray-brand mb-2">Thanks for your interest!</h4>
+                    <h4 className="font-semibold mb-2" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Thanks for your interest!</h4>
                     {isQualified ? (
                       <div className="space-y-3">
-                        <div className="bg-[#3d6b6b]/10 border border-[#3d6b6b]/20 rounded-xl p-3 text-left">
-                          <p className="text-sm text-[#3d6b6b] font-medium mb-2">✅ You qualify for our Mentorship Program!</p>
-                          <ul className="text-xs text-mocha space-y-1">
+                        <div 
+                          className="rounded-xl p-3 text-left"
+                          style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
+                        >
+                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ You qualify for our Mentorship Program!</p>
+                          <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
                             <li>• Full guided experience: 9 total calls</li>
                             <li>• Deal → Setup & Design → Live STR</li>
                             <li>• We can set up your Airbnb remotely</li>
                             <li>• Only ~3 hours/week to manage once live</li>
                           </ul>
                         </div>
-                        <p className="text-sm text-mocha">
+                        <p className="text-sm" style={{ color: '#787060' }}>
                           Reach out to get started:
                         </p>
                         <a
                           href="mailto:hello@teeco.co"
-                          className="block w-full py-3 bg-[#3d6b6b] text-white rounded-xl font-semibold hover:bg-[#4a7a7a] transition-colors"
+                          className="block w-full py-3 rounded-xl font-semibold transition-colors"
+                          style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                         >
                           Email hello@teeco.co
                         </a>
                       </div>
                     ) : (
-                      <p className="text-sm text-mocha">
+                      <p className="text-sm" style={{ color: '#787060' }}>
                         We&apos;ll send you helpful resources to get started with STR investing!
                       </p>
                     )}
                     <button
                       onClick={resetChat}
-                      className="mt-4 text-sm text-mocha hover:text-gray-brand transition-colors"
+                      className="mt-4 text-sm transition-colors"
+                      style={{ color: '#787060' }}
                     >
                       ← Back to menu
                     </button>
@@ -356,7 +409,8 @@ export function ChatAssistant() {
                 {surveyStep !== "complete" && surveyStep !== "email" && (
                   <button
                     onClick={resetChat}
-                    className="w-full mt-4 text-sm text-mocha hover:text-gray-brand transition-colors"
+                    className="w-full mt-4 text-sm transition-colors"
+                    style={{ color: '#787060' }}
                   >
                     ← Back to menu
                   </button>

@@ -8,38 +8,45 @@ export function TopMarkets() {
     .sort((a, b) => b.marketScore - a.marketScore)
     .slice(0, 10);
 
-  const getGradeColor = (grade: string) => {
+  // Grade colors using Teeco brand palette
+  const getGradeStyle = (grade: string) => {
     switch (grade) {
-      case 'A+': return 'bg-emerald-500';
-      case 'A': return 'bg-emerald-400';
-      case 'B+': return 'bg-teal-500';
-      case 'B': return 'bg-teal-400';
-      case 'C': return 'bg-amber-500';
-      case 'D': return 'bg-orange-500';
-      default: return 'bg-red-500';
+      case 'A+': return { backgroundColor: '#000000', color: '#ffffff' };
+      case 'A': return { backgroundColor: '#2b2823', color: '#ffffff' };
+      case 'B+': return { backgroundColor: '#3d3a34', color: '#ffffff' };
+      case 'B': return { backgroundColor: '#787060', color: '#ffffff' };
+      case 'C': return { backgroundColor: '#d8d6cd', color: '#2b2823' };
+      case 'D': return { backgroundColor: '#e5e3da', color: '#787060', border: '1px solid #d8d6cd' };
+      default: return { backgroundColor: '#e5e3da', color: '#787060', border: '1px dashed #787060' };
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-emerald-600";
-    if (score >= 75) return "text-emerald-500";
-    if (score >= 65) return "text-teal-600";
-    if (score >= 55) return "text-teal-500";
-    if (score >= 45) return "text-amber-600";
-    if (score >= 35) return "text-orange-500";
-    return "text-red-600";
+  const getScoreStyle = (score: number) => {
+    if (score >= 85) return { color: '#000000' };
+    if (score >= 75) return { color: '#2b2823' };
+    if (score >= 65) return { color: '#3d3a34' };
+    if (score >= 55) return { color: '#787060' };
+    return { color: '#9a9488' };
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-900">Top 10 Markets</h2>
-          <p className="text-sm text-slate-500">Highest STR investment grades nationwide</p>
+          <h2 
+            className="text-xl sm:text-2xl font-semibold mb-1"
+            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            Top 10 Markets
+          </h2>
+          <p className="text-sm" style={{ color: '#787060' }}>
+            Highest STR investment grades nationwide
+          </p>
         </div>
         <Link 
           href="/search" 
-          className="text-sm font-medium text-teal-600 hover:text-teal-700 flex items-center gap-1"
+          className="text-sm font-medium flex items-center gap-1 transition-opacity hover:opacity-70"
+          style={{ color: '#2b2823' }}
         >
           View All
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,26 +60,51 @@ export function TopMarkets() {
           <Link
             key={city.id}
             href={`/city/${city.id}`}
-            className="group bg-white border border-slate-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-slate-300 transition-all duration-200"
+            className="group rounded-xl p-4 transition-all duration-300"
+            style={{ 
+              backgroundColor: '#ffffff',
+              border: '1px solid #d8d6cd',
+              boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(43, 40, 35, 0.12)';
+              e.currentTarget.style.borderColor = '#787060';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(43, 40, 35, 0.04)';
+              e.currentTarget.style.borderColor = '#d8d6cd';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
             {/* Rank Badge */}
-            <div className="flex items-center justify-between mb-2">
-              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                index < 3 ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600"
-              }`}>
+            <div className="flex items-center justify-between mb-3">
+              <span 
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                style={{ 
+                  backgroundColor: index < 3 ? '#2b2823' : '#e5e3da',
+                  color: index < 3 ? '#ffffff' : '#787060'
+                }}
+              >
                 {index + 1}
               </span>
-              <span className={`px-2 py-0.5 rounded-md text-xs font-bold text-white ${getGradeColor(city.grade)}`}>
+              <span 
+                className="px-2 py-0.5 rounded-md text-xs font-bold"
+                style={getGradeStyle(city.grade)}
+              >
                 {city.grade}
               </span>
             </div>
             
             {/* City Info */}
             <div className="mb-3">
-              <div className="font-semibold text-slate-900 text-sm truncate group-hover:text-teal-600 transition-colors">
+              <div 
+                className="font-semibold text-sm truncate transition-colors"
+                style={{ color: '#2b2823' }}
+              >
                 {city.name}
               </div>
-              <div className="text-xs text-slate-500 truncate">
+              <div className="text-xs truncate" style={{ color: '#787060' }}>
                 {city.county}, {city.stateCode}
               </div>
             </div>
@@ -80,12 +112,29 @@ export function TopMarkets() {
             {/* Score */}
             <div className="flex items-end justify-between">
               <div>
-                <div className={`text-2xl font-bold ${getScoreColor(city.marketScore)}`}>
+                <div 
+                  className="text-2xl font-bold"
+                  style={{ 
+                    ...getScoreStyle(city.marketScore),
+                    fontFamily: 'Source Serif Pro, Georgia, serif'
+                  }}
+                >
                   {city.marketScore}
                 </div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-wide">Score</div>
+                <div 
+                  className="text-[10px] uppercase tracking-wider"
+                  style={{ color: '#787060' }}
+                >
+                  Score
+                </div>
               </div>
-              <svg className="w-5 h-5 text-slate-300 group-hover:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg 
+                className="w-5 h-5 transition-colors" 
+                style={{ color: '#d8d6cd' }}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -94,15 +143,41 @@ export function TopMarkets() {
       </div>
       
       {/* Scoring Explanation */}
-      <div className="bg-slate-50 rounded-xl p-4 text-sm">
-        <div className="font-medium text-slate-700 mb-2">How We Score Markets</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600">
-          <div>💰 Cash-on-Cash: 35pts</div>
-          <div>🏠 Affordability: 25pts</div>
-          <div>⚖️ STR Legality: 15pts</div>
-          <div>🤝 Landlord Friendly: 10pts</div>
-          <div>📊 Market Headroom: 10pts</div>
-          <div>📈 Appreciation: 5pts</div>
+      <div 
+        className="rounded-xl p-5 text-sm"
+        style={{ backgroundColor: 'rgba(43, 40, 35, 0.03)', border: '1px solid #d8d6cd' }}
+      >
+        <div 
+          className="font-semibold mb-3"
+          style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+        >
+          How We Score Markets
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" style={{ color: '#787060' }}>
+          <div className="flex items-center gap-1.5">
+            <span>💰</span>
+            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>35pts</strong></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>🏠</span>
+            <span>Affordability: <strong style={{ color: '#2b2823' }}>25pts</strong></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>⚖️</span>
+            <span>STR Legality: <strong style={{ color: '#2b2823' }}>15pts</strong></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>🤝</span>
+            <span>Landlord Friendly: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>📊</span>
+            <span>Market Headroom: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>📈</span>
+            <span>Appreciation: <strong style={{ color: '#2b2823' }}>5pts</strong></span>
+          </div>
         </div>
       </div>
     </div>
