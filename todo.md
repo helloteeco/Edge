@@ -113,7 +113,7 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 # Comparable Airbnb Listings Feature (January 2026)
 
 ## Feature: View Comparable Listings
-- [ ] Add "View Comparable Listings on Airbnb" button to city detail pages
-- [ ] Add "View Comparable Listings on Airbnb" button to address calculator results
-- [ ] Link opens Airbnb search for that city/location
-- [ ] Clean button styling consistent with Teeco brand
+- [x] Add "View Comparable Listings on Airbnb" button to city detail pages
+- [x] Add "View Comparable Listings on Airbnb" button to address calculator results
+- [x] Link opens Airbnb search for that city/location (uses Airbnb coral #FF5A5F)
+- [x] Clean button styling consistent with Teeco brand
