@@ -117,3 +117,43 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Add "View Comparable Listings on Airbnb" button to address calculator results
 - [x] Link opens Airbnb search for that city/location (uses Airbnb coral #FF5A5F)
 - [x] Clean button styling consistent with Teeco brand
+
+
+# Edge Deal Calculator Rebuild (January 2026)
+
+## Module 1: Address Input
+- [ ] Clean address input with auto-parse
+- [ ] Market lookup from existing city data
+- [ ] Fallback to manual entry if not found
+
+## Module 2: Property Profile (Editable)
+- [ ] Bedrooms, bathrooms, property type
+- [ ] Purchase price (editable)
+- [ ] All auto-filled values must be editable
+
+## Module 3: Market Benchmark + Cohort Controls
+- [ ] Show market median ADR & occupancy (low/base/high)
+- [ ] Cohort controls: radius, bedrooms, property type
+- [ ] Mock API layer with typed responses
+- [ ] Source labels for transparency
+
+## Module 4: Assumptions Sliders (6 max)
+- [ ] ADR adjustment slider
+- [ ] Occupancy adjustment slider
+- [ ] Cleaning cost (per stay or per month toggle)
+- [ ] Management fee %
+- [ ] Down payment %
+- [ ] Interest rate
+
+## Module 5: Outputs + STR vs LTR Compare
+- [ ] Annual gross revenue (low/base/high)
+- [ ] NOI and monthly cash flow
+- [ ] Cash-on-cash return
+- [ ] LTR comparison panel
+- [ ] Break-even occupancy calculation
+
+## Technical Requirements
+- [ ] Pure calculation functions with unit tests
+- [ ] Deterministic low/base/high ranges
+- [ ] Client-side state only (no backend)
+- [ ] Assumptions drawer with confidence scoring

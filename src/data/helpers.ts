@@ -336,6 +336,83 @@ export function findCityForAddress(address: string): FlatCity | null {
   return null;
 }
 
+// Get state-level benchmark data for fallback when city not found
+export interface StateBenchmark {
+  stateCode: string;
+  stateName: string;
+  adr: { low: number; base: number; high: number };
+  occupancy: { low: number; base: number; high: number };
+  medianHomePrice: number;
+  strStatus: string;
+  source: 'state_fallback';
+}
+
+export function getStateBenchmark(stateCode: string): StateBenchmark | null {
+  const state = stateDataByCode[stateCode.toUpperCase()];
+  if (!state) return null;
+  
+  // Get cities in this state to calculate ranges
+  const citiesInState = getAllCities().filter(c => c.stateCode === stateCode.toUpperCase());
+  
+  // Calculate ADR range from state data with variance
+  const baseADR = state.rental.avgADR;
+  const adr = {
+    low: Math.round(baseADR * 0.75),
+    base: baseADR,
+    high: Math.round(baseADR * 1.35),
+  };
+  
+  // Calculate occupancy range
+  const baseOcc = state.rental.occupancyRate;
+  const occupancy = {
+    low: Math.max(35, baseOcc - 15),
+    base: baseOcc,
+    high: Math.min(85, baseOcc + 10),
+  };
+  
+  return {
+    stateCode: stateCode.toUpperCase(),
+    stateName: state.name,
+    adr,
+    occupancy,
+    medianHomePrice: state.appreciation.medianValue,
+    strStatus: state.strRegulation.status,
+    source: 'state_fallback',
+  };
+}
+
+// Enhanced address lookup that returns city data or state fallback
+export interface AddressLookupResult {
+  type: 'city' | 'state_fallback' | 'not_found';
+  city?: FlatCity;
+  stateBenchmark?: StateBenchmark;
+  parsedAddress: { city?: string; state?: string } | null;
+}
+
+export function lookupAddress(address: string): AddressLookupResult {
+  const parsed = parseAddress(address);
+  
+  if (!parsed) {
+    return { type: 'not_found', parsedAddress: null };
+  }
+  
+  // Try to find city first
+  const city = findCityForAddress(address);
+  if (city) {
+    return { type: 'city', city, parsedAddress: parsed };
+  }
+  
+  // Fall back to state-level data
+  if (parsed.state) {
+    const stateBenchmark = getStateBenchmark(parsed.state);
+    if (stateBenchmark) {
+      return { type: 'state_fallback', stateBenchmark, parsedAddress: parsed };
+    }
+  }
+  
+  return { type: 'not_found', parsedAddress: parsed };
+}
+
 // Export pre-computed arrays for direct import
 export const cityData = getAllCities();
 export const stateData = getAllStates();
