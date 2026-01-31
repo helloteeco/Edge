@@ -159,3 +159,88 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Deterministic low/base/high ranges
 - [x] Client-side state only (no backend)
 - [x] Confidence scoring (HIGH/MEDIUM/LOW) based on data source
+
+
+# Calculator Rebuild - Match Teeco Spreadsheet (January 2026)
+
+## Verified Formulas to Implement
+- [ ] Mortgage P&I: M = P × [r(1+r)^n] / [(1+r)^n - 1]
+- [ ] PMI: ~0.5-1% of loan annually when down payment < 20%
+- [ ] Gross Income: ADR × Occupancy % × 30 days
+- [ ] NOI: Gross Income - Operating Expenses
+- [ ] Cap Rate: NOI / Purchase Price
+- [ ] Cash Flow: NOI - Debt Service
+- [ ] Cash on Cash: Annual Cash Flow / Total Cash Invested
+- [ ] Payback Period: Total Invested / Monthly Cash Flow
+
+## Startup Costs Section (Total Cash to Close)
+- [ ] Down Payment ($)
+- [ ] Closing Costs (% or $)
+- [ ] Reno/Rehab budget
+- [ ] Furnishings ($15-20/sq ft estimate)
+- [ ] Amenities budget
+- [ ] Holding Costs
+- [ ] Legal fees
+
+## Detailed Expenses (15+ line items)
+- [ ] CapEx Reserve (5% of gross)
+- [ ] Electric
+- [ ] Water
+- [ ] Gas
+- [ ] Trash
+- [ ] Internet
+- [ ] Lawn Care
+- [ ] House Supplies
+- [ ] Pest Control
+- [ ] Rental Management Software
+- [ ] Property Tax (auto-estimate 1.5% of price)
+- [ ] Home Insurance
+- [ ] Management Fee %
+- [ ] Cleaning (per stay or monthly)
+- [ ] Business License
+
+## Validation & Warnings
+- [ ] Flag property tax if >3% of home value
+- [ ] Show red indicators for negative cash flow
+- [ ] Show yellow indicators for marginal deals (<5% CoC)
+- [ ] Validate all inputs are reasonable
+
+## UX Features
+- [ ] Quick Mode (simple inputs) vs Detailed Mode (all fields)
+- [ ] Collapsible expense sections
+- [ ] Auto-calculate furnishing estimate from sq ft
+- [ ] Real-time calculation updates
+
+
+# Calculator UX Improvements - Make Worth $1,000/year
+
+## User Feedback Issues
+- [ ] Remove cap rate (focus on single family, cash-on-cash only)
+- [ ] Market benchmark section is confusing and hard to use
+- [ ] ADR adjustment slider is confusing - users don't know what premium to set
+- [ ] Need more accurate data based on address, bedrooms, bathrooms, guest capacity
+- [ ] Focus on showing clear annual revenue estimate
+
+## Research Tasks
+- [ ] Research AirDNA, Mashvisor, Rabbu pricing and features
+- [ ] Identify what makes $1,000/year tools valuable
+- [ ] Document competitor feature comparison
+
+
+# Simplified Calculator Build
+
+## Remove
+- [ ] Remove cap rate display
+- [ ] Remove ADR adjustment slider
+- [ ] Remove occupancy adjustment slider
+- [ ] Remove Low/Base/High benchmark inputs
+- [ ] Remove confusing market benchmark section
+
+## Add/Change
+- [ ] Auto-calculate ADR based on bedrooms (1BR=base, 2BR=+20%, 3BR=+35%, 4BR=+50%, 5BR+=+65%)
+- [ ] Auto-calculate occupancy from market data
+- [ ] Show big "Estimated Annual Revenue" number at top
+- [ ] Add clear methodology section explaining calculations
+- [ ] Keep cash-on-cash as hero metric
+- [ ] Keep STR vs LTR comparison
+- [ ] Keep all expense inputs from spreadsheet
