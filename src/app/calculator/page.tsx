@@ -22,6 +22,19 @@ import {
 // SIMPLIFIED STATE - Removed confusing sliders
 // ============================================================================
 
+interface PropertySuggestion {
+  address: { street: string; city: string; state: string; zipCode: string };
+  propertyId?: string;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  nightPrice?: number;
+  occupancy?: number;
+  monthlyRevenue?: number;
+  image?: string;
+  neighborhood?: string;
+}
+
 interface CalculatorState {
   // Address
   address: string;
@@ -86,12 +99,12 @@ interface CalculatorState {
   showDetailedExpenses: boolean;
   showMethodology: boolean;
   
-  // Autocomplete
-  suggestions: Array<{
-    displayName: string;
-    address: { street: string; city: string; state: string; zipCode: string };
-  }>;
+  // Autocomplete - now using Mashvisor property data
+  suggestions: PropertySuggestion[];
   showSuggestions: boolean;
+  totalPropertiesInArea: number;
+  searchCity: string;
+  searchState: string;
   
   // Mashvisor Data
   mashvisorData: {
@@ -166,6 +179,9 @@ const initialState: CalculatorState = {
   // Autocomplete
   suggestions: [],
   showSuggestions: false,
+  totalPropertiesInArea: 0,
+  searchCity: '',
+  searchState: '',
   // Mashvisor
   mashvisorData: null,
 };
@@ -178,7 +194,7 @@ export default function DealCalculatorPage() {
   const [state, setState] = useState<CalculatorState>(initialState);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Fetch address suggestions for autocomplete
+  // Fetch property suggestions from Mashvisor
   const fetchSuggestions = async (query: string) => {
     if (query.length < 3) {
       setState(s => ({ ...s, suggestions: [], showSuggestions: false }));
@@ -186,12 +202,15 @@ export default function DealCalculatorPage() {
     }
     
     try {
-      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/property-search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       setState(s => ({
         ...s,
         suggestions: data.suggestions || [],
         showSuggestions: (data.suggestions?.length || 0) > 0,
+        totalPropertiesInArea: data.totalProperties || 0,
+        searchCity: data.city || '',
+        searchState: data.state || '',
       }));
     } catch (error) {
       console.error('Autocomplete error:', error);
@@ -211,8 +230,8 @@ export default function DealCalculatorPage() {
     }, 300);
   };
   
-  // Handle suggestion selection
-  const handleSelectSuggestion = (suggestion: typeof state.suggestions[0]) => {
+  // Handle suggestion selection - auto-fill with Mashvisor property data
+  const handleSelectSuggestion = (suggestion: PropertySuggestion) => {
     const { street, city, state: stateCode, zipCode } = suggestion.address;
     const fullAddress = `${street}, ${city}, ${stateCode} ${zipCode}`;
     setState(s => ({
@@ -220,6 +239,13 @@ export default function DealCalculatorPage() {
       address: fullAddress,
       suggestions: [],
       showSuggestions: false,
+      // Auto-fill from Mashvisor data
+      bedrooms: suggestion.bedrooms || s.bedrooms,
+      bathrooms: suggestion.bathrooms || s.bathrooms,
+      marketADR: suggestion.nightPrice || s.marketADR,
+      marketOccupancy: suggestion.occupancy || s.marketOccupancy,
+      parsedCity: city,
+      parsedState: stateCode,
     }));
   };
   
@@ -502,22 +528,50 @@ export default function DealCalculatorPage() {
               </button>
             </div>
             
-            {/* Autocomplete Suggestions */}
+            {/* Autocomplete Suggestions - Mashvisor Properties */}
             {state.showSuggestions && state.suggestions.length > 0 && (
               <div 
                 className="absolute left-0 right-0 mt-1 rounded-xl overflow-hidden z-50"
                 style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
               >
+                {state.totalPropertiesInArea > 0 && (
+                  <div className="px-4 py-2 text-xs font-medium" style={{ backgroundColor: '#f8f7f4', color: '#787060', borderBottom: '1px solid #e5e3da' }}>
+                    {state.totalPropertiesInArea.toLocaleString()} active STR listings in {state.searchCity}, {state.searchState}
+                  </div>
+                )}
                 {state.suggestions.map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => handleSelectSuggestion(suggestion)}
-                    className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors"
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors flex gap-3"
                     style={{ color: '#2b2823', borderBottom: index < state.suggestions.length - 1 ? '1px solid #e5e3da' : 'none' }}
                   >
-                    <div className="font-medium">{suggestion.address.street}</div>
-                    <div className="text-xs" style={{ color: '#787060' }}>
-                      {suggestion.address.city}, {suggestion.address.state} {suggestion.address.zipCode}
+                    {suggestion.image && (
+                      <img 
+                        src={suggestion.image} 
+                        alt="" 
+                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{suggestion.address.street}</div>
+                      <div className="text-xs" style={{ color: '#787060' }}>
+                        {suggestion.neighborhood && `${suggestion.neighborhood} • `}
+                        {suggestion.address.city}, {suggestion.address.state}
+                      </div>
+                      {(suggestion.nightPrice || suggestion.occupancy) && (
+                        <div className="flex gap-3 mt-1 text-xs">
+                          {suggestion.nightPrice && (
+                            <span style={{ color: '#22c55e' }}>${suggestion.nightPrice}/night</span>
+                          )}
+                          {suggestion.occupancy && (
+                            <span style={{ color: '#3b82f6' }}>{suggestion.occupancy}% occ</span>
+                          )}
+                          {suggestion.bedrooms && (
+                            <span style={{ color: '#787060' }}>{suggestion.bedrooms}BR</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </button>
                 ))}
