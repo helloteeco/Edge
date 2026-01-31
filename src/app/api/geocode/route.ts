@@ -31,7 +31,21 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    // Map all results, not just houses - users might search for cities or streets
+    // State abbreviations mapping
+    const stateAbbreviations: Record<string, string> = {
+      "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA",
+      "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE", "Florida": "FL", "Georgia": "GA",
+      "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
+      "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
+      "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO",
+      "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
+      "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
+      "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
+      "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT",
+      "Virginia": "VA", "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
+    };
+
+    // Map results to the format expected by the calculator
     const suggestions = data.slice(0, 5).map((item: any) => {
       const address = item.address || {};
       
@@ -43,39 +57,37 @@ export async function GET(request: NextRequest) {
         street = address.road;
       } else if (address.neighbourhood) {
         street = address.neighbourhood;
+      } else {
+        street = item.display_name.split(",")[0] || "";
       }
       
       // Get city name
       const city = address.city || address.town || address.village || address.county || "";
       
-      // Get state - convert full name to abbreviation if possible
-      const stateAbbreviations: Record<string, string> = {
-        "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA",
-        "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE", "Florida": "FL", "Georgia": "GA",
-        "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
-        "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
-        "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO",
-        "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
-        "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
-        "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
-        "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT",
-        "Virginia": "VA", "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
-      };
-      
+      // Get state abbreviation
       const stateFull = address.state || "";
       const state = stateAbbreviations[stateFull] || stateFull;
       
+      // Get zip code
+      const zip = address.postcode || "";
+      
+      // Build display string in format: "123 Main St, City, ST 12345"
+      let display = street;
+      if (city) display += `, ${city}`;
+      if (state) display += `, ${state}`;
+      if (zip) display += ` ${zip}`;
+      
+      // If we couldn't build a nice display, use the original
+      if (!street && !city) {
+        display = item.display_name;
+      }
+      
       return {
-        displayName: item.display_name,
-        address: {
-          street: street || item.display_name.split(",")[0] || "",
-          city,
-          state,
-          zipCode: address.postcode || "",
-        },
-        lat: item.lat,
-        lon: item.lon,
-        type: item.type,
+        display,
+        street,
+        city,
+        state,
+        zip,
       };
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 // ============================================================================
@@ -15,6 +15,14 @@ interface RecentSearch {
   timestamp: number;
 }
 
+interface AddressSuggestion {
+  display: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
 interface AnalysisResult {
   address: string;
   city: string;
@@ -26,20 +34,22 @@ interface AnalysisResult {
   // Market Conditions
   adr: number;
   occupancy: number;
-  revPAN: number; // Revenue per Available Night
+  revPAN: number;
   // Property Details
   bedrooms: number;
   bathrooms: number;
   sqft: number;
   propertyType: string;
-  // Nearby Comps
-  nearbyListings: number;
-  // Additional Metrics
+  listPrice: number;
+  // Investment Metrics
   strCapRate: number;
   ltrCapRate: number;
   traditionalRent: number;
   mashMeter: number;
   walkScore: number;
+  transitScore: number;
+  bikeScore: number;
+  nearbyListings: number;
 }
 
 // ============================================================================
@@ -53,6 +63,17 @@ export default function CalculatorPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [bedrooms, setBedrooms] = useState(3);
+  
+  // Address autocomplete
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Manual income override
+  const [useCustomIncome, setUseCustomIncome] = useState(false);
+  const [customAnnualIncome, setCustomAnnualIncome] = useState("");
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -66,11 +87,60 @@ export default function CalculatorPage() {
     }
   }, []);
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch address suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (address.length < 5) {
+        setSuggestions([]);
+        return;
+      }
+
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`);
+        const data = await response.json();
+        
+        if (data.suggestions && Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions.slice(0, 5));
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        console.error("Failed to fetch suggestions:", err);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    const debounce = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounce);
+  }, [address]);
+
   // Save recent search
   const saveRecentSearch = (search: RecentSearch) => {
     const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
+  };
+
+  // Select suggestion
+  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    setAddress(suggestion.display);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    // Auto-analyze after selection
+    setTimeout(() => handleAnalyze(suggestion.display), 100);
   };
 
   // Analyze address
@@ -80,7 +150,7 @@ export default function CalculatorPage() {
 
     setIsLoading(true);
     setError(null);
-    setResult(null);
+    setShowSuggestions(false);
 
     try {
       const response = await fetch("/api/mashvisor/property", {
@@ -101,11 +171,27 @@ export default function CalculatorPage() {
 
       // Calculate revenue based on bedroom count
       const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : 1.3;
-      const adjustedADR = Math.round((neighborhood?.adr || 150) * bedroomMultiplier);
-      const occ = neighborhood?.occupancy || 55;
+      
+      // Get ADR and occupancy from neighborhood data - handle various data formats
+      const rawAdr = neighborhood?.adr;
+      const baseAdr = typeof rawAdr === 'number' ? rawAdr : 
+                      typeof rawAdr === 'string' ? parseFloat(rawAdr) : 150;
+      const adjustedADR = Math.round(baseAdr * bedroomMultiplier);
+      
+      const rawOcc = neighborhood?.occupancy;
+      const occ = typeof rawOcc === 'number' ? rawOcc : 
+                  typeof rawOcc === 'string' ? parseFloat(rawOcc) : 55;
+      
       const annualRevenue = Math.round(adjustedADR * (occ / 100) * 365);
       const monthlyRevenue = Math.round(annualRevenue / 12);
       const revPAN = Math.round(adjustedADR * (occ / 100));
+
+      // Parse all numeric values safely
+      const parseNum = (val: unknown): number => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') return parseFloat(val) || 0;
+        return 0;
+      };
 
       const analysisResult: AnalysisResult = {
         address: addressToAnalyze,
@@ -115,29 +201,34 @@ export default function CalculatorPage() {
         annualRevenue,
         monthlyRevenue,
         adr: adjustedADR,
-        occupancy: occ,
+        occupancy: Math.round(occ),
         revPAN,
         bedrooms: property?.bedrooms || bedrooms,
         bathrooms: property?.bathrooms || 2,
-        sqft: property?.sqft || 0,
+        sqft: parseNum(property?.sqft),
         propertyType: property?.propertyType || "house",
-        nearbyListings: neighborhood?.listingsCount || 0,
-        strCapRate: neighborhood?.strCapRate || 0,
-        ltrCapRate: neighborhood?.ltrCapRate || 0,
-        traditionalRent: neighborhood?.traditionalRent || 0,
-        mashMeter: neighborhood?.mashMeter || 0,
-        walkScore: neighborhood?.walkScore || 0,
+        listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice),
+        strCapRate: parseNum(neighborhood?.strCapRate),
+        ltrCapRate: parseNum(neighborhood?.ltrCapRate),
+        traditionalRent: parseNum(neighborhood?.traditionalRent),
+        mashMeter: parseNum(neighborhood?.mashMeter),
+        walkScore: parseNum(neighborhood?.walkScore),
+        transitScore: parseNum(neighborhood?.transitScore),
+        bikeScore: parseNum(neighborhood?.bikeScore),
+        nearbyListings: parseNum(neighborhood?.listingsCount),
       };
 
       setResult(analysisResult);
       setAddress(addressToAnalyze);
+      setUseCustomIncome(false);
+      setCustomAnnualIncome("");
 
       // Save to recent searches
       saveRecentSearch({
         address: addressToAnalyze,
         annualRevenue,
         adr: adjustedADR,
-        occupancy: occ,
+        occupancy: Math.round(occ),
         timestamp: Date.now(),
       });
     } catch (err) {
@@ -155,6 +246,14 @@ export default function CalculatorPage() {
       currency: "USD",
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  // Get display revenue (custom or calculated)
+  const getDisplayRevenue = () => {
+    if (useCustomIncome && customAnnualIncome) {
+      return parseFloat(customAnnualIncome.replace(/[^0-9.]/g, "")) || 0;
+    }
+    return result?.annualRevenue || 0;
   };
 
   return (
@@ -192,17 +291,24 @@ export default function CalculatorPage() {
         <div className="rounded-2xl p-6 mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
           <div className="flex gap-3">
             <div className="flex-1 relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
                 <svg className="w-5 h-5" style={{ color: "#787060" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
               <input
+                ref={inputRef}
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setShowSuggestions(false);
+                    handleAnalyze();
+                  }
+                }}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 placeholder="Enter any US address (e.g., 123 Main St, Orlando, FL 32801)"
                 className="w-full pl-12 pr-4 py-4 rounded-xl text-base outline-none"
                 style={{ 
@@ -211,6 +317,39 @@ export default function CalculatorPage() {
                   color: "#2b2823",
                 }}
               />
+              
+              {/* Address Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-50"
+                  style={{ backgroundColor: "#ffffff", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", border: "1px solid #e5e3da" }}
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                      style={{ borderBottom: index < suggestions.length - 1 ? "1px solid #f0f0f0" : "none" }}
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" style={{ color: "#787060" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      </svg>
+                      <span className="text-sm" style={{ color: "#2b2823" }}>{suggestion.display}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Loading indicator for suggestions */}
+              {isLoadingSuggestions && address.length >= 5 && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <svg className="w-4 h-4 animate-spin" style={{ color: "#787060" }} fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </div>
+              )}
             </div>
             <button
               onClick={() => handleAnalyze()}
@@ -224,9 +363,7 @@ export default function CalculatorPage() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                "Analyze"
               )}
             </button>
           </div>
@@ -264,7 +401,7 @@ export default function CalculatorPage() {
                       setAddress(search.address);
                       handleAnalyze(search.address);
                     }}
-                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex justify-between items-center"
+                    className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
                     style={{ backgroundColor: "#f8f7f4" }}
                   >
                     <span className="text-sm" style={{ color: "#2b2823" }}>{search.address}</span>
@@ -293,37 +430,77 @@ export default function CalculatorPage() {
           <div className="space-y-6">
             {/* Annual Revenue Projection - Hero Card */}
             <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <p className="text-sm font-medium mb-2" style={{ color: "#22c55e" }}>Annual Revenue Projection</p>
-              <p className="text-5xl md:text-6xl font-bold mb-3" style={{ color: "#2b2823" }}>
-                {formatCurrency(result.annualRevenue)}<span className="text-2xl font-normal">/yr</span>
+              <p className="text-sm font-medium mb-2" style={{ color: "#22c55e" }}>
+                {useCustomIncome ? "Your Custom Estimate" : "Estimated Annual Revenue"}
               </p>
-              <p className="text-sm" style={{ color: "#787060" }}>
+              <p className="text-5xl md:text-6xl font-bold mb-3" style={{ color: "#2b2823" }}>
+                {formatCurrency(getDisplayRevenue())}<span className="text-2xl font-normal">/yr</span>
+              </p>
+              <p className="text-sm mb-4" style={{ color: "#787060" }}>
                 Based on {result.nearbyListings > 0 ? `${result.nearbyListings} nearby Airbnbs` : "market data"} in {result.neighborhood}
               </p>
 
-              {/* Market Conditions */}
-              <div className="mt-6 pt-6 flex justify-center gap-8" style={{ borderTop: "1px solid #e5e3da" }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs" style={{ backgroundColor: "#f8f7f4" }}>
-                  {new Date().toLocaleString("default", { month: "long" })} Market Conditions
-                </div>
+              {/* Custom Income Override */}
+              <div className="mt-4 pt-4" style={{ borderTop: "1px solid #e5e3da" }}>
+                <label className="flex items-center justify-center gap-2 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={useCustomIncome}
+                    onChange={(e) => setUseCustomIncome(e.target.checked)}
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: "#2b2823" }}
+                  />
+                  <span className="text-sm" style={{ color: "#787060" }}>Use my own gross income estimate</span>
+                </label>
+                
+                {useCustomIncome && (
+                  <div className="max-w-xs mx-auto">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-medium" style={{ color: "#787060" }}>$</span>
+                      <input
+                        type="text"
+                        value={customAnnualIncome}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          setCustomAnnualIncome(value ? parseInt(value).toLocaleString() : "");
+                        }}
+                        placeholder="50,000"
+                        className="w-full pl-8 pr-16 py-3 rounded-xl text-lg font-medium text-center outline-none"
+                        style={{ 
+                          backgroundColor: "#f8f7f4", 
+                          border: "2px solid #e5e3da",
+                          color: "#2b2823",
+                        }}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: "#787060" }}>/year</span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-6">
-                <div>
-                  <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.adr)}</p>
-                  <p className="text-xs" style={{ color: "#787060" }}>Average Daily Rate</p>
+
+              {/* Market Conditions */}
+              <div className="mt-6 pt-6" style={{ borderTop: "1px solid #e5e3da" }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs mb-4" style={{ backgroundColor: "#f8f7f4" }}>
+                  Market Conditions • {result.city}, {result.state}
                 </div>
-                <div>
-                  <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{result.occupancy}%</p>
-                  <p className="text-xs" style={{ color: "#787060" }}>Occupancy Rate</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.revPAN)}</p>
-                  <p className="text-xs" style={{ color: "#787060" }}>RevPAN</p>
+                <div className="grid grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.adr)}</p>
+                    <p className="text-xs" style={{ color: "#787060" }}>Avg Nightly Rate</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{result.occupancy}%</p>
+                    <p className="text-xs" style={{ color: "#787060" }}>Occupancy Rate</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.revPAN)}</p>
+                    <p className="text-xs" style={{ color: "#787060" }}>RevPAN</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Property & Location Details */}
+            {/* Property & Investment Details */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Property Details */}
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
@@ -331,7 +508,7 @@ export default function CalculatorPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm" style={{ color: "#787060" }}>Address</span>
-                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.address.split(",")[0]}</span>
+                    <span className="text-sm font-medium text-right" style={{ color: "#2b2823", maxWidth: "60%" }}>{result.address.split(",")[0]}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm" style={{ color: "#787060" }}>Location</span>
@@ -351,6 +528,12 @@ export default function CalculatorPage() {
                       <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.sqft.toLocaleString()}</span>
                     </div>
                   )}
+                  {result.listPrice > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>List/Sale Price</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{formatCurrency(result.listPrice)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -360,7 +543,7 @@ export default function CalculatorPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm" style={{ color: "#787060" }}>Monthly Revenue (STR)</span>
-                    <span className="text-sm font-medium" style={{ color: "#22c55e" }}>{formatCurrency(result.monthlyRevenue)}</span>
+                    <span className="text-sm font-medium" style={{ color: "#22c55e" }}>{formatCurrency(useCustomIncome && customAnnualIncome ? getDisplayRevenue() / 12 : result.monthlyRevenue)}</span>
                   </div>
                   {result.traditionalRent > 0 && (
                     <div className="flex justify-between">
@@ -371,7 +554,7 @@ export default function CalculatorPage() {
                   {result.strCapRate > 0 && (
                     <div className="flex justify-between">
                       <span className="text-sm" style={{ color: "#787060" }}>STR Cap Rate</span>
-                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.strCapRate.toFixed(1)}%</span>
+                      <span className="text-sm font-medium" style={{ color: "#22c55e" }}>{result.strCapRate.toFixed(1)}%</span>
                     </div>
                   )}
                   {result.ltrCapRate > 0 && (
@@ -383,29 +566,56 @@ export default function CalculatorPage() {
                   {result.mashMeter > 0 && (
                     <div className="flex justify-between">
                       <span className="text-sm" style={{ color: "#787060" }}>Mash Meter Score</span>
-                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.mashMeter}/100</span>
+                      <span className="text-sm font-medium" style={{ color: result.mashMeter >= 70 ? "#22c55e" : result.mashMeter >= 50 ? "#f59e0b" : "#ef4444" }}>{result.mashMeter}/100</span>
                     </div>
                   )}
-                  {result.walkScore > 0 && (
+                  {result.nearbyListings > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-sm" style={{ color: "#787060" }}>Walk Score</span>
-                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.walkScore}/100</span>
+                      <span className="text-sm" style={{ color: "#787060" }}>Active Listings</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.nearbyListings}</span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
+            {/* Location Scores */}
+            {(result.walkScore > 0 || result.transitScore > 0 || result.bikeScore > 0) && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-sm font-semibold mb-4" style={{ color: "#2b2823" }}>Location Scores</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {result.walkScore > 0 && (
+                    <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f8f7f4" }}>
+                      <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{result.walkScore}</p>
+                      <p className="text-xs" style={{ color: "#787060" }}>Walk Score</p>
+                    </div>
+                  )}
+                  {result.transitScore > 0 && (
+                    <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f8f7f4" }}>
+                      <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{result.transitScore}</p>
+                      <p className="text-xs" style={{ color: "#787060" }}>Transit Score</p>
+                    </div>
+                  )}
+                  {result.bikeScore > 0 && (
+                    <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f8f7f4" }}>
+                      <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{result.bikeScore}</p>
+                      <p className="text-xs" style={{ color: "#787060" }}>Bike Score</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Monthly Revenue Breakdown */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-sm font-semibold mb-4" style={{ color: "#2b2823" }}>Monthly Revenue Breakdown</h3>
               <div className="grid grid-cols-12 gap-2">
                 {Array.from({ length: 12 }, (_, i) => {
-                  // Simulate seasonality
                   const month = new Date(2024, i).toLocaleString("default", { month: "short" });
                   const seasonMultiplier = [0.7, 0.75, 0.9, 1.0, 1.1, 1.2, 1.3, 1.25, 1.0, 0.85, 0.75, 0.8][i];
-                  const monthRevenue = Math.round(result.monthlyRevenue * seasonMultiplier);
-                  const maxRevenue = Math.round(result.monthlyRevenue * 1.3);
+                  const baseMonthly = useCustomIncome && customAnnualIncome ? getDisplayRevenue() / 12 : result.monthlyRevenue;
+                  const monthRevenue = Math.round(baseMonthly * seasonMultiplier);
+                  const maxRevenue = Math.round(baseMonthly * 1.3);
                   const heightPct = (monthRevenue / maxRevenue) * 100;
 
                   return (
@@ -425,24 +635,47 @@ export default function CalculatorPage() {
                 })}
               </div>
               <div className="mt-4 flex justify-between text-xs" style={{ color: "#787060" }}>
-                <span>Low Season: ~{formatCurrency(Math.round(result.monthlyRevenue * 0.7))}/mo</span>
-                <span>High Season: ~{formatCurrency(Math.round(result.monthlyRevenue * 1.3))}/mo</span>
+                <span>Low Season: ~{formatCurrency(Math.round((useCustomIncome && customAnnualIncome ? getDisplayRevenue() / 12 : result.monthlyRevenue) * 0.7))}/mo</span>
+                <span>High Season: ~{formatCurrency(Math.round((useCustomIncome && customAnnualIncome ? getDisplayRevenue() / 12 : result.monthlyRevenue) * 1.3))}/mo</span>
               </div>
             </div>
 
-            {/* CTA */}
-            <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: "#2b2823" }}>
-              <p className="text-white font-semibold mb-2">Want a detailed investment analysis?</p>
-              <p className="text-white/70 text-sm mb-4">Get cash-on-cash returns, expense breakdowns, and more</p>
+            {/* Research Comps CTA */}
+            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold mb-1" style={{ color: "#2b2823" }}>Research Comparable Listings</h3>
+                  <p className="text-xs" style={{ color: "#787060" }}>See what similar properties are charging on Airbnb</p>
+                </div>
+                <a
+                  href={`https://www.airbnb.com/s/${encodeURIComponent(result.city + ", " + result.state)}/homes?adults=2&refinement_paths%5B%5D=%2Fhomes&search_type=filter_change&tab_id=home_tab&query=${encodeURIComponent(result.city + ", " + result.state)}&place_id=&date_picker_type=flexible_dates&source=structured_search_input_header&min_bedrooms=${bedrooms}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  View on Airbnb
+                </a>
+              </div>
+            </div>
+
+            {/* New Search Button */}
+            <div className="text-center">
               <button
                 onClick={() => {
-                  // Scroll to top and show full calculator
+                  setResult(null);
+                  setAddress("");
+                  setUseCustomIncome(false);
+                  setCustomAnnualIncome("");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="px-6 py-3 rounded-xl font-semibold text-sm"
-                style={{ backgroundColor: "#ffffff", color: "#2b2823" }}
+                className="px-6 py-3 rounded-xl font-medium text-sm"
+                style={{ backgroundColor: "#f8f7f4", color: "#2b2823", border: "1px solid #e5e3da" }}
               >
-                Run Full Analysis →
+                Analyze Another Address
               </button>
             </div>
           </div>
