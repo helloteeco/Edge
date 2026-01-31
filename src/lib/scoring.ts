@@ -12,7 +12,7 @@
  * 2. Affordability                  - 25 points
  * 3. STR Legality                   - 15 points
  * 4. Landlord Friendliness          - 10 points
- * 5. Saturation Risk                - 10 points
+ * 5. Market Headroom               - 10 points
  * 6. Appreciation Potential         - 5 points (lowest - we're not chasing appreciation)
  * 
  * CASH-ON-CASH RETURN CALCULATION
@@ -39,7 +39,7 @@ export interface ScoringBreakdown {
   affordability: { score: number; maxScore: 25; value: number; rating: string };
   legality: { score: number; maxScore: 15; status: string; rating: string };
   landlordFriendly: { score: number; maxScore: 10; rating: string };
-  saturation: { score: number; maxScore: 10; value: number; rating: string };
+  marketHeadroom: { score: number; maxScore: 10; value: number; rating: string };
   appreciation: { score: number; maxScore: 5; value: number; rating: string };
   totalScore: number;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
@@ -179,20 +179,21 @@ export function scoreLandlordFriendly(stateCode: string): { score: number; ratin
 }
 
 /**
- * Calculate Saturation Risk score (10 points max)
+ * Calculate Market Headroom score (10 points max)
  * Based on STR listings per 1,000 residents
+ * Higher score = more room for new STRs (less competition)
  * 
  * Scoring:
- * - < 3 listings/1000: 10 points (Low Saturation)
- * - < 6 listings/1000: 8 points (Moderate)
- * - < 10 listings/1000: 5 points (High)
- * - >= 10 listings/1000: 2 points (Very High)
+ * - < 3 listings/1000: 10 points (Excellent Headroom)
+ * - < 6 listings/1000: 8 points (Good Headroom)
+ * - < 10 listings/1000: 5 points (Limited Headroom)
+ * - >= 10 listings/1000: 2 points (Crowded Market)
  */
-export function scoreSaturation(listingsPerThousand: number): { score: number; rating: string } {
-  if (listingsPerThousand < 3) return { score: 10, rating: 'Low Saturation' };
-  if (listingsPerThousand < 6) return { score: 8, rating: 'Moderate Saturation' };
-  if (listingsPerThousand < 10) return { score: 5, rating: 'High Saturation' };
-  return { score: 2, rating: 'Very High Saturation' };
+export function scoreMarketHeadroom(listingsPerThousand: number): { score: number; rating: string } {
+  if (listingsPerThousand < 3) return { score: 10, rating: 'Excellent Headroom' };
+  if (listingsPerThousand < 6) return { score: 8, rating: 'Good Headroom' };
+  if (listingsPerThousand < 10) return { score: 5, rating: 'Limited Headroom' };
+  return { score: 2, rating: 'Crowded Market' };
 }
 
 /**
@@ -271,7 +272,7 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   const affordability = scoreAffordability(data.medianHomePrice);
   const legality = scoreLegality(data.strStatus, data.permitRequired);
   const landlordFriendly = scoreLandlordFriendly(data.stateCode);
-  const saturation = scoreSaturation(data.listingsPerThousand);
+  const marketHeadroom = scoreMarketHeadroom(data.listingsPerThousand);
   const appreciation = scoreAppreciation(data.oneYearAppreciation);
   
   const totalScore = 
@@ -279,7 +280,7 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
     affordability.score + 
     legality.score + 
     landlordFriendly.score + 
-    saturation.score + 
+    marketHeadroom.score + 
     appreciation.score;
   
   const grade = getGrade(totalScore);
@@ -290,7 +291,7 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
     affordability: { score: affordability.score, maxScore: 25, value: data.medianHomePrice, rating: affordability.rating },
     legality: { score: legality.score, maxScore: 15, status: data.strStatus, rating: legality.rating },
     landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
-    saturation: { score: saturation.score, maxScore: 10, value: data.listingsPerThousand, rating: saturation.rating },
+    marketHeadroom: { score: marketHeadroom.score, maxScore: 10, value: data.listingsPerThousand, rating: marketHeadroom.rating },
     appreciation: { score: appreciation.score, maxScore: 5, value: data.oneYearAppreciation, rating: appreciation.rating },
     totalScore,
     grade,

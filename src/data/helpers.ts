@@ -17,14 +17,14 @@ export interface FlatCity {
   strMonthlyRevenue: number;
   medianHomeValue: number;
   regulation: string;
-  saturation: number;
+  marketHeadroom: number;
   listingsPerThousand: number;
   scores: {
     demand: number;
     affordability: number;
     regulation: number;
     seasonality: number;
-    saturation: number;
+    marketHeadroom: number;
   };
   incomeBySize: Record<string, number>;
   amenityDelta: Array<{ name: string; boost: number; priority: string }>;
@@ -101,14 +101,14 @@ export function getAllCities(): FlatCity[] {
         strMonthlyRevenue: city.rental.monthlyRevenue,
         medianHomeValue: city.rental.medianHomePrice,
         regulation: city.strStatus === "legal" ? "Legal" : "Restricted",
-        saturation: 100 - city.marketScore.saturation,
+        marketHeadroom: scoring.marketHeadroom.score, // Use new scoring (10 = excellent, 2 = crowded)
         listingsPerThousand: city.saturationRisk.listingsPerThousand,
         scores: {
           demand: city.marketScore.demand,
           affordability: city.marketScore.affordability,
           regulation: city.marketScore.regulation,
           seasonality: city.marketScore.seasonality,
-          saturation: city.marketScore.saturation,
+          marketHeadroom: scoring.marketHeadroom.score,
         },
         incomeBySize: {
           "1BR": city.incomeBySize.oneBR,

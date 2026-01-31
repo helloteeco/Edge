@@ -261,20 +261,20 @@ export default function AddressCalculatorPage() {
                     </div>
                   </div>
 
-                  {/* Saturation */}
+                  {/* Market Headroom */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                         <span className="text-sm">📊</span>
                       </div>
                       <div>
-                        <div className="font-medium text-slate-900">Saturation Risk</div>
-                        <div className="text-xs text-slate-500">{result.scoring.saturation.rating}</div>
+                        <div className="font-medium text-slate-900">Market Headroom</div>
+                        <div className="text-xs text-slate-500">{result.scoring.marketHeadroom.rating}</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-slate-900">{result.scoring.saturation.score}/{result.scoring.saturation.maxScore}</div>
-                      <div className="text-xs text-slate-500">{result.scoring.saturation.value.toFixed(1)} listings/1K</div>
+                      <div className="font-semibold text-slate-900">{result.scoring.marketHeadroom.score}/{result.scoring.marketHeadroom.maxScore}</div>
+                      <div className="text-xs text-slate-500">{result.scoring.marketHeadroom.value.toFixed(1)} listings/1K</div>
                     </div>
                   </div>
 
@@ -351,7 +351,7 @@ export default function AddressCalculatorPage() {
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Enter an Address</h3>
             <p className="text-slate-500 text-sm max-w-md mx-auto">
               Paste any US property address above to instantly see STR investment metrics, 
-              including cash-on-cash return, affordability score, and market saturation.
+              including cash-on-cash return, affordability score, and market headroom.
             </p>
           </div>
         )}
@@ -381,7 +381,7 @@ export default function AddressCalculatorPage() {
               <span className="font-semibold text-slate-900">10 points</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-slate-100">
-              <span className="text-slate-700">📊 Saturation Risk</span>
+              <span className="text-slate-700">📊 Market Headroom</span>
               <span className="font-semibold text-slate-900">10 points</span>
             </div>
             <div className="flex items-center justify-between py-2">

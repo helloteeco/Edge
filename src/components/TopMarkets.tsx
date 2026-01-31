@@ -101,7 +101,7 @@ export function TopMarkets() {
           <div>🏠 Affordability: 25pts</div>
           <div>⚖️ STR Legality: 15pts</div>
           <div>🤝 Landlord Friendly: 10pts</div>
-          <div>📊 Low Saturation: 10pts</div>
+          <div>📊 Market Headroom: 10pts</div>
           <div>📈 Appreciation: 5pts</div>
         </div>
       </div>

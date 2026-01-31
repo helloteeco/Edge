@@ -214,17 +214,17 @@ export default function CityPage({ params }: { params: { id: string } }) {
                 <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.landlordFriendly.score}/10</span>
               </div>
               
-              {/* Saturation */}
+              {/* Market Headroom */}
               <div className="flex items-center gap-3">
                 <span className="text-sm">📊</span>
-                <span className="text-sm text-slate-600 w-32">Low Saturation</span>
+                <span className="text-sm text-slate-600 w-32">Market Headroom</span>
                 <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-red-400 rounded-full"
-                    style={{ width: `${(city.scoring.saturation.score / 10) * 100}%` }}
+                    className="h-full bg-emerald-400 rounded-full"
+                    style={{ width: `${(city.scoring.marketHeadroom.score / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.saturation.score}/10</span>
+                <span className="text-sm font-semibold text-slate-700 w-12 text-right">{city.scoring.marketHeadroom.score}/10</span>
               </div>
               
               {/* Appreciation */}
@@ -255,9 +255,9 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-xs text-slate-400">{city.scoring.affordability.rating}</div>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-slate-500">Saturation</div>
-              <div className="font-semibold text-slate-900">{city.listingsPerThousand.toFixed(1)}/1K</div>
-              <div className="text-xs text-slate-400">{city.scoring.saturation.rating}</div>
+              <div className="text-slate-500">Headroom</div>
+              <div className="font-semibold text-slate-900">{city.scoring.marketHeadroom.score}/10</div>
+              <div className="text-xs text-slate-400">{city.scoring.marketHeadroom.rating}</div>
             </div>
           </div>
         </div>

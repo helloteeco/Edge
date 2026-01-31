@@ -33,10 +33,10 @@ export default function SearchPage() {
       cityResults = cityResults.filter(c => c.marketScore >= 70);
       stateResults = stateResults.filter(s => s.marketScore >= 70);
     } else if (filter === "recommended") {
-      // High Cash-on-Cash + Low saturation + Legal
+      // High Cash-on-Cash + Good market headroom + Legal
       cityResults = cityResults.filter(c => 
         c.marketScore >= 65 && 
-        c.saturation < 50 && 
+        c.marketHeadroom >= 8 && 
         c.regulation === "Legal"
       );
       stateResults = [];
