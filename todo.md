@@ -108,3 +108,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix map filter button active state styling (consistent Teeco brand)
 - [x] Update chat button styling (changed to mocha #787060)
 - [x] Remove emoji icons from search filter buttons (clean text-only labels)
+
+
+# Comparable Airbnb Listings Feature (January 2026)
+
+## Feature: View Comparable Listings
+- [ ] Add "View Comparable Listings on Airbnb" button to city detail pages
+- [ ] Add "View Comparable Listings on Airbnb" button to address calculator results
+- [ ] Link opens Airbnb search for that city/location
+- [ ] Clean button styling consistent with Teeco brand

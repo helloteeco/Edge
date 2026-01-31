@@ -412,6 +412,54 @@ export default function AddressCalculatorPage() {
               </div>
             </div>
 
+            {/* View Comparable Listings */}
+            <div 
+              className="rounded-2xl p-5"
+              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: '#e5e3da' }}
+                >
+                  <svg className="w-5 h-5" style={{ color: '#2b2823' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 
+                    className="font-semibold"
+                    style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
+                    Research Comparable Listings
+                  </h3>
+                  <p className="text-sm" style={{ color: '#787060' }}>See active Airbnb rentals in this market</p>
+                </div>
+              </div>
+              <a
+                href={`https://www.airbnb.com/s/${encodeURIComponent(result.name + ', ' + result.stateCode)}/homes`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+                style={{ 
+                  backgroundColor: '#FF5A5F',
+                  color: '#ffffff',
+                  boxShadow: '0 2px 8px -2px rgba(255, 90, 95, 0.3)'
+                }}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12.001 18.275c-1.353-1.697-2.797-3.46-3.592-5.075-.795-1.614-1.022-3.015-.534-4.157.487-1.142 1.538-1.9 2.85-2.122 1.312-.222 2.83.113 4.276 1.075 1.446.962 2.82 2.55 3.592 4.165.773 1.614 1 3.015.513 4.157-.488 1.142-1.539 1.9-2.851 2.122-1.312.222-2.83-.113-4.276-1.075l.022-.09zm-.022.09c-1.446-.962-2.82-2.55-3.592-4.165" />
+                </svg>
+                View Listings on Airbnb
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+              <p className="text-xs text-center mt-3" style={{ color: '#787060' }}>
+                Opens Airbnb.com in a new tab to view real listings and pricing
+              </p>
+            </div>
+
             {/* View Full Analysis */}
             <Link
               href={`/city/${result.id}`}
