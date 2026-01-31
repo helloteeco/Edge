@@ -1,1340 +1,477 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { lookupAddress, FlatCity, StateBenchmark } from "@/data/helpers";
-import {
-  calculateDeal,
-  DealInputs,
-  DealOutput,
-  DEFAULT_FINANCING,
-  DEFAULT_STARTUP,
-  DEFAULT_EXPENSES,
-  LTRComparison,
-  StartupCosts,
-  DetailedExpenses,
-  estimateFurnishings,
-  estimateLTRRent,
-  getBedroomMultiplier,
-} from "@/lib/deal-calculator";
 
 // ============================================================================
-// SIMPLIFIED STATE - Removed confusing sliders
+// TYPES
 // ============================================================================
 
-interface PropertySuggestion {
-  address: { street: string; city: string; state: string; zipCode: string };
-  propertyId?: string;
-  propertyType?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  nightPrice?: number;
-  occupancy?: number;
-  monthlyRevenue?: number;
-  image?: string;
-  neighborhood?: string;
+interface RecentSearch {
+  address: string;
+  annualRevenue: number;
+  adr: number;
+  occupancy: number;
+  timestamp: number;
 }
 
-interface CalculatorState {
-  // Address
+interface AnalysisResult {
   address: string;
-  lookupResult: 'idle' | 'loading' | 'city' | 'state_fallback' | 'not_found';
-  cityData: FlatCity | null;
-  stateBenchmark: StateBenchmark | null;
-  parsedCity: string;
-  parsedState: string;
-  
-  // Property Profile (user enters these)
+  city: string;
+  state: string;
+  neighborhood: string;
+  // Revenue Projection
+  annualRevenue: number;
+  monthlyRevenue: number;
+  // Market Conditions
+  adr: number;
+  occupancy: number;
+  revPAN: number; // Revenue per Available Night
+  // Property Details
   bedrooms: number;
   bathrooms: number;
-  propertyType: 'house' | 'condo' | 'cabin' | 'apartment' | 'townhouse';
-  purchasePrice: number;
-  squareFeet: number;
-  
-  // Market Data (auto-filled, hidden from user)
-  marketADR: number;
-  marketOccupancy: number;
-  
-  // Financing
-  downPaymentPct: number;
-  interestRate: number;
-  loanTermYears: number;
-  closingCostsPct: number;
-  
-  // Startup Costs
-  renoRehab: number;
-  furnishings: number;
-  amenities: number;
-  holdingCosts: number;
-  legal: number;
-  
-  // Operating Expenses
-  electric: number;
-  water: number;
-  gas: number;
-  trash: number;
-  internet: number;
-  propertyTaxAnnual: number;
-  insuranceAnnual: number;
-  lawnCare: number;
-  houseSupplies: number;
-  pestControl: number;
-  rentalSoftware: number;
-  businessLicense: number;
-  managementPct: number;
-  cleaningPerStay: number;
-  capexReservePct: number;
-  otaFeesPct: number;
-  
-  // LTR Comparison
-  showLtrComparison: boolean;
-  ltrMonthlyRent: number;
-  ltrVacancyPct: number;
-  ltrRepairsPct: number;
-  ltrManagementPct: number;
-  ltrUtilities: number;
-  
-  // UI State
-  showStartupCosts: boolean;
-  showDetailedExpenses: boolean;
-  showMethodology: boolean;
-  
-  // Autocomplete - now using Mashvisor property data
-  suggestions: PropertySuggestion[];
-  showSuggestions: boolean;
-  totalPropertiesInArea: number;
-  searchCity: string;
-  searchState: string;
-  
-  // Mashvisor Data
-  mashvisorData: {
-    neighborhood: {
-      name: string;
-      occupancy: number;
-      adr: number;
-      monthlyRevenue: number;
-      traditionalRent: number;
-      strCapRate: number;
-      ltrCapRate: number;
-      listingsCount: number;
-      mashMeter: number;
-      walkScore: number;
-    } | null;
-    dataSource: 'mashvisor' | 'local' | null;
-  } | null;
+  sqft: number;
+  propertyType: string;
+  // Nearby Comps
+  nearbyListings: number;
+  // Additional Metrics
+  strCapRate: number;
+  ltrCapRate: number;
+  traditionalRent: number;
+  mashMeter: number;
+  walkScore: number;
 }
-
-const initialState: CalculatorState = {
-  address: '',
-  lookupResult: 'idle',
-  cityData: null,
-  stateBenchmark: null,
-  parsedCity: '',
-  parsedState: '',
-  bedrooms: 3,
-  bathrooms: 2,
-  propertyType: 'house',
-  purchasePrice: 250000,
-  squareFeet: 1500,
-  marketADR: 150,
-  marketOccupancy: 60,
-  downPaymentPct: 25,
-  interestRate: 7.0,
-  loanTermYears: 30,
-  closingCostsPct: 3,
-  // Startup Costs
-  renoRehab: 15000,
-  furnishings: 0,
-  amenities: 5000,
-  holdingCosts: 3000,
-  legal: 1000,
-  // Operating Expenses
-  electric: 100,
-  water: 60,
-  gas: 30,
-  trash: 25,
-  internet: 60,
-  propertyTaxAnnual: 0,
-  insuranceAnnual: 2000,
-  lawnCare: 50,
-  houseSupplies: 50,
-  pestControl: 40,
-  rentalSoftware: 20,
-  businessLicense: 100,
-  managementPct: 0,
-  cleaningPerStay: 150,
-  capexReservePct: 5,
-  otaFeesPct: 3,
-  // LTR
-  showLtrComparison: false,
-  ltrMonthlyRent: 1500,
-  ltrVacancyPct: 5,
-  ltrRepairsPct: 5,
-  ltrManagementPct: 8,
-  ltrUtilities: 0,
-  // UI
-  showStartupCosts: false,
-  showDetailedExpenses: false,
-  showMethodology: false,
-  // Autocomplete
-  suggestions: [],
-  showSuggestions: false,
-  totalPropertiesInArea: 0,
-  searchCity: '',
-  searchState: '',
-  // Mashvisor
-  mashvisorData: null,
-};
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
-export default function DealCalculatorPage() {
-  const [state, setState] = useState<CalculatorState>(initialState);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Fetch property suggestions from Mashvisor
-  const fetchSuggestions = async (query: string) => {
-    if (query.length < 3) {
-      setState(s => ({ ...s, suggestions: [], showSuggestions: false }));
-      return;
+export default function CalculatorPage() {
+  const [address, setAddress] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [bedrooms, setBedrooms] = useState(3);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("edge_recent_searches");
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse recent searches:", e);
+      }
     }
-    
+  }, []);
+
+  // Save recent search
+  const saveRecentSearch = (search: RecentSearch) => {
+    const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
+  };
+
+  // Analyze address
+  const handleAnalyze = async (searchAddress?: string) => {
+    const addressToAnalyze = searchAddress || address;
+    if (!addressToAnalyze.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+    setResult(null);
+
     try {
-      const response = await fetch(`/api/property-search?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
-      setState(s => ({
-        ...s,
-        suggestions: data.suggestions || [],
-        showSuggestions: (data.suggestions?.length || 0) > 0,
-        totalPropertiesInArea: data.totalProperties || 0,
-        searchCity: data.city || '',
-        searchState: data.state || '',
-      }));
-    } catch (error) {
-      console.error('Autocomplete error:', error);
-    }
-  };
-  
-  // Handle address input change with debounce
-  const handleAddressChange = (value: string) => {
-    setState(s => ({ ...s, address: value }));
-    
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    
-    debounceRef.current = setTimeout(() => {
-      fetchSuggestions(value);
-    }, 300);
-  };
-  
-  // Handle suggestion selection - auto-fill with Mashvisor property data
-  const handleSelectSuggestion = (suggestion: PropertySuggestion) => {
-    const { street, city, state: stateCode, zipCode } = suggestion.address;
-    const fullAddress = `${street}, ${city}, ${stateCode} ${zipCode}`;
-    setState(s => ({
-      ...s,
-      address: fullAddress,
-      suggestions: [],
-      showSuggestions: false,
-      // Auto-fill from Mashvisor data
-      bedrooms: suggestion.bedrooms || s.bedrooms,
-      bathrooms: suggestion.bathrooms || s.bathrooms,
-      marketADR: suggestion.nightPrice || s.marketADR,
-      marketOccupancy: suggestion.occupancy || s.marketOccupancy,
-      parsedCity: city,
-      parsedState: stateCode,
-    }));
-  };
-  
-  // Auto-calculate values
-  const autoFurnishings = estimateFurnishings(state.squareFeet);
-  const autoPropertyTax = Math.round(state.purchasePrice * 0.015);
-  
-  // Calculate ADR adjusted for bedrooms
-  const bedroomMultiplier = getBedroomMultiplier(state.bedrooms);
-  const adjustedADR = Math.round(state.marketADR * bedroomMultiplier);
-  
-  // Calculate annual revenue estimate
-  const estimatedAnnualRevenue = Math.round(adjustedADR * (state.marketOccupancy / 100) * 365);
-  const revenueRangeLow = Math.round(estimatedAnnualRevenue * 0.75);
-  const revenueRangeHigh = Math.round(estimatedAnnualRevenue * 1.25);
-  
-  // Calculate deal output
-  const dealOutput = useMemo<DealOutput | null>(() => {
-    if (state.lookupResult === 'idle' || state.lookupResult === 'loading') {
-      return null;
-    }
-    
-    const startup: StartupCosts = {
-      renoRehab: state.renoRehab,
-      furnishings: state.furnishings > 0 ? state.furnishings : autoFurnishings,
-      amenities: state.amenities,
-      holdingCosts: state.holdingCosts,
-      legal: state.legal,
-    };
-    
-    const expenses: DetailedExpenses = {
-      electric: state.electric,
-      water: state.water,
-      gas: state.gas,
-      trash: state.trash,
-      internet: state.internet,
-      propertyTaxAnnual: state.propertyTaxAnnual > 0 ? state.propertyTaxAnnual : autoPropertyTax,
-      insuranceAnnual: state.insuranceAnnual,
-      lawnCare: state.lawnCare,
-      houseSupplies: state.houseSupplies,
-      pestControl: state.pestControl,
-      rentalSoftware: state.rentalSoftware,
-      businessLicense: state.businessLicense,
-      managementPct: state.managementPct,
-      cleaningPerStay: state.cleaningPerStay,
-      capexReservePct: state.capexReservePct,
-      otaFeesPct: state.otaFeesPct,
-    };
-    
-    // Build ranges based on market data
-    const adrBase = adjustedADR;
-    const occBase = state.marketOccupancy;
-    
-    const inputs: DealInputs = {
-      property: {
-        bedrooms: state.bedrooms,
-        bathrooms: state.bathrooms,
-        propertyType: state.propertyType,
-        purchasePrice: state.purchasePrice,
-        squareFeet: state.squareFeet,
-      },
-      benchmark: {
-        adr: {
-          low: Math.round(adrBase * 0.85),
-          base: adrBase,
-          high: Math.round(adrBase * 1.15),
-        },
-        occupancy: {
-          low: Math.max(35, occBase - 12),
-          base: occBase,
-          high: Math.min(85, occBase + 10),
-        },
-        source: state.lookupResult === 'city' ? 'city_data' : 
-                state.lookupResult === 'state_fallback' ? 'state_fallback' : 'user_estimate',
-        marketName: state.cityData?.name || state.stateBenchmark?.stateName || 'Unknown',
-        sampleSize: state.lookupResult === 'city' ? 50 : 20,
-      },
-      financing: {
-        downPaymentPct: state.downPaymentPct,
-        interestRate: state.interestRate,
-        loanTermYears: state.loanTermYears,
-        closingCostsPct: state.closingCostsPct,
-      },
-      startup,
-      expenses,
-      seasonality: { type: 'year_round' },
-      adrAdjustment: 0,
-      occupancyAdjustment: 0,
-      avgStayLength: 3,
-    };
-    
-    const ltr: LTRComparison | undefined = state.showLtrComparison ? {
-      monthlyRent: state.ltrMonthlyRent,
-      vacancyPct: state.ltrVacancyPct,
-      repairsPct: state.ltrRepairsPct,
-      managementPct: state.ltrManagementPct,
-      utilitiesMonthly: state.ltrUtilities,
-    } : undefined;
-    
-    return calculateDeal(inputs, ltr);
-  }, [state, adjustedADR, autoFurnishings, autoPropertyTax]);
-  
-  // Handle address lookup - tries Mashvisor API first, falls back to local data
-  const handleAnalyze = async () => {
-    if (!state.address.trim()) return;
-    
-    setState(s => ({ ...s, lookupResult: 'loading', showSuggestions: false }));
-    
-    try {
-      // Try Mashvisor API first
-      const response = await fetch('/api/mashvisor/property', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: state.address }),
+      const response = await fetch("/api/mashvisor/property", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: addressToAnalyze }),
       });
-      
+
       const data = await response.json();
-      
-      if (data.success && data.neighborhood) {
-        // Mashvisor data found!
-        const nb = data.neighborhood;
-        const prop = data.property;
-        setState(s => ({
-          ...s,
-          lookupResult: 'city',
-          cityData: null,
-          stateBenchmark: null,
-          parsedCity: prop.city || '',
-          parsedState: prop.state || '',
-          purchasePrice: prop.listPrice || prop.lastSalePrice || s.purchasePrice,
-          marketADR: nb.adr || 150,
-          marketOccupancy: nb.occupancy || 60,
-          bedrooms: prop.bedrooms || s.bedrooms,
-          bathrooms: prop.bathrooms || s.bathrooms,
-          squareFeet: prop.sqft || s.squareFeet,
-          ltrMonthlyRent: nb.traditionalRent || Math.round((prop.listPrice || 250000) * 0.006),
-          propertyTaxAnnual: Math.round((prop.listPrice || 250000) * 0.015),
-          mashvisorData: {
-            neighborhood: {
-              name: nb.name,
-              occupancy: nb.occupancy,
-              adr: nb.adr,
-              monthlyRevenue: nb.monthlyRevenue,
-              traditionalRent: nb.traditionalRent,
-              strCapRate: nb.strCapRate,
-              ltrCapRate: nb.ltrCapRate,
-              listingsCount: nb.listingsCount,
-              mashMeter: nb.mashMeter,
-              walkScore: nb.walkScore,
-            },
-            dataSource: 'mashvisor',
-          },
-        }));
+
+      if (!data.success) {
+        setError(data.error || "Could not find data for this address. Try a different address.");
+        setIsLoading(false);
         return;
       }
-    } catch (error) {
-      console.error('Mashvisor API error:', error);
+
+      const { property, neighborhood } = data;
+
+      // Calculate revenue based on bedroom count
+      const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : 1.3;
+      const adjustedADR = Math.round((neighborhood?.adr || 150) * bedroomMultiplier);
+      const occ = neighborhood?.occupancy || 55;
+      const annualRevenue = Math.round(adjustedADR * (occ / 100) * 365);
+      const monthlyRevenue = Math.round(annualRevenue / 12);
+      const revPAN = Math.round(adjustedADR * (occ / 100));
+
+      const analysisResult: AnalysisResult = {
+        address: addressToAnalyze,
+        city: property?.city || "",
+        state: property?.state || "",
+        neighborhood: neighborhood?.name || "Unknown",
+        annualRevenue,
+        monthlyRevenue,
+        adr: adjustedADR,
+        occupancy: occ,
+        revPAN,
+        bedrooms: property?.bedrooms || bedrooms,
+        bathrooms: property?.bathrooms || 2,
+        sqft: property?.sqft || 0,
+        propertyType: property?.propertyType || "house",
+        nearbyListings: neighborhood?.listingsCount || 0,
+        strCapRate: neighborhood?.strCapRate || 0,
+        ltrCapRate: neighborhood?.ltrCapRate || 0,
+        traditionalRent: neighborhood?.traditionalRent || 0,
+        mashMeter: neighborhood?.mashMeter || 0,
+        walkScore: neighborhood?.walkScore || 0,
+      };
+
+      setResult(analysisResult);
+      setAddress(addressToAnalyze);
+
+      // Save to recent searches
+      saveRecentSearch({
+        address: addressToAnalyze,
+        annualRevenue,
+        adr: adjustedADR,
+        occupancy: occ,
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.error("Analysis error:", err);
+      setError("Failed to analyze address. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Fall back to local data
-    const result = lookupAddress(state.address);
-    
-    if (result.type === 'city' && result.city) {
-      const city = result.city;
-      setState(s => ({
-        ...s,
-        lookupResult: 'city',
-        cityData: city,
-        stateBenchmark: null,
-        parsedCity: city.name,
-        parsedState: city.stateCode,
-        purchasePrice: city.medianHomeValue,
-        marketADR: city.avgADR,
-        marketOccupancy: city.occupancy,
-        ltrMonthlyRent: estimateLTRRent(city.strMonthlyRevenue),
-        propertyTaxAnnual: Math.round(city.medianHomeValue * 0.015),
-        mashvisorData: { neighborhood: null, dataSource: 'local' },
-      }));
-    } else if (result.type === 'state_fallback' && result.stateBenchmark) {
-      const benchmark = result.stateBenchmark;
-      setState(s => ({
-        ...s,
-        lookupResult: 'state_fallback',
-        cityData: null,
-        stateBenchmark: benchmark,
-        parsedCity: result.parsedAddress?.city || '',
-        parsedState: benchmark.stateCode,
-        purchasePrice: benchmark.medianHomePrice,
-        marketADR: benchmark.adr.base,
-        marketOccupancy: benchmark.occupancy.base,
-        ltrMonthlyRent: Math.round(benchmark.medianHomePrice * 0.006),
-        propertyTaxAnnual: Math.round(benchmark.medianHomePrice * 0.015),
-        mashvisorData: { neighborhood: null, dataSource: 'local' },
-      }));
-    } else {
-      setState(s => ({
-        ...s,
-        lookupResult: 'not_found',
-        cityData: null,
-        stateBenchmark: null,
-        parsedCity: result.parsedAddress?.city || '',
-        parsedState: result.parsedAddress?.state || '',
-        mashvisorData: null,
-      }));
-    }
   };
-  
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleAnalyze();
-  };
-  
-  const updateState = (updates: Partial<CalculatorState>) => {
-    setState(s => ({ ...s, ...updates }));
-  };
-  
+
+  // Format currency
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       maximumFractionDigits: 0,
     }).format(value);
   };
-  
-  // Build Airbnb search URL
-  const airbnbSearchUrl = state.parsedCity && state.parsedState
-    ? `https://www.airbnb.com/s/${encodeURIComponent(state.parsedCity)}--${encodeURIComponent(state.parsedState)}/homes`
-    : 'https://www.airbnb.com';
-  
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
+    <div className="min-h-screen" style={{ backgroundColor: "#f5f4f0" }}>
       {/* Header */}
-      <div className="px-4 pt-4 pb-6" style={{ backgroundColor: '#2b2823' }}>
-        <Link href="/" className="inline-flex items-center gap-1 text-sm mb-4" style={{ color: '#9a9488' }}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Map
-        </Link>
-        <h1 className="text-2xl font-bold" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-          Deal Calculator
-        </h1>
-        <p className="text-sm mt-1" style={{ color: '#9a9488' }}>
-          Analyze any property&apos;s STR investment potential
-        </p>
-      </div>
-      
-      <div className="px-4 py-6 space-y-4 max-w-lg mx-auto">
-        
-        {/* ================================================================ */}
-        {/* MODULE 1: ADDRESS INPUT */}
-        {/* ================================================================ */}
-        <div 
-          className="rounded-2xl p-5"
-          style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-        >
-          <h2 className="font-semibold mb-3" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-            Property Address
-          </h2>
-          
-          <div className="relative">
-            <div className="flex gap-2">
+      <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#787060" }}>
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <span className="text-white font-semibold">Edge by Teeco</span>
+          </Link>
+          <Link href="/" className="text-sm text-white/70 hover:text-white">
+            ← Back to Map
+          </Link>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="text-center mb-8">
+          <p className="text-sm font-medium mb-2" style={{ color: "#787060" }}>STR Revenue Calculator</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
+            Estimate Airbnb rental revenue for<br />any address in the United States
+          </h1>
+          <p className="text-sm" style={{ color: "#787060" }}>
+            Powered by Mashvisor • Real-time market data
+          </p>
+        </div>
+
+        {/* Search Box */}
+        <div className="rounded-2xl p-6 mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                <svg className="w-5 h-5" style={{ color: "#787060" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
               <input
                 type="text"
-                placeholder="Start typing an address..."
-                value={state.address}
-                onChange={(e) => handleAddressChange(e.target.value)}
-                onKeyPress={handleKeyPress}
-                onFocus={() => state.suggestions.length > 0 && setState(s => ({ ...s, showSuggestions: true }))}
-                className="flex-1 px-4 py-3 rounded-xl text-sm"
-                style={{ border: '2px solid #d8d6cd', color: '#2b2823' }}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                placeholder="Enter any US address (e.g., 123 Main St, Orlando, FL 32801)"
+                className="w-full pl-12 pr-4 py-4 rounded-xl text-base outline-none"
+                style={{ 
+                  backgroundColor: "#f8f7f4", 
+                  border: "2px solid #e5e3da",
+                  color: "#2b2823",
+                }}
               />
-              <button
-                onClick={handleAnalyze}
-                disabled={state.lookupResult === 'loading'}
-                className="px-5 py-3 rounded-xl font-semibold text-sm transition-all"
-                style={{ backgroundColor: '#787060', color: '#ffffff' }}
-              >
-                {state.lookupResult === 'loading' ? '...' : 'Analyze'}
-              </button>
             </div>
-            
-            {/* Autocomplete Suggestions - Mashvisor Properties */}
-            {state.showSuggestions && state.suggestions.length > 0 && (
-              <div 
-                className="absolute left-0 right-0 mt-1 rounded-xl overflow-hidden z-50"
-                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-              >
-                {state.totalPropertiesInArea > 0 && (
-                  <div className="px-4 py-2 text-xs font-medium" style={{ backgroundColor: '#f8f7f4', color: '#787060', borderBottom: '1px solid #e5e3da' }}>
-                    {state.totalPropertiesInArea.toLocaleString()} active STR listings in {state.searchCity}, {state.searchState}
-                  </div>
-                )}
-                {state.suggestions.map((suggestion, index) => (
+            <button
+              onClick={() => handleAnalyze()}
+              disabled={isLoading || !address.trim()}
+              className="px-6 py-4 rounded-xl font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: "#2b2823" }}
+            >
+              {isLoading ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Bedroom Selector */}
+          <div className="mt-4 flex items-center gap-3">
+            <span className="text-sm" style={{ color: "#787060" }}>Bedrooms:</span>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setBedrooms(num)}
+                  className="w-10 h-10 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: bedrooms === num ? "#2b2823" : "#f8f7f4",
+                    color: bedrooms === num ? "#ffffff" : "#2b2823",
+                    border: bedrooms === num ? "none" : "1px solid #e5e3da",
+                  }}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && !result && (
+            <div className="mt-6 pt-6" style={{ borderTop: "1px solid #e5e3da" }}>
+              <p className="text-sm font-semibold mb-3" style={{ color: "#2b2823" }}>Recent Searches</p>
+              <div className="space-y-2">
+                {recentSearches.map((search, index) => (
                   <button
                     key={index}
-                    onClick={() => handleSelectSuggestion(suggestion)}
-                    className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors flex gap-3"
-                    style={{ color: '#2b2823', borderBottom: index < state.suggestions.length - 1 ? '1px solid #e5e3da' : 'none' }}
+                    onClick={() => {
+                      setAddress(search.address);
+                      handleAnalyze(search.address);
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex justify-between items-center"
+                    style={{ backgroundColor: "#f8f7f4" }}
                   >
-                    {suggestion.image && (
-                      <img 
-                        src={suggestion.image} 
-                        alt="" 
-                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{suggestion.address.street}</div>
-                      <div className="text-xs" style={{ color: '#787060' }}>
-                        {suggestion.neighborhood && `${suggestion.neighborhood} • `}
-                        {suggestion.address.city}, {suggestion.address.state}
-                      </div>
-                      {(suggestion.nightPrice || suggestion.occupancy) && (
-                        <div className="flex gap-3 mt-1 text-xs">
-                          {suggestion.nightPrice && (
-                            <span style={{ color: '#22c55e' }}>${suggestion.nightPrice}/night</span>
-                          )}
-                          {suggestion.occupancy && (
-                            <span style={{ color: '#3b82f6' }}>{suggestion.occupancy}% occ</span>
-                          )}
-                          {suggestion.bedrooms && (
-                            <span style={{ color: '#787060' }}>{suggestion.bedrooms}BR</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <span className="text-sm" style={{ color: "#2b2823" }}>{search.address}</span>
+                    <span className="text-sm font-medium" style={{ color: "#22c55e" }}>
+                      {formatCurrency(search.annualRevenue)}/yr
+                    </span>
                   </button>
                 ))}
               </div>
-            )}
-          </div>
-          
-          <p className="text-xs mt-2" style={{ color: '#787060' }}>
-            Powered by Mashvisor • Real-time STR market data
-          </p>
-          
-          {/* Status Badge */}
-          {state.lookupResult === 'city' && (
-            <div className="mt-3">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: state.mashvisorData?.dataSource === 'mashvisor' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: state.mashvisorData?.dataSource === 'mashvisor' ? '#22c55e' : '#3b82f6' }}>
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  {state.mashvisorData?.dataSource === 'mashvisor' ? 'Live Mashvisor Data' : 'Local Market Data'}
-                </span>
-                <span className="text-xs" style={{ color: '#787060' }}>{state.parsedCity}, {state.parsedState}</span>
-              </div>
-              
-              {/* Mashvisor Market Intelligence Panel */}
-              {state.mashvisorData?.neighborhood && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: '#f8f7f4', border: '1px solid #e5e3da' }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold" style={{ color: '#2b2823' }}>Market Intelligence</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
-                      {state.mashvisorData.neighborhood.name}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-xs" style={{ color: '#787060' }}>Occupancy</div>
-                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>{state.mashvisorData.neighborhood.occupancy}%</div>
-                    </div>
-                    <div>
-                      <div className="text-xs" style={{ color: '#787060' }}>Avg Nightly Rate</div>
-                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>${state.mashvisorData.neighborhood.adr}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs" style={{ color: '#787060' }}>STR Monthly Revenue</div>
-                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>${state.mashvisorData.neighborhood.monthlyRevenue?.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs" style={{ color: '#787060' }}>Active Listings</div>
-                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>{state.mashvisorData.neighborhood.listingsCount}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs" style={{ color: '#787060' }}>STR Cap Rate</div>
-                      <div className="text-lg font-bold" style={{ color: '#22c55e' }}>{state.mashvisorData.neighborhood.strCapRate}%</div>
-                    </div>
-                    <div>
-                      <div className="text-xs" style={{ color: '#787060' }}>LTR Cap Rate</div>
-                      <div className="text-lg font-bold" style={{ color: '#787060' }}>{state.mashvisorData.neighborhood.ltrCapRate}%</div>
-                    </div>
-                  </div>
-                  {state.mashvisorData.neighborhood.mashMeter && (
-                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid #e5e3da' }}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs" style={{ color: '#787060' }}>Mash Meter Score</span>
-                        <span className="text-sm font-bold" style={{ color: state.mashvisorData.neighborhood.mashMeter >= 70 ? '#22c55e' : state.mashvisorData.neighborhood.mashMeter >= 50 ? '#f59e0b' : '#ef4444' }}>
-                          {state.mashvisorData.neighborhood.mashMeter}/100
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-          
-          {state.lookupResult === 'state_fallback' && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                Using State Averages
-              </span>
-              <span className="text-xs" style={{ color: '#787060' }}>{state.parsedState}</span>
-            </div>
-          )}
-          
-          {state.lookupResult === 'not_found' && (
-            <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: '#fef2f2' }}>
-              <p className="text-xs" style={{ color: '#ef4444' }}>
-                City not in our database. Enter property details manually below.
-              </p>
             </div>
           )}
         </div>
-        
-        {/* Show rest of calculator after address lookup */}
-        {state.lookupResult !== 'idle' && state.lookupResult !== 'loading' && (
-          <>
-            {/* ================================================================ */}
-            {/* HERO: ESTIMATED ANNUAL REVENUE */}
-            {/* ================================================================ */}
-            <div 
-              className="rounded-2xl p-6 text-center"
-              style={{ backgroundColor: '#2b2823', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.2)' }}
-            >
-              <p className="text-xs font-medium mb-1" style={{ color: '#9a9488' }}>ESTIMATED ANNUAL REVENUE</p>
-              <p className="text-4xl font-bold mb-2" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                {formatCurrency(estimatedAnnualRevenue)}
-              </p>
-              <p className="text-sm" style={{ color: '#787060' }}>
-                Range: {formatCurrency(revenueRangeLow)} – {formatCurrency(revenueRangeHigh)}
-              </p>
-              
-              {/* How we calculated this */}
-              <button
-                onClick={() => updateState({ showMethodology: !state.showMethodology })}
-                className="mt-4 text-xs font-medium underline"
-                style={{ color: '#9a9488' }}
-              >
-                {state.showMethodology ? 'Hide methodology' : 'How we calculated this'}
-              </button>
-              
-              {state.showMethodology && (
-                <div className="mt-4 p-4 rounded-xl text-left" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                  <p className="text-xs mb-3" style={{ color: '#e5e3da' }}>
-                    <strong>Formula:</strong> ADR × Occupancy × 365 days
-                  </p>
-                  <div className="space-y-2 text-xs" style={{ color: '#9a9488' }}>
-                    <div className="flex justify-between">
-                      <span>Market Base ADR ({state.parsedCity || state.parsedState})</span>
-                      <span style={{ color: '#e5e3da' }}>${state.marketADR}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Bedroom Adjustment ({state.bedrooms}BR = {Math.round((bedroomMultiplier - 1) * 100)}% premium)</span>
-                      <span style={{ color: '#e5e3da' }}>×{bedroomMultiplier.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Your Adjusted ADR</span>
-                      <span style={{ color: '#22c55e' }}>${adjustedADR}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Market Occupancy</span>
-                      <span style={{ color: '#e5e3da' }}>{state.marketOccupancy}%</span>
-                    </div>
-                    <div className="flex justify-between pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                      <span>Calculation</span>
-                      <span style={{ color: '#e5e3da' }}>${adjustedADR} × {state.marketOccupancy}% × 365</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* ================================================================ */}
-            {/* MODULE 2: PROPERTY PROFILE */}
-            {/* ================================================================ */}
-            <div 
-              className="rounded-2xl p-5"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-            >
-              <h2 className="font-semibold mb-4" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                Property Details
-              </h2>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {/* Purchase Price */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Purchase Price</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#787060' }}>$</span>
-                    <input
-                      type="number"
-                      value={state.purchasePrice}
-                      onChange={(e) => updateState({ purchasePrice: parseInt(e.target.value) || 0 })}
-                      className="w-full pl-7 pr-3 py-3 rounded-xl text-lg font-semibold"
-                      style={{ border: '2px solid #d8d6cd', color: '#2b2823' }}
-                    />
-                  </div>
-                </div>
-                
-                {/* Bedrooms */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Bedrooms</label>
-                  <select
-                    value={state.bedrooms}
-                    onChange={(e) => updateState({ bedrooms: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  >
-                    {[1, 2, 3, 4, 5, 6].map(n => (
-                      <option key={n} value={n}>{n} BR</option>
-                    ))}
-                  </select>
-                </div>
-                
-                {/* Bathrooms */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Bathrooms</label>
-                  <select
-                    value={state.bathrooms}
-                    onChange={(e) => updateState({ bathrooms: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  >
-                    {[1, 1.5, 2, 2.5, 3, 3.5, 4].map(n => (
-                      <option key={n} value={n}>{n} BA</option>
-                    ))}
-                  </select>
-                </div>
-                
-                {/* Square Feet */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Square Feet</label>
-                  <input
-                    type="number"
-                    value={state.squareFeet}
-                    onChange={(e) => updateState({ squareFeet: parseInt(e.target.value) || 1000 })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  />
-                </div>
-                
-                {/* Property Type */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Property Type</label>
-                  <select
-                    value={state.propertyType}
-                    onChange={(e) => updateState({ propertyType: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  >
-                    <option value="house">House</option>
-                    <option value="condo">Condo</option>
-                    <option value="cabin">Cabin</option>
-                    <option value="townhouse">Townhouse</option>
-                    <option value="apartment">Apartment</option>
-                  </select>
-                </div>
-              </div>
-              
-              {/* Research Comps Link */}
-              <a
-                href={airbnbSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl font-medium text-sm transition-all"
-                style={{ backgroundColor: '#FF5A5F', color: '#ffffff' }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Research Comps on Airbnb
-              </a>
-              <p className="text-xs text-center mt-2" style={{ color: '#787060' }}>
-                See what similar properties charge in this area
-              </p>
-            </div>
-            
-            {/* ================================================================ */}
-            {/* FINANCING */}
-            {/* ================================================================ */}
-            <div 
-              className="rounded-2xl p-5"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-            >
-              <h2 className="font-semibold mb-4" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                Financing
-              </h2>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {/* Down Payment */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Down Payment %</label>
-                  <input
-                    type="number"
-                    value={state.downPaymentPct}
-                    onChange={(e) => updateState({ downPaymentPct: parseInt(e.target.value) || 20 })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  />
-                  {state.downPaymentPct < 20 && (
-                    <p className="text-xs mt-1" style={{ color: '#f59e0b' }}>PMI will apply</p>
-                  )}
-                </div>
-                
-                {/* Interest Rate */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Interest Rate %</label>
-                  <input
-                    type="number"
-                    step="0.125"
-                    value={state.interestRate}
-                    onChange={(e) => updateState({ interestRate: parseFloat(e.target.value) || 7 })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  />
-                </div>
-                
-                {/* Loan Term */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Loan Term</label>
-                  <select
-                    value={state.loanTermYears}
-                    onChange={(e) => updateState({ loanTermYears: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  >
-                    <option value={15}>15 Years</option>
-                    <option value={20}>20 Years</option>
-                    <option value={30}>30 Years</option>
-                  </select>
-                </div>
-                
-                {/* Closing Costs */}
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Closing Costs %</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={state.closingCostsPct}
-                    onChange={(e) => updateState({ closingCostsPct: parseFloat(e.target.value) || 3 })}
-                    className="w-full px-3 py-2 rounded-lg"
-                    style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* ================================================================ */}
-            {/* STARTUP COSTS (Expandable) */}
-            {/* ================================================================ */}
-            <div 
-              className="rounded-2xl overflow-hidden"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-            >
-              <button
-                onClick={() => updateState({ showStartupCosts: !state.showStartupCosts })}
-                className="w-full flex items-center justify-between p-5"
-              >
-                <div>
-                  <h2 className="font-semibold text-left" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                    Startup Costs
-                  </h2>
-                  <p className="text-xs mt-1" style={{ color: '#787060' }}>
-                    Total: {formatCurrency(state.renoRehab + (state.furnishings || autoFurnishings) + state.amenities + state.holdingCosts + state.legal)}
-                  </p>
-                </div>
-                <svg 
-                  className={`w-5 h-5 transition-transform ${state.showStartupCosts ? 'rotate-180' : ''}`} 
-                  fill="none" stroke="#787060" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {state.showStartupCosts && (
-                <div className="px-5 pb-5 space-y-3" style={{ borderTop: '1px solid #e5e3da' }}>
-                  <div className="pt-4 grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Reno/Rehab</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                        <input
-                          type="number"
-                          value={state.renoRehab}
-                          onChange={(e) => updateState({ renoRehab: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>
-                        Furnishings <span className="text-xs" style={{ color: '#9a9488' }}>($15/sqft)</span>
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                        <input
-                          type="number"
-                          value={state.furnishings || autoFurnishings}
-                          onChange={(e) => updateState({ furnishings: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823', backgroundColor: state.furnishings === 0 ? '#fafaf8' : '#fff' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Amenities</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                        <input
-                          type="number"
-                          value={state.amenities}
-                          onChange={(e) => updateState({ amenities: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Holding Costs</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                        <input
-                          type="number"
-                          value={state.holdingCosts}
-                          onChange={(e) => updateState({ holdingCosts: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Legal Fees</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                        <input
-                          type="number"
-                          value={state.legal}
-                          onChange={(e) => updateState({ legal: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* ================================================================ */}
-            {/* OPERATING EXPENSES (Expandable) */}
-            {/* ================================================================ */}
-            <div 
-              className="rounded-2xl overflow-hidden"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-            >
-              <button
-                onClick={() => updateState({ showDetailedExpenses: !state.showDetailedExpenses })}
-                className="w-full flex items-center justify-between p-5"
-              >
-                <div>
-                  <h2 className="font-semibold text-left" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                    Operating Expenses
-                  </h2>
-                  <p className="text-xs mt-1" style={{ color: '#787060' }}>
-                    15 line items • Tap to customize
-                  </p>
-                </div>
-                <svg 
-                  className={`w-5 h-5 transition-transform ${state.showDetailedExpenses ? 'rotate-180' : ''}`} 
-                  fill="none" stroke="#787060" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {state.showDetailedExpenses && (
-                <div className="px-5 pb-5 space-y-4" style={{ borderTop: '1px solid #e5e3da' }}>
-                  {/* Utilities */}
-                  <div className="pt-4">
-                    <h3 className="text-xs font-semibold mb-3" style={{ color: '#787060' }}>UTILITIES (Monthly)</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { key: 'electric', label: 'Electric' },
-                        { key: 'water', label: 'Water' },
-                        { key: 'gas', label: 'Gas' },
-                        { key: 'trash', label: 'Trash' },
-                        { key: 'internet', label: 'Internet' },
-                      ].map(({ key, label }) => (
-                        <div key={key}>
-                          <label className="block text-xs mb-1" style={{ color: '#787060' }}>{label}</label>
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                            <input
-                              type="number"
-                              value={(state as any)[key]}
-                              onChange={(e) => updateState({ [key]: parseInt(e.target.value) || 0 })}
-                              className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                              style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Property Costs */}
-                  <div>
-                    <h3 className="text-xs font-semibold mb-3" style={{ color: '#787060' }}>PROPERTY (Annual)</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs mb-1" style={{ color: '#787060' }}>
-                          Property Tax <span style={{ color: '#9a9488' }}>(1.5% default)</span>
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                          <input
-                            type="number"
-                            value={state.propertyTaxAnnual || autoPropertyTax}
-                            onChange={(e) => updateState({ propertyTaxAnnual: parseInt(e.target.value) || 0 })}
-                            className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                            style={{ border: '1px solid #d8d6cd', color: '#2b2823', backgroundColor: state.propertyTaxAnnual === 0 ? '#fafaf8' : '#fff' }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-1" style={{ color: '#787060' }}>Insurance</label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                          <input
-                            type="number"
-                            value={state.insuranceAnnual}
-                            onChange={(e) => updateState({ insuranceAnnual: parseInt(e.target.value) || 0 })}
-                            className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                            style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Variable Costs */}
-                  <div>
-                    <h3 className="text-xs font-semibold mb-3" style={{ color: '#787060' }}>VARIABLE COSTS</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs mb-1" style={{ color: '#787060' }}>Management Fee %</label>
-                        <input
-                          type="number"
-                          value={state.managementPct}
-                          onChange={(e) => updateState({ managementPct: parseInt(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                        />
-                        {state.managementPct === 0 && (
-                          <p className="text-xs mt-1" style={{ color: '#22c55e' }}>Self-managed</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-1" style={{ color: '#787060' }}>Cleaning (per stay)</label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                          <input
-                            type="number"
-                            value={state.cleaningPerStay}
-                            onChange={(e) => updateState({ cleaningPerStay: parseInt(e.target.value) || 0 })}
-                            className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                            style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* ================================================================ */}
-            {/* INVESTMENT ANALYSIS */}
-            {/* ================================================================ */}
-            {dealOutput && (
-              <div 
-                className="rounded-2xl overflow-hidden"
-                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-              >
-                {/* Cash on Cash - Hero Metric */}
-                <div className="p-6 text-center" style={{ backgroundColor: dealOutput.returns.cashOnCash.base >= 0 ? '#f0fdf4' : '#fef2f2' }}>
-                  <p className="text-xs font-medium mb-1" style={{ color: '#787060' }}>CASH-ON-CASH RETURN</p>
-                  <p 
-                    className="text-4xl font-bold"
-                    style={{ 
-                      color: dealOutput.returns.cashOnCash.base >= 8 ? '#22c55e' : 
-                             dealOutput.returns.cashOnCash.base >= 0 ? '#f59e0b' : '#ef4444',
-                      fontFamily: 'Source Serif Pro, Georgia, serif'
-                    }}
-                  >
-                    {dealOutput.returns.cashOnCash.base.toFixed(1)}%
-                  </p>
-                  <p className="text-sm mt-1" style={{ color: '#787060' }}>
-                    Range: {dealOutput.returns.cashOnCash.low.toFixed(1)}% to {dealOutput.returns.cashOnCash.high.toFixed(1)}%
-                  </p>
-                  
-                  {/* Quick verdict */}
-                  <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
-                    style={{ 
-                      backgroundColor: dealOutput.returns.cashOnCash.base >= 8 ? 'rgba(34, 197, 94, 0.1)' : 
-                                       dealOutput.returns.cashOnCash.base >= 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                      color: dealOutput.returns.cashOnCash.base >= 8 ? '#22c55e' : 
-                             dealOutput.returns.cashOnCash.base >= 0 ? '#f59e0b' : '#ef4444'
-                    }}
-                  >
-                    {dealOutput.returns.cashOnCash.base >= 12 ? '🔥 Excellent Deal' :
-                     dealOutput.returns.cashOnCash.base >= 8 ? '✅ Good Deal' :
-                     dealOutput.returns.cashOnCash.base >= 4 ? '⚠️ Marginal' :
-                     dealOutput.returns.cashOnCash.base >= 0 ? '⚠️ Break-even' : '❌ Negative Cash Flow'}
-                  </div>
-                </div>
-                
-                {/* Monthly Cash Flow */}
-                <div className="p-5" style={{ borderTop: '1px solid #e5e3da' }}>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium" style={{ color: '#2b2823' }}>Monthly Cash Flow</span>
-                    <span 
-                      className="text-xl font-bold"
-                      style={{ color: dealOutput.returns.cashFlowMonthly.base >= 0 ? '#22c55e' : '#ef4444' }}
-                    >
-                      {formatCurrency(dealOutput.returns.cashFlowMonthly.base)}
-                    </span>
-                  </div>
-                  <p className="text-xs mt-1" style={{ color: '#787060' }}>
-                    Range: {formatCurrency(dealOutput.returns.cashFlowMonthly.low)} to {formatCurrency(dealOutput.returns.cashFlowMonthly.high)}
-                  </p>
-                </div>
-                
-                {/* Cash to Close */}
-                <div className="p-5" style={{ borderTop: '1px solid #e5e3da' }}>
-                  <h3 className="text-sm font-semibold mb-3" style={{ color: '#2b2823' }}>Total Cash Required</h3>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between py-1">
-                      <span style={{ color: '#787060' }}>Down Payment ({state.downPaymentPct}%)</span>
-                      <span className="font-medium" style={{ color: '#2b2823' }}>{formatCurrency(dealOutput.cashToClose.downPayment)}</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span style={{ color: '#787060' }}>Closing Costs</span>
-                      <span className="font-medium" style={{ color: '#2b2823' }}>{formatCurrency(dealOutput.cashToClose.closingCosts)}</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span style={{ color: '#787060' }}>Startup (Reno + Furnish + etc)</span>
-                      <span className="font-medium" style={{ color: '#2b2823' }}>
-                        {formatCurrency(dealOutput.cashToClose.renoRehab + dealOutput.cashToClose.furnishings + dealOutput.cashToClose.amenities + dealOutput.cashToClose.holdingCosts + dealOutput.cashToClose.legal)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-2 mt-2" style={{ borderTop: '1px solid #e5e3da' }}>
-                      <span className="font-semibold" style={{ color: '#2b2823' }}>Total</span>
-                      <span className="font-bold text-lg" style={{ color: '#2b2823' }}>{formatCurrency(dealOutput.cashToClose.total)}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Key Metrics */}
-                <div className="p-5" style={{ borderTop: '1px solid #e5e3da' }}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-xl" style={{ backgroundColor: '#fafaf8' }}>
-                      <p className="text-xs" style={{ color: '#787060' }}>Break-Even Occupancy</p>
-                      <p className="text-lg font-semibold" style={{ color: '#2b2823' }}>{dealOutput.returns.breakEvenOccupancy}%</p>
-                    </div>
-                    <div className="p-3 rounded-xl" style={{ backgroundColor: '#fafaf8' }}>
-                      <p className="text-xs" style={{ color: '#787060' }}>Payback Period</p>
-                      <p className="text-lg font-semibold" style={{ color: '#2b2823' }}>
-                        {dealOutput.returns.paybackMonths.base < 999 
-                          ? `${Math.round(dealOutput.returns.paybackMonths.base / 12 * 10) / 10} years`
-                          : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* ================================================================ */}
-            {/* STR vs LTR COMPARISON */}
-            {/* ================================================================ */}
-            <div 
-              className="rounded-2xl p-5"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                  STR vs Long-Term Rental
-                </h2>
-                <button
-                  onClick={() => updateState({ showLtrComparison: !state.showLtrComparison })}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-                  style={{ 
-                    backgroundColor: state.showLtrComparison ? '#2b2823' : '#e5e3da',
-                    color: state.showLtrComparison ? '#ffffff' : '#787060'
-                  }}
-                >
-                  {state.showLtrComparison ? 'Hide' : 'Compare'}
-                </button>
-              </div>
-              
-              {state.showLtrComparison && (
-                <div className="space-y-4">
-                  {/* LTR Inputs */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Monthly Rent</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{ color: '#787060' }}>$</span>
-                        <input
-                          type="number"
-                          value={state.ltrMonthlyRent}
-                          onChange={(e) => updateState({ ltrMonthlyRent: parseInt(e.target.value) || 0 })}
-                          className="w-full pl-5 pr-2 py-2 rounded-lg text-sm"
-                          style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1" style={{ color: '#787060' }}>Vacancy %</label>
-                      <input
-                        type="number"
-                        value={state.ltrVacancyPct}
-                        onChange={(e) => updateState({ ltrVacancyPct: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 rounded-lg text-sm"
-                        style={{ border: '1px solid #d8d6cd', color: '#2b2823' }}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Comparison Results */}
-                  {dealOutput?.comparison && (
-                    <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: '#fafaf8' }}>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
-                          <p className="text-xs font-medium mb-1" style={{ color: '#787060' }}>STR Monthly</p>
-                          <p className="text-lg font-bold" style={{ color: dealOutput.returns.cashFlowMonthly.base >= 0 ? '#22c55e' : '#ef4444' }}>
-                            {formatCurrency(dealOutput.returns.cashFlowMonthly.base)}
-                          </p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
-                          <p className="text-xs font-medium mb-1" style={{ color: '#787060' }}>LTR Monthly</p>
-                          <p className="text-lg font-bold" style={{ color: dealOutput.comparison.ltrCashFlowMonthly >= 0 ? '#22c55e' : '#ef4444' }}>
-                            {formatCurrency(dealOutput.comparison.ltrCashFlowMonthly)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Verdict */}
-                      <div className="text-center p-3 rounded-lg" style={{ 
-                        backgroundColor: dealOutput.comparison.difference.base >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'
-                      }}>
-                        <p className="text-sm font-semibold" style={{ 
-                          color: dealOutput.comparison.difference.base >= 0 ? '#22c55e' : '#ef4444'
-                        }}>
-                          {dealOutput.comparison.difference.base >= 0 
-                            ? `STR wins by ${formatCurrency(dealOutput.comparison.difference.base)}/mo`
-                            : `LTR wins by ${formatCurrency(Math.abs(dealOutput.comparison.difference.base))}/mo`}
-                        </p>
-                        <p className="text-xs mt-1" style={{ color: '#787060' }}>
-                          Break-even STR occupancy: {dealOutput.comparison.breakEvenOccupancy}%
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-          </>
+
+        {/* Error Message */}
+        {error && (
+          <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+            <p className="text-sm" style={{ color: "#dc2626" }}>{error}</p>
+            <p className="text-xs mt-1" style={{ color: "#787060" }}>
+              Tip: Use format "123 Main St, City, ST 12345" or "123 Main St, City, ST"
+            </p>
+          </div>
         )}
-        
-        {/* Bottom Padding for Navigation */}
-        <div className="h-24"></div>
-      </div>
+
+        {/* Results */}
+        {result && (
+          <div className="space-y-6">
+            {/* Annual Revenue Projection - Hero Card */}
+            <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <p className="text-sm font-medium mb-2" style={{ color: "#22c55e" }}>Annual Revenue Projection</p>
+              <p className="text-5xl md:text-6xl font-bold mb-3" style={{ color: "#2b2823" }}>
+                {formatCurrency(result.annualRevenue)}<span className="text-2xl font-normal">/yr</span>
+              </p>
+              <p className="text-sm" style={{ color: "#787060" }}>
+                Based on {result.nearbyListings > 0 ? `${result.nearbyListings} nearby Airbnbs` : "market data"} in {result.neighborhood}
+              </p>
+
+              {/* Market Conditions */}
+              <div className="mt-6 pt-6 flex justify-center gap-8" style={{ borderTop: "1px solid #e5e3da" }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs" style={{ backgroundColor: "#f8f7f4" }}>
+                  {new Date().toLocaleString("default", { month: "long" })} Market Conditions
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-6">
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.adr)}</p>
+                  <p className="text-xs" style={{ color: "#787060" }}>Average Daily Rate</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{result.occupancy}%</p>
+                  <p className="text-xs" style={{ color: "#787060" }}>Occupancy Rate</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.revPAN)}</p>
+                  <p className="text-xs" style={{ color: "#787060" }}>RevPAN</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Property & Location Details */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Property Details */}
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-sm font-semibold mb-4" style={{ color: "#2b2823" }}>Property Details</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm" style={{ color: "#787060" }}>Address</span>
+                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.address.split(",")[0]}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm" style={{ color: "#787060" }}>Location</span>
+                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.city}, {result.state}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm" style={{ color: "#787060" }}>Neighborhood</span>
+                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.neighborhood}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm" style={{ color: "#787060" }}>Bedrooms</span>
+                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{bedrooms}</span>
+                  </div>
+                  {result.sqft > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>Square Feet</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.sqft.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Investment Metrics */}
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-sm font-semibold mb-4" style={{ color: "#2b2823" }}>Investment Metrics</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm" style={{ color: "#787060" }}>Monthly Revenue (STR)</span>
+                    <span className="text-sm font-medium" style={{ color: "#22c55e" }}>{formatCurrency(result.monthlyRevenue)}</span>
+                  </div>
+                  {result.traditionalRent > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>Monthly Rent (LTR)</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{formatCurrency(result.traditionalRent)}</span>
+                    </div>
+                  )}
+                  {result.strCapRate > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>STR Cap Rate</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.strCapRate.toFixed(1)}%</span>
+                    </div>
+                  )}
+                  {result.ltrCapRate > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>LTR Cap Rate</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.ltrCapRate.toFixed(1)}%</span>
+                    </div>
+                  )}
+                  {result.mashMeter > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>Mash Meter Score</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.mashMeter}/100</span>
+                    </div>
+                  )}
+                  {result.walkScore > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm" style={{ color: "#787060" }}>Walk Score</span>
+                      <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{result.walkScore}/100</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Monthly Revenue Breakdown */}
+            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <h3 className="text-sm font-semibold mb-4" style={{ color: "#2b2823" }}>Monthly Revenue Breakdown</h3>
+              <div className="grid grid-cols-12 gap-2">
+                {Array.from({ length: 12 }, (_, i) => {
+                  // Simulate seasonality
+                  const month = new Date(2024, i).toLocaleString("default", { month: "short" });
+                  const seasonMultiplier = [0.7, 0.75, 0.9, 1.0, 1.1, 1.2, 1.3, 1.25, 1.0, 0.85, 0.75, 0.8][i];
+                  const monthRevenue = Math.round(result.monthlyRevenue * seasonMultiplier);
+                  const maxRevenue = Math.round(result.monthlyRevenue * 1.3);
+                  const heightPct = (monthRevenue / maxRevenue) * 100;
+
+                  return (
+                    <div key={i} className="flex flex-col items-center">
+                      <div className="w-full h-24 flex items-end">
+                        <div
+                          className="w-full rounded-t"
+                          style={{
+                            height: `${heightPct}%`,
+                            backgroundColor: seasonMultiplier >= 1.1 ? "#22c55e" : "#d8d6cd",
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs mt-1" style={{ color: "#787060" }}>{month}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex justify-between text-xs" style={{ color: "#787060" }}>
+                <span>Low Season: ~{formatCurrency(Math.round(result.monthlyRevenue * 0.7))}/mo</span>
+                <span>High Season: ~{formatCurrency(Math.round(result.monthlyRevenue * 1.3))}/mo</span>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: "#2b2823" }}>
+              <p className="text-white font-semibold mb-2">Want a detailed investment analysis?</p>
+              <p className="text-white/70 text-sm mb-4">Get cash-on-cash returns, expense breakdowns, and more</p>
+              <button
+                onClick={() => {
+                  // Scroll to top and show full calculator
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="px-6 py-3 rounded-xl font-semibold text-sm"
+                style={{ backgroundColor: "#ffffff", color: "#2b2823" }}
+              >
+                Run Full Analysis →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!result && !error && !isLoading && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "#f8f7f4" }}>
+              <svg className="w-8 h-8" style={{ color: "#787060" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <p className="text-sm" style={{ color: "#787060" }}>
+              Enter any US address to get instant STR revenue estimates
+            </p>
+            <p className="text-xs mt-2" style={{ color: "#a8a49a" }}>
+              Works with addresses from Zillow, Redfin, Realtor.com, and more
+            </p>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="py-8 text-center">
+        <p className="text-xs" style={{ color: "#787060" }}>
+          Data provided by Mashvisor • Updated daily
+        </p>
+      </footer>
     </div>
   );
 }
