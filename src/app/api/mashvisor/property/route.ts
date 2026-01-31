@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MASHVISOR_API_KEY = "20f866598emsh7e1f8d0058d2271p1adc56jsn8653832f1320";
+const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY || "20f866598emsh7e1f8d0058d2271p1adc56jsn8653832f1320";
 const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 
 export async function POST(request: NextRequest) {
