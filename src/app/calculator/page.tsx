@@ -37,11 +37,8 @@ export default function AddressCalculatorPage() {
   };
 
   const openInRabbu = () => {
-    if (!address.trim()) return;
-    // Encode the address for URL and redirect to Rabbu's Airbnb Calculator
-    const encodedAddress = encodeURIComponent(address.trim());
-    const rabbuUrl = `https://www.rabbu.com/airbnb-calculator?address=${encodedAddress}`;
-    window.open(rabbuUrl, '_blank', 'noopener,noreferrer');
+    // Simply redirect to Rabbu's Airbnb Calculator
+    window.open('https://www.rabbu.com/airbnb-calculator', '_blank', 'noopener,noreferrer');
   };
 
   const getGradeColor = (grade: string) => {
@@ -131,8 +128,7 @@ export default function AddressCalculatorPage() {
           <div className="mt-4 pt-4 border-t border-slate-200">
             <button
               onClick={openInRabbu}
-              disabled={!address.trim()}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors border border-slate-300"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

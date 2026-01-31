@@ -116,7 +116,7 @@ export function ChatAssistant() {
           </div>
 
           {/* Content */}
-          <div className="h-80 overflow-y-auto">
+          <div className={`overflow-y-auto ${mode === "menu" ? "max-h-[80vh] sm:max-h-none sm:h-auto" : "h-80"}`}>
             {mode === "menu" && (
               <div className="p-4 space-y-3">
                 <button
