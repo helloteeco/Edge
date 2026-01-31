@@ -33,11 +33,11 @@ export default function SearchPage() {
       cityResults = cityResults.filter(c => c.marketScore >= 70);
       stateResults = stateResults.filter(s => s.marketScore >= 70);
     } else if (filter === "recommended") {
-      // High Cash-on-Cash + Good market headroom + Legal
+      // Hidden Gems: Good score + Legal + Affordable (under $250K median)
       cityResults = cityResults.filter(c => 
-        c.marketScore >= 65 && 
-        c.marketHeadroom >= 8 && 
-        c.regulation === "Legal"
+        c.marketScore >= 70 && 
+        c.regulation === "Legal" &&
+        c.medianHomeValue <= 250000
       );
       stateResults = [];
     }
@@ -46,7 +46,7 @@ export default function SearchPage() {
     cityResults.sort((a, b) => b.marketScore - a.marketScore);
     stateResults.sort((a, b) => b.marketScore - a.marketScore);
 
-    return { cities: cityResults.slice(0, 50), states: stateResults.slice(0, 10) };
+    return { cities: cityResults, states: stateResults };
   }, [query, filter]);
 
   const totalResults = results.cities.length + results.states.length;
@@ -73,11 +73,11 @@ export default function SearchPage() {
   };
 
   const filters = [
-    { key: "all", label: "All", icon: "📋" },
-    { key: "states", label: "States", icon: "🗺️" },
-    { key: "cities", label: "Cities", icon: "🏙️" },
-    { key: "minScore", label: "Score 70+", icon: "⭐" },
-    { key: "recommended", label: "Hidden Gems", icon: "💎" },
+    { key: "all", label: "All" },
+    { key: "states", label: "States" },
+    { key: "cities", label: "Cities" },
+    { key: "minScore", label: "Score 70+" },
+    { key: "recommended", label: "Hidden Gems" },
   ];
 
   return (
@@ -145,8 +145,7 @@ export default function SearchPage() {
                   boxShadow: filter === f.key ? '0 2px 8px -2px rgba(43, 40, 35, 0.2)' : 'none'
                 }}
               >
-                <span>{f.icon}</span>
-                <span>{f.label}</span>
+                {f.label}
               </button>
             ))}
           </div>

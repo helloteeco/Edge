@@ -94,3 +94,16 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - Cream: #e5e3da (backgrounds, cards)
 - White: #ffffff (clean backgrounds)
 - Border: #d8d6cd (subtle borders)
+
+
+# Option B - Polish Launch (January 2026)
+
+## Critical Fixes
+- [ ] Remove search result limits (show all 269 markets, all 50 states)
+- [ ] Fix Hidden Gems filter criteria to return results
+
+## Visual Polish
+- [ ] Replace emoji nav icons with clean SF Symbol-style icons
+- [ ] Update map legend colors to match Teeco brand
+- [ ] Fix map filter button active state styling
+- [ ] Update chat button styling to match brand

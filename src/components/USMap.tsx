@@ -46,8 +46,8 @@ const getGradeColor = (grade: string) => {
   switch (grade) {
     case 'A+': return 'bg-emerald-600 text-white';
     case 'A': return 'bg-emerald-500 text-white';
-    case 'B+': return 'bg-[#2b2823] text-white';
-    case 'B': return 'bg-[#3d3a34] text-white';
+    case 'B+': return 'bg-teal-600 text-white';
+    case 'B': return 'bg-teal-500 text-white';
     case 'C': return 'bg-amber-400 text-amber-900';
     case 'D': return 'bg-orange-400 text-white';
     default: return 'bg-red-400 text-white';
@@ -58,8 +58,8 @@ const getGradeBgColor = (grade: string) => {
   switch (grade) {
     case 'A+': return 'bg-emerald-500';
     case 'A': return 'bg-emerald-400';
-    case 'B+': return 'bg-[#2b2823]';
-    case 'B': return 'bg-[#3d3a34]';
+    case 'B+': return 'bg-teal-600';
+    case 'B': return 'bg-teal-500';
     case 'C': return 'bg-amber-500';
     case 'D': return 'bg-orange-500';
     default: return 'bg-red-500';
@@ -197,7 +197,7 @@ export function USMap() {
               <span style={{ color: '#787060' }}>C</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-md shadow-sm" style={{ backgroundColor: '#3d3a34' }} />
+              <div className="w-5 h-5 bg-teal-500 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>B/B+</span>
             </div>
             <div className="flex items-center gap-1.5">

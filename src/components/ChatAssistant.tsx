@@ -85,9 +85,9 @@ export function ChatAssistant() {
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all z-50"
         style={{ 
-          backgroundColor: isOpen ? '#787060' : '#2b2823',
+          backgroundColor: isOpen ? '#9a9488' : '#787060',
           color: '#ffffff',
-          boxShadow: isOpen ? '0 4px 20px rgba(43, 40, 35, 0.25)' : '0 4px 20px rgba(43, 40, 35, 0.4)'
+          boxShadow: '0 4px 20px rgba(120, 112, 96, 0.35)'
         }}
       >
         {isOpen ? (
