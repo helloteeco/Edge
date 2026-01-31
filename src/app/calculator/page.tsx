@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { lookupAddress, FlatCity, StateBenchmark } from "@/data/helpers";
 import {
@@ -85,6 +85,30 @@ interface CalculatorState {
   showStartupCosts: boolean;
   showDetailedExpenses: boolean;
   showMethodology: boolean;
+  
+  // Autocomplete
+  suggestions: Array<{
+    displayName: string;
+    address: { street: string; city: string; state: string; zipCode: string };
+  }>;
+  showSuggestions: boolean;
+  
+  // Mashvisor Data
+  mashvisorData: {
+    neighborhood: {
+      name: string;
+      occupancy: number;
+      adr: number;
+      monthlyRevenue: number;
+      traditionalRent: number;
+      strCapRate: number;
+      ltrCapRate: number;
+      listingsCount: number;
+      mashMeter: number;
+      walkScore: number;
+    } | null;
+    dataSource: 'mashvisor' | 'local' | null;
+  } | null;
 }
 
 const initialState: CalculatorState = {
@@ -139,6 +163,11 @@ const initialState: CalculatorState = {
   showStartupCosts: false,
   showDetailedExpenses: false,
   showMethodology: false,
+  // Autocomplete
+  suggestions: [],
+  showSuggestions: false,
+  // Mashvisor
+  mashvisorData: null,
 };
 
 // ============================================================================
@@ -147,6 +176,52 @@ const initialState: CalculatorState = {
 
 export default function DealCalculatorPage() {
   const [state, setState] = useState<CalculatorState>(initialState);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Fetch address suggestions for autocomplete
+  const fetchSuggestions = async (query: string) => {
+    if (query.length < 3) {
+      setState(s => ({ ...s, suggestions: [], showSuggestions: false }));
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      setState(s => ({
+        ...s,
+        suggestions: data.suggestions || [],
+        showSuggestions: (data.suggestions?.length || 0) > 0,
+      }));
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+    }
+  };
+  
+  // Handle address input change with debounce
+  const handleAddressChange = (value: string) => {
+    setState(s => ({ ...s, address: value }));
+    
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    
+    debounceRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300);
+  };
+  
+  // Handle suggestion selection
+  const handleSelectSuggestion = (suggestion: typeof state.suggestions[0]) => {
+    const { street, city, state: stateCode, zipCode } = suggestion.address;
+    const fullAddress = `${street}, ${city}, ${stateCode} ${zipCode}`;
+    setState(s => ({
+      ...s,
+      address: fullAddress,
+      suggestions: [],
+      showSuggestions: false,
+    }));
+  };
   
   // Auto-calculate values
   const autoFurnishings = estimateFurnishings(state.squareFeet);
@@ -247,56 +322,109 @@ export default function DealCalculatorPage() {
     return calculateDeal(inputs, ltr);
   }, [state, adjustedADR, autoFurnishings, autoPropertyTax]);
   
-  // Handle address lookup
-  const handleAnalyze = () => {
+  // Handle address lookup - tries Mashvisor API first, falls back to local data
+  const handleAnalyze = async () => {
     if (!state.address.trim()) return;
     
-    setState(s => ({ ...s, lookupResult: 'loading' }));
+    setState(s => ({ ...s, lookupResult: 'loading', showSuggestions: false }));
     
-    setTimeout(() => {
-      const result = lookupAddress(state.address);
+    try {
+      // Try Mashvisor API first
+      const response = await fetch('/api/mashvisor/property', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: state.address }),
+      });
       
-      if (result.type === 'city' && result.city) {
-        const city = result.city;
+      const data = await response.json();
+      
+      if (data.success && data.neighborhood) {
+        // Mashvisor data found!
+        const nb = data.neighborhood;
+        const prop = data.property;
         setState(s => ({
           ...s,
           lookupResult: 'city',
-          cityData: city,
-          stateBenchmark: null,
-          parsedCity: city.name,
-          parsedState: city.stateCode,
-          purchasePrice: city.medianHomeValue,
-          marketADR: city.avgADR,
-          marketOccupancy: city.occupancy,
-          ltrMonthlyRent: estimateLTRRent(city.strMonthlyRevenue),
-          propertyTaxAnnual: Math.round(city.medianHomeValue * 0.015),
-        }));
-      } else if (result.type === 'state_fallback' && result.stateBenchmark) {
-        const benchmark = result.stateBenchmark;
-        setState(s => ({
-          ...s,
-          lookupResult: 'state_fallback',
-          cityData: null,
-          stateBenchmark: benchmark,
-          parsedCity: result.parsedAddress?.city || '',
-          parsedState: benchmark.stateCode,
-          purchasePrice: benchmark.medianHomePrice,
-          marketADR: benchmark.adr.base,
-          marketOccupancy: benchmark.occupancy.base,
-          ltrMonthlyRent: Math.round(benchmark.medianHomePrice * 0.006),
-          propertyTaxAnnual: Math.round(benchmark.medianHomePrice * 0.015),
-        }));
-      } else {
-        setState(s => ({
-          ...s,
-          lookupResult: 'not_found',
           cityData: null,
           stateBenchmark: null,
-          parsedCity: result.parsedAddress?.city || '',
-          parsedState: result.parsedAddress?.state || '',
+          parsedCity: prop.city || '',
+          parsedState: prop.state || '',
+          purchasePrice: prop.listPrice || prop.lastSalePrice || s.purchasePrice,
+          marketADR: nb.adr || 150,
+          marketOccupancy: nb.occupancy || 60,
+          bedrooms: prop.bedrooms || s.bedrooms,
+          bathrooms: prop.bathrooms || s.bathrooms,
+          squareFeet: prop.sqft || s.squareFeet,
+          ltrMonthlyRent: nb.traditionalRent || Math.round((prop.listPrice || 250000) * 0.006),
+          propertyTaxAnnual: Math.round((prop.listPrice || 250000) * 0.015),
+          mashvisorData: {
+            neighborhood: {
+              name: nb.name,
+              occupancy: nb.occupancy,
+              adr: nb.adr,
+              monthlyRevenue: nb.monthlyRevenue,
+              traditionalRent: nb.traditionalRent,
+              strCapRate: nb.strCapRate,
+              ltrCapRate: nb.ltrCapRate,
+              listingsCount: nb.listingsCount,
+              mashMeter: nb.mashMeter,
+              walkScore: nb.walkScore,
+            },
+            dataSource: 'mashvisor',
+          },
         }));
+        return;
       }
-    }, 400);
+    } catch (error) {
+      console.error('Mashvisor API error:', error);
+    }
+    
+    // Fall back to local data
+    const result = lookupAddress(state.address);
+    
+    if (result.type === 'city' && result.city) {
+      const city = result.city;
+      setState(s => ({
+        ...s,
+        lookupResult: 'city',
+        cityData: city,
+        stateBenchmark: null,
+        parsedCity: city.name,
+        parsedState: city.stateCode,
+        purchasePrice: city.medianHomeValue,
+        marketADR: city.avgADR,
+        marketOccupancy: city.occupancy,
+        ltrMonthlyRent: estimateLTRRent(city.strMonthlyRevenue),
+        propertyTaxAnnual: Math.round(city.medianHomeValue * 0.015),
+        mashvisorData: { neighborhood: null, dataSource: 'local' },
+      }));
+    } else if (result.type === 'state_fallback' && result.stateBenchmark) {
+      const benchmark = result.stateBenchmark;
+      setState(s => ({
+        ...s,
+        lookupResult: 'state_fallback',
+        cityData: null,
+        stateBenchmark: benchmark,
+        parsedCity: result.parsedAddress?.city || '',
+        parsedState: benchmark.stateCode,
+        purchasePrice: benchmark.medianHomePrice,
+        marketADR: benchmark.adr.base,
+        marketOccupancy: benchmark.occupancy.base,
+        ltrMonthlyRent: Math.round(benchmark.medianHomePrice * 0.006),
+        propertyTaxAnnual: Math.round(benchmark.medianHomePrice * 0.015),
+        mashvisorData: { neighborhood: null, dataSource: 'local' },
+      }));
+    } else {
+      setState(s => ({
+        ...s,
+        lookupResult: 'not_found',
+        cityData: null,
+        stateBenchmark: null,
+        parsedCity: result.parsedAddress?.city || '',
+        parsedState: result.parsedAddress?.state || '',
+        mashvisorData: null,
+      }));
+    }
   };
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -352,41 +480,116 @@ export default function DealCalculatorPage() {
             Property Address
           </h2>
           
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="e.g., 123 Main St, Orlando, FL 32801"
-              value={state.address}
-              onChange={(e) => updateState({ address: e.target.value })}
-              onKeyPress={handleKeyPress}
-              className="flex-1 px-4 py-3 rounded-xl text-sm"
-              style={{ border: '2px solid #d8d6cd', color: '#2b2823' }}
-            />
-            <button
-              onClick={handleAnalyze}
-              disabled={state.lookupResult === 'loading'}
-              className="px-5 py-3 rounded-xl font-semibold text-sm transition-all"
-              style={{ backgroundColor: '#787060', color: '#ffffff' }}
-            >
-              {state.lookupResult === 'loading' ? '...' : 'Analyze'}
-            </button>
+          <div className="relative">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Start typing an address..."
+                value={state.address}
+                onChange={(e) => handleAddressChange(e.target.value)}
+                onKeyPress={handleKeyPress}
+                onFocus={() => state.suggestions.length > 0 && setState(s => ({ ...s, showSuggestions: true }))}
+                className="flex-1 px-4 py-3 rounded-xl text-sm"
+                style={{ border: '2px solid #d8d6cd', color: '#2b2823' }}
+              />
+              <button
+                onClick={handleAnalyze}
+                disabled={state.lookupResult === 'loading'}
+                className="px-5 py-3 rounded-xl font-semibold text-sm transition-all"
+                style={{ backgroundColor: '#787060', color: '#ffffff' }}
+              >
+                {state.lookupResult === 'loading' ? '...' : 'Analyze'}
+              </button>
+            </div>
+            
+            {/* Autocomplete Suggestions */}
+            {state.showSuggestions && state.suggestions.length > 0 && (
+              <div 
+                className="absolute left-0 right-0 mt-1 rounded-xl overflow-hidden z-50"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+              >
+                {state.suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectSuggestion(suggestion)}
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors"
+                    style={{ color: '#2b2823', borderBottom: index < state.suggestions.length - 1 ? '1px solid #e5e3da' : 'none' }}
+                  >
+                    <div className="font-medium">{suggestion.address.street}</div>
+                    <div className="text-xs" style={{ color: '#787060' }}>
+                      {suggestion.address.city}, {suggestion.address.state} {suggestion.address.zipCode}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           
           <p className="text-xs mt-2" style={{ color: '#787060' }}>
-            Enter a full address including city and state
+            Powered by Mashvisor • Real-time STR market data
           </p>
           
           {/* Status Badge */}
           {state.lookupResult === 'city' && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Market Data Found
-              </span>
-              <span className="text-xs" style={{ color: '#787060' }}>{state.parsedCity}, {state.parsedState}</span>
+            <div className="mt-3">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+                  style={{ backgroundColor: state.mashvisorData?.dataSource === 'mashvisor' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: state.mashvisorData?.dataSource === 'mashvisor' ? '#22c55e' : '#3b82f6' }}>
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  {state.mashvisorData?.dataSource === 'mashvisor' ? 'Live Mashvisor Data' : 'Local Market Data'}
+                </span>
+                <span className="text-xs" style={{ color: '#787060' }}>{state.parsedCity}, {state.parsedState}</span>
+              </div>
+              
+              {/* Mashvisor Market Intelligence Panel */}
+              {state.mashvisorData?.neighborhood && (
+                <div className="p-4 rounded-xl" style={{ backgroundColor: '#f8f7f4', border: '1px solid #e5e3da' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold" style={{ color: '#2b2823' }}>Market Intelligence</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
+                      {state.mashvisorData.neighborhood.name}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs" style={{ color: '#787060' }}>Occupancy</div>
+                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>{state.mashvisorData.neighborhood.occupancy}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs" style={{ color: '#787060' }}>Avg Nightly Rate</div>
+                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>${state.mashvisorData.neighborhood.adr}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs" style={{ color: '#787060' }}>STR Monthly Revenue</div>
+                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>${state.mashvisorData.neighborhood.monthlyRevenue?.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs" style={{ color: '#787060' }}>Active Listings</div>
+                      <div className="text-lg font-bold" style={{ color: '#2b2823' }}>{state.mashvisorData.neighborhood.listingsCount}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs" style={{ color: '#787060' }}>STR Cap Rate</div>
+                      <div className="text-lg font-bold" style={{ color: '#22c55e' }}>{state.mashvisorData.neighborhood.strCapRate}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs" style={{ color: '#787060' }}>LTR Cap Rate</div>
+                      <div className="text-lg font-bold" style={{ color: '#787060' }}>{state.mashvisorData.neighborhood.ltrCapRate}%</div>
+                    </div>
+                  </div>
+                  {state.mashvisorData.neighborhood.mashMeter && (
+                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid #e5e3da' }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: '#787060' }}>Mash Meter Score</span>
+                        <span className="text-sm font-bold" style={{ color: state.mashvisorData.neighborhood.mashMeter >= 70 ? '#22c55e' : state.mashvisorData.neighborhood.mashMeter >= 50 ? '#f59e0b' : '#ef4444' }}>
+                          {state.mashvisorData.neighborhood.mashMeter}/100
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           
