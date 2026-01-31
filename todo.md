@@ -99,11 +99,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 # Option B - Polish Launch (January 2026)
 
 ## Critical Fixes
-- [ ] Remove search result limits (show all 269 markets, all 50 states)
-- [ ] Fix Hidden Gems filter criteria to return results
+- [x] Remove search result limits (now showing all 318 results: 50 states + 268 cities)
+- [x] Fix Hidden Gems filter criteria (now returns 32 high-quality markets)
 
 ## Visual Polish
-- [ ] Replace emoji nav icons with clean SF Symbol-style icons
-- [ ] Update map legend colors to match Teeco brand
-- [ ] Fix map filter button active state styling
-- [ ] Update chat button styling to match brand
+- [x] Replace emoji nav icons with clean SVG icons (Map, Search, Calculator, Saved, Funding)
+- [x] Update map legend colors (B/B+ changed from black to teal for clearer hierarchy)
+- [x] Fix map filter button active state styling (consistent Teeco brand)
+- [x] Update chat button styling (changed to mocha #787060)
+- [x] Remove emoji icons from search filter buttons (clean text-only labels)
