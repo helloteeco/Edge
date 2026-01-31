@@ -33,9 +33,9 @@ export default function SearchPage() {
       cityResults = cityResults.filter(c => c.marketScore >= 70);
       stateResults = stateResults.filter(s => s.marketScore >= 70);
     } else if (filter === "recommended") {
-      // High RPR + Low saturation + Legal
+      // High Cash-on-Cash + Low saturation + Legal
       cityResults = cityResults.filter(c => 
-        c.rpr >= 0.15 && 
+        c.marketScore >= 65 && 
         c.saturation < 50 && 
         c.regulation === "Legal"
       );
@@ -137,7 +137,7 @@ export default function SearchPage() {
           </p>
           {filter === "recommended" && (
             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
-              High RPR • Low Competition • Legal
+              High CoC • Low Competition • Legal
             </span>
           )}
         </div>

@@ -55,3 +55,11 @@
 ### State Scoring
 State grades are calculated as the average score of the top 50% performing cities in that state.
 This prevents a few poor markets from unfairly penalizing an otherwise strong state.
+
+
+# Add Markets and Replace RPR with Cash on Cash
+
+- [ ] Copy all cities/counties from mobile app to web app
+- [ ] Replace Revenue to Price Ratio (RPR) with Cash on Cash return
+- [ ] Update scoring model to use Cash on Cash
+- [ ] Update all UI components to display Cash on Cash

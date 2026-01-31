@@ -1,6 +1,6 @@
 import { cityData as cityDataByState, CityData } from "./city-data";
 import { stateData as stateDataByCode, StateData } from "./state-data";
-import { calculateScore, calculateStateScore, ScoringBreakdown } from "@/lib/scoring";
+import { calculateScore, calculateStateScore, calculateCashOnCash, ScoringBreakdown } from "@/lib/scoring";
 
 // Flatten city data into array with state code
 export interface FlatCity {
@@ -9,7 +9,7 @@ export interface FlatCity {
   county: string;
   stateCode: string;
   population: number;
-  rpr: number;
+  cashOnCash: number; // Cash-on-Cash return percentage
   dsi: boolean;
   marketScore: number;
   avgADR: number;
@@ -63,10 +63,10 @@ function getStateAppreciation(stateCode: string): number {
   return state?.appreciation?.oneYear || 3; // Default to 3% if not found
 }
 
-// Calculate city score using new transparent model
+// Calculate city score using new transparent model with Cash-on-Cash
 function calculateCityScore(city: CityData, stateCode: string): ScoringBreakdown {
   return calculateScore({
-    rpr: city.rpr,
+    monthlyRevenue: city.rental.monthlyRevenue,
     medianHomePrice: city.rental.medianHomePrice,
     strStatus: city.strStatus,
     permitRequired: city.permitRequired,
@@ -84,13 +84,16 @@ export function getAllCities(): FlatCity[] {
     for (const city of stateCities) {
       const scoring = calculateCityScore(city, stateCode);
       
+      // Calculate Cash-on-Cash return
+      const cashOnCash = calculateCashOnCash(city.rental.monthlyRevenue, city.rental.medianHomePrice);
+      
       cities.push({
         id: city.id,
         name: city.name,
         county: city.county,
         stateCode,
         population: city.population,
-        rpr: city.rpr,
+        cashOnCash, // Use Cash-on-Cash instead of RPR
         dsi: city.dsi,
         marketScore: scoring.totalScore, // Use new score
         avgADR: city.rental.avgADR,

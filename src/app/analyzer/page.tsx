@@ -11,6 +11,8 @@ export default function AnalyzerPage() {
 
   // Calculations
   const downPaymentAmount = purchasePrice * (downPayment / 100);
+  const closingCosts = purchasePrice * 0.03; // 3% closing costs
+  const totalCashInvested = downPaymentAmount + closingCosts;
   const loanAmount = purchasePrice - downPaymentAmount;
   const monthlyRate = interestRate / 100 / 12;
   const numPayments = 30 * 12;
@@ -22,18 +24,20 @@ export default function AnalyzerPage() {
   const netOperatingIncome = annualRevenue - annualExpenses;
   const annualCashFlow = netOperatingIncome - annualMortgage;
   const monthlyCashFlow = annualCashFlow / 12;
-  const cashOnCash = (annualCashFlow / downPaymentAmount) * 100;
-  const rpr = annualRevenue / purchasePrice;
+  
+  // Cash-on-Cash Return = Annual Cash Flow / Total Cash Invested
+  const cashOnCash = (annualCashFlow / totalCashInvested) * 100;
 
-  const getRPRGrade = (rpr: number) => {
-    if (rpr >= 0.20) return { grade: "A+", color: "text-emerald-600", bgColor: "bg-emerald-500", label: "Excellent" };
-    if (rpr >= 0.18) return { grade: "A", color: "text-emerald-600", bgColor: "bg-emerald-500", label: "Great" };
-    if (rpr >= 0.15) return { grade: "B+", color: "text-green-600", bgColor: "bg-green-500", label: "Good" };
-    if (rpr >= 0.12) return { grade: "C", color: "text-amber-600", bgColor: "bg-amber-500", label: "Fair" };
-    return { grade: "F", color: "text-red-600", bgColor: "bg-red-500", label: "Poor" };
+  const getCoCGrade = (coc: number) => {
+    if (coc >= 20) return { grade: "A+", color: "text-emerald-600", bgColor: "bg-emerald-500", label: "Elite" };
+    if (coc >= 15) return { grade: "A", color: "text-emerald-600", bgColor: "bg-emerald-500", label: "Excellent" };
+    if (coc >= 10) return { grade: "B+", color: "text-green-600", bgColor: "bg-green-500", label: "Good" };
+    if (coc >= 5) return { grade: "C", color: "text-amber-600", bgColor: "bg-amber-500", label: "Marginal" };
+    if (coc >= 0) return { grade: "D", color: "text-orange-600", bgColor: "bg-orange-500", label: "Break-even" };
+    return { grade: "F", color: "text-red-600", bgColor: "bg-red-500", label: "Negative" };
   };
 
-  const rprGrade = getRPRGrade(rpr);
+  const cocGrade = getCoCGrade(cashOnCash);
   const dsi = monthlyCashFlow > 0;
 
   return (
@@ -156,9 +160,9 @@ export default function AnalyzerPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-slate-50 rounded-xl">
-                  <div className={`text-4xl font-bold ${rprGrade.color}`}>{rprGrade.grade}</div>
+                  <div className={`text-4xl font-bold ${cocGrade.color}`}>{cocGrade.grade}</div>
                   <div className="text-sm font-medium text-slate-700 mt-1">Deal Grade</div>
-                  <div className="text-xs text-slate-500 mt-1">RPR: {(rpr * 100).toFixed(1)}%</div>
+                  <div className="text-xs text-slate-500 mt-1">CoC: {cashOnCash.toFixed(1)}%</div>
                 </div>
                 
                 <div className="text-center p-4 bg-slate-50 rounded-xl">
@@ -219,22 +223,30 @@ export default function AnalyzerPage() {
                     {cashOnCash.toFixed(1)}%
                   </span>
                 </div>
+                <div className="text-xs text-slate-500 mb-2">
+                  Total Cash Invested: ${totalCashInvested.toLocaleString()} (${downPaymentAmount.toLocaleString()} down + ${closingCosts.toLocaleString()} closing)
+                </div>
                 <div className="text-sm text-slate-500 bg-slate-50 rounded-xl p-3">
-                  {cashOnCash >= 10 ? "🚀 Excellent return! This is a strong investment." :
-                   cashOnCash >= 5 ? "⚠️ Decent return. Consider if you can increase revenue." :
-                   "❌ Low return. Look for ways to reduce costs or increase revenue."}
+                  {cashOnCash >= 20 ? "🚀 Elite return! This is an exceptional investment opportunity." :
+                   cashOnCash >= 15 ? "🎯 Excellent return! This is a strong investment." :
+                   cashOnCash >= 10 ? "✅ Good return. This deal meets investment criteria." :
+                   cashOnCash >= 5 ? "⚠️ Marginal return. Consider if you can increase revenue." :
+                   cashOnCash >= 0 ? "⚠️ Break-even. Look for ways to improve cash flow." :
+                   "❌ Negative cash flow. This deal loses money."}
                 </div>
               </div>
             </div>
 
             {/* Bottom Line */}
-            <div className={`rounded-2xl p-5 ${dsi && cashOnCash >= 8 ? "bg-emerald-50 border border-emerald-200" : dsi ? "bg-amber-50 border border-amber-200" : "bg-red-50 border border-red-200"}`}>
+            <div className={`rounded-2xl p-5 ${dsi && cashOnCash >= 10 ? "bg-emerald-50 border border-emerald-200" : dsi && cashOnCash >= 5 ? "bg-amber-50 border border-amber-200" : "bg-red-50 border border-red-200"}`}>
               <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                <span className="text-lg">{dsi && cashOnCash >= 8 ? "🎯" : dsi ? "⚠️" : "❌"}</span> The Bottom Line
+                <span className="text-lg">{dsi && cashOnCash >= 10 ? "🎯" : dsi && cashOnCash >= 5 ? "⚠️" : "❌"}</span> The Bottom Line
               </h3>
               <p className="text-sm text-slate-600">
-                {dsi && cashOnCash >= 10 
-                  ? "Great deal! You'll make good money and easily pay your bills. This property shows strong investment potential."
+                {dsi && cashOnCash >= 15 
+                  ? "Great deal! Strong cash-on-cash return with positive cash flow. This property shows excellent investment potential."
+                  : dsi && cashOnCash >= 10
+                  ? "Good deal. Solid returns that meet investment criteria. Proceed with confidence."
                   : dsi && cashOnCash >= 5
                   ? "Decent deal. It pays the bills but returns could be better. Consider negotiating the price or finding ways to boost revenue."
                   : !dsi

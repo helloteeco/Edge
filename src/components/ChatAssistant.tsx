@@ -36,10 +36,10 @@ export function ChatAssistant() {
     // Simulate AI response (in production, this would call your API)
     setTimeout(() => {
       const responses = [
-        "Great question! For STR investing, I recommend focusing on markets with an RPR (Revenue-to-Price Ratio) above 0.15. This means you'll earn at least 15% of the purchase price annually in gross revenue.",
+        "Great question! For STR investing, I recommend focusing on markets with a Cash-on-Cash return above 15%. This means you'll earn at least 15% annually on your invested capital.",
         "The Hidden Gems filter shows markets with high income potential but low competition. These are often smaller towns near major attractions.",
-        "When analyzing a market, look at three things: 1) Can you pay the bills? (DSI), 2) How much money do you make vs. price? (RPR), and 3) Is it legal to do STR there?",
-        "Mountain and lake markets typically have the best RPR because property prices are lower but vacation demand is high. Beach markets look attractive but often have lower returns due to high property costs.",
+        "When analyzing a market, look at three things: 1) Can you pay the bills? (positive cash flow), 2) What's your Cash-on-Cash return?, and 3) Is it legal to do STR there?",
+        "Mountain and lake markets typically have the best Cash-on-Cash returns because property prices are lower but vacation demand is high. Beach markets look attractive but often have lower returns due to high property costs.",
       ];
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];
       setMessages(prev => [...prev, { role: "assistant", content: randomResponse }]);

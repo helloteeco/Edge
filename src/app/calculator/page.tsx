@@ -202,13 +202,13 @@ export default function AddressCalculatorPage() {
                         <span className="text-sm">💰</span>
                       </div>
                       <div>
-                        <div className="font-medium text-slate-900">Cash-on-Cash (RPR)</div>
+                        <div className="font-medium text-slate-900">Cash-on-Cash Return</div>
                         <div className="text-xs text-slate-500">{result.scoring.cashOnCash.rating}</div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold text-slate-900">{result.scoring.cashOnCash.score}/{result.scoring.cashOnCash.maxScore}</div>
-                      <div className="text-xs text-slate-500">{result.scoring.cashOnCash.value.toFixed(1)}% RPR</div>
+                      <div className="text-xs text-slate-500">{result.scoring.cashOnCash.value.toFixed(1)}% CoC</div>
                     </div>
                   </div>
 
@@ -365,7 +365,7 @@ export default function AddressCalculatorPage() {
           </p>
           <div className="space-y-2 text-sm">
             <div className="flex items-center justify-between py-2 border-b border-slate-100">
-              <span className="text-slate-700">💰 Cash-on-Cash Return (RPR)</span>
+              <span className="text-slate-700">💰 Cash-on-Cash Return</span>
               <span className="font-semibold text-slate-900">35 points</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-slate-100">

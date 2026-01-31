@@ -53,7 +53,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
   let filteredCities = [...cities];
   
   if (filterBy === "gems") {
-    filteredCities = filteredCities.filter(c => c.rpr >= 0.15 && c.saturation < 50);
+    filteredCities = filteredCities.filter(c => c.marketScore >= 65 && c.saturation < 50);
   } else if (filterBy === "legal") {
     filteredCities = filteredCities.filter(c => c.regulation === "Legal");
   } else if (filterBy === "restricted") {
@@ -266,7 +266,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
           </p>
           {filterBy === "gems" && (
             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
-              High RPR • Low Saturation
+              High CoC • Low Saturation
             </span>
           )}
         </div>

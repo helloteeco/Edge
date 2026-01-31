@@ -245,7 +245,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
           {/* Score Details */}
           <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
             <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-slate-500">Cash-on-Cash (RPR)</div>
+              <div className="text-slate-500">Cash-on-Cash</div>
               <div className="font-semibold text-slate-900">{city.scoring.cashOnCash.value.toFixed(1)}%</div>
               <div className="text-xs text-slate-400">{city.scoring.cashOnCash.rating}</div>
             </div>
@@ -274,7 +274,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
                 {city.grade}
               </div>
               <div className="text-xs font-semibold text-slate-700 mt-2">{city.scoring.cashOnCash.rating}</div>
-              <div className="text-xs text-slate-400 mt-1">RPR: {city.scoring.cashOnCash.value.toFixed(1)}%</div>
+              <div className="text-xs text-slate-400 mt-1">CoC: {city.scoring.cashOnCash.value.toFixed(1)}%</div>
             </div>
 
             {/* DSI Gauge */}

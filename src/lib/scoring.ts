@@ -8,12 +8,30 @@
  * 
  * SCORING WEIGHTS (Total: 100 points)
  * =====================================
- * 1. Cash-on-Cash Return (RPR)    - 35 points (heaviest weight)
- * 2. Affordability                - 25 points
- * 3. STR Legality                 - 15 points
- * 4. Landlord Friendliness        - 10 points
- * 5. Saturation Risk              - 10 points
- * 6. Appreciation Potential       - 5 points (lowest - we're not chasing appreciation)
+ * 1. Cash-on-Cash Return            - 35 points (heaviest weight)
+ * 2. Affordability                  - 25 points
+ * 3. STR Legality                   - 15 points
+ * 4. Landlord Friendliness          - 10 points
+ * 5. Saturation Risk                - 10 points
+ * 6. Appreciation Potential         - 5 points (lowest - we're not chasing appreciation)
+ * 
+ * CASH-ON-CASH RETURN CALCULATION
+ * ================================
+ * Cash-on-Cash = (Annual Net Operating Income) / (Total Cash Invested)
+ * 
+ * Where:
+ * - Annual Net Operating Income = (Monthly Revenue × 12) - Annual Operating Expenses
+ * - Annual Operating Expenses = ~35% of gross revenue (cleaning, utilities, PM, insurance, repairs)
+ * - Total Cash Invested = Down Payment (20%) + Closing Costs (3%)
+ * 
+ * Example: $200K home, $3,000/month revenue
+ * - Annual Gross Revenue: $36,000
+ * - Annual Operating Expenses (35%): $12,600
+ * - Annual NOI: $23,400
+ * - Mortgage Payment (80% @ 7%, 30yr): $1,064/month = $12,768/year
+ * - Annual Cash Flow: $23,400 - $12,768 = $10,632
+ * - Total Cash Invested: $40,000 (20%) + $6,000 (3%) = $46,000
+ * - Cash-on-Cash Return: $10,632 / $46,000 = 23.1%
  */
 
 export interface ScoringBreakdown {
@@ -29,27 +47,65 @@ export interface ScoringBreakdown {
 }
 
 /**
- * Calculate Cash-on-Cash score (35 points max)
- * Based on Revenue-to-Price Ratio (RPR)
+ * Calculate Cash-on-Cash Return from monthly revenue and home price
  * 
- * RPR = Annual Gross Revenue / Purchase Price
+ * Assumptions:
+ * - 20% down payment
+ * - 3% closing costs
+ * - 7% interest rate, 30-year mortgage
+ * - 35% operating expense ratio
+ */
+export function calculateCashOnCash(monthlyRevenue: number, homePrice: number): number {
+  if (homePrice <= 0 || monthlyRevenue <= 0) return 0;
+  
+  // Annual gross revenue
+  const annualGrossRevenue = monthlyRevenue * 12;
+  
+  // Operating expenses (35% of gross)
+  const annualOperatingExpenses = annualGrossRevenue * 0.35;
+  
+  // Net Operating Income
+  const annualNOI = annualGrossRevenue - annualOperatingExpenses;
+  
+  // Mortgage calculation (80% LTV, 7% rate, 30 years)
+  const loanAmount = homePrice * 0.80;
+  const monthlyRate = 0.07 / 12;
+  const numPayments = 30 * 12;
+  const monthlyMortgage = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
+  const annualMortgage = monthlyMortgage * 12;
+  
+  // Annual Cash Flow
+  const annualCashFlow = annualNOI - annualMortgage;
+  
+  // Total Cash Invested (20% down + 3% closing costs)
+  const totalCashInvested = (homePrice * 0.20) + (homePrice * 0.03);
+  
+  // Cash-on-Cash Return
+  const cashOnCash = (annualCashFlow / totalCashInvested) * 100;
+  
+  return Math.round(cashOnCash * 10) / 10; // Round to 1 decimal
+}
+
+/**
+ * Calculate Cash-on-Cash score (35 points max)
+ * 
  * Target: 20%+ for strong score
  * 
  * Scoring:
- * - RPR >= 0.20 (20%+): 35 points (Elite)
- * - RPR >= 0.18 (18%+): 30 points (Excellent)
- * - RPR >= 0.15 (15%+): 25 points (Good)
- * - RPR >= 0.12 (12%+): 18 points (Marginal)
- * - RPR >= 0.10 (10%+): 10 points (Poor)
- * - RPR < 0.10: 5 points (Avoid)
+ * - CoC >= 20%: 35 points (Elite)
+ * - CoC >= 15%: 30 points (Excellent)
+ * - CoC >= 10%: 25 points (Good)
+ * - CoC >= 5%: 18 points (Marginal)
+ * - CoC >= 0%: 10 points (Break-even)
+ * - CoC < 0%: 5 points (Negative Cash Flow)
  */
-export function scoreCashOnCash(rpr: number): { score: number; rating: string } {
-  if (rpr >= 0.20) return { score: 35, rating: 'Elite (20%+)' };
-  if (rpr >= 0.18) return { score: 30, rating: 'Excellent (18%+)' };
-  if (rpr >= 0.15) return { score: 25, rating: 'Good (15%+)' };
-  if (rpr >= 0.12) return { score: 18, rating: 'Marginal (12%+)' };
-  if (rpr >= 0.10) return { score: 10, rating: 'Poor (10%+)' };
-  return { score: 5, rating: 'Avoid (<10%)' };
+export function scoreCashOnCash(cashOnCashReturn: number): { score: number; rating: string } {
+  if (cashOnCashReturn >= 20) return { score: 35, rating: 'Elite (20%+)' };
+  if (cashOnCashReturn >= 15) return { score: 30, rating: 'Excellent (15%+)' };
+  if (cashOnCashReturn >= 10) return { score: 25, rating: 'Good (10%+)' };
+  if (cashOnCashReturn >= 5) return { score: 18, rating: 'Marginal (5%+)' };
+  if (cashOnCashReturn >= 0) return { score: 10, rating: 'Break-even' };
+  return { score: 5, rating: 'Negative Cash Flow' };
 }
 
 /**
@@ -198,7 +254,7 @@ export function getVerdict(grade: string): 'strong-buy' | 'buy' | 'hold' | 'caut
  * Calculate complete scoring breakdown for a market
  */
 export interface MarketData {
-  rpr: number;
+  monthlyRevenue: number;
   medianHomePrice: number;
   strStatus: string;
   permitRequired: boolean;
@@ -208,7 +264,10 @@ export interface MarketData {
 }
 
 export function calculateScore(data: MarketData): ScoringBreakdown {
-  const cashOnCash = scoreCashOnCash(data.rpr);
+  // Calculate Cash-on-Cash return from revenue and price
+  const cashOnCashReturn = calculateCashOnCash(data.monthlyRevenue, data.medianHomePrice);
+  
+  const cashOnCash = scoreCashOnCash(cashOnCashReturn);
   const affordability = scoreAffordability(data.medianHomePrice);
   const legality = scoreLegality(data.strStatus, data.permitRequired);
   const landlordFriendly = scoreLandlordFriendly(data.stateCode);
@@ -227,7 +286,7 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   const verdict = getVerdict(grade);
   
   return {
-    cashOnCash: { score: cashOnCash.score, maxScore: 35, value: data.rpr * 100, rating: cashOnCash.rating },
+    cashOnCash: { score: cashOnCash.score, maxScore: 35, value: cashOnCashReturn, rating: cashOnCash.rating },
     affordability: { score: affordability.score, maxScore: 25, value: data.medianHomePrice, rating: affordability.rating },
     legality: { score: legality.score, maxScore: 15, status: data.strStatus, rating: legality.rating },
     landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
