@@ -247,8 +247,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Fix Inflated Revenue Values (Airbtics Integration)
-- [ ] Remove RURAL_CORRECTION multipliers from Mashvisor API route
-- [ ] Add Airbtics API integration as primary data source
-- [ ] Update calculator to use Airbtics with Mashvisor fallback
-- [ ] Test Oak Hill, WV shows ~$66k/year (not $610k)
-- [ ] Verify all revenue calculations are accurate
+- [x] Remove RURAL_CORRECTION multipliers from Mashvisor API route
+- [x] Add Airbtics API integration as primary data source
+- [x] Update calculator to use Airbtics with Mashvisor fallback
+- [x] Test Oak Hill, WV shows ~$66k/year (not $610k) ✅ Now showing $66,388/yr
+- [x] Verify all revenue calculations are accurate
+- [x] Fix x12 multiplication bug in percentile display
+- [x] Add Nominatim geocoding for address-to-coordinates conversion
