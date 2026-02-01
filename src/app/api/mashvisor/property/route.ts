@@ -9,6 +9,7 @@ const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 // Helper to make Mashvisor API calls
 async function mashvisorFetch(endpoint: string) {
   const url = `https://${MASHVISOR_HOST}${endpoint}`;
+  console.log("Mashvisor API call:", url);
   const response = await fetch(url, {
     method: "GET",
     headers: {
@@ -49,11 +50,16 @@ export async function POST(request: NextRequest) {
     const state = stateZip.split(" ")[0] || "";
     const zip = stateZip.split(" ")[1] || "";
 
+    console.log("Parsed address:", { street, city, state, zip });
+
     let property = null;
     let neighborhoodId = null;
     let neighborhoodData = null;
+    let dataSource = "neighborhood"; // Track where data came from
 
-    // Step 1: Try to get property info to find neighborhood ID
+    // =========================================================================
+    // STEP 1: Try to get property info (may fail for many addresses)
+    // =========================================================================
     try {
       const propertyData = await mashvisorFetch(
         `/property?address=${encodeURIComponent(street)}&city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&zip_code=${encodeURIComponent(zip)}`
@@ -62,41 +68,95 @@ export async function POST(request: NextRequest) {
       if (propertyData.status === "success" && propertyData.content) {
         property = propertyData.content;
         neighborhoodId = property.neighborhood?.id;
+        dataSource = "property";
+        console.log("Found property, neighborhood ID:", neighborhoodId);
       }
     } catch (e) {
-      console.log("Property lookup failed:", e);
+      console.log("Property lookup failed (expected for many addresses):", e);
     }
 
-    // Step 2: If no neighborhood ID from property, search neighborhoods by city
+    // =========================================================================
+    // STEP 2: FALLBACK - Search neighborhoods by city/state
+    // This is the key fix for "Property Not Found" issue
+    // =========================================================================
     if (!neighborhoodId && city && state) {
+      console.log("Property not found, falling back to city neighborhood search...");
       try {
         const searchData = await mashvisorFetch(
-          `/city/neighborhoods/${encodeURIComponent(state)}/${encodeURIComponent(city)}?page=1&items=5`
+          `/city/neighborhoods/${encodeURIComponent(state)}/${encodeURIComponent(city)}?page=1&items=10`
         );
         
         if (searchData.status === "success" && searchData.content?.results?.length > 0) {
+          // Get the first (most relevant) neighborhood
           neighborhoodId = searchData.content.results[0].id;
+          console.log("Found neighborhood via city search:", neighborhoodId, searchData.content.results[0].name);
         }
       } catch (e) {
         console.log("Neighborhood search failed:", e);
       }
     }
 
-    // Step 3: Get neighborhood bar data (main STR metrics)
-    if (neighborhoodId) {
+    // =========================================================================
+    // STEP 3: SECOND FALLBACK - Try city-level data directly
+    // =========================================================================
+    if (!neighborhoodId && city && state) {
+      console.log("No neighborhood found, trying city-level data...");
+      try {
+        // Try to get city overview data
+        const cityData = await mashvisorFetch(
+          `/city/overview/${encodeURIComponent(state)}/${encodeURIComponent(city)}`
+        );
+        
+        if (cityData.status === "success" && cityData.content) {
+          // Use city-level data as neighborhood data
+          neighborhoodData = {
+            name: city,
+            city: city,
+            state: state,
+            airbnb_rental: {
+              night_price: cityData.content.airbnb_night_price,
+              occupancy: cityData.content.airbnb_occupancy,
+              rental_income: cityData.content.airbnb_rental,
+              cap_rate: cityData.content.airbnb_cap,
+            },
+            traditional_rental: {
+              rental_income: cityData.content.traditional_rental,
+              cap_rate: cityData.content.traditional_cap,
+            },
+            num_of_airbnb_properties: cityData.content.num_of_airbnb_listings,
+            median_price: cityData.content.median_price,
+            walkscore: cityData.content.walk_score,
+            transitscore: cityData.content.transit_score,
+            bikescore: cityData.content.bike_score,
+          };
+          dataSource = "city";
+          console.log("Using city-level data for:", city);
+        }
+      } catch (e) {
+        console.log("City data fetch failed:", e);
+      }
+    }
+
+    // =========================================================================
+    // STEP 4: Get neighborhood bar data (main STR metrics)
+    // =========================================================================
+    if (neighborhoodId && !neighborhoodData) {
       try {
         const nbData = await mashvisorFetch(
           `/neighborhood/${neighborhoodId}/bar?state=${encodeURIComponent(state)}`
         );
         if (nbData.status === "success" && nbData.content) {
           neighborhoodData = nbData.content;
+          console.log("Got neighborhood bar data:", neighborhoodData.name);
         }
       } catch (e) {
         console.log("Neighborhood bar fetch failed:", e);
       }
     }
 
-    // Step 4: Get active listings to calculate REAL percentiles
+    // =========================================================================
+    // STEP 5: Get active listings to calculate REAL percentiles
+    // =========================================================================
     let listingsData = null;
     let percentileData = {
       revenue: { p25: 0, p50: 0, p75: 0, p90: 0 },
@@ -105,23 +165,28 @@ export async function POST(request: NextRequest) {
     };
     let comparableListings: any[] = [];
 
-    if (neighborhoodId || (city && state)) {
+    if (city && state) {
       try {
-        // Fetch listings - try by neighborhood first, then by city
-        let listingsEndpoint = neighborhoodId 
-          ? `/airbnb-property/active-listings?state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}&neighborhood_id=${neighborhoodId}&page=1&items=100`
-          : `/airbnb-property/active-listings?state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}&page=1&items=100`;
+        // Fetch listings by city (more reliable than neighborhood)
+        let listingsEndpoint = `/airbnb-property/active-listings?state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}&page=1&items=100`;
+        
+        // Add neighborhood filter if available
+        if (neighborhoodId) {
+          listingsEndpoint += `&neighborhood_id=${neighborhoodId}`;
+        }
         
         // Filter by bedrooms if specified
         if (bedrooms) {
           listingsEndpoint += `&bedrooms=${bedrooms}`;
         }
 
+        console.log("Fetching listings...");
         const listingsResponse = await mashvisorFetch(listingsEndpoint);
         
         if (listingsResponse.status === "success" && listingsResponse.content?.properties?.length > 0) {
           listingsData = listingsResponse.content;
           const props = listingsData.properties;
+          console.log(`Found ${props.length} listings`);
 
           // Extract values for percentile calculation
           const revenues = props.map((p: any) => p.rental_income).filter((v: number) => v > 0);
@@ -135,6 +200,8 @@ export async function POST(request: NextRequest) {
             occupancy: calculatePercentiles(occupancies),
           };
 
+          console.log("Calculated percentiles:", percentileData);
+
           // Get top 5 comparable listings for display
           comparableListings = props
             .filter((p: any) => p.rental_income > 0)
@@ -142,8 +209,8 @@ export async function POST(request: NextRequest) {
             .slice(0, 5)
             .map((p: any) => ({
               id: p.id,
-              name: p.name,
-              url: p.url,
+              name: p.name || `${p.num_of_rooms} BR in ${city}`,
+              url: p.url || `https://www.airbnb.com/rooms/${p.id}`,
               image: p.image,
               bedrooms: p.num_of_rooms,
               bathrooms: p.num_of_baths,
@@ -155,13 +222,17 @@ export async function POST(request: NextRequest) {
               reviewsCount: p.reviews_count,
               propertyType: p.property_type,
             }));
+        } else {
+          console.log("No listings found for this area");
         }
       } catch (e) {
         console.log("Listings fetch failed:", e);
       }
     }
 
-    // Step 5: Get historical occupancy data for seasonality
+    // =========================================================================
+    // STEP 6: Get historical occupancy data for seasonality
+    // =========================================================================
     let historicalData: any[] = [];
     if (neighborhoodId) {
       try {
@@ -169,34 +240,46 @@ export async function POST(request: NextRequest) {
           `/neighborhood/${neighborhoodId}/historical/airbnb?state=${encodeURIComponent(state)}`
         );
         if (histResponse.status === "success" && histResponse.content?.results) {
-          historicalData = histResponse.content.results.slice(0, 12).reverse(); // Last 12 months
+          historicalData = histResponse.content.results.slice(0, 12).reverse();
         }
       } catch (e) {
         console.log("Historical data fetch failed:", e);
       }
     }
 
-    // If we have no data at all, return error
+    // =========================================================================
+    // FINAL CHECK: If we have no data at all, return helpful error
+    // =========================================================================
     if (!neighborhoodData && !listingsData) {
       return NextResponse.json({
         success: false,
-        error: "No data found for this location",
-        message: "This address or city may not have STR data available. Try a major city like Nashville, Austin, or Denver.",
+        error: "No STR data found for this location",
+        message: `We couldn't find short-term rental data for "${city}, ${state}". Try a major market like Nashville, Austin, Denver, or Miami.`,
+        suggestions: [
+          "Nashville, TN",
+          "Austin, TX", 
+          "Denver, CO",
+          "Miami, FL",
+          "Phoenix, AZ",
+        ],
       });
     }
 
-    // Extract data from neighborhood bar response
+    // =========================================================================
+    // BUILD RESPONSE
+    // =========================================================================
     const airbnbRental = neighborhoodData?.airbnb_rental || {};
     const traditionalRental = neighborhoodData?.traditional_rental || {};
 
-    // Use REAL data from Mashvisor - no fallbacks to fake numbers
+    // Use REAL data from Mashvisor
     const avgOccupancy = airbnbRental.occupancy || neighborhoodData?.avg_occupancy || 0;
     const avgAdr = airbnbRental.night_price || 0;
     const avgMonthlyRevenue = airbnbRental.rental_income || 0;
 
-    // Build comprehensive result
     const result = {
       success: true,
+      dataSource: dataSource, // Tell frontend where data came from
+      
       property: property ? {
         address: property.address || street,
         city: property.city || city,
@@ -217,11 +300,11 @@ export async function POST(request: NextRequest) {
         zipCode: zip,
       },
       
-      neighborhood: neighborhoodData ? {
+      neighborhood: {
         id: neighborhoodId,
-        name: neighborhoodData.name || city,
-        city: neighborhoodData.city || city,
-        state: neighborhoodData.state || state,
+        name: neighborhoodData?.name || city,
+        city: neighborhoodData?.city || city,
+        state: neighborhoodData?.state || state,
         
         // Core STR metrics from Mashvisor
         occupancy: avgOccupancy,
@@ -243,24 +326,24 @@ export async function POST(request: NextRequest) {
         occupancyChangePercent: airbnbRental.occupancy_change_percentage || 0,
         
         // Property counts
-        listingsCount: neighborhoodData.num_of_airbnb_properties || 0,
-        traditionalCount: neighborhoodData.num_of_traditional_properties || 0,
-        totalProperties: neighborhoodData.num_of_properties || 0,
+        listingsCount: neighborhoodData?.num_of_airbnb_properties || listingsData?.num_of_properties || 0,
+        traditionalCount: neighborhoodData?.num_of_traditional_properties || 0,
+        totalProperties: neighborhoodData?.num_of_properties || 0,
         
         // Scores
-        mashMeter: neighborhoodData.mashMeter || 0,
-        mashMeterStars: neighborhoodData.mashMeterStars || 0,
-        walkScore: neighborhoodData.walkscore || 0,
-        transitScore: neighborhoodData.transitscore || 0,
-        bikeScore: neighborhoodData.bikescore || 0,
+        mashMeter: neighborhoodData?.mashMeter || 0,
+        mashMeterStars: neighborhoodData?.mashMeterStars || 0,
+        walkScore: neighborhoodData?.walkscore || 0,
+        transitScore: neighborhoodData?.transitscore || 0,
+        bikeScore: neighborhoodData?.bikescore || 0,
         
         // Market data
-        medianPrice: neighborhoodData.median_price || 0,
-        pricePerSqft: neighborhoodData.price_per_sqft || 0,
-        avgSoldPrice: neighborhoodData.average_sold_price || 0,
-        avgDaysOnMarket: neighborhoodData.average_days_on_market || 0,
-        strategy: neighborhoodData.strategy || "airbnb",
-      } : null,
+        medianPrice: neighborhoodData?.median_price || 0,
+        pricePerSqft: neighborhoodData?.price_per_sqft || 0,
+        avgSoldPrice: neighborhoodData?.average_sold_price || 0,
+        avgDaysOnMarket: neighborhoodData?.average_days_on_market || 0,
+        strategy: neighborhoodData?.strategy || "airbnb",
+      },
       
       // REAL percentile data calculated from actual listings
       percentiles: {
@@ -282,11 +365,12 @@ export async function POST(request: NextRequest) {
       })),
     };
 
+    console.log("Returning result for:", city, state, "Data source:", dataSource);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Mashvisor API error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch property data" },
+      { success: false, error: "Failed to fetch property data. Please try again." },
       { status: 500 }
     );
   }

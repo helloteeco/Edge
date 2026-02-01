@@ -374,7 +374,26 @@ export default function CalculatorPage() {
   // Calculate investment metrics
   const calculateInvestment = () => {
     const price = parseFloat(purchasePrice.replace(/[^0-9.]/g, "")) || 0;
-    if (price === 0) return null;
+    // Return partial data even if price is 0 so UI can show the calculator
+    if (price === 0) {
+      return {
+        downPayment: 0,
+        loanAmount: 0,
+        monthlyMortgage: 0,
+        annualPropertyTax: 0,
+        annualInsurance: insuranceAnnual,
+        annualManagement: 0,
+        annualMaintenance: 0,
+        annualVacancy: 0,
+        totalAnnualExpenses: 0,
+        netOperatingIncome: 0,
+        cashFlow: 0,
+        cashOnCashReturn: 0,
+        capRate: 0,
+        monthlyCashFlow: 0,
+        needsPrice: true, // Flag to show "enter price" message
+      };
+    }
 
     const downPayment = price * (downPaymentPercent / 100);
     const loanAmount = price - downPayment;
@@ -963,7 +982,15 @@ export default function CalculatorPage() {
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <h4 className="font-semibold mb-4" style={{ color: "#2b2823" }}>Investment Summary</h4>
                   
-                  {/* Key Metrics */}
+                  {/* Show message if purchase price not entered */}
+                  {investment.needsPrice && (
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-4">
+                      <p className="text-amber-700 text-sm">👆 Enter a purchase price above to see ROI calculations</p>
+                    </div>
+                  )}
+                  
+                  {/* Key Metrics - only show when price is entered */}
+                  {!investment.needsPrice && (
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="p-4 rounded-xl text-center" style={{ backgroundColor: investment.monthlyCashFlow >= 0 ? "#ecfdf5" : "#fef2f2" }}>
                       <p className="text-xs mb-1" style={{ color: "#787060" }}>Monthly Cash Flow</p>
@@ -984,8 +1011,10 @@ export default function CalculatorPage() {
                       </p>
                     </div>
                   </div>
+                  )}
 
-                  {/* Expense Breakdown */}
+                  {/* Expense Breakdown - only show when price is entered */}
+                  {!investment.needsPrice && (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span style={{ color: "#787060" }}>Down Payment</span>
@@ -1036,6 +1065,7 @@ export default function CalculatorPage() {
                       </span>
                     </div>
                   </div>
+                  )}
                 </div>
               )}
             </div>
