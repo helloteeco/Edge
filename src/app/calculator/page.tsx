@@ -1074,59 +1074,80 @@ export default function CalculatorPage() {
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Revenue Forecast</h3>
               <p className="text-sm text-gray-500 mb-4">Projected monthly income based on seasonal demand</p>
               
-              {/* Bar Chart - Revenue Based */}
-              <div className="flex items-end justify-between gap-1 h-48 mb-2">
-                {getSeasonalityData().map((month, index) => {
-                  const annualRev = getDisplayRevenue() || 0;
-                  const baseMonthlyRev = annualRev / 12;
-                  const guestMultiplier = getGuestCountMultiplier();
-                  // Use actual revenue from historical data if available, otherwise calculate from occupancy
-                  let monthlyRev = 0;
+              {/* Bar Chart with Y-Axis */}
+              {(() => {
+                const annualRev = getDisplayRevenue() || 0;
+                const baseMonthlyRev = annualRev / 12;
+                const guestMultiplier = getGuestCountMultiplier();
+                
+                // Calculate all monthly revenues first
+                const monthlyRevenues = getSeasonalityData().map(month => {
                   if (month.revenue && month.revenue > 0) {
-                    // Use actual monthly revenue from Airbtics, scaled by guest multiplier
-                    monthlyRev = Math.round(month.revenue * guestMultiplier);
+                    return Math.round(month.revenue * guestMultiplier);
                   } else {
-                    // Calculate from occupancy multiplier
                     const baseOccupancy = result.occupancy || 55;
                     const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
-                    monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
+                    return Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
                   }
-                  monthlyRev = monthlyRev || Math.round(baseMonthlyRev);
-                  
-                  const maxRev = Math.max(...getSeasonalityData().map(m => {
-                    if (m.revenue && m.revenue > 0) return Math.round(m.revenue * guestMultiplier);
-                    const baseOcc = result.occupancy || 55;
-                    const mult = baseOcc > 0 ? (m.occupancy / baseOcc) : 1;
-                    return Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5)) || baseMonthlyRev;
-                  }), 1);
-                  const heightPercent = maxRev > 0 ? (monthlyRev / maxRev) * 100 : 50;
-                  const barColor = monthlyRev >= baseMonthlyRev * 1.1 ? '#22c55e' : monthlyRev >= baseMonthlyRev * 0.9 ? '#3b82f6' : '#f59e0b';
-                  
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-bold mb-1" style={{ color: "#2b2823" }}>
-                        ${monthlyRev >= 1000 ? Math.round(monthlyRev / 1000) + 'k' : formatCurrency(monthlyRev).replace('$', '')}
-                      </span>
-                      <div 
-                        className="w-full rounded-t-md transition-all cursor-pointer hover:opacity-80"
-                        style={{ 
-                          height: `${heightPercent}%`,
-                          backgroundColor: barColor,
-                          minHeight: '20px'
-                        }}
-                        title={`${monthNames[month.month - 1]}: ${formatCurrency(monthlyRev)}`}
-                      ></div>
+                });
+                
+                const maxRev = Math.max(...monthlyRevenues, 1);
+                const minRev = Math.min(...monthlyRevenues);
+                // Start Y-axis from 60% of min to emphasize variation
+                const yAxisMin = Math.floor(minRev * 0.6 / 500) * 500;
+                const yAxisMax = Math.ceil(maxRev * 1.1 / 500) * 500;
+                const yAxisRange = yAxisMax - yAxisMin;
+                
+                // Generate Y-axis labels (4 ticks)
+                const yAxisTicks = [0, 0.33, 0.66, 1].map(pct => Math.round(yAxisMin + yAxisRange * pct));
+                
+                return (
+                  <div className="flex gap-2">
+                    {/* Y-Axis Labels */}
+                    <div className="flex flex-col justify-between h-48 text-right pr-2" style={{ minWidth: '45px' }}>
+                      {yAxisTicks.reverse().map((tick, i) => (
+                        <span key={i} className="text-xs" style={{ color: "#787060" }}>
+                          ${tick >= 1000 ? Math.round(tick / 1000) + 'k' : tick}
+                        </span>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between gap-1">
-                {monthNames.map((name, index) => (
-                  <div key={index} className="flex-1 text-center">
-                    <span className="text-xs text-gray-400">{name}</span>
+                    
+                    {/* Chart Area */}
+                    <div className="flex-1">
+                      <div className="flex items-end justify-between gap-1 h-48 border-l border-b" style={{ borderColor: '#e5e3da' }}>
+                        {monthlyRevenues.map((monthlyRev, index) => {
+                          // Calculate height based on Y-axis range (not from 0)
+                          const heightPercent = yAxisRange > 0 ? ((monthlyRev - yAxisMin) / yAxisRange) * 100 : 50;
+                          const barColor = monthlyRev >= baseMonthlyRev * 1.1 ? '#22c55e' : monthlyRev >= baseMonthlyRev * 0.9 ? '#3b82f6' : '#f59e0b';
+                          
+                          return (
+                            <div key={index} className="flex-1 flex flex-col items-center justify-end h-full">
+                              <span className="text-xs font-bold mb-1" style={{ color: "#2b2823" }}>
+                                ${monthlyRev >= 1000 ? Math.round(monthlyRev / 1000) + 'k' : monthlyRev}
+                              </span>
+                              <div 
+                                className="w-full rounded-t-md transition-all cursor-pointer hover:opacity-80"
+                                style={{ 
+                                  height: `${Math.max(heightPercent, 5)}%`,
+                                  backgroundColor: barColor,
+                                }}
+                                title={`${monthNames[index]}: ${formatCurrency(monthlyRev)}`}
+                              ></div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between gap-1 mt-1">
+                        {monthNames.map((name, index) => (
+                          <div key={index} className="flex-1 text-center">
+                            <span className="text-xs text-gray-400">{name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })()}
               
               {/* Legend */}
               <div className="flex justify-center gap-4 mt-4 text-xs">
