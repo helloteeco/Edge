@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { cityData, stateData } from "@/data/helpers";
 
@@ -28,15 +28,106 @@ export default function SavedPage() {
   const [activeTab, setActiveTab] = useState<'reports' | 'markets'>('reports');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
+  
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
 
+  // Check auth status on mount
   useEffect(() => {
+    const authEmail = localStorage.getItem("edge_auth_email");
+    const authToken = localStorage.getItem("edge_auth_token");
+    
+    if (authEmail && authToken) {
+      setIsAuthenticated(true);
+      setUserEmail(authEmail);
+    }
+  }, []);
+
+  // Load saved data
+  const loadSavedData = useCallback(async () => {
+    // Always load local data first
     const cities = JSON.parse(localStorage.getItem("savedCities") || "[]");
     const states = JSON.parse(localStorage.getItem("savedStates") || "[]");
-    const reports = JSON.parse(localStorage.getItem("savedReports") || "[]");
+    const localReports = JSON.parse(localStorage.getItem("savedReports") || "[]");
+    
     setSavedCities(cities);
     setSavedStates(states);
-    setSavedReports(reports);
-  }, []);
+    
+    // If authenticated, sync with server
+    if (isAuthenticated && userEmail) {
+      setIsSyncing(true);
+      try {
+        const response = await fetch(`/api/saved-properties?email=${encodeURIComponent(userEmail)}`);
+        const data = await response.json();
+        
+        if (data.success && data.properties) {
+          // Merge server data with local data (server takes priority for conflicts)
+          const serverReports = data.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number } }) => ({
+            id: p.id,
+            address: p.address,
+            city: p.address.split(',')[1]?.trim() || '',
+            state: p.address.split(',')[2]?.trim() || '',
+            bedrooms: p.result?.bedrooms || 0,
+            bathrooms: p.result?.bathrooms || 0,
+            guestCount: p.result?.guestCount || 0,
+            annualRevenue: p.result?.annualRevenue || 0,
+            cashFlow: p.result?.monthlyNetCashFlow || 0,
+            cashOnCash: p.result?.cashOnCash || 0,
+            purchasePrice: 0,
+            notes: p.notes || '',
+            savedAt: p.savedAt,
+          }));
+          
+          // Merge: use server data, add any local-only items
+          const serverAddresses = new Set(serverReports.map((r: SavedReport) => r.address));
+          const localOnlyReports = localReports.filter((r: SavedReport) => !serverAddresses.has(r.address));
+          
+          // Upload local-only reports to server
+          for (const report of localOnlyReports) {
+            await fetch('/api/saved-properties', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: userEmail,
+                property: {
+                  address: report.address,
+                  notes: report.notes,
+                  result: {
+                    annualRevenue: report.annualRevenue,
+                    cashOnCash: report.cashOnCash,
+                    monthlyNetCashFlow: report.cashFlow,
+                    bedrooms: report.bedrooms,
+                    bathrooms: report.bathrooms,
+                    guestCount: report.guestCount,
+                  },
+                },
+              }),
+            });
+          }
+          
+          const mergedReports = [...serverReports, ...localOnlyReports];
+          setSavedReports(mergedReports);
+          localStorage.setItem("savedReports", JSON.stringify(mergedReports));
+          setLastSyncTime(Date.now());
+        } else {
+          setSavedReports(localReports);
+        }
+      } catch (error) {
+        console.error("Error syncing with server:", error);
+        setSavedReports(localReports);
+      }
+      setIsSyncing(false);
+    } else {
+      setSavedReports(localReports);
+    }
+  }, [isAuthenticated, userEmail]);
+
+  useEffect(() => {
+    loadSavedData();
+  }, [loadSavedData]);
 
   const removeSavedCity = (cityId: string) => {
     const updated = savedCities.filter(id => id !== cityId);
@@ -50,24 +141,57 @@ export default function SavedPage() {
     localStorage.setItem("savedStates", JSON.stringify(updated));
   };
 
-  const removeSavedReport = (reportId: string) => {
+  const removeSavedReport = async (reportId: string) => {
     const updated = savedReports.filter(r => r.id !== reportId);
     setSavedReports(updated);
     localStorage.setItem("savedReports", JSON.stringify(updated));
+    
+    // Sync with server if authenticated
+    if (isAuthenticated && userEmail) {
+      try {
+        await fetch('/api/saved-properties', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail, propertyId: reportId }),
+        });
+      } catch (error) {
+        console.error("Error deleting from server:", error);
+      }
+    }
   };
 
-  const updateReportNotes = (reportId: string, notes: string) => {
+  const updateReportNotes = async (reportId: string, notes: string) => {
     const updated = savedReports.map(r => 
       r.id === reportId ? { ...r, notes } : r
     );
     setSavedReports(updated);
     localStorage.setItem("savedReports", JSON.stringify(updated));
     setEditingNoteId(null);
+    
+    // Sync with server if authenticated
+    if (isAuthenticated && userEmail) {
+      try {
+        await fetch('/api/saved-properties', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail, propertyId: reportId, notes }),
+        });
+      } catch (error) {
+        console.error("Error updating notes on server:", error);
+      }
+    }
   };
 
   const startEditingNote = (report: SavedReport) => {
     setEditingNoteId(report.id);
     setNoteText(report.notes || "");
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("edge_auth_email");
+    localStorage.removeItem("edge_auth_token");
+    setIsAuthenticated(false);
+    setUserEmail(null);
   };
 
   const savedCityData = cityData.filter(city => savedCities.includes(city.id));
@@ -125,21 +249,72 @@ export default function SavedPage() {
         }}
       >
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: '#e5e3da' }}
-            >
-              <span className="text-xl">💾</span>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: '#e5e3da' }}
+              >
+                <span className="text-xl">💾</span>
+              </div>
+              <h1 
+                className="text-2xl font-bold"
+                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                Saved
+              </h1>
             </div>
-            <h1 
-              className="text-2xl font-bold"
-              style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-            >
-              Saved
-            </h1>
+            
+            {/* Auth Status */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="text-sm font-medium" style={{ color: '#2b2823' }}>{userEmail}</div>
+                  <div className="text-xs flex items-center gap-1" style={{ color: '#787060' }}>
+                    {isSyncing ? (
+                      <>
+                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Synced across devices
+                      </>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-gray-100"
+                  style={{ color: '#787060', border: '1px solid #d8d6cd' }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/calculator"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                Sign In to Sync
+              </Link>
+            )}
           </div>
-          <p className="ml-13" style={{ color: '#787060' }}>Your saved reports and bookmarked markets</p>
+          <p className="ml-13" style={{ color: '#787060' }}>
+            {isAuthenticated 
+              ? "Your saved reports sync across all your devices" 
+              : "Your saved reports and bookmarked markets"}
+          </p>
           
           {/* Tabs */}
           <div className="flex gap-2 mt-4">

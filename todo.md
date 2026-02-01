@@ -292,3 +292,14 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Add email report option
 - [x] Add ROI timeline chart (10-year projection)
 - [x] Update PDF with ROI timeline and all helpful info for sharing
+
+
+## User Authentication & Email Collection (February 2026)
+- [ ] Create users database/storage for email collection
+- [ ] Store user emails when they sign in via magic link
+- [ ] Track signup date and last login for each user
+- [ ] Create admin API to export email list
+- [ ] Link saved properties to user accounts by email
+- [ ] Sync saved properties across devices for logged-in users
+- [ ] Add 60-minute cache expiration for recent searches (API compliance)
+- [ ] Update PDF export with new Teeco logo
