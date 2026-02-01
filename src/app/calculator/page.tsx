@@ -181,34 +181,50 @@ export default function CalculatorPage() {
 
       const { property, neighborhood } = data;
 
-      const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : 1.3;
-      
-      const rawAdr = neighborhood?.adr;
-      const baseAdr = typeof rawAdr === "number" ? rawAdr : typeof rawAdr === "string" ? parseFloat(rawAdr) : 150;
-      const adjustedADR = Math.round(baseAdr * bedroomMultiplier);
-      
-      const rawOcc = neighborhood?.occupancy;
-      const occ = typeof rawOcc === "number" ? rawOcc : typeof rawOcc === "string" ? parseFloat(rawOcc) : 55;
-      
-      const annualRevenue = Math.round(adjustedADR * (occ / 100) * 365);
-      const monthlyRevenue = Math.round(annualRevenue / 12);
-      const revPAN = Math.round(adjustedADR * (occ / 100));
-
+      // Parse numeric values safely
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
         if (typeof val === "string") return parseFloat(val) || 0;
         return 0;
       };
 
+      // Bedroom multiplier for ADR adjustment
+      const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : 1.3;
+      
+      // Get ADR from API - now correctly mapped from airbnb_rental.night_price
+      const baseAdr = parseNum(neighborhood?.adr);
+      const adjustedADR = baseAdr > 0 ? Math.round(baseAdr * bedroomMultiplier) : 150;
+      
+      // Get occupancy from API - now correctly mapped from airbnb_rental.occupancy
+      const occ = parseNum(neighborhood?.occupancy);
+      const occupancy = occ > 0 ? occ : 55;
+      
+      // Calculate revenue - prefer API monthly revenue if available, otherwise calculate
+      const apiMonthlyRevenue = parseNum(neighborhood?.monthlyRevenue);
+      let annualRevenue: number;
+      let monthlyRevenue: number;
+      
+      if (apiMonthlyRevenue > 0) {
+        // Use API monthly revenue and adjust for bedrooms
+        monthlyRevenue = Math.round(apiMonthlyRevenue * bedroomMultiplier);
+        annualRevenue = monthlyRevenue * 12;
+      } else {
+        // Calculate from ADR and occupancy
+        annualRevenue = Math.round(adjustedADR * (occupancy / 100) * 365);
+        monthlyRevenue = Math.round(annualRevenue / 12);
+      }
+      
+      const revPAN = Math.round(adjustedADR * (occupancy / 100));
+
       const analysisResult: AnalysisResult = {
         address: addressToAnalyze,
-        city: property?.city || "",
-        state: property?.state || "",
+        city: property?.city || neighborhood?.city || "",
+        state: property?.state || neighborhood?.state || "",
         neighborhood: neighborhood?.name || "Unknown",
         annualRevenue,
         monthlyRevenue,
         adr: adjustedADR,
-        occupancy: Math.round(occ),
+        occupancy: Math.round(occupancy),
         revPAN,
         bedrooms: property?.bedrooms || bedrooms,
         bathrooms: property?.bathrooms || bathrooms,
