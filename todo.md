@@ -244,3 +244,11 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Keep cash-on-cash as hero metric
 - [ ] Keep STR vs LTR comparison
 - [ ] Keep all expense inputs from spreadsheet
+
+
+## Fix Inflated Revenue Values (Airbtics Integration)
+- [ ] Remove RURAL_CORRECTION multipliers from Mashvisor API route
+- [ ] Add Airbtics API integration as primary data source
+- [ ] Update calculator to use Airbtics with Mashvisor fallback
+- [ ] Test Oak Hill, WV shows ~$66k/year (not $610k)
+- [ ] Verify all revenue calculations are accurate

@@ -6,6 +6,119 @@ export const dynamic = "force-dynamic";
 const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY || "20f866598emsh7e1f8d0058d2271p1adc56jsn8653832f1320";
 const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 
+// Airbtics API configuration (primary data source for accurate STR data)
+const AIRBTICS_API_KEY = process.env.AIRBTICS_API_KEY || "";
+const AIRBTICS_BASE_URL = "https://crap0y5bx5.execute-api.us-east-2.amazonaws.com/prod";
+
+// Cache for Airbtics reports (60 minutes per TOS)
+const airbticsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 60 * 60 * 1000; // 60 minutes
+
+// Geocode address to get coordinates using Nominatim (OpenStreetMap)
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ", USA")}&format=json&limit=1`;
+    console.log("Geocoding address:", address);
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "EdgeByTeeco/1.0 (contact@teeco.co)",
+      },
+    });
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      const result = data[0];
+      const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
+      console.log("Geocoded coordinates:", coords);
+      return coords;
+    }
+    console.log("No geocoding results for:", address);
+    return null;
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
+  }
+}
+
+// Call Airbtics API for accurate STR data
+async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bathrooms: number): Promise<any | null> {
+  if (!AIRBTICS_API_KEY) {
+    console.log("Airbtics API key not configured, skipping...");
+    return null;
+  }
+
+  const cacheKey = `${lat.toFixed(3)}_${lng.toFixed(3)}_${bedrooms}`;
+  const cached = airbticsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log("Airbtics cache hit for:", cacheKey);
+    return cached.data;
+  }
+
+  try {
+    console.log("Calling Airbtics API for:", { lat, lng, bedrooms });
+    
+    // Step 1: Request a report
+    const createResponse = await fetch(`${AIRBTICS_BASE_URL}/report/summary`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": AIRBTICS_API_KEY,  // lowercase header as per docs
+      },
+      body: JSON.stringify({
+        latitude: lat,   // API expects 'latitude' not 'lat'
+        longitude: lng,  // API expects 'longitude' not 'lng'
+        bedrooms,
+        bathrooms: bathrooms || Math.ceil(bedrooms / 2),
+        accommodates: bedrooms * 2,
+      }),
+    });
+
+    if (!createResponse.ok) {
+      console.error("Airbtics create error:", createResponse.status);
+      return null;
+    }
+
+    const createResult = await createResponse.json();
+    // The API returns { message: { report_id: "..." } }
+    const reportId = createResult.report_id || createResult.message?.report_id;
+    
+    if (!reportId) {
+      console.error("No report_id from Airbtics, response:", JSON.stringify(createResult));
+      return null;
+    }
+    
+    console.log("Airbtics report_id:", reportId);
+
+    // Step 2: Fetch the report (free call)
+    const reportResponse = await fetch(`${AIRBTICS_BASE_URL}/report?id=${reportId}`, {
+      method: "GET",
+      headers: { "x-api-key": AIRBTICS_API_KEY },
+    });
+
+    if (!reportResponse.ok) {
+      console.error("Airbtics report fetch error:", reportResponse.status);
+      return null;
+    }
+
+    const reportResponse2 = await reportResponse.json();
+    // The API wraps the data in a 'message' object
+    const reportData = reportResponse2.message || reportResponse2;
+    
+    console.log("Airbtics data received:", {
+      revenue: reportData.revenue,
+      nightlyRate: reportData.nightly_rate,
+      occupancy: reportData.occupancy_rate,
+    });
+
+    // Cache the result
+    airbticsCache.set(cacheKey, { data: reportData, timestamp: Date.now() });
+    return reportData;
+  } catch (error) {
+    console.error("Airbtics API error:", error);
+    return null;
+  }
+}
+
 // Helper to make Mashvisor API calls
 async function mashvisorFetch(endpoint: string) {
   const url = `https://${MASHVISOR_HOST}${endpoint}`;
@@ -61,12 +174,9 @@ function getBedroomMultiplier(bedrooms: number): number {
   return BEDROOM_ADR_MULTIPLIERS[bedrooms] || 1.0;
 }
 
-// Rural market correction multipliers (Mashvisor underestimates these markets)
-const RURAL_CORRECTION = {
-  adr: 2.5,        // ADR is typically 2.5x what Mashvisor shows
-  occupancy: 1.8,  // Occupancy is typically 1.8x higher
-  revenue: 3.0,    // Combined effect on revenue
-};
+// REMOVED: Rural market correction multipliers
+// These were causing inflated values. Now using Airbtics for accurate data.
+// const RURAL_CORRECTION = { adr: 2.5, occupancy: 1.8, revenue: 3.0 };
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,10 +199,21 @@ export async function POST(request: NextRequest) {
 
     console.log("Parsed address:", { street, city, state, zip, bedrooms, bathrooms });
 
+    // =========================================================================
+    // STEP 0: Try Airbtics first for accurate STR data (primary source)
+    // =========================================================================
+    let airbticsData = null;
+    const coords = await geocodeAddress(address);
+    
+    if (coords) {
+      console.log("Geocoded coordinates:", coords);
+      airbticsData = await fetchAirbticsData(coords.lat, coords.lng, bedrooms, bathrooms);
+    }
+
     let property = null;
     let neighborhoodId = null;
     let neighborhoodData = null;
-    let dataSource = "neighborhood";
+    let dataSource = airbticsData ? "airbtics" : "neighborhood";
 
     // =========================================================================
     // STEP 1: Try to get property info (may fail for many addresses)
@@ -364,34 +485,14 @@ export async function POST(request: NextRequest) {
     let adjustedMonthlyRevenue = bedroomSpecificRevenue > 0 ? bedroomSpecificRevenue : baseMonthlyRevenue * bedroomMultiplier;
 
     // =========================================================================
-    // APPLY RURAL/VACATION MARKET CORRECTION
-    // Mashvisor significantly underestimates these markets
+    // RURAL MARKET DETECTION (for logging only - no corrections applied)
+    // Airbtics provides accurate data, so no multipliers needed
     // =========================================================================
     const isRuralMarket = isRuralVacationMarket(state, city, neighborhoodName);
-    let ruralCorrectionApplied = false;
+    const ruralCorrectionApplied = false; // No longer applying corrections
 
     if (isRuralMarket) {
-      console.log("Applying rural/vacation market correction for:", city, state);
-      ruralCorrectionApplied = true;
-      
-      // Only apply correction if data seems unreasonably low
-      if (adjustedAdr < 100) {
-        adjustedAdr = adjustedAdr * RURAL_CORRECTION.adr;
-      }
-      if (adjustedOccupancy < 40) {
-        adjustedOccupancy = Math.min(adjustedOccupancy * RURAL_CORRECTION.occupancy, 75);
-      }
-      if (adjustedMonthlyRevenue < 2000) {
-        adjustedMonthlyRevenue = adjustedMonthlyRevenue * RURAL_CORRECTION.revenue;
-      }
-      
-      // Also adjust percentiles for rural markets
-      if (percentileData.revenue.p50 < 30000) {
-        percentileData.revenue.p25 = percentileData.revenue.p25 * RURAL_CORRECTION.revenue;
-        percentileData.revenue.p50 = percentileData.revenue.p50 * RURAL_CORRECTION.revenue;
-        percentileData.revenue.p75 = percentileData.revenue.p75 * RURAL_CORRECTION.revenue;
-        percentileData.revenue.p90 = percentileData.revenue.p90 * RURAL_CORRECTION.revenue;
-      }
+      console.log("Rural/vacation market detected:", city, state, "- using raw Mashvisor data (Airbtics recommended for accuracy)");
     }
 
     // If we still have no monthly revenue, calculate from ADR and occupancy
@@ -400,18 +501,39 @@ export async function POST(request: NextRequest) {
     }
 
     // =========================================================================
-    // ENSURE PERCENTILES MAKE SENSE
-    // If percentiles are 0 or very low, estimate from adjusted base data
+    // USE AIRBTICS DATA IF AVAILABLE (more accurate than Mashvisor)
     // =========================================================================
-    const annualRevenue = adjustedMonthlyRevenue * 12;
+    let annualRevenue: number;
     
-    if (percentileData.revenue.p50 === 0 || percentileData.revenue.p50 < annualRevenue * 0.5) {
+    if (airbticsData && airbticsData.revenue > 0) {
+      // Airbtics provides accurate annual revenue directly
+      annualRevenue = airbticsData.revenue;
+      adjustedAdr = airbticsData.nightly_rate || adjustedAdr;
+      adjustedOccupancy = airbticsData.occupancy_rate || adjustedOccupancy;
+      adjustedMonthlyRevenue = Math.round(annualRevenue / 12);
+      
+      // Use Airbtics data for percentiles (estimate from their data)
       percentileData.revenue = {
         p25: Math.round(annualRevenue * 0.7),
         p50: Math.round(annualRevenue),
-        p75: Math.round(annualRevenue * 1.35),
-        p90: Math.round(annualRevenue * 1.65),
+        p75: Math.round(annualRevenue * 1.28),
+        p90: Math.round(annualRevenue * 1.45),
       };
+      
+      console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy });
+    } else {
+      // Fallback to Mashvisor data
+      annualRevenue = adjustedMonthlyRevenue * 12;
+      
+      // Ensure percentiles make sense for Mashvisor data
+      if (percentileData.revenue.p50 === 0 || percentileData.revenue.p50 < annualRevenue * 0.5) {
+        percentileData.revenue = {
+          p25: Math.round(annualRevenue * 0.7),
+          p50: Math.round(annualRevenue),
+          p75: Math.round(annualRevenue * 1.35),
+          p90: Math.round(annualRevenue * 1.65),
+        };
+      }
     }
 
     const result = {

@@ -244,22 +244,25 @@ export default function CalculatorPage() {
       const avgOccupancy = parseNum(neighborhood?.occupancy);
       
       // Use percentile data if available (already filtered by bedroom count)
+      // NOTE: percentiles.revenue values are ALREADY ANNUAL (calculated from monthly * 12 in API)
       let annualRevenue: number;
       let monthlyRevenue: number;
       
       if (percentiles?.revenue?.p50 > 0) {
-        // Use median (p50) from filtered listings as the average
-        monthlyRevenue = percentiles.revenue.p50;
-        annualRevenue = monthlyRevenue * 12;
+        // p50 is ALREADY annual revenue - don't multiply by 12 again!
+        annualRevenue = percentiles.revenue.p50;
+        monthlyRevenue = Math.round(annualRevenue / 12);
+      } else if (parseNum(neighborhood?.annualRevenue) > 0) {
+        // Use neighborhood annual revenue directly
+        annualRevenue = parseNum(neighborhood?.annualRevenue);
+        monthlyRevenue = Math.round(annualRevenue / 12);
       } else if (parseNum(neighborhood?.monthlyRevenue) > 0) {
-        // Fallback to neighborhood average with bedroom multiplier
-        const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : bedrooms === 5 ? 1.3 : 1.5;
-        monthlyRevenue = Math.round(parseNum(neighborhood?.monthlyRevenue) * bedroomMultiplier);
+        // Fallback to neighborhood monthly revenue
+        monthlyRevenue = parseNum(neighborhood?.monthlyRevenue);
         annualRevenue = monthlyRevenue * 12;
       } else if (avgAdr > 0 && avgOccupancy > 0) {
-        // Calculate from ADR and occupancy
-        const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : bedrooms === 5 ? 1.3 : 1.5;
-        annualRevenue = Math.round(avgAdr * bedroomMultiplier * (avgOccupancy / 100) * 365);
+        // Calculate from ADR and occupancy (no bedroom multiplier - data should already be bedroom-specific)
+        annualRevenue = Math.round(avgAdr * (avgOccupancy / 100) * 365);
         monthlyRevenue = Math.round(annualRevenue / 12);
       } else {
         annualRevenue = 0;
@@ -344,14 +347,15 @@ export default function CalculatorPage() {
     if (!result) return 0;
     
     // Use real percentile data if available
+    // NOTE: percentiles.revenue values are ALREADY ANNUAL (not monthly)
     if (result.percentiles?.revenue) {
       switch (revenuePercentile) {
         case "75th":
-          return result.percentiles.revenue.p75 * 12;
+          return result.percentiles.revenue.p75; // Already annual, don't multiply by 12
         case "90th":
-          return result.percentiles.revenue.p90 * 12;
+          return result.percentiles.revenue.p90; // Already annual, don't multiply by 12
         default:
-          return result.percentiles.revenue.p50 * 12;
+          return result.percentiles.revenue.p50; // Already annual, don't multiply by 12
       }
     }
     
@@ -696,10 +700,10 @@ export default function CalculatorPage() {
                       <span className="block text-xs opacity-75">
                         {formatCurrency(
                           p === "average" 
-                            ? result.percentiles.revenue.p50 * 12 
+                            ? result.percentiles.revenue.p50  // Already annual
                             : p === "75th" 
-                              ? result.percentiles.revenue.p75 * 12 
-                              : result.percentiles.revenue.p90 * 12
+                              ? result.percentiles.revenue.p75  // Already annual
+                              : result.percentiles.revenue.p90  // Already annual
                         )}/yr
                       </span>
                     )}
