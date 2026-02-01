@@ -729,7 +729,7 @@ export default function CalculatorPage() {
               </div>
 
               {/* Custom Income Override */}
-              <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+              <div className="mt-4 p-4 rounded-xl border-2 border-dashed border-gray-200">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -737,16 +737,44 @@ export default function CalculatorPage() {
                     onChange={(e) => setUseCustomIncome(e.target.checked)}
                     className="w-4 h-4 rounded"
                   />
-                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>Use my own gross income estimate</span>
+                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>I know this market better - use my own estimates</span>
                 </label>
                 {useCustomIncome && (
-                  <input
-                    type="number"
-                    value={customAnnualIncome}
-                    onChange={(e) => setCustomAnnualIncome(e.target.value)}
-                    placeholder="Enter annual income..."
-                    className="mt-2 w-full px-4 py-2 rounded-lg border border-gray-200"
-                  />
+                  <div className="mt-3 space-y-3">
+                    <p className="text-xs text-gray-500">Override Mashvisor data with your market knowledge:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">Annual Revenue ($)</label>
+                        <input
+                          type="number"
+                          value={customAnnualIncome}
+                          onChange={(e) => setCustomAnnualIncome(e.target.value)}
+                          placeholder="e.g. 85000"
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">Avg Nightly Rate ($)</label>
+                        <input
+                          type="number"
+                          id="customAdr"
+                          placeholder={`Current: $${result.adr}`}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">Occupancy (%)</label>
+                        <input
+                          type="number"
+                          id="customOccupancy"
+                          placeholder={`Current: ${result.occupancy}%`}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                          max="100"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600">💡 Tip: Use this if you have local market knowledge that differs from the data shown</p>
+                  </div>
                 )}
               </div>
 
@@ -767,28 +795,37 @@ export default function CalculatorPage() {
               </div>
             </div>
 
-            {/* Seasonality Chart */}
+            {/* Seasonality Revenue Chart */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Seasonality Trends</h3>
-              <p className="text-sm text-gray-500 mb-4">Monthly occupancy patterns</p>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Revenue Forecast</h3>
+              <p className="text-sm text-gray-500 mb-4">Projected monthly income based on seasonal demand</p>
               
-              {/* Bar Chart */}
-              <div className="flex items-end justify-between gap-1 h-40 mb-2">
+              {/* Bar Chart - Revenue Based */}
+              <div className="flex items-end justify-between gap-1 h-48 mb-2">
                 {getSeasonalityData().map((month, index) => {
-                  const maxOcc = Math.max(...getSeasonalityData().map(m => m.occupancy));
-                  const heightPercent = (month.occupancy / maxOcc) * 100;
-                  const barColor = month.occupancy >= 70 ? '#22c55e' : month.occupancy >= 50 ? '#eab308' : '#ef4444';
+                  const baseMonthlyRev = getDisplayRevenue() / 12;
+                  const seasonalMultiplier = month.occupancy / (result.occupancy || 55);
+                  const monthlyRev = Math.round(baseMonthlyRev * Math.min(seasonalMultiplier, 1.5));
+                  const maxRev = Math.max(...getSeasonalityData().map(m => {
+                    const mult = m.occupancy / (result.occupancy || 55);
+                    return Math.round(baseMonthlyRev * Math.min(mult, 1.5));
+                  }));
+                  const heightPercent = maxRev > 0 ? (monthlyRev / maxRev) * 100 : 50;
+                  const barColor = monthlyRev >= baseMonthlyRev * 1.1 ? '#22c55e' : monthlyRev >= baseMonthlyRev * 0.9 ? '#3b82f6' : '#f59e0b';
                   
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-medium mb-1" style={{ color: "#787060" }}>{month.occupancy}%</span>
+                      <span className="text-xs font-bold mb-1" style={{ color: "#2b2823" }}>
+                        ${Math.round(monthlyRev / 1000)}k
+                      </span>
                       <div 
-                        className="w-full rounded-t-md transition-all"
+                        className="w-full rounded-t-md transition-all cursor-pointer hover:opacity-80"
                         style={{ 
                           height: `${heightPercent}%`,
                           backgroundColor: barColor,
-                          minHeight: '8px'
+                          minHeight: '20px'
                         }}
+                        title={`${monthNames[month.month - 1]}: ${formatCurrency(monthlyRev)}`}
                       ></div>
                     </div>
                   );
@@ -806,15 +843,15 @@ export default function CalculatorPage() {
               <div className="flex justify-center gap-4 mt-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded" style={{ backgroundColor: '#22c55e' }}></div>
-                  <span style={{ color: "#787060" }}>High (70%+)</span>
+                  <span style={{ color: "#787060" }}>Peak Season</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#eab308' }}></div>
-                  <span style={{ color: "#787060" }}>Medium (50-70%)</span>
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                  <span style={{ color: "#787060" }}>Average</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-                  <span style={{ color: "#787060" }}>Low (&lt;50%)</span>
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
+                  <span style={{ color: "#787060" }}>Low Season</span>
                 </div>
               </div>
             </div>
