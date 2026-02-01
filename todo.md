@@ -286,9 +286,9 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Remove unnecessary elements (timestamps, about:blank)
 
 ## Final Calculator Enhancements (February 2026)
-- [ ] Fix Y-axis scaling on monthly revenue chart to show seasonal variation
-- [ ] Add save report functionality to Saved section
-- [ ] Add notes feature for saved properties
-- [ ] Add email report option
-- [ ] Add ROI timeline chart (5-10 year projection)
-- [ ] Update PDF with ROI timeline and all helpful info for sharing
+- [x] Fix Y-axis scaling on monthly revenue chart to show seasonal variation
+- [x] Add save report functionality to Saved section
+- [x] Add notes feature for saved properties
+- [x] Add email report option
+- [x] Add ROI timeline chart (10-year projection)
+- [x] Update PDF with ROI timeline and all helpful info for sharing
