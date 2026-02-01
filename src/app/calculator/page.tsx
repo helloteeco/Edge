@@ -349,6 +349,7 @@ export default function CalculatorPage() {
     const investment = calculateInvestment();
     const displayRevenue = getDisplayRevenue();
     const monthlyRevenue = Math.round(displayRevenue / 12);
+    const guestMultiplier = getGuestCountMultiplier();
     
     // Create a printable HTML document
     const reportHTML = `
@@ -466,7 +467,8 @@ export default function CalculatorPage() {
       const baseMonthlyRev = displayRevenue / 12;
       let monthlyRev = 0;
       if (historicalMonth?.revenue && historicalMonth.revenue > 0) {
-        monthlyRev = historicalMonth.revenue;
+        // Apply guest multiplier to historical revenue
+        monthlyRev = Math.round(historicalMonth.revenue * guestMultiplier);
       } else if (historicalMonth?.occupancy) {
         const baseOcc = result.occupancy || 55;
         const mult = baseOcc > 0 ? (historicalMonth.occupancy / baseOcc) : 1;
@@ -1077,11 +1079,12 @@ export default function CalculatorPage() {
                 {getSeasonalityData().map((month, index) => {
                   const annualRev = getDisplayRevenue() || 0;
                   const baseMonthlyRev = annualRev / 12;
+                  const guestMultiplier = getGuestCountMultiplier();
                   // Use actual revenue from historical data if available, otherwise calculate from occupancy
                   let monthlyRev = 0;
                   if (month.revenue && month.revenue > 0) {
-                    // Use actual monthly revenue from Airbtics
-                    monthlyRev = month.revenue;
+                    // Use actual monthly revenue from Airbtics, scaled by guest multiplier
+                    monthlyRev = Math.round(month.revenue * guestMultiplier);
                   } else {
                     // Calculate from occupancy multiplier
                     const baseOccupancy = result.occupancy || 55;
@@ -1091,7 +1094,7 @@ export default function CalculatorPage() {
                   monthlyRev = monthlyRev || Math.round(baseMonthlyRev);
                   
                   const maxRev = Math.max(...getSeasonalityData().map(m => {
-                    if (m.revenue && m.revenue > 0) return m.revenue;
+                    if (m.revenue && m.revenue > 0) return Math.round(m.revenue * guestMultiplier);
                     const baseOcc = result.occupancy || 55;
                     const mult = baseOcc > 0 ? (m.occupancy / baseOcc) : 1;
                     return Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5)) || baseMonthlyRev;
@@ -1151,10 +1154,12 @@ export default function CalculatorPage() {
                 {getSeasonalityData().map((month, index) => {
                   const annualRev = getDisplayRevenue() || 0;
                   const baseMonthlyRev = annualRev / 12;
+                  const guestMultiplier = getGuestCountMultiplier();
                   // Use actual revenue from historical data if available
                   let monthlyRev = 0;
                   if (month.revenue && month.revenue > 0) {
-                    monthlyRev = month.revenue;
+                    // Apply guest multiplier to historical revenue
+                    monthlyRev = Math.round(month.revenue * guestMultiplier);
                   } else {
                     const baseOccupancy = result.occupancy || 55;
                     const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
