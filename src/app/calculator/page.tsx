@@ -21,6 +21,8 @@ interface AddressSuggestion {
   city: string;
   state: string;
   zip: string;
+  streetLine?: string;
+  locationLine?: string;
 }
 
 interface AnalysisResult {
@@ -110,7 +112,7 @@ export default function CalculatorPage() {
   // Fetch address suggestions - show 5 most likely city/state combinations
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (address.length < 5) {
+      if (address.length < 3) {
         setSuggestions([]);
         return;
       }
@@ -131,7 +133,7 @@ export default function CalculatorPage() {
       }
     };
 
-    const debounce = setTimeout(fetchSuggestions, 300);
+    const debounce = setTimeout(fetchSuggestions, 150);
     return () => clearTimeout(debounce);
   }, [address]);
 
@@ -374,7 +376,7 @@ export default function CalculatorPage() {
                 }}
               />
               
-              {/* Address Suggestions Dropdown */}
+              {/* Address Suggestions Dropdown - Rabbu Style */}
               {showSuggestions && suggestions.length > 0 && (
                 <div 
                   ref={suggestionsRef}
@@ -385,20 +387,27 @@ export default function CalculatorPage() {
                     <button
                       key={index}
                       onClick={() => handleSelectSuggestion(suggestion)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start gap-3 transition-colors"
                       style={{ borderBottom: index < suggestions.length - 1 ? "1px solid #f0f0f0" : "none" }}
                     >
-                      <svg className="w-4 h-4 flex-shrink-0" style={{ color: "#787060" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#2b2823" }} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                       </svg>
-                      <span className="text-sm" style={{ color: "#2b2823" }}>{suggestion.display}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium" style={{ color: "#2b2823" }}>
+                          {suggestion.streetLine || suggestion.street}
+                        </span>
+                        <span className="text-xs" style={{ color: "#787060" }}>
+                          {suggestion.locationLine || `${suggestion.city}, ${suggestion.state}`}
+                        </span>
+                      </div>
                     </button>
                   ))}
                 </div>
               )}
               
               {/* Loading indicator */}
-              {isLoadingSuggestions && address.length >= 5 && (
+              {isLoadingSuggestions && address.length >= 3 && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                   <svg className="w-4 h-4 animate-spin" style={{ color: "#787060" }} fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -426,7 +435,7 @@ export default function CalculatorPage() {
 
           {/* Format Hint */}
           <p className="text-xs mt-2" style={{ color: "#a8a49a" }}>
-            Format: <span style={{ color: "#787060" }}>123 Main St, City, ST 12345</span> or <span style={{ color: "#787060" }}>123 Main St, City, ST</span>
+            Format: <span style={{ color: "#787060" }}>123 Main St, City, ST</span>
           </p>
 
           {/* Bedroom/Bathroom Selector */}
@@ -502,7 +511,7 @@ export default function CalculatorPage() {
           <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
             <p className="text-sm" style={{ color: "#dc2626" }}>{error}</p>
             <p className="text-xs mt-1" style={{ color: "#787060" }}>
-              Format: 123 Main St, City, ST 12345
+              Format: 123 Main St, City, ST
             </p>
           </div>
         )}
