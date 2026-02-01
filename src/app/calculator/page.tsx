@@ -86,6 +86,8 @@ interface AnalysisResult {
   revenueChangePercent: number;
   occupancyChange: string;
   occupancyChangePercent: number;
+  // Historical data for seasonality
+  historical: { year: number; month: number; occupancy: number }[];
 }
 
 // ============================================================================
@@ -218,7 +220,7 @@ export default function CalculatorPage() {
         return;
       }
 
-      const { property, neighborhood, percentiles, comparables } = data;
+      const { property, neighborhood, percentiles, comparables, historical } = data;
 
       // Parse numeric values safely
       const parseNum = (val: unknown): number => {
@@ -292,6 +294,8 @@ export default function CalculatorPage() {
         revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
         occupancyChange: neighborhood?.occupancyChange || "stable",
         occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
+        // Historical data for seasonality
+        historical: historical || [],
       };
 
       setResult(analysisResult);
@@ -827,6 +831,85 @@ export default function CalculatorPage() {
                       )}
                     </a>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Seasonality Chart */}
+            {result.historical && result.historical.length > 0 && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Seasonality Trends</h3>
+                <p className="text-sm text-gray-500 mb-4">Historical occupancy rates by month</p>
+                <div className="flex items-end justify-between gap-1 h-40">
+                  {result.historical.map((month, index) => {
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const heightPercent = Math.max(month.occupancy, 10);
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center">
+                        <div 
+                          className="w-full rounded-t-md transition-all hover:opacity-80"
+                          style={{ 
+                            height: `${heightPercent}%`, 
+                            backgroundColor: month.occupancy >= 70 ? '#22c55e' : month.occupancy >= 50 ? '#eab308' : '#ef4444',
+                            minHeight: '8px'
+                          }}
+                          title={`${monthNames[month.month - 1]} ${month.year}: ${month.occupancy}%`}
+                        />
+                        <span className="text-xs mt-1" style={{ color: "#787060" }}>
+                          {monthNames[month.month - 1]}
+                        </span>
+                        <span className="text-xs font-medium" style={{ color: "#2b2823" }}>
+                          {month.occupancy}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-center gap-4 mt-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#22c55e' }}></div>
+                    <span style={{ color: "#787060" }}>High (70%+)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#eab308' }}></div>
+                    <span style={{ color: "#787060" }}>Medium (50-70%)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                    <span style={{ color: "#787060" }}>Low (&lt;50%)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Monthly Revenue Projection */}
+            {result.monthlyRevenue > 0 && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Monthly Revenue Projection</h3>
+                <p className="text-sm text-gray-500 mb-4">Estimated monthly revenue based on seasonal occupancy</p>
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+                    // Use historical data if available, otherwise use seasonal multipliers
+                    const historicalMonth = result.historical?.find(h => h.month === index + 1);
+                    const seasonalMultiplier = historicalMonth 
+                      ? historicalMonth.occupancy / (result.occupancy || 55)
+                      : [0.7, 0.75, 0.9, 1.0, 1.1, 1.2, 1.25, 1.2, 1.0, 0.9, 0.8, 0.85][index];
+                    const monthlyRev = Math.round(result.monthlyRevenue * Math.min(seasonalMultiplier, 1.5));
+                    return (
+                      <div key={month} className="p-3 rounded-lg text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                        <p className="text-xs font-medium" style={{ color: "#787060" }}>{month}</p>
+                        <p className="text-sm font-bold" style={{ color: "#2b2823" }}>
+                          {formatCurrency(monthlyRev)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "#ecfdf5" }}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium" style={{ color: "#787060" }}>Projected Annual Total</span>
+                    <span className="text-xl font-bold text-green-600">{formatCurrency(getDisplayRevenue())}</span>
+                  </div>
                 </div>
               </div>
             )}
