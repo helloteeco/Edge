@@ -342,7 +342,7 @@ export default function CalculatorPage() {
   const downloadPDFReport = async () => {
     if (!result) return;
     
-    const investment = calculateInvestmentMetrics();
+    const investment = calculateInvestment();
     const displayRevenue = getDisplayRevenue();
     const monthlyRevenue = Math.round(displayRevenue / 12);
     
