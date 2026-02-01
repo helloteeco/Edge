@@ -74,6 +74,9 @@ export default function CalculatorPage() {
   const [useCustomIncome, setUseCustomIncome] = useState(false);
   const [customAnnualIncome, setCustomAnnualIncome] = useState("");
   
+  // Revenue percentile selector (average, 75th, 90th)
+  const [revenuePercentile, setRevenuePercentile] = useState<"average" | "75th" | "90th">("average");
+  
   // Investment Calculator Fields
   const [purchasePrice, setPurchasePrice] = useState("");
   const [downPaymentPercent, setDownPaymentPercent] = useState(20);
@@ -257,12 +260,31 @@ export default function CalculatorPage() {
     }).format(value);
   };
 
-  // Get display revenue
+  // Get percentile multiplier for revenue
+  const getPercentileMultiplier = () => {
+    switch (revenuePercentile) {
+      case "75th": return 1.25; // 25% above average
+      case "90th": return 1.45; // 45% above average (top performers)
+      default: return 1.0; // average
+    }
+  };
+
+  // Get display revenue based on percentile or custom input
   const getDisplayRevenue = () => {
     if (useCustomIncome && customAnnualIncome) {
       return parseFloat(customAnnualIncome.replace(/[^0-9.]/g, "")) || 0;
     }
-    return result?.annualRevenue || 0;
+    const baseRevenue = result?.annualRevenue || 0;
+    return Math.round(baseRevenue * getPercentileMultiplier());
+  };
+
+  // Get percentile label
+  const getPercentileLabel = () => {
+    switch (revenuePercentile) {
+      case "75th": return "75th Percentile";
+      case "90th": return "90th Percentile (Top Performers)";
+      default: return "Market Average";
+    }
   };
 
   // Calculate investment metrics
@@ -521,14 +543,56 @@ export default function CalculatorPage() {
           <div className="space-y-6">
             {/* Annual Revenue Projection */}
             <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              {/* Revenue Percentile Selector */}
+              <div className="flex justify-center gap-2 mb-6">
+                <button
+                  onClick={() => { setRevenuePercentile("average"); setUseCustomIncome(false); }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: revenuePercentile === "average" && !useCustomIncome ? "#2b2823" : "#f8f7f4",
+                    color: revenuePercentile === "average" && !useCustomIncome ? "#ffffff" : "#2b2823",
+                    border: revenuePercentile === "average" && !useCustomIncome ? "none" : "1px solid #e5e3da",
+                  }}
+                >
+                  Average
+                </button>
+                <button
+                  onClick={() => { setRevenuePercentile("75th"); setUseCustomIncome(false); }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: revenuePercentile === "75th" && !useCustomIncome ? "#2b2823" : "#f8f7f4",
+                    color: revenuePercentile === "75th" && !useCustomIncome ? "#ffffff" : "#2b2823",
+                    border: revenuePercentile === "75th" && !useCustomIncome ? "none" : "1px solid #e5e3da",
+                  }}
+                >
+                  75th %
+                </button>
+                <button
+                  onClick={() => { setRevenuePercentile("90th"); setUseCustomIncome(false); }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: revenuePercentile === "90th" && !useCustomIncome ? "#2b2823" : "#f8f7f4",
+                    color: revenuePercentile === "90th" && !useCustomIncome ? "#ffffff" : "#2b2823",
+                    border: revenuePercentile === "90th" && !useCustomIncome ? "none" : "1px solid #e5e3da",
+                  }}
+                >
+                  90th %
+                </button>
+              </div>
+
               <p className="text-sm font-medium mb-2" style={{ color: "#22c55e" }}>
-                {useCustomIncome ? "Your Custom Estimate" : "Estimated Annual Revenue"}
+                {useCustomIncome ? "Your Custom Estimate" : getPercentileLabel()}
               </p>
               <p className="text-5xl md:text-6xl font-bold mb-3" style={{ color: "#2b2823" }}>
                 {formatCurrency(getDisplayRevenue())}<span className="text-2xl font-normal">/yr</span>
               </p>
               <p className="text-sm mb-4" style={{ color: "#787060" }}>
-                Based on {result.nearbyListings > 0 ? `${result.nearbyListings} nearby Airbnbs` : "market data"} in {result.neighborhood}
+                {revenuePercentile === "90th" && !useCustomIncome 
+                  ? "Top performers with premium amenities & design"
+                  : revenuePercentile === "75th" && !useCustomIncome
+                  ? "Above average listings with good amenities"
+                  : `Based on ${result.nearbyListings > 0 ? `${result.nearbyListings} nearby Airbnbs` : "market data"} in ${result.neighborhood}`
+                }
               </p>
 
               {/* Custom Income Override */}
