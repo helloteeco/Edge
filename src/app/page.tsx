@@ -27,7 +27,7 @@ export default function HomePage() {
             {/* Left: Logo and Description */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <img src="/teeco-icon.png" alt="Teeco" className="w-10 h-10 invert" />
+                <img src="/teeco-icon-black.png" alt="Teeco" className="w-10 h-10 invert" />
                 <h1 
                   className="text-2xl sm:text-3xl font-bold tracking-tight"
                   style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}

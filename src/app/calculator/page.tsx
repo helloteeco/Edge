@@ -381,6 +381,7 @@ export default function CalculatorPage() {
 </head>
 <body>
   <div class="header">
+    <img src="/teeco-logo-full.png" alt="Teeco" style="height: 50px; margin-bottom: 16px;" />
     <h1>STR Investment Analysis</h1>
     <p class="subtitle">${result.address || result.neighborhood}, ${result.city}, ${result.state}</p>
     <p class="subtitle">${result.bedrooms} Bedrooms • ${result.bathrooms} Bathrooms</p>
@@ -517,6 +518,7 @@ export default function CalculatorPage() {
   </table>
 
   <div class="footer">
+    <img src="/teeco-icon-black.png" alt="Teeco" style="height: 30px; margin-bottom: 8px;" />
     <p><strong>Edge by Teeco</strong> - STR Investment Analysis</p>
     <p>Data powered by Airbtics & Mashvisor</p>
     <p class="disclaimer">This report is for informational purposes only and should not be considered financial advice. Actual results may vary based on market conditions, property management, and other factors. Always conduct your own due diligence before making investment decisions.</p>
@@ -734,7 +736,7 @@ export default function CalculatorPage() {
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/teeco-icon.png" alt="Teeco" className="w-8 h-8 invert" />
+            <img src="/teeco-icon-black.png" alt="Teeco" className="w-8 h-8 invert" />
             <span className="text-white font-semibold">Edge by Teeco</span>
           </Link>
           <Link href="/" className="text-sm text-white/70 hover:text-white">
