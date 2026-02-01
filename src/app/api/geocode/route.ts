@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Force dynamic rendering for this API route
+export const dynamic = "force-dynamic";
+
 // Google Places API key - you need to enable Places API in Google Cloud Console
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || "";
 

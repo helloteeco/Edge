@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering for this API route
+export const dynamic = "force-dynamic";
+
 const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY || '20f866598emsh7e1f8d0058d2271p1adc56jsn8653832f1320';
 
 // Parse city and state from search query
