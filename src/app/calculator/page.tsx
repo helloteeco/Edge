@@ -420,7 +420,7 @@ export default function CalculatorPage() {
           <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
             <p className="text-sm" style={{ color: "#dc2626" }}>{error}</p>
             <p className="text-xs mt-1" style={{ color: "#787060" }}>
-              Tip: Use format "123 Main St, City, ST 12345" or "123 Main St, City, ST"
+              Tip: Use format &quot;123 Main St, City, ST 12345&quot; or &quot;123 Main St, City, ST&quot;
             </p>
           </div>
         )}
