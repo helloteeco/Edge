@@ -33,7 +33,7 @@ function calculatePercentiles(values: number[]) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { address, bedrooms = 3 } = await request.json();
+    const { address, bedrooms = 3, bathrooms = 2 } = await request.json();
 
     if (!address) {
       return NextResponse.json(
@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
     const state = stateZip.split(" ")[0] || "";
     const zip = stateZip.split(" ")[1] || "";
 
-    console.log("Parsed address:", { street, city, state, zip });
+    console.log("Parsed address:", { street, city, state, zip, bedrooms, bathrooms });
 
     let property = null;
     let neighborhoodId = null;
     let neighborhoodData = null;
-    let dataSource = "neighborhood"; // Track where data came from
+    let dataSource = "neighborhood";
 
     // =========================================================================
     // STEP 1: Try to get property info (may fail for many addresses)
@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
 
     // =========================================================================
     // STEP 2: FALLBACK - Search neighborhoods by city/state
-    // This is the key fix for "Property Not Found" issue
     // =========================================================================
     if (!neighborhoodId && city && state) {
       console.log("Property not found, falling back to city neighborhood search...");
@@ -87,7 +86,6 @@ export async function POST(request: NextRequest) {
         );
         
         if (searchData.status === "success" && searchData.content?.results?.length > 0) {
-          // Get the first (most relevant) neighborhood
           neighborhoodId = searchData.content.results[0].id;
           console.log("Found neighborhood via city search:", neighborhoodId, searchData.content.results[0].name);
         }
@@ -102,13 +100,11 @@ export async function POST(request: NextRequest) {
     if (!neighborhoodId && city && state) {
       console.log("No neighborhood found, trying city-level data...");
       try {
-        // Try to get city overview data
         const cityData = await mashvisorFetch(
           `/city/overview/${encodeURIComponent(state)}/${encodeURIComponent(city)}`
         );
         
         if (cityData.status === "success" && cityData.content) {
-          // Use city-level data as neighborhood data
           neighborhoodData = {
             name: city,
             city: city,
@@ -117,11 +113,6 @@ export async function POST(request: NextRequest) {
               night_price: cityData.content.airbnb_night_price,
               occupancy: cityData.content.airbnb_occupancy,
               rental_income: cityData.content.airbnb_rental,
-              cap_rate: cityData.content.airbnb_cap,
-            },
-            traditional_rental: {
-              rental_income: cityData.content.traditional_rental,
-              cap_rate: cityData.content.traditional_cap,
             },
             num_of_airbnb_properties: cityData.content.num_of_airbnb_listings,
             median_price: cityData.content.median_price,
@@ -155,7 +146,8 @@ export async function POST(request: NextRequest) {
     }
 
     // =========================================================================
-    // STEP 5: Get active listings to calculate REAL percentiles
+    // STEP 5: Get active listings and FILTER BY BEDROOM COUNT
+    // NOTE: Mashvisor's bedrooms parameter doesn't work, so we filter client-side
     // =========================================================================
     let listingsData = null;
     let percentileData = {
@@ -164,46 +156,63 @@ export async function POST(request: NextRequest) {
       occupancy: { p25: 0, p50: 0, p75: 0, p90: 0 },
     };
     let comparableListings: any[] = [];
+    let totalListingsInArea = 0;
+    let filteredListingsCount = 0;
 
     if (city && state) {
       try {
-        // Fetch listings by city (more reliable than neighborhood)
-        let listingsEndpoint = `/airbnb-property/active-listings?state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}&page=1&items=100`;
+        // Fetch MORE listings to ensure we get enough of the right bedroom count
+        let listingsEndpoint = `/airbnb-property/active-listings?state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}&page=1&items=200`;
         
-        // Add neighborhood filter if available
         if (neighborhoodId) {
           listingsEndpoint += `&neighborhood_id=${neighborhoodId}`;
         }
-        
-        // Filter by bedrooms if specified
-        if (bedrooms) {
-          listingsEndpoint += `&bedrooms=${bedrooms}`;
-        }
 
-        console.log("Fetching listings...");
+        console.log("Fetching listings for filtering...");
         const listingsResponse = await mashvisorFetch(listingsEndpoint);
         
         if (listingsResponse.status === "success" && listingsResponse.content?.properties?.length > 0) {
           listingsData = listingsResponse.content;
-          const props = listingsData.properties;
-          console.log(`Found ${props.length} listings`);
+          const allProps = listingsData.properties;
+          totalListingsInArea = allProps.length;
+          console.log(`Found ${allProps.length} total listings`);
 
+          // =====================================================================
+          // CRITICAL FIX: Filter listings by bedroom count
+          // For 6+ bedrooms, include all listings with 6 or more bedrooms
+          // =====================================================================
+          const targetBedrooms = bedrooms;
+          const filteredProps = allProps.filter((p: any) => {
+            const listingBedrooms = p.num_of_rooms || 0;
+            if (targetBedrooms >= 6) {
+              return listingBedrooms >= 6;
+            }
+            return listingBedrooms === targetBedrooms;
+          });
+
+          filteredListingsCount = filteredProps.length;
+          console.log(`Filtered to ${filteredProps.length} listings with ${targetBedrooms}${targetBedrooms >= 6 ? '+' : ''} bedrooms`);
+
+          // If we have filtered listings, use them for percentiles
+          const propsForCalculation = filteredProps.length >= 3 ? filteredProps : allProps;
+          
           // Extract values for percentile calculation
-          const revenues = props.map((p: any) => p.rental_income).filter((v: number) => v > 0);
-          const adrs = props.map((p: any) => p.night_price).filter((v: number) => v > 0);
-          const occupancies = props.map((p: any) => p.occupancy).filter((v: number) => v > 0);
+          const revenues = propsForCalculation.map((p: any) => p.rental_income).filter((v: number) => v > 0);
+          const adrs = propsForCalculation.map((p: any) => p.night_price).filter((v: number) => v > 0);
+          const occupancies = propsForCalculation.map((p: any) => p.occupancy).filter((v: number) => v > 0);
 
-          // Calculate real percentiles from actual listings
+          // Calculate real percentiles
           percentileData = {
             revenue: calculatePercentiles(revenues),
             adr: calculatePercentiles(adrs),
             occupancy: calculatePercentiles(occupancies),
           };
 
-          console.log("Calculated percentiles:", percentileData);
+          console.log("Calculated percentiles from filtered listings:", percentileData);
 
-          // Get top 5 comparable listings for display
-          comparableListings = props
+          // Get top 5 comparable listings (from filtered set if available)
+          const compsSource = filteredProps.length >= 3 ? filteredProps : allProps;
+          comparableListings = compsSource
             .filter((p: any) => p.rental_income > 0)
             .sort((a: any, b: any) => b.rental_income - a.rental_income)
             .slice(0, 5)
@@ -214,6 +223,7 @@ export async function POST(request: NextRequest) {
               image: p.image,
               bedrooms: p.num_of_rooms,
               bathrooms: p.num_of_baths,
+              sqft: p.sqft || 0,
               nightPrice: p.night_price,
               occupancy: p.occupancy,
               monthlyRevenue: p.rental_income,
@@ -269,16 +279,17 @@ export async function POST(request: NextRequest) {
     // BUILD RESPONSE
     // =========================================================================
     const airbnbRental = neighborhoodData?.airbnb_rental || {};
-    const traditionalRental = neighborhoodData?.traditional_rental || {};
 
-    // Use REAL data from Mashvisor
+    // Use REAL data from Mashvisor - STR ONLY (no LTR)
     const avgOccupancy = airbnbRental.occupancy || neighborhoodData?.avg_occupancy || 0;
     const avgAdr = airbnbRental.night_price || 0;
     const avgMonthlyRevenue = airbnbRental.rental_income || 0;
 
     const result = {
       success: true,
-      dataSource: dataSource, // Tell frontend where data came from
+      dataSource: dataSource,
+      bedroomsUsed: bedrooms,
+      bathroomsUsed: bathrooms,
       
       property: property ? {
         address: property.address || street,
@@ -287,7 +298,7 @@ export async function POST(request: NextRequest) {
         zipCode: property.zip_code || property.zip || zip,
         bedrooms: property.beds,
         bathrooms: property.baths,
-        sqft: property.sqft,
+        sqft: property.sqft || 0,
         yearBuilt: property.year_built,
         propertyType: property.property_type || property.homeType,
         listPrice: property.list_price,
@@ -298,6 +309,7 @@ export async function POST(request: NextRequest) {
         city: city,
         state: state,
         zipCode: zip,
+        sqft: 0,
       },
       
       neighborhood: {
@@ -312,13 +324,6 @@ export async function POST(request: NextRequest) {
         monthlyRevenue: avgMonthlyRevenue,
         annualRevenue: avgMonthlyRevenue * 12,
         
-        // Cap rates and ROI
-        strCapRate: airbnbRental.cap_rate || 0,
-        strRoi: airbnbRental.roi || 0,
-        traditionalRent: traditionalRental.rental_income || 0,
-        ltrCapRate: traditionalRental.cap_rate || 0,
-        ltrRoi: traditionalRental.roi || 0,
-        
         // Market trends
         revenueChange: airbnbRental.rental_income_change || "stable",
         revenueChangePercent: airbnbRental.rental_income_change_percentage || 0,
@@ -327,7 +332,6 @@ export async function POST(request: NextRequest) {
         
         // Property counts
         listingsCount: neighborhoodData?.num_of_airbnb_properties || listingsData?.num_of_properties || 0,
-        traditionalCount: neighborhoodData?.num_of_traditional_properties || 0,
         totalProperties: neighborhoodData?.num_of_properties || 0,
         
         // Scores
@@ -342,35 +346,33 @@ export async function POST(request: NextRequest) {
         pricePerSqft: neighborhoodData?.price_per_sqft || 0,
         avgSoldPrice: neighborhoodData?.average_sold_price || 0,
         avgDaysOnMarket: neighborhoodData?.average_days_on_market || 0,
-        strategy: neighborhoodData?.strategy || "airbnb",
       },
       
-      // REAL percentile data calculated from actual listings
+      // REAL percentile data calculated from actual listings filtered by bedroom
       percentiles: {
         revenue: percentileData.revenue,
         adr: percentileData.adr,
         occupancy: percentileData.occupancy,
-        listingsAnalyzed: listingsData?.properties?.length || 0,
-        totalListingsInArea: listingsData?.num_of_properties || 0,
+        listingsAnalyzed: filteredListingsCount,
+        totalListingsInArea: totalListingsInArea,
       },
       
-      // Comparable listings for reference
+      // Comparable listings (filtered by bedroom count)
       comparables: comparableListings,
       
       // Historical data for seasonality chart
-      historical: historicalData.map((h: any) => ({
-        year: h.year,
-        month: h.month,
-        occupancy: h.value,
-      })),
+      historical: historicalData,
     };
 
-    console.log("Returning result for:", city, state, "Data source:", dataSource);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Mashvisor API error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch property data. Please try again." },
+      { 
+        success: false, 
+        error: "Failed to fetch property data",
+        message: "An error occurred while fetching data. Please try again."
+      },
       { status: 500 }
     );
   }

@@ -39,6 +39,7 @@ interface ComparableListing {
   image: string | null;
   bedrooms: number;
   bathrooms: number;
+  sqft: number;
   nightPrice: number;
   occupancy: number;
   monthlyRevenue: number;
@@ -64,7 +65,6 @@ interface AnalysisResult {
   propertyType: string;
   listPrice: number;
   nearbyListings: number;
-  // Real percentile data from Mashvisor listings
   percentiles: {
     revenue: PercentileData;
     adr: PercentileData;
@@ -72,14 +72,11 @@ interface AnalysisResult {
     listingsAnalyzed: number;
     totalListingsInArea: number;
   } | null;
-  // Comparable listings
   comparables: ComparableListing[];
-  // Market trends
   revenueChange: string;
   revenueChangePercent: number;
   occupancyChange: string;
   occupancyChangePercent: number;
-  // Historical data for seasonality
   historical: { year: number; month: number; occupancy: number }[];
 }
 
@@ -93,8 +90,8 @@ export default function CalculatorPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const [bedrooms, setBedrooms] = useState<number | null>(null); // Required - starts as null
-  const [bathrooms, setBathrooms] = useState<number | null>(null); // Required - starts as null
+  const [bedrooms, setBedrooms] = useState<number | null>(null);
+  const [bathrooms, setBathrooms] = useState<number | null>(null);
   
   // Address autocomplete
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -107,7 +104,7 @@ export default function CalculatorPage() {
   const [useCustomIncome, setUseCustomIncome] = useState(false);
   const [customAnnualIncome, setCustomAnnualIncome] = useState("");
   
-  // Revenue percentile selector (average, 75th, 90th)
+  // Revenue percentile selector
   const [revenuePercentile, setRevenuePercentile] = useState<"average" | "75th" | "90th">("average");
   
   // Investment Calculator Fields
@@ -121,15 +118,14 @@ export default function CalculatorPage() {
   const [maintenancePercent, setMaintenancePercent] = useState(5);
   const [vacancyPercent, setVacancyPercent] = useState(10);
   
-  // Teeco Design/Setup Costs (toggleable)
+  // Teeco Design/Setup Costs (sqft-based)
   const [includeDesignServices, setIncludeDesignServices] = useState(false);
-  const [designServicesCost, setDesignServicesCost] = useState(5600); // $7k with 20% discount
   const [includeSetupServices, setIncludeSetupServices] = useState(false);
-  const [setupServicesCost, setSetupServicesCost] = useState(8320); // $10.4k with 20% discount
   const [includeFurnishings, setIncludeFurnishings] = useState(false);
-  const [furnishingsCost, setFurnishingsCost] = useState(15000);
   const [includeAmenities, setIncludeAmenities] = useState(false);
   const [amenitiesCost, setAmenitiesCost] = useState(11000);
+  const [propertySqft, setPropertySqft] = useState(1500); // Default sqft for calculation
+  const [studentDiscount, setStudentDiscount] = useState(false); // 20% discount toggle
   
   // Monthly Expenses
   const [electricMonthly, setElectricMonthly] = useState(100);
@@ -160,7 +156,7 @@ export default function CalculatorPage() {
 
   // Address autocomplete with debounce
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const debounceTimer = setTimeout(async () => {
       if (address.length >= 3) {
         setIsLoadingSuggestions(true);
         try {
@@ -170,8 +166,8 @@ export default function CalculatorPage() {
             setSuggestions(data.suggestions);
             setShowSuggestions(true);
           }
-        } catch (err) {
-          console.error("Geocode error:", err);
+        } catch (e) {
+          console.error("Geocode error:", e);
         } finally {
           setIsLoadingSuggestions(false);
         }
@@ -180,14 +176,15 @@ export default function CalculatorPage() {
         setShowSuggestions(false);
       }
     }, 200);
-    return () => clearTimeout(timer);
+
+    return () => clearTimeout(debounceTimer);
   }, [address]);
 
-  // Click outside to close suggestions
+  // Close suggestions when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node) &&
-          inputRef.current && !inputRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
       }
     };
@@ -200,7 +197,6 @@ export default function CalculatorPage() {
     setAddress(suggestion.display);
     setShowSuggestions(false);
     setSuggestions([]);
-    // Don't auto-analyze - user must select bedrooms first
   };
 
   // Check if form is valid for analysis
@@ -211,7 +207,6 @@ export default function CalculatorPage() {
     const addressToAnalyze = searchAddress || address;
     if (!addressToAnalyze.trim()) return;
     
-    // Require bedroom and bathroom selection
     if (bedrooms === null || bathrooms === null) {
       setError("Please select the number of bedrooms and bathrooms before analyzing.");
       return;
@@ -238,7 +233,6 @@ export default function CalculatorPage() {
 
       const { property, neighborhood, percentiles, comparables, historical } = data;
 
-      // Parse numeric values safely
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
         if (typeof val === "string") return parseFloat(val) || 0;
@@ -248,36 +242,32 @@ export default function CalculatorPage() {
       // Get REAL data from Mashvisor - STR only
       const avgAdr = parseNum(neighborhood?.adr);
       const avgOccupancy = parseNum(neighborhood?.occupancy);
-      const avgMonthlyRevenue = parseNum(neighborhood?.monthlyRevenue);
-      const avgAnnualRevenue = parseNum(neighborhood?.annualRevenue);
       
-      // Bedroom multiplier for ADR adjustment (more bedrooms = higher price)
-      const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : 1.3;
-      
-      // Calculate adjusted values
-      const adjustedADR = avgAdr > 0 ? Math.round(avgAdr * bedroomMultiplier) : 0;
-      const occupancy = avgOccupancy > 0 ? avgOccupancy : 0;
-      
-      // Calculate revenue
+      // Use percentile data if available (already filtered by bedroom count)
       let annualRevenue: number;
       let monthlyRevenue: number;
       
-      if (avgMonthlyRevenue > 0) {
-        monthlyRevenue = Math.round(avgMonthlyRevenue * bedroomMultiplier);
+      if (percentiles?.revenue?.p50 > 0) {
+        // Use median (p50) from filtered listings as the average
+        monthlyRevenue = percentiles.revenue.p50;
         annualRevenue = monthlyRevenue * 12;
-      } else if (avgAnnualRevenue > 0) {
-        annualRevenue = Math.round(avgAnnualRevenue * bedroomMultiplier);
-        monthlyRevenue = Math.round(annualRevenue / 12);
-      } else if (adjustedADR > 0 && occupancy > 0) {
-        annualRevenue = Math.round(adjustedADR * (occupancy / 100) * 365);
+      } else if (parseNum(neighborhood?.monthlyRevenue) > 0) {
+        // Fallback to neighborhood average with bedroom multiplier
+        const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : bedrooms === 5 ? 1.3 : 1.5;
+        monthlyRevenue = Math.round(parseNum(neighborhood?.monthlyRevenue) * bedroomMultiplier);
+        annualRevenue = monthlyRevenue * 12;
+      } else if (avgAdr > 0 && avgOccupancy > 0) {
+        // Calculate from ADR and occupancy
+        const bedroomMultiplier = bedrooms <= 1 ? 0.7 : bedrooms === 2 ? 0.85 : bedrooms === 3 ? 1.0 : bedrooms === 4 ? 1.15 : bedrooms === 5 ? 1.3 : 1.5;
+        annualRevenue = Math.round(avgAdr * bedroomMultiplier * (avgOccupancy / 100) * 365);
         monthlyRevenue = Math.round(annualRevenue / 12);
       } else {
-        // No data available
         annualRevenue = 0;
         monthlyRevenue = 0;
       }
       
-      const revPAN = adjustedADR > 0 && occupancy > 0 ? Math.round(adjustedADR * (occupancy / 100)) : 0;
+      const revPAN = avgAdr > 0 && avgOccupancy > 0 ? Math.round(avgAdr * (avgOccupancy / 100)) : 0;
+      const sqft = parseNum(property?.sqft);
 
       const analysisResult: AnalysisResult = {
         address: addressToAnalyze,
@@ -286,24 +276,21 @@ export default function CalculatorPage() {
         neighborhood: neighborhood?.name || "Unknown",
         annualRevenue,
         monthlyRevenue,
-        adr: adjustedADR,
-        occupancy: Math.round(occupancy),
+        adr: Math.round(avgAdr),
+        occupancy: Math.round(avgOccupancy),
         revPAN,
-        bedrooms: property?.bedrooms || bedrooms,
-        bathrooms: property?.bathrooms || bathrooms,
-        sqft: parseNum(property?.sqft),
+        bedrooms: bedrooms,
+        bathrooms: bathrooms,
+        sqft: sqft,
         propertyType: property?.propertyType || "house",
         listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
         nearbyListings: parseNum(neighborhood?.listingsCount),
-        // Real percentile data
         percentiles: percentiles || null,
         comparables: comparables || [],
-        // Market trends
         revenueChange: neighborhood?.revenueChange || "stable",
         revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
         occupancyChange: neighborhood?.occupancyChange || "stable",
         occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
-        // Historical data for seasonality
         historical: historical || [],
       };
 
@@ -315,9 +302,9 @@ export default function CalculatorPage() {
         setPurchasePrice(analysisResult.listPrice.toString());
       }
       
-      // Auto-calculate furnishings based on sqft
-      if (analysisResult.sqft > 0) {
-        setFurnishingsCost(Math.round(analysisResult.sqft * 17.5)); // $15-20/sqft average
+      // Auto-set sqft for design/setup cost calculations
+      if (sqft > 0) {
+        setPropertySqft(sqft);
       }
       
       setUseCustomIncome(false);
@@ -326,8 +313,8 @@ export default function CalculatorPage() {
       saveRecentSearch({
         address: addressToAnalyze,
         annualRevenue,
-        adr: adjustedADR,
-        occupancy: Math.round(occupancy),
+        adr: Math.round(avgAdr),
+        occupancy: Math.round(avgOccupancy),
         timestamp: Date.now(),
       });
     } catch (err) {
@@ -379,12 +366,29 @@ export default function CalculatorPage() {
     }
   };
 
+  // Calculate design cost ($7/sqft with optional 20% student discount)
+  const calculateDesignCost = () => {
+    const baseCost = propertySqft * 7;
+    return studentDiscount ? Math.round(baseCost * 0.8) : baseCost;
+  };
+
+  // Calculate setup cost ($20/sqft with optional 20% student discount)
+  const calculateSetupCost = () => {
+    const baseCost = propertySqft * 20;
+    return studentDiscount ? Math.round(baseCost * 0.8) : baseCost;
+  };
+
+  // Calculate furnishings cost (~$15-20/sqft average)
+  const calculateFurnishingsCost = () => {
+    return Math.round(propertySqft * 17.5);
+  };
+
   // Calculate startup costs (one-time)
   const calculateStartupCosts = () => {
     let total = 0;
-    if (includeDesignServices) total += designServicesCost;
-    if (includeSetupServices) total += setupServicesCost;
-    if (includeFurnishings) total += furnishingsCost;
+    if (includeDesignServices) total += calculateDesignCost();
+    if (includeSetupServices) total += calculateSetupCost();
+    if (includeFurnishings) total += calculateFurnishingsCost();
     if (includeAmenities) total += amenitiesCost;
     return total;
   };
@@ -393,7 +397,6 @@ export default function CalculatorPage() {
   const calculateMonthlyExpenses = () => {
     const utilities = electricMonthly + waterMonthly + internetMonthly;
     const maintenance = lawnCareMonthly + suppliesMonthly;
-    // Estimate cleaning based on occupancy (assume 3-day avg stay)
     const estimatedTurnovers = result ? Math.round((result.occupancy / 100) * 30 / 3) : 8;
     const cleaning = cleaningPerTurn * estimatedTurnovers;
     return utilities + maintenance + cleaning;
@@ -427,12 +430,10 @@ export default function CalculatorPage() {
     const downPayment = price * (downPaymentPercent / 100);
     const loanAmount = price - downPayment;
     
-    // Monthly mortgage payment (P&I)
     const monthlyRate = interestRate / 100 / 12;
     const numPayments = loanTerm * 12;
     const monthlyMortgage = loanAmount > 0 ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1) : 0;
     
-    // Annual expenses
     const annualPropertyTax = price * (propertyTaxRate / 100);
     const annualInsurance = insuranceAnnual;
     const grossRevenue = getDisplayRevenue();
@@ -477,12 +478,10 @@ export default function CalculatorPage() {
   const getSeasonalityData = () => {
     if (!result) return [];
     
-    // If we have historical data, use it
     if (result.historical && result.historical.length >= 12) {
       return result.historical.slice(0, 12);
     }
     
-    // Otherwise generate estimated seasonal pattern
     const baseOccupancy = result.occupancy || 55;
     const seasonalMultipliers = [0.7, 0.75, 0.9, 1.0, 1.1, 1.2, 1.25, 1.2, 1.0, 0.9, 0.8, 0.85];
     
@@ -492,6 +491,8 @@ export default function CalculatorPage() {
       occupancy: Math.round(Math.min(baseOccupancy * mult, 95))
     }));
   };
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f5f4f0" }}>
@@ -519,9 +520,7 @@ export default function CalculatorPage() {
           <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
             Analyze any rental property<br />in the United States
           </h1>
-          <p className="text-sm" style={{ color: "#787060" }}>
-            Powered by Mashvisor • Real-time market data
-          </p>
+          <p className="text-gray-600">Get accurate revenue estimates based on real Airbnb data</p>
         </div>
 
         {/* Search Box */}
@@ -529,24 +528,24 @@ export default function CalculatorPage() {
           <h2 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Property Details</h2>
           
           {/* Bedroom/Bathroom Selector - REQUIRED */}
-          <div className="flex gap-6 mb-4">
+          <div className="flex flex-wrap gap-6 mb-4">
             <div>
               <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>
                 Bedrooms <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((num) => (
+                {[1, 2, 3, 4, 5, 6].map((num) => (
                   <button
                     key={num}
                     onClick={() => setBedrooms(num)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                    className={`w-12 h-10 rounded-lg font-medium transition-all ${
                       bedrooms === num 
                         ? "text-white" 
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                     style={bedrooms === num ? { backgroundColor: "#2b2823" } : {}}
                   >
-                    {num}
+                    {num === 6 ? "6+" : num}
                   </button>
                 ))}
               </div>
@@ -556,18 +555,18 @@ export default function CalculatorPage() {
                 Bathrooms <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                {[1, 2, 3, 4].map((num) => (
+                {[1, 2, 3, 4, 5].map((num) => (
                   <button
                     key={num}
                     onClick={() => setBathrooms(num)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                    className={`w-12 h-10 rounded-lg font-medium transition-all ${
                       bathrooms === num 
                         ? "text-white" 
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                     style={bathrooms === num ? { backgroundColor: "#2b2823" } : {}}
                   >
-                    {num}
+                    {num === 5 ? "5+" : num}
                   </button>
                 ))}
               </div>
@@ -613,7 +612,7 @@ export default function CalculatorPage() {
                 </div>
               )}
               
-              {/* Suggestions dropdown - Rabbu style */}
+              {/* Suggestions dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div 
                   ref={suggestionsRef}
@@ -623,18 +622,14 @@ export default function CalculatorPage() {
                     <button
                       key={index}
                       onClick={() => handleSelectSuggestion(suggestion)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start gap-3 border-b border-gray-100 last:border-b-0 transition-colors"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start gap-3 border-b border-gray-100 last:border-b-0"
                     >
                       <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "#787060" }} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                       </svg>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">
-                          {suggestion.streetLine || suggestion.street}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate">
-                          {suggestion.locationLine || `${suggestion.city}, ${suggestion.state}`}
-                        </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{suggestion.streetLine || suggestion.street}</p>
+                        <p className="text-sm text-gray-500">{suggestion.locationLine || `${suggestion.city}, ${suggestion.state}`}</p>
                       </div>
                     </button>
                   ))}
@@ -644,116 +639,97 @@ export default function CalculatorPage() {
             
             <button
               onClick={() => handleAnalyze()}
-              disabled={isLoading || !canAnalyze}
-              className="px-6 py-4 rounded-xl font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: "#2b2823" }}
+              disabled={!canAnalyze || isLoading}
+              className="px-8 py-4 rounded-xl font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: canAnalyze ? "#2b2823" : "#a0a0a0" }}
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
                 "Analyze"
               )}
             </button>
           </div>
           
-          <p className="text-xs mt-2" style={{ color: "#999" }}>
-            Format: 123 Main St, City, ST
-          </p>
+          <p className="text-xs text-gray-400 mt-2">Format: 123 Main St, City, ST</p>
         </div>
 
         {/* Error Message */}
         {error && (
           <div className="rounded-xl p-4 mb-6 bg-red-50 border border-red-200">
             <p className="text-red-700">{error}</p>
-            <p className="text-sm text-red-500 mt-1">Format: 123 Main St, City, ST</p>
           </div>
         )}
 
-        {/* Results Section */}
+        {/* Results */}
         {result && (
           <div className="space-y-6">
-            {/* Revenue Percentile Selector */}
+            {/* Revenue Estimate Card */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>Revenue Projection</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                    {result.bedrooms} BR • {result.bathrooms} BA
-                  </span>
-                  {result.percentiles && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
-                      Based on {result.percentiles.listingsAnalyzed} listings
-                    </span>
-                  )}
+                <div>
+                  <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>{result.neighborhood}</h3>
+                  <p className="text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
                 </div>
+                {result.percentiles && (
+                  <div className="text-right text-xs text-gray-500">
+                    Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
+                  </div>
+                )}
               </div>
-              
-              {/* Percentile Buttons */}
+
+              {/* Percentile Selector */}
               <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setRevenuePercentile("average")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                    revenuePercentile === "average"
-                      ? "text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  style={revenuePercentile === "average" ? { backgroundColor: "#2b2823" } : {}}
-                >
-                  <div className="text-sm">Average</div>
-                  {result.percentiles?.revenue && (
-                    <div className="text-xs opacity-70">{formatCurrency(result.percentiles.revenue.p50)}/mo</div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setRevenuePercentile("75th")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                    revenuePercentile === "75th"
-                      ? "text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  style={revenuePercentile === "75th" ? { backgroundColor: "#2b2823" } : {}}
-                >
-                  <div className="text-sm">75th %</div>
-                  {result.percentiles?.revenue && (
-                    <div className="text-xs opacity-70">{formatCurrency(result.percentiles.revenue.p75)}/mo</div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setRevenuePercentile("90th")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                    revenuePercentile === "90th"
-                      ? "text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  style={revenuePercentile === "90th" ? { backgroundColor: "#2b2823" } : {}}
-                >
-                  <div className="text-sm">90th %</div>
-                  {result.percentiles?.revenue && (
-                    <div className="text-xs opacity-70">{formatCurrency(result.percentiles.revenue.p90)}/mo</div>
-                  )}
-                </button>
+                {(["average", "75th", "90th"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setRevenuePercentile(p)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      revenuePercentile === p
+                        ? "text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                    style={revenuePercentile === p ? { backgroundColor: "#2b2823" } : {}}
+                  >
+                    {p === "average" ? "Average" : p === "75th" ? "75th %" : "90th %"}
+                    {result.percentiles?.revenue && (
+                      <span className="block text-xs opacity-75">
+                        {formatCurrency(
+                          p === "average" 
+                            ? result.percentiles.revenue.p50 * 12 
+                            : p === "75th" 
+                              ? result.percentiles.revenue.p75 * 12 
+                              : result.percentiles.revenue.p90 * 12
+                        )}/yr
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
-              
+
               {/* Revenue Display */}
-              <div className="text-center p-6 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                <p className="text-sm mb-1" style={{ color: "#787060" }}>
-                  {revenuePercentile === "average" ? "Average" : revenuePercentile === "75th" ? "75th Percentile" : "90th Percentile"} Annual Revenue
+              <div className="text-center py-6 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                <p className="text-sm font-medium mb-1" style={{ color: "#787060" }}>
+                  {revenuePercentile === "average" ? "Estimated Annual Revenue" : 
+                   revenuePercentile === "75th" ? "75th Percentile Revenue" : "90th Percentile Revenue"}
                 </p>
-                <p className="text-4xl font-bold" style={{ color: "#2b2823" }}>
+                <p className="text-4xl font-bold" style={{ color: "#22c55e" }}>
                   {formatCurrency(getDisplayRevenue())}
                 </p>
-                <p className="text-sm mt-1" style={{ color: "#787060" }}>
+                <p className="text-sm text-gray-500 mt-1">
                   {formatCurrency(getDisplayRevenue() / 12)}/month
                 </p>
                 {revenuePercentile !== "average" && (
-                  <p className="text-xs mt-2 text-green-600">
-                    {revenuePercentile === "75th" ? "Top 25% performers with good amenities" : "Top 10% performers with premium design & amenities"}
+                  <p className="text-xs text-gray-400 mt-2">
+                    {revenuePercentile === "75th" 
+                      ? "Top 25% performers with good amenities" 
+                      : "Top 10% performers with premium amenities & design"}
                   </p>
                 )}
               </div>
-              
+
               {/* Custom Income Override */}
-              <div className="mt-4">
+              <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -761,92 +737,69 @@ export default function CalculatorPage() {
                     onChange={(e) => setUseCustomIncome(e.target.checked)}
                     className="w-4 h-4 rounded"
                   />
-                  <span className="text-sm" style={{ color: "#787060" }}>Use my own gross income estimate</span>
+                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>Use my own gross income estimate</span>
                 </label>
                 {useCustomIncome && (
-                  <div className="mt-2">
-                    <input
-                      type="number"
-                      value={customAnnualIncome}
-                      onChange={(e) => setCustomAnnualIncome(e.target.value)}
-                      placeholder="Enter annual gross income..."
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200"
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    value={customAnnualIncome}
+                    onChange={(e) => setCustomAnnualIncome(e.target.value)}
+                    placeholder="Enter annual income..."
+                    className="mt-2 w-full px-4 py-2 rounded-lg border border-gray-200"
+                  />
                 )}
               </div>
-            </div>
 
-            {/* Market Intelligence - STR Only */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>
-                Market Intelligence - {result.neighborhood}, {result.city}
-              </h3>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                  <p className="text-xs mb-1" style={{ color: "#787060" }}>Avg Nightly Rate</p>
-                  <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
-                    {result.adr > 0 ? formatCurrency(result.adr) : "N/A"}
-                  </p>
+              {/* Key Metrics */}
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="text-center p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                  <p className="text-xs text-gray-500">Avg Nightly Rate</p>
+                  <p className="text-lg font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.adr)}</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                  <p className="text-xs mb-1" style={{ color: "#787060" }}>Occupancy Rate</p>
-                  <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
-                    {result.occupancy > 0 ? `${result.occupancy}%` : "N/A"}
-                  </p>
-                  {result.occupancyChange && result.occupancyChangePercent !== 0 && (
-                    <p className={`text-xs ${result.occupancyChange === "up" ? "text-green-600" : "text-red-600"}`}>
-                      {result.occupancyChange === "up" ? "↑" : "↓"} {Math.abs(result.occupancyChangePercent).toFixed(1)}% YoY
-                    </p>
-                  )}
+                <div className="text-center p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                  <p className="text-xs text-gray-500">Occupancy</p>
+                  <p className="text-lg font-bold" style={{ color: "#2b2823" }}>{result.occupancy}%</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                  <p className="text-xs mb-1" style={{ color: "#787060" }}>RevPAN</p>
-                  <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
-                    {result.revPAN > 0 ? formatCurrency(result.revPAN) : "N/A"}
-                  </p>
-                </div>
-                <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                  <p className="text-xs mb-1" style={{ color: "#787060" }}>Active Listings</p>
-                  <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
-                    {result.nearbyListings > 0 ? result.nearbyListings : "N/A"}
-                  </p>
+                <div className="text-center p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                  <p className="text-xs text-gray-500">Active Listings</p>
+                  <p className="text-lg font-bold" style={{ color: "#2b2823" }}>{result.nearbyListings}</p>
                 </div>
               </div>
             </div>
 
-            {/* Seasonality Chart - Visual Bar Graph */}
+            {/* Seasonality Chart */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Seasonality Trends</h3>
-              <p className="text-sm text-gray-500 mb-4">Estimated occupancy rates by month</p>
+              <p className="text-sm text-gray-500 mb-4">Monthly occupancy patterns</p>
               
               {/* Bar Chart */}
-              <div className="flex items-end justify-between gap-1 h-48 mb-2">
+              <div className="flex items-end justify-between gap-1 h-40 mb-2">
                 {getSeasonalityData().map((month, index) => {
-                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                  const heightPercent = Math.max(month.occupancy, 10);
+                  const maxOcc = Math.max(...getSeasonalityData().map(m => m.occupancy));
+                  const heightPercent = (month.occupancy / maxOcc) * 100;
                   const barColor = month.occupancy >= 70 ? '#22c55e' : month.occupancy >= 50 ? '#eab308' : '#ef4444';
+                  
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-medium mb-1" style={{ color: "#2b2823" }}>
-                        {month.occupancy}%
-                      </span>
+                      <span className="text-xs font-medium mb-1" style={{ color: "#787060" }}>{month.occupancy}%</span>
                       <div 
-                        className="w-full rounded-t-md transition-all hover:opacity-80"
+                        className="w-full rounded-t-md transition-all"
                         style={{ 
-                          height: `${heightPercent * 1.5}px`, 
+                          height: `${heightPercent}%`,
                           backgroundColor: barColor,
-                          minHeight: '12px'
+                          minHeight: '8px'
                         }}
-                        title={`${monthNames[month.month - 1]}: ${month.occupancy}% occupancy`}
-                      />
-                      <span className="text-xs mt-2" style={{ color: "#787060" }}>
-                        {monthNames[month.month - 1]}
-                      </span>
+                      ></div>
                     </div>
                   );
                 })}
+              </div>
+              <div className="flex justify-between gap-1">
+                {monthNames.map((name, index) => (
+                  <div key={index} className="flex-1 text-center">
+                    <span className="text-xs text-gray-400">{name}</span>
+                  </div>
+                ))}
               </div>
               
               {/* Legend */}
@@ -873,7 +826,6 @@ export default function CalculatorPage() {
               
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                 {getSeasonalityData().map((month, index) => {
-                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                   const seasonalMultiplier = month.occupancy / (result.occupancy || 55);
                   const monthlyRev = Math.round((getDisplayRevenue() / 12) * Math.min(seasonalMultiplier, 1.5));
                   return (
@@ -899,7 +851,7 @@ export default function CalculatorPage() {
             {result.comparables && result.comparables.length > 0 && (
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>
-                  Top Performing {result.bedrooms}BR Listings in Area
+                  Top Performing {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
                 </h3>
                 <div className="space-y-3">
                   {result.comparables.slice(0, 5).map((listing, index) => (
@@ -935,11 +887,40 @@ export default function CalculatorPage() {
 
             {/* Startup Costs - Teeco Services */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Startup Costs</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>Startup Costs</h3>
+                {/* Student Discount Toggle */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={studentDiscount}
+                    onChange={(e) => setStudentDiscount(e.target.checked)}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm font-medium text-green-600">20% Student Discount</span>
+                </label>
+              </div>
               <p className="text-sm text-gray-500 mb-4">One-time setup expenses (toggle on/off)</p>
               
+              {/* Property Sqft Input */}
+              <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>
+                  Property Square Footage (for cost calculation)
+                </label>
+                <input
+                  type="number"
+                  value={propertySqft}
+                  onChange={(e) => setPropertySqft(parseInt(e.target.value) || 1500)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200"
+                  placeholder="Enter sqft..."
+                />
+                {result.sqft > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">Mashvisor data: {result.sqft} sqft</p>
+                )}
+              </div>
+              
               <div className="space-y-4">
-                {/* Design Services */}
+                {/* Design Services - $7/sqft */}
                 <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: includeDesignServices ? "#f0fdf4" : "#f5f4f0" }}>
                   <div className="flex items-center gap-3">
                     <input
@@ -950,19 +931,15 @@ export default function CalculatorPage() {
                     />
                     <div>
                       <p className="font-medium" style={{ color: "#2b2823" }}>Teeco Design Services</p>
-                      <p className="text-xs text-gray-500">Interior design & styling (20% discount included)</p>
+                      <p className="text-xs text-gray-500">$7/sqft • Interior design & styling{studentDiscount && " (20% off)"}</p>
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    value={designServicesCost}
-                    onChange={(e) => setDesignServicesCost(parseInt(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-right"
-                    disabled={!includeDesignServices}
-                  />
+                  <p className="font-semibold" style={{ color: includeDesignServices ? "#22c55e" : "#787060" }}>
+                    {formatCurrency(calculateDesignCost())}
+                  </p>
                 </div>
                 
-                {/* Setup Services */}
+                {/* Setup Services - $20/sqft */}
                 <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: includeSetupServices ? "#f0fdf4" : "#f5f4f0" }}>
                   <div className="flex items-center gap-3">
                     <input
@@ -973,16 +950,12 @@ export default function CalculatorPage() {
                     />
                     <div>
                       <p className="font-medium" style={{ color: "#2b2823" }}>Teeco Setup Services</p>
-                      <p className="text-xs text-gray-500">Full property setup & staging (20% discount included)</p>
+                      <p className="text-xs text-gray-500">$20/sqft • Full property setup & staging{studentDiscount && " (20% off)"}</p>
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    value={setupServicesCost}
-                    onChange={(e) => setSetupServicesCost(parseInt(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-right"
-                    disabled={!includeSetupServices}
-                  />
+                  <p className="font-semibold" style={{ color: includeSetupServices ? "#22c55e" : "#787060" }}>
+                    {formatCurrency(calculateSetupCost())}
+                  </p>
                 </div>
                 
                 {/* Furnishings */}
@@ -996,19 +969,15 @@ export default function CalculatorPage() {
                     />
                     <div>
                       <p className="font-medium" style={{ color: "#2b2823" }}>Furnishings</p>
-                      <p className="text-xs text-gray-500">Furniture, decor, linens (~$15-20/sqft)</p>
+                      <p className="text-xs text-gray-500">~$17.50/sqft • Furniture, decor, linens</p>
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    value={furnishingsCost}
-                    onChange={(e) => setFurnishingsCost(parseInt(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-right"
-                    disabled={!includeFurnishings}
-                  />
+                  <p className="font-semibold" style={{ color: includeFurnishings ? "#22c55e" : "#787060" }}>
+                    {formatCurrency(calculateFurnishingsCost())}
+                  </p>
                 </div>
                 
-                {/* Amenities */}
+                {/* Premium Amenities */}
                 <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: includeAmenities ? "#f0fdf4" : "#f5f4f0" }}>
                   <div className="flex items-center gap-3">
                     <input
@@ -1032,11 +1001,11 @@ export default function CalculatorPage() {
                 </div>
               </div>
               
-              {/* Startup Total */}
-              <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+              {/* Total Startup Costs */}
+              <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#2b2823" }}>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium" style={{ color: "#787060" }}>Total Startup Costs</span>
-                  <span className="text-xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(calculateStartupCosts())}</span>
+                  <span className="text-white font-medium">Total Startup Costs</span>
+                  <span className="text-xl font-bold text-white">{formatCurrency(calculateStartupCosts())}</span>
                 </div>
               </div>
             </div>
@@ -1044,11 +1013,11 @@ export default function CalculatorPage() {
             {/* Monthly Operating Expenses */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
-              <p className="text-sm text-gray-500 mb-4">Recurring costs for running your STR</p>
+              <p className="text-sm text-gray-500 mb-4">Recurring costs to run your STR</p>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: "#787060" }}>Electric</label>
+                  <label className="text-xs text-gray-500 block mb-1">Electric</label>
                   <input
                     type="number"
                     value={electricMonthly}
@@ -1057,7 +1026,7 @@ export default function CalculatorPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: "#787060" }}>Water</label>
+                  <label className="text-xs text-gray-500 block mb-1">Water</label>
                   <input
                     type="number"
                     value={waterMonthly}
@@ -1066,7 +1035,7 @@ export default function CalculatorPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: "#787060" }}>Internet</label>
+                  <label className="text-xs text-gray-500 block mb-1">Internet</label>
                   <input
                     type="number"
                     value={internetMonthly}
@@ -1075,7 +1044,7 @@ export default function CalculatorPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: "#787060" }}>Lawn Care</label>
+                  <label className="text-xs text-gray-500 block mb-1">Lawn Care</label>
                   <input
                     type="number"
                     value={lawnCareMonthly}
@@ -1084,7 +1053,7 @@ export default function CalculatorPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: "#787060" }}>Cleaning/Turn</label>
+                  <label className="text-xs text-gray-500 block mb-1">Cleaning/Turn</label>
                   <input
                     type="number"
                     value={cleaningPerTurn}
@@ -1093,7 +1062,7 @@ export default function CalculatorPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: "#787060" }}>Supplies</label>
+                  <label className="text-xs text-gray-500 block mb-1">Supplies</label>
                   <input
                     type="number"
                     value={suppliesMonthly}
@@ -1105,272 +1074,195 @@ export default function CalculatorPage() {
               
               <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium" style={{ color: "#787060" }}>Est. Monthly Operating</span>
-                  <span className="text-xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(calculateMonthlyExpenses())}</span>
+                  <span className="text-sm font-medium" style={{ color: "#787060" }}>Est. Monthly Operating</span>
+                  <span className="text-lg font-bold" style={{ color: "#2b2823" }}>{formatCurrency(calculateMonthlyExpenses())}</span>
                 </div>
               </div>
             </div>
 
             {/* Investment Calculator */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Investment Calculator</h3>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Investment Calculator</h3>
+              <p className="text-sm text-gray-500 mb-4">Calculate your potential returns</p>
               
               {/* Purchase Price */}
               <div className="mb-4">
-                <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>Purchase Price</label>
+                <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>Purchase Price</label>
                 <input
-                  type="text"
+                  type="number"
                   value={purchasePrice}
                   onChange={(e) => setPurchasePrice(e.target.value)}
                   placeholder="Enter purchase price..."
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
                 />
               </div>
-
-              {/* Down Payment */}
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium" style={{ color: "#787060" }}>Down Payment</label>
-                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{downPaymentPercent}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={downPaymentPercent}
-                  onChange={(e) => setDownPaymentPercent(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Interest Rate */}
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium" style={{ color: "#787060" }}>Interest Rate</label>
-                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{interestRate.toFixed(1)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="3"
-                  max="12"
-                  step="0.1"
-                  value={interestRate}
-                  onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Loan Term */}
-              <div className="mb-4">
-                <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>Loan Term</label>
-                <div className="flex gap-2">
-                  {[15, 20, 30].map((term) => (
-                    <button
-                      key={term}
-                      onClick={() => setLoanTerm(term)}
-                      className={`flex-1 py-2 rounded-lg font-medium transition-all ${
-                        loanTerm === term
-                          ? "text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                      style={loanTerm === term ? { backgroundColor: "#2b2823" } : {}}
-                    >
-                      {term} years
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Property Tax Rate */}
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium" style={{ color: "#787060" }}>Property Tax Rate</label>
-                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{propertyTaxRate.toFixed(1)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="3"
-                  step="0.1"
-                  value={propertyTaxRate}
-                  onChange={(e) => setPropertyTaxRate(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Annual Insurance */}
-              <div className="mb-4">
-                <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>Annual Insurance</label>
-                <input
-                  type="number"
-                  value={insuranceAnnual}
-                  onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200"
-                />
-              </div>
-
-              {/* Management Fee */}
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium" style={{ color: "#787060" }}>Management Fee</label>
-                  <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{managementFeePercent}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="35"
-                  value={managementFeePercent}
-                  onChange={(e) => setManagementFeePercent(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Maintenance & Vacancy */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              
+              {/* Sliders */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-sm font-medium" style={{ color: "#787060" }}>Maintenance</label>
-                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{maintenancePercent}%</span>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span style={{ color: "#787060" }}>Down Payment</span>
+                    <span className="font-medium">{downPaymentPercent}%</span>
                   </div>
                   <input
                     type="range"
                     min="0"
-                    max="15"
-                    value={maintenancePercent}
-                    onChange={(e) => setMaintenancePercent(parseInt(e.target.value))}
+                    max="100"
+                    value={downPaymentPercent}
+                    onChange={(e) => setDownPaymentPercent(parseInt(e.target.value))}
                     className="w-full"
                   />
                 </div>
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-sm font-medium" style={{ color: "#787060" }}>Vacancy</label>
-                    <span className="text-sm font-medium" style={{ color: "#2b2823" }}>{vacancyPercent}%</span>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span style={{ color: "#787060" }}>Interest Rate</span>
+                    <span className="font-medium">{interestRate.toFixed(1)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="3"
+                    max="12"
+                    step="0.1"
+                    value={interestRate}
+                    onChange={(e) => setInterestRate(parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span style={{ color: "#787060" }}>Loan Term</span>
+                    <span className="font-medium">{loanTerm} years</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {[15, 20, 30].map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setLoanTerm(term)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                          loanTerm === term ? "text-white" : "bg-gray-100 text-gray-600"
+                        }`}
+                        style={loanTerm === term ? { backgroundColor: "#2b2823" } : {}}
+                      >
+                        {term}yr
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span style={{ color: "#787060" }}>Property Tax Rate</span>
+                    <span className="font-medium">{propertyTaxRate.toFixed(1)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3"
+                    step="0.1"
+                    value={propertyTaxRate}
+                    onChange={(e) => setPropertyTaxRate(parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span style={{ color: "#787060" }}>Management Fee</span>
+                    <span className="font-medium">{managementFeePercent}%</span>
                   </div>
                   <input
                     type="range"
                     min="0"
-                    max="20"
-                    value={vacancyPercent}
-                    onChange={(e) => setVacancyPercent(parseInt(e.target.value))}
+                    max="35"
+                    value={managementFeePercent}
+                    onChange={(e) => setManagementFeePercent(parseInt(e.target.value))}
                     className="w-full"
                   />
                 </div>
+                <div>
+                  <label className="text-sm block mb-1" style={{ color: "#787060" }}>Annual Insurance</label>
+                  <input
+                    type="number"
+                    value={insuranceAnnual}
+                    onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
               </div>
-
-              {/* Investment Summary */}
-              {investment && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h4 className="font-semibold mb-4" style={{ color: "#2b2823" }}>Investment Summary</h4>
-                  
-                  {/* Show message if purchase price not entered */}
-                  {investment.needsPrice && (
-                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-4">
-                      <p className="text-amber-700 text-sm">👆 Enter a purchase price above to see ROI calculations</p>
-                    </div>
-                  )}
-                  
-                  {/* Key Metrics - only show when price is entered */}
-                  {!investment.needsPrice && (
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-xl text-center" style={{ backgroundColor: investment.monthlyCashFlow >= 0 ? "#ecfdf5" : "#fef2f2" }}>
-                      <p className="text-xs mb-1" style={{ color: "#787060" }}>Monthly Cash Flow</p>
-                      <p className={`text-2xl font-bold ${investment.monthlyCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
+              
+              {/* Investment Results */}
+              {investment.needsPrice ? (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                  <p className="text-amber-700 text-sm">👆 Enter a purchase price above to see ROI calculations</p>
+                </div>
+              ) : (
+                <>
+                  {/* Key Metrics */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center p-4 rounded-xl" style={{ backgroundColor: investment.monthlyCashFlow >= 0 ? "#ecfdf5" : "#fef2f2" }}>
+                      <p className="text-xs text-gray-500">Monthly Cash Flow</p>
+                      <p className={`text-xl font-bold ${investment.monthlyCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
                         {formatCurrency(investment.monthlyCashFlow)}
                       </p>
                     </div>
-                    <div className="p-4 rounded-xl text-center" style={{ backgroundColor: "#f5f4f0" }}>
-                      <p className="text-xs mb-1" style={{ color: "#787060" }}>Cash-on-Cash Return</p>
-                      <p className={`text-2xl font-bold ${investment.cashOnCashReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                      <p className="text-xs text-gray-500">Cash-on-Cash</p>
+                      <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
                         {investment.cashOnCashReturn.toFixed(1)}%
                       </p>
                     </div>
-                  </div>
-                  )}
-
-                  {/* Expense Breakdown - only show when price is entered */}
-                  {!investment.needsPrice && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Down Payment</span>
-                      <span className="font-medium">{formatCurrency(investment.downPayment)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>+ Startup Costs</span>
-                      <span className="font-medium">{formatCurrency(investment.startupCosts)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold border-t border-gray-100 pt-2">
-                      <span>Total Cash Needed</span>
-                      <span>{formatCurrency(investment.totalCashNeeded)}</span>
-                    </div>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Loan Amount</span>
-                      <span className="font-medium">{formatCurrency(investment.loanAmount)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Monthly Mortgage (P&I)</span>
-                      <span className="font-medium">{formatCurrency(investment.monthlyMortgage)}</span>
-                    </div>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Annual Property Tax</span>
-                      <span className="font-medium">{formatCurrency(investment.annualPropertyTax)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Annual Insurance</span>
-                      <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Annual Management</span>
-                      <span className="font-medium">{formatCurrency(investment.annualManagement)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Annual Operating Expenses</span>
-                      <span className="font-medium">{formatCurrency(investment.monthlyOperating * 12)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Annual Maintenance Reserve</span>
-                      <span className="font-medium">{formatCurrency(investment.annualMaintenance)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: "#787060" }}>Annual Vacancy Reserve</span>
-                      <span className="font-medium">{formatCurrency(investment.annualVacancy)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 my-2"></div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span>Gross Revenue</span>
-                      <span className="text-green-600">{formatCurrency(getDisplayRevenue())}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span>Total Annual Expenses</span>
-                      <span className="text-red-600">-{formatCurrency(investment.totalAnnualExpenses)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-bold pt-2 border-t border-gray-200">
-                      <span>Annual Cash Flow</span>
-                      <span className={investment.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>
-                        {formatCurrency(investment.cashFlow)}
-                      </span>
+                    <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                      <p className="text-xs text-gray-500">Total Cash Needed</p>
+                      <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
+                        {formatCurrency(investment.totalCashNeeded)}
+                      </p>
                     </div>
                   </div>
-                  )}
-                </div>
+                  
+                  {/* Expense Breakdown */}
+                  <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                    <h4 className="font-medium mb-3" style={{ color: "#2b2823" }}>Annual Expense Breakdown</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Mortgage (P&I)</span>
+                        <span className="font-medium">{formatCurrency(investment.monthlyMortgage * 12)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Property Tax</span>
+                        <span className="font-medium">{formatCurrency(investment.annualPropertyTax)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Insurance</span>
+                        <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Management ({managementFeePercent}%)</span>
+                        <span className="font-medium">{formatCurrency(investment.annualManagement)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Operating Expenses</span>
+                        <span className="font-medium">{formatCurrency(investment.monthlyOperating * 12)}</span>
+                      </div>
+                      <div className="border-t border-gray-300 pt-2 mt-2">
+                        <div className="flex justify-between font-medium">
+                          <span>Total Annual Expenses</span>
+                          <span className="text-red-600">{formatCurrency(investment.totalAnnualExpenses)}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between font-medium">
+                        <span>Gross Revenue</span>
+                        <span className="text-green-600">{formatCurrency(getDisplayRevenue())}</span>
+                      </div>
+                      <div className="border-t border-gray-300 pt-2 mt-2">
+                        <div className="flex justify-between font-bold text-lg">
+                          <span>Annual Cash Flow</span>
+                          <span className={investment.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>
+                            {formatCurrency(investment.cashFlow)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
-            </div>
-
-            {/* View on Airbnb Button */}
-            <div className="text-center">
-              <a
-                href={`https://www.airbnb.com/s/${encodeURIComponent(result.city + ", " + result.state)}/homes?adults=1&min_bedrooms=${result.bedrooms}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "#FF5A5F" }}
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.703c-.457.907-1.158 1.65-2.018 2.143-.86.493-1.855.754-2.876.754-1.02 0-2.016-.261-2.876-.754-.86-.493-1.561-1.236-2.018-2.143-.457-.907-.686-1.928-.686-2.953 0-1.025.229-2.046.686-2.953.457-.907 1.158-1.65 2.018-2.143.86-.493 1.855-.754 2.876-.754 1.02 0 2.016.261 2.876.754.86.493 1.561 1.236 2.018 2.143.457.907.686 1.928.686 2.953 0 1.025-.229 2.046-.686 2.953z"/>
-                </svg>
-                View {result.bedrooms}BR Listings on Airbnb
-              </a>
             </div>
           </div>
         )}
@@ -1385,14 +1277,16 @@ export default function CalculatorPage() {
                   key={index}
                   onClick={() => {
                     setAddress(search.address);
-                    // Don't auto-analyze - user must select bedrooms first
+                    if (bedrooms && bathrooms) {
+                      handleAnalyze(search.address);
+                    }
                   }}
-                  className="w-full p-3 rounded-lg text-left hover:bg-gray-50 transition-colors flex justify-between items-center"
+                  className="w-full p-3 rounded-xl text-left hover:bg-gray-50 transition-colors border border-gray-100"
                 >
-                  <span className="text-sm truncate" style={{ color: "#2b2823" }}>{search.address}</span>
-                  <span className="text-sm font-medium" style={{ color: "#787060" }}>
-                    {formatCurrency(search.annualRevenue)}/yr
-                  </span>
+                  <p className="font-medium text-gray-900 truncate">{search.address}</p>
+                  <p className="text-sm text-gray-500">
+                    {formatCurrency(search.annualRevenue)}/yr • {formatCurrency(search.adr)}/night • {search.occupancy}% occ
+                  </p>
                 </button>
               ))}
             </div>
