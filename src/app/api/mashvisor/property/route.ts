@@ -615,7 +615,21 @@ export async function POST(request: NextRequest) {
           `/neighborhood/${neighborhoodId}/historical/airbnb?state=${encodeURIComponent(state)}`
         );
         if (histResponse.status === "success" && histResponse.content?.results) {
-          historicalData = histResponse.content.results.slice(0, 12).reverse();
+          // Transform Mashvisor historical data to include revenue calculations
+          const rawHistorical = histResponse.content.results.slice(0, 12).reverse();
+          historicalData = rawHistorical.map((item: any) => {
+            const occ = item.value || item.occupancy || 50;
+            const adr = adjustedAdr; // Use the bedroom-adjusted ADR
+            const monthlyRev = Math.round(adr * (occ / 100) * 30);
+            return {
+              year: item.year || 2025,
+              month: item.month || 1,
+              occupancy: occ,
+              adr: adr,
+              revenue: monthlyRev,
+            };
+          });
+          console.log("Mashvisor historical data transformed:", historicalData.length, "months");
         }
       } catch (e) {
         console.log("Historical data fetch failed:", e);
