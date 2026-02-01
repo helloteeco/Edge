@@ -93,6 +93,7 @@ export default function CalculatorPage() {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [bedrooms, setBedrooms] = useState<number | null>(null);
   const [bathrooms, setBathrooms] = useState<number | null>(null);
+  const [guestCount, setGuestCount] = useState<number | null>(null);
   
   // Address autocomplete
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -135,6 +136,7 @@ export default function CalculatorPage() {
   const [lawnCareMonthly, setLawnCareMonthly] = useState(60);
   const [cleaningPerTurn, setCleaningPerTurn] = useState(150);
   const [suppliesMonthly, setSuppliesMonthly] = useState(50);
+  const [miscMonthly, setMiscMonthly] = useState(0);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -221,7 +223,7 @@ export default function CalculatorPage() {
       const response = await fetch("/api/mashvisor/property", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms }),
+        body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || bedrooms * 2 }),
       });
 
       const data = await response.json();
@@ -444,9 +446,9 @@ export default function CalculatorPage() {
   <h2>Comparable Listings (${result.comparables.length})</h2>
   <table class="table">
     <tr><th>Listing</th><th>Beds</th><th>Rate</th><th>Occ</th><th>Revenue</th></tr>
-    ${result.comparables.slice(0, 10).map(c => `
+    ${result.comparables.slice(0, 5).map(c => `
     <tr>
-      <td>${c.name.substring(0, 30)}${c.name.length > 30 ? '...' : ''}</td>
+      <td><a href="${c.url}" target="_blank">${c.name.substring(0, 30)}${c.name.length > 30 ? '...' : ''}</a></td>
       <td>${c.bedrooms}</td>
       <td>${formatCurrency(c.nightPrice)}</td>
       <td>${c.occupancy}%</td>
@@ -455,6 +457,64 @@ export default function CalculatorPage() {
     `).join('')}
   </table>
   ` : ''}
+
+  <h2>Monthly Revenue Forecast</h2>
+  <div class="grid" style="grid-template-columns: repeat(6, 1fr);">
+    ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+      const historicalMonth = result.historical?.[index];
+      const baseMonthlyRev = displayRevenue / 12;
+      let monthlyRev = 0;
+      if (historicalMonth?.revenue && historicalMonth.revenue > 0) {
+        monthlyRev = historicalMonth.revenue;
+      } else if (historicalMonth?.occupancy) {
+        const baseOcc = result.occupancy || 55;
+        const mult = baseOcc > 0 ? (historicalMonth.occupancy / baseOcc) : 1;
+        monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5));
+      } else {
+        monthlyRev = Math.round(baseMonthlyRev);
+      }
+      return `<div class="metric" style="padding: 8px;"><p class="metric-label">${month}</p><p class="metric-value" style="font-size: 14px;">${formatCurrency(monthlyRev)}</p></div>`;
+    }).join('')}
+  </div>
+
+  ${result.recommendedAmenities && result.recommendedAmenities.length > 0 ? `
+  <h2>Recommended Amenities for 90th Percentile</h2>
+  <table class="table">
+    <tr><th>Amenity</th><th>Priority</th><th>Revenue Boost</th></tr>
+    ${result.recommendedAmenities.slice(0, 7).map(a => `
+    <tr>
+      <td>${a.name}</td>
+      <td>${a.priority}</td>
+      <td class="positive">+${a.boost}%</td>
+    </tr>
+    `).join('')}
+  </table>
+  ` : ''}
+
+  ${investment.startupCosts > 0 ? `
+  <h2>Startup Costs</h2>
+  <table class="table">
+    <tr><th>Item</th><th>Cost</th></tr>
+    ${includeDesignServices ? `<tr><td>Teeco Design Services ($7/sqft × ${propertySqft} sqft)</td><td>${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
+    ${includeSetupServices ? `<tr><td>Teeco Setup Services ($13/sqft × ${propertySqft} sqft)</td><td>${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
+    ${includeFurnishings ? `<tr><td>Furnishings (~$17.50/sqft × ${propertySqft} sqft)</td><td>${formatCurrency(calculateFurnishingsCost())}</td></tr>` : ''}
+    ${includeAmenities ? `<tr><td>Amenities (Hot Tub, Fire Pit, etc.)</td><td>${formatCurrency(amenitiesCost)}</td></tr>` : ''}
+    <tr><td><strong>Total Startup Costs</strong></td><td><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
+  </table>
+  ` : ''}
+
+  <h2>Monthly Operating Expenses</h2>
+  <table class="table">
+    <tr><th>Expense</th><th>Monthly</th></tr>
+    <tr><td>Electric</td><td>${formatCurrency(electricMonthly)}</td></tr>
+    <tr><td>Water</td><td>${formatCurrency(waterMonthly)}</td></tr>
+    <tr><td>Internet</td><td>${formatCurrency(internetMonthly)}</td></tr>
+    <tr><td>Lawn Care</td><td>${formatCurrency(lawnCareMonthly)}</td></tr>
+    <tr><td>Cleaning (per turnover)</td><td>${formatCurrency(cleaningPerTurn)}</td></tr>
+    <tr><td>Supplies</td><td>${formatCurrency(suppliesMonthly)}</td></tr>
+    ${miscMonthly > 0 ? `<tr><td>Misc</td><td>${formatCurrency(miscMonthly)}</td></tr>` : ''}
+    <tr><td><strong>Est. Monthly Operating</strong></td><td><strong>${formatCurrency(calculateMonthlyExpenses())}</strong></td></tr>
+  </table>
 
   <div class="footer">
     <p><strong>Edge by Teeco</strong> - STR Investment Analysis</p>
@@ -516,9 +576,9 @@ export default function CalculatorPage() {
     return studentDiscount ? Math.round(baseCost * 0.8) : baseCost;
   };
 
-  // Calculate setup cost ($20/sqft with optional 20% student discount)
+  // Calculate setup cost ($13/sqft with optional 20% student discount)
   const calculateSetupCost = () => {
-    const baseCost = propertySqft * 20;
+    const baseCost = propertySqft * 13;
     return studentDiscount ? Math.round(baseCost * 0.8) : baseCost;
   };
 
@@ -540,7 +600,7 @@ export default function CalculatorPage() {
   // Calculate monthly operating expenses
   const calculateMonthlyExpenses = () => {
     const utilities = electricMonthly + waterMonthly + internetMonthly;
-    const maintenance = lawnCareMonthly + suppliesMonthly;
+    const maintenance = lawnCareMonthly + suppliesMonthly + miscMonthly;
     const estimatedTurnovers = result ? Math.round((result.occupancy / 100) * 30 / 3) : 8;
     const cleaning = cleaningPerTurn * estimatedTurnovers;
     return utilities + maintenance + cleaning;
@@ -713,6 +773,27 @@ export default function CalculatorPage() {
                     style={bathrooms === num ? { backgroundColor: "#2b2823" } : {}}
                   >
                     {num === 5 ? "5+" : num}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>
+                Sleeps
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setGuestCount(num)}
+                    className={`w-12 h-10 rounded-lg font-medium transition-all ${
+                      guestCount === num 
+                        ? "text-white" 
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                    style={guestCount === num ? { backgroundColor: "#2b2823" } : {}}
+                  >
+                    {num === 16 ? "16+" : num}
                   </button>
                 ))}
               </div>
@@ -1333,6 +1414,16 @@ export default function CalculatorPage() {
                     value={suppliesMonthly}
                     onChange={(e) => setSuppliesMonthly(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Misc</label>
+                  <input
+                    type="number"
+                    value={miscMonthly}
+                    onChange={(e) => setMiscMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                    placeholder="0"
                   />
                 </div>
               </div>

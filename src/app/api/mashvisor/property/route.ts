@@ -164,7 +164,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
 
 // Call Airbtics API for accurate STR data
 // Uses report/all ($0.50) to get 30+ comparable listings for investor-grade analysis
-async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bathrooms: number): Promise<any | null> {
+async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bathrooms: number, accommodates: number = 6): Promise<any | null> {
   if (!AIRBTICS_API_KEY) {
     console.log("Airbtics API key not configured, skipping...");
     return null;
@@ -192,7 +192,7 @@ async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bat
         longitude: lng,
         bedrooms,
         bathrooms: bathrooms || Math.ceil(bedrooms / 2),
-        accommodates: bedrooms * 2,
+        accommodates: accommodates || bedrooms * 2,
       }),
     });
 
@@ -352,7 +352,7 @@ function getBedroomMultiplier(bedrooms: number): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const { address, bedrooms = 3, bathrooms = 2 } = await request.json();
+    const { address, bedrooms = 3, bathrooms = 2, accommodates = 6 } = await request.json();
 
     if (!address) {
       return NextResponse.json(
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
       console.log("Geocoded coordinates:", coords);
       latitude = coords.lat;
       longitude = coords.lng;
-      airbticsData = await fetchAirbticsData(coords.lat, coords.lng, bedrooms, bathrooms);
+      airbticsData = await fetchAirbticsData(coords.lat, coords.lng, bedrooms, bathrooms, accommodates);
     }
 
     let property = null;
@@ -757,6 +757,10 @@ export async function POST(request: NextRequest) {
             const compLon = parseFloat(p.longitude) || 0;
             const distance = calcDistance(latitude, longitude, compLat, compLon);
             
+            // Calculate guest count similarity score (lower is better)
+            const compAccommodates = parseInt(p.accommodates) || (parseInt(p.bedrooms) || bedrooms) * 2;
+            const guestDiff = Math.abs(compAccommodates - accommodates);
+            
             return {
               id: p.listingID || p.id || index,
               name: p.name || `${p.bedrooms || bedrooms} BR Listing`,
@@ -764,6 +768,7 @@ export async function POST(request: NextRequest) {
               image: p.thumbnail_url || p.thumbnail_url_extended || null,
               bedrooms: parseInt(p.bedrooms) || bedrooms,
               bathrooms: p.bathrooms || bathrooms,
+              accommodates: compAccommodates,
               sqft: 0,
               nightPrice: p.avg_booked_daily_rate_ltm || adjustedAdr,
               occupancy: p.avg_occupancy_rate_ltm || adjustedOccupancy,
@@ -773,12 +778,15 @@ export async function POST(request: NextRequest) {
               reviewsCount: p.visible_review_count || 0,
               propertyType: p.room_type || "Entire home",
               distance: distance,
+              guestDiff: guestDiff,
+              // Combined score: distance (miles) + guest difference * 0.5 (weight guest count)
+              similarityScore: distance + (guestDiff * 0.5),
             };
           })
           // Filter to within 25 miles
           .filter((p: any) => p.distance <= 25)
-          // Sort by distance (closest first)
-          .sort((a: any, b: any) => a.distance - b.distance)
+          // Sort by similarity score (combines distance and guest count match)
+          .sort((a: any, b: any) => a.similarityScore - b.similarityScore)
           // Take top 5
           .slice(0, 5);
         
