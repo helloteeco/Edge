@@ -295,11 +295,16 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## User Authentication & Email Collection (February 2026)
-- [ ] Create users database/storage for email collection
-- [ ] Store user emails when they sign in via magic link
-- [ ] Track signup date and last login for each user
-- [ ] Create admin API to export email list
-- [ ] Link saved properties to user accounts by email
-- [ ] Sync saved properties across devices for logged-in users
-- [ ] Add 60-minute cache expiration for recent searches (API compliance)
-- [ ] Update PDF export with new Teeco logo
+- [x] Create users database/storage for email collection
+- [x] Store user emails when they sign in via magic link
+- [x] Track signup date and last login for each user
+- [x] Create admin API to export email list
+- [x] Link saved properties to user accounts by email
+- [x] Sync saved properties across devices for logged-in users
+- [x] Add 60-minute cache expiration for recent searches (API compliance)
+- [x] Update PDF export with new Teeco logo
+
+
+## Issues to Fix (February 2026)
+- [ ] Magic link emails not actually being sent (need email service integration)
+- [ ] edge.teeco.co site not loading - investigate deployment
