@@ -14,10 +14,12 @@ const AIRBTICS_BASE_URL = "https://crap0y5bx5.execute-api.us-east-2.amazonaws.co
 const airbticsCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 
-// Geocode address to get coordinates using Nominatim (OpenStreetMap)
+// Geocode address to get lat/lng for Airbtics
+// Falls back to city-level geocoding if full address fails
 async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ", USA")}&format=json&limit=1`;
+    // Use Nominatim (OpenStreetMap) for geocoding - free and no API key needed
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
     console.log("Geocoding address:", address);
     const response = await fetch(url, {
       headers: {
@@ -29,9 +31,34 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
     if (data && data.length > 0) {
       const result = data[0];
       const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
-      console.log("Geocoded coordinates:", coords);
+      console.log("Geocoded coordinates (full address):", coords);
       return coords;
     }
+    
+    // Fallback: Try city-level geocoding if full address fails
+    const addressParts = address.split(",").map((p: string) => p.trim());
+    if (addressParts.length >= 2) {
+      const city = addressParts[1];
+      const stateCountry = addressParts.slice(2).join(", ");
+      const cityQuery = `${city}, ${stateCountry}`;
+      console.log("Falling back to city-level geocoding:", cityQuery);
+      
+      const cityUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityQuery)}&format=json&limit=1`;
+      const cityResponse = await fetch(cityUrl, {
+        headers: {
+          "User-Agent": "EdgeByTeeco/1.0 (contact@teeco.co)",
+        },
+      });
+      const cityData = await cityResponse.json();
+      
+      if (cityData && cityData.length > 0) {
+        const result = cityData[0];
+        const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
+        console.log("Geocoded coordinates (city-level):", coords);
+        return coords;
+      }
+    }
+    
     console.log("No geocoding results for:", address);
     return null;
   } catch (error) {
@@ -41,6 +68,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
 }
 
 // Call Airbtics API for accurate STR data
+// Uses report/all ($0.50) to get 30+ comparable listings for investor-grade analysis
 async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bathrooms: number): Promise<any | null> {
   if (!AIRBTICS_API_KEY) {
     console.log("Airbtics API key not configured, skipping...");
@@ -55,18 +83,18 @@ async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bat
   }
 
   try {
-    console.log("Calling Airbtics API for:", { lat, lng, bedrooms });
+    console.log("Calling Airbtics API (report/all) for:", { lat, lng, bedrooms });
     
-    // Step 1: Request a report
-    const createResponse = await fetch(`${AIRBTICS_BASE_URL}/report/summary`, {
+    // Step 1: Request a full report with comparables ($0.50 per call)
+    const createResponse = await fetch(`${AIRBTICS_BASE_URL}/report/all`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": AIRBTICS_API_KEY,  // lowercase header as per docs
+        "x-api-key": AIRBTICS_API_KEY,
       },
       body: JSON.stringify({
-        latitude: lat,   // API expects 'latitude' not 'lat'
-        longitude: lng,  // API expects 'longitude' not 'lng'
+        latitude: lat,
+        longitude: lng,
         bedrooms,
         bathrooms: bathrooms || Math.ceil(bedrooms / 2),
         accommodates: bedrooms * 2,
@@ -102,12 +130,51 @@ async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bat
 
     const reportResponse2 = await reportResponse.json();
     // The API wraps the data in a 'message' object
-    const reportData = reportResponse2.message || reportResponse2;
+    const rawData = reportResponse2.message || reportResponse2;
+    
+    // Extract data from the correct structure (kpis contains percentile data)
+    const kpis = rawData.kpis || {};
+    const p50 = kpis["50"] || {};
+    const p25 = kpis["25"] || {};
+    const p75 = kpis["75"] || {};
+    const p90 = kpis["90"] || {};
+    
+    // Transform to a normalized structure
+    const reportData = {
+      revenue: p50.ltm_revenue || 0,
+      nightly_rate: p50.ltm_nightly_rate || 0,
+      occupancy_rate: p50.ltm_occupancy_rate || 0,
+      percentiles: {
+        revenue: {
+          p25: p25.ltm_revenue || 0,
+          p50: p50.ltm_revenue || 0,
+          p75: p75.ltm_revenue || 0,
+          p90: p90.ltm_revenue || 0,
+        },
+        adr: {
+          p25: p25.ltm_nightly_rate || 0,
+          p50: p50.ltm_nightly_rate || 0,
+          p75: p75.ltm_nightly_rate || 0,
+          p90: p90.ltm_nightly_rate || 0,
+        },
+        occupancy: {
+          p25: p25.ltm_occupancy_rate || 0,
+          p50: p50.ltm_occupancy_rate || 0,
+          p75: p75.ltm_occupancy_rate || 0,
+          p90: p90.ltm_occupancy_rate || 0,
+        },
+      },
+      comps: rawData.comps || [],
+      monthly_occupancy: p50.monthly_occupancy || {},
+      monthly_adr: p50.monthly_adr || {},
+    };
     
     console.log("Airbtics data received:", {
       revenue: reportData.revenue,
       nightlyRate: reportData.nightly_rate,
       occupancy: reportData.occupancy_rate,
+      comparablesCount: reportData.comps?.length || 0,
+      percentiles: reportData.percentiles.revenue,
     });
 
     // Cache the result
@@ -512,15 +579,53 @@ export async function POST(request: NextRequest) {
       adjustedOccupancy = airbticsData.occupancy_rate || adjustedOccupancy;
       adjustedMonthlyRevenue = Math.round(annualRevenue / 12);
       
-      // Use Airbtics data for percentiles (estimate from their data)
-      percentileData.revenue = {
-        p25: Math.round(annualRevenue * 0.7),
-        p50: Math.round(annualRevenue),
-        p75: Math.round(annualRevenue * 1.28),
-        p90: Math.round(annualRevenue * 1.45),
-      };
+      // Use Airbtics percentile data if available (from report/all)
+      if (airbticsData.percentiles) {
+        percentileData.revenue = {
+          p25: airbticsData.percentiles.revenue?.p25 || Math.round(annualRevenue * 0.7),
+          p50: airbticsData.percentiles.revenue?.p50 || annualRevenue,
+          p75: airbticsData.percentiles.revenue?.p75 || Math.round(annualRevenue * 1.28),
+          p90: airbticsData.percentiles.revenue?.p90 || Math.round(annualRevenue * 1.45),
+        };
+      } else {
+        // Estimate percentiles from their data
+        percentileData.revenue = {
+          p25: Math.round(annualRevenue * 0.7),
+          p50: Math.round(annualRevenue),
+          p75: Math.round(annualRevenue * 1.28),
+          p90: Math.round(annualRevenue * 1.45),
+        };
+      }
       
-      console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy });
+      // Extract comparable listings from Airbtics (report/all returns 30+ comps)
+      const airbticsComps = airbticsData.comps || [];
+      if (airbticsComps.length > 0) {
+        comparableListings = airbticsComps
+          .filter((p: any) => p.annual_revenue_ltm > 0 || p.revenue_potential > 0)
+          .slice(0, 30) // Show up to 30 comparables
+          .map((p: any, index: number) => ({
+            id: p.listingID || p.id || index,
+            name: p.name || `${p.bedrooms || bedrooms} BR Listing`,
+            url: p.listing_url || `https://www.airbnb.com/rooms/${p.listingID}`,
+            image: p.thumbnail_url || p.thumbnail_url_extended || null,
+            bedrooms: parseInt(p.bedrooms) || bedrooms,
+            bathrooms: p.bathrooms || bathrooms,
+            sqft: 0,
+            nightPrice: p.avg_booked_daily_rate_ltm || adjustedAdr,
+            occupancy: p.avg_occupancy_rate_ltm || adjustedOccupancy,
+            monthlyRevenue: Math.round((p.annual_revenue_ltm || annualRevenue) / 12),
+            annualRevenue: p.annual_revenue_ltm || annualRevenue,
+            rating: p.reveiw_scores_rating || 0,  // Note: Airbtics has typo in field name
+            reviewsCount: p.visible_review_count || 0,
+            propertyType: p.room_type || "Entire home",
+          }));
+        
+        filteredListingsCount = airbticsComps.length;
+        totalListingsInArea = airbticsComps.length;
+        console.log(`Airbtics provided ${comparableListings.length} comparable listings`);
+      }
+      
+      console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy, comps: comparableListings.length });
     } else {
       // Fallback to Mashvisor data
       annualRevenue = adjustedMonthlyRevenue * 12;

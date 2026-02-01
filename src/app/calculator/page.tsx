@@ -338,6 +338,144 @@ export default function CalculatorPage() {
     }).format(amount);
   };
 
+  // Generate and download PDF report
+  const downloadPDFReport = async () => {
+    if (!result) return;
+    
+    const investment = calculateInvestmentMetrics();
+    const displayRevenue = getDisplayRevenue();
+    const monthlyRevenue = Math.round(displayRevenue / 12);
+    
+    // Create a printable HTML document
+    const reportHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>STR Investment Analysis - ${result.address || result.neighborhood}</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #2b2823; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    h2 { font-size: 18px; color: #787060; margin-top: 32px; border-bottom: 2px solid #e5e3da; padding-bottom: 8px; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .subtitle { color: #787060; font-size: 14px; }
+    .highlight { background: #ecfdf5; padding: 24px; border-radius: 12px; text-align: center; margin: 24px 0; }
+    .highlight-value { font-size: 36px; font-weight: bold; color: #22c55e; }
+    .highlight-label { font-size: 14px; color: #787060; margin-bottom: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+    .metric { background: #f5f4f0; padding: 16px; border-radius: 8px; text-align: center; }
+    .metric-value { font-size: 20px; font-weight: bold; color: #2b2823; }
+    .metric-label { font-size: 12px; color: #787060; }
+    .table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e3da; }
+    .table th { background: #f5f4f0; font-weight: 600; }
+    .positive { color: #22c55e; }
+    .negative { color: #ef4444; }
+    .footer { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e5e3da; text-align: center; font-size: 12px; color: #787060; }
+    .disclaimer { font-size: 11px; color: #9ca3af; margin-top: 16px; font-style: italic; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>STR Investment Analysis</h1>
+    <p class="subtitle">${result.address || result.neighborhood}, ${result.city}, ${result.state}</p>
+    <p class="subtitle">${result.bedrooms} Bedrooms • ${result.bathrooms} Bathrooms</p>
+    <p class="subtitle">Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+  </div>
+
+  <div class="highlight">
+    <p class="highlight-label">${revenuePercentile === 'average' ? 'Estimated Annual Revenue' : revenuePercentile === '75th' ? '75th Percentile Revenue' : '90th Percentile Revenue'}</p>
+    <p class="highlight-value">${formatCurrency(displayRevenue)}</p>
+    <p class="subtitle">${formatCurrency(monthlyRevenue)}/month</p>
+  </div>
+
+  <h2>Market Metrics</h2>
+  <div class="grid">
+    <div class="metric">
+      <p class="metric-value">${formatCurrency(result.adr)}</p>
+      <p class="metric-label">Avg Nightly Rate</p>
+    </div>
+    <div class="metric">
+      <p class="metric-value">${result.occupancy}%</p>
+      <p class="metric-label">Occupancy Rate</p>
+    </div>
+    <div class="metric">
+      <p class="metric-value">${result.nearbyListings || 'N/A'}</p>
+      <p class="metric-label">Active Listings</p>
+    </div>
+  </div>
+
+  ${result.percentiles ? `
+  <h2>Revenue Percentiles</h2>
+  <div class="grid">
+    <div class="metric">
+      <p class="metric-value">${formatCurrency(result.percentiles.revenue.p25)}</p>
+      <p class="metric-label">25th Percentile</p>
+    </div>
+    <div class="metric">
+      <p class="metric-value">${formatCurrency(result.percentiles.revenue.p50)}</p>
+      <p class="metric-label">50th Percentile (Avg)</p>
+    </div>
+    <div class="metric">
+      <p class="metric-value">${formatCurrency(result.percentiles.revenue.p75)}</p>
+      <p class="metric-label">75th Percentile</p>
+    </div>
+  </div>
+  ` : ''}
+
+  ${purchasePrice ? `
+  <h2>Investment Analysis</h2>
+  <table class="table">
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Purchase Price</td><td>${formatCurrency(parseFloat(purchasePrice))}</td></tr>
+    <tr><td>Down Payment (${downPaymentPercent}%)</td><td>${formatCurrency(investment.downPayment)}</td></tr>
+    <tr><td>Loan Amount</td><td>${formatCurrency(investment.loanAmount)}</td></tr>
+    <tr><td>Monthly Mortgage</td><td>${formatCurrency(investment.monthlyMortgage)}</td></tr>
+    <tr><td>Annual Gross Revenue</td><td class="positive">${formatCurrency(displayRevenue)}</td></tr>
+    <tr><td>Total Annual Expenses</td><td class="negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
+    <tr><td><strong>Annual Cash Flow</strong></td><td class="${investment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(investment.cashFlow)}</strong></td></tr>
+    <tr><td><strong>Cash-on-Cash Return</strong></td><td class="${investment.cashOnCash >= 0 ? 'positive' : 'negative'}"><strong>${investment.cashOnCash.toFixed(1)}%</strong></td></tr>
+  </table>
+  ` : ''}
+
+  ${result.comparables && result.comparables.length > 0 ? `
+  <h2>Comparable Listings (${result.comparables.length})</h2>
+  <table class="table">
+    <tr><th>Listing</th><th>Beds</th><th>Rate</th><th>Occ</th><th>Revenue</th></tr>
+    ${result.comparables.slice(0, 10).map(c => `
+    <tr>
+      <td>${c.name.substring(0, 30)}${c.name.length > 30 ? '...' : ''}</td>
+      <td>${c.bedrooms}</td>
+      <td>${formatCurrency(c.nightPrice)}</td>
+      <td>${c.occupancy}%</td>
+      <td>${formatCurrency(c.annualRevenue)}/yr</td>
+    </tr>
+    `).join('')}
+  </table>
+  ` : ''}
+
+  <div class="footer">
+    <p><strong>Edge by Teeco</strong> - STR Investment Analysis</p>
+    <p>Data powered by Airbtics & Mashvisor</p>
+    <p class="disclaimer">This report is for informational purposes only and should not be considered financial advice. Actual results may vary based on market conditions, property management, and other factors. Always conduct your own due diligence before making investment decisions.</p>
+  </div>
+</body>
+</html>
+    `;
+    
+    // Open print dialog with the report
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(reportHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      // Auto-trigger print dialog after a short delay
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+  };
+
   // Get display revenue based on percentile selection or custom income
   const getDisplayRevenue = () => {
     if (useCustomIncome && customAnnualIncome) {
@@ -675,11 +813,25 @@ export default function CalculatorPage() {
                   <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>{result.neighborhood}</h3>
                   <p className="text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
                 </div>
-                {result.percentiles && (
-                  <div className="text-right text-xs text-gray-500">
-                    Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  {result.percentiles && (
+                    <div className="text-right text-xs text-gray-500">
+                      Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
+                    </div>
+                  )}
+                  {/* PDF Download Button */}
+                  <button
+                    onClick={downloadPDFReport}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                    style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
+                    title="Download PDF Report"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    PDF
+                  </button>
+                </div>
               </div>
 
               {/* Percentile Selector */}
@@ -807,20 +959,22 @@ export default function CalculatorPage() {
               {/* Bar Chart - Revenue Based */}
               <div className="flex items-end justify-between gap-1 h-48 mb-2">
                 {getSeasonalityData().map((month, index) => {
-                  const baseMonthlyRev = getDisplayRevenue() / 12;
-                  const seasonalMultiplier = month.occupancy / (result.occupancy || 55);
-                  const monthlyRev = Math.round(baseMonthlyRev * Math.min(seasonalMultiplier, 1.5));
+                  const annualRev = getDisplayRevenue() || 0;
+                  const baseMonthlyRev = annualRev / 12;
+                  const baseOccupancy = result.occupancy || 55;
+                  const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
+                  const monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5)) || 0;
                   const maxRev = Math.max(...getSeasonalityData().map(m => {
-                    const mult = m.occupancy / (result.occupancy || 55);
-                    return Math.round(baseMonthlyRev * Math.min(mult, 1.5));
-                  }));
+                    const mult = baseOccupancy > 0 ? (m.occupancy / baseOccupancy) : 1;
+                    return Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5)) || 0;
+                  }), 1); // Ensure maxRev is at least 1 to avoid division by zero
                   const heightPercent = maxRev > 0 ? (monthlyRev / maxRev) * 100 : 50;
                   const barColor = monthlyRev >= baseMonthlyRev * 1.1 ? '#22c55e' : monthlyRev >= baseMonthlyRev * 0.9 ? '#3b82f6' : '#f59e0b';
                   
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center">
                       <span className="text-xs font-bold mb-1" style={{ color: "#2b2823" }}>
-                        ${Math.round(monthlyRev / 1000)}k
+                        ${annualRev > 0 ? Math.round(monthlyRev / 1000) : 0}k
                       </span>
                       <div 
                         className="w-full rounded-t-md transition-all cursor-pointer hover:opacity-80"
@@ -867,8 +1021,10 @@ export default function CalculatorPage() {
               
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                 {getSeasonalityData().map((month, index) => {
-                  const seasonalMultiplier = month.occupancy / (result.occupancy || 55);
-                  const monthlyRev = Math.round((getDisplayRevenue() / 12) * Math.min(seasonalMultiplier, 1.5));
+                  const annualRev = getDisplayRevenue() || 0;
+                  const baseOccupancy = result.occupancy || 55;
+                  const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
+                  const monthlyRev = Math.round((annualRev / 12) * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5)) || 0;
                   return (
                     <div key={index} className="p-3 rounded-lg text-center" style={{ backgroundColor: "#f5f4f0" }}>
                       <p className="text-xs font-medium" style={{ color: "#787060" }}>{monthNames[month.month - 1]}</p>

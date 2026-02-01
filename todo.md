@@ -254,3 +254,14 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Verify all revenue calculations are accurate
 - [x] Fix x12 multiplication bug in percentile display
 - [x] Add Nominatim geocoding for address-to-coordinates conversion
+
+
+## Calculator Optimization for Investor-Ready Reports (February 2026)
+- [x] Fix NaN values in Monthly Revenue Forecast chart
+- [x] Fix NaN values in Monthly Revenue Projection grid
+- [x] Upgrade to Airbtics report/all ($0.50) for 30+ comparable listings
+- [x] Fix Airbtics data extraction (kpis structure, comps field names)
+- [x] Add city-level geocoding fallback for addresses not found
+- [x] Add PDF download button for investor reports
+- [x] Ensure all data fields populate correctly
+- [x] Make calculator reliable for $250K investment decisions
