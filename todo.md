@@ -274,4 +274,13 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Filter comps by similar bedroom/bath count
 - [ ] Show top 5 most relevant comps
 - [ ] Ensure comp links are clickable and go to Airbnb listings
-- [ ] Add recommended amenities section for reaching 90th percentile
+- [x] Add recommended amenities section for reaching 90th percentile
+
+## PDF Export Redesign (February 2026)
+- [ ] Redesign PDF with professional investment report layout
+- [ ] Add executive summary with key investment highlights
+- [ ] Include guest count/sleeps info in PDF header
+- [ ] Add startup costs breakdown to PDF
+- [ ] Fix monthly revenue to show seasonal variation (not flat)
+- [ ] Add visual hierarchy and better formatting
+- [ ] Remove unnecessary elements (timestamps, about:blank)

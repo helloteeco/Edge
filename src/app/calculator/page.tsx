@@ -350,124 +350,15 @@ export default function CalculatorPage() {
     const displayRevenue = getDisplayRevenue();
     const monthlyRevenue = Math.round(displayRevenue / 12);
     const guestMultiplier = getGuestCountMultiplier();
+    const guestBonus = Math.round((guestMultiplier - 1) * 100);
+    const baselineGuests = (bedrooms || 3) * 2;
     
-    // Create a printable HTML document
-    const reportHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>STR Investment Analysis - ${result.address || result.neighborhood}</title>
-  <style>
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #2b2823; }
-    h1 { font-size: 24px; margin-bottom: 8px; }
-    h2 { font-size: 18px; color: #787060; margin-top: 32px; border-bottom: 2px solid #e5e3da; padding-bottom: 8px; }
-    .header { text-align: center; margin-bottom: 40px; }
-    .subtitle { color: #787060; font-size: 14px; }
-    .highlight { background: #ecfdf5; padding: 24px; border-radius: 12px; text-align: center; margin: 24px 0; }
-    .highlight-value { font-size: 36px; font-weight: bold; color: #22c55e; }
-    .highlight-label { font-size: 14px; color: #787060; margin-bottom: 8px; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
-    .metric { background: #f5f4f0; padding: 16px; border-radius: 8px; text-align: center; }
-    .metric-value { font-size: 20px; font-weight: bold; color: #2b2823; }
-    .metric-label { font-size: 12px; color: #787060; }
-    .table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-    .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e3da; }
-    .table th { background: #f5f4f0; font-weight: 600; }
-    .positive { color: #22c55e; }
-    .negative { color: #ef4444; }
-    .footer { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e5e3da; text-align: center; font-size: 12px; color: #787060; }
-    .disclaimer { font-size: 11px; color: #9ca3af; margin-top: 16px; font-style: italic; }
-    @media print { body { padding: 20px; } }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <img src="/teeco-logo-full.png" alt="Teeco" style="height: 50px; margin-bottom: 16px;" />
-    <h1>STR Investment Analysis</h1>
-    <p class="subtitle">${result.address || result.neighborhood}, ${result.city}, ${result.state}</p>
-    <p class="subtitle">${result.bedrooms} Bedrooms • ${result.bathrooms} Bathrooms</p>
-    <p class="subtitle">Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-  </div>
-
-  <div class="highlight">
-    <p class="highlight-label">${revenuePercentile === 'average' ? 'Estimated Annual Revenue' : revenuePercentile === '75th' ? '75th Percentile Revenue' : '90th Percentile Revenue'}</p>
-    <p class="highlight-value">${formatCurrency(displayRevenue)}</p>
-    <p class="subtitle">${formatCurrency(monthlyRevenue)}/month</p>
-  </div>
-
-  <h2>Market Metrics</h2>
-  <div class="grid">
-    <div class="metric">
-      <p class="metric-value">${formatCurrency(result.adr)}</p>
-      <p class="metric-label">Avg Nightly Rate</p>
-    </div>
-    <div class="metric">
-      <p class="metric-value">${result.occupancy}%</p>
-      <p class="metric-label">Occupancy Rate</p>
-    </div>
-    <div class="metric">
-      <p class="metric-value">${result.nearbyListings || 'N/A'}</p>
-      <p class="metric-label">Active Listings</p>
-    </div>
-  </div>
-
-  ${result.percentiles ? `
-  <h2>Revenue Percentiles</h2>
-  <div class="grid">
-    <div class="metric">
-      <p class="metric-value">${formatCurrency(result.percentiles.revenue.p25)}</p>
-      <p class="metric-label">25th Percentile</p>
-    </div>
-    <div class="metric">
-      <p class="metric-value">${formatCurrency(result.percentiles.revenue.p50)}</p>
-      <p class="metric-label">50th Percentile (Avg)</p>
-    </div>
-    <div class="metric">
-      <p class="metric-value">${formatCurrency(result.percentiles.revenue.p75)}</p>
-      <p class="metric-label">75th Percentile</p>
-    </div>
-  </div>
-  ` : ''}
-
-  ${purchasePrice ? `
-  <h2>Investment Analysis</h2>
-  <table class="table">
-    <tr><th>Metric</th><th>Value</th></tr>
-    <tr><td>Purchase Price</td><td>${formatCurrency(parseFloat(purchasePrice))}</td></tr>
-    <tr><td>Down Payment (${downPaymentPercent}%)</td><td>${formatCurrency(investment.downPayment)}</td></tr>
-    <tr><td>Loan Amount</td><td>${formatCurrency(investment.loanAmount)}</td></tr>
-    <tr><td>Monthly Mortgage</td><td>${formatCurrency(investment.monthlyMortgage)}</td></tr>
-    <tr><td>Annual Gross Revenue</td><td class="positive">${formatCurrency(displayRevenue)}</td></tr>
-    <tr><td>Total Annual Expenses</td><td class="negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
-    <tr><td><strong>Annual Cash Flow</strong></td><td class="${investment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(investment.cashFlow)}</strong></td></tr>
-    <tr><td><strong>Cash-on-Cash Return</strong></td><td class="${investment.cashOnCashReturn >= 0 ? 'positive' : 'negative'}"><strong>${investment.cashOnCashReturn.toFixed(1)}%</strong></td></tr>
-  </table>
-  ` : ''}
-
-  ${result.comparables && result.comparables.length > 0 ? `
-  <h2>Comparable Listings (${result.comparables.length})</h2>
-  <table class="table">
-    <tr><th>Listing</th><th>Beds</th><th>Rate</th><th>Occ</th><th>Revenue</th></tr>
-    ${result.comparables.slice(0, 5).map(c => `
-    <tr>
-      <td><a href="${c.url}" target="_blank">${c.name.substring(0, 30)}${c.name.length > 30 ? '...' : ''}</a></td>
-      <td>${c.bedrooms}</td>
-      <td>${formatCurrency(c.nightPrice)}</td>
-      <td>${c.occupancy}%</td>
-      <td>${formatCurrency(c.annualRevenue)}/yr</td>
-    </tr>
-    `).join('')}
-  </table>
-  ` : ''}
-
-  <h2>Monthly Revenue Forecast</h2>
-  <div class="grid" style="grid-template-columns: repeat(6, 1fr);">
-    ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+    // Calculate monthly revenues with seasonal variation
+    const monthlyRevenues = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
       const historicalMonth = result.historical?.[index];
       const baseMonthlyRev = displayRevenue / 12;
       let monthlyRev = 0;
       if (historicalMonth?.revenue && historicalMonth.revenue > 0) {
-        // Apply guest multiplier to historical revenue
         monthlyRev = Math.round(historicalMonth.revenue * guestMultiplier);
       } else if (historicalMonth?.occupancy) {
         const baseOcc = result.occupancy || 55;
@@ -476,54 +367,253 @@ export default function CalculatorPage() {
       } else {
         monthlyRev = Math.round(baseMonthlyRev);
       }
-      return `<div class="metric" style="padding: 8px;"><p class="metric-label">${month}</p><p class="metric-value" style="font-size: 14px;">${formatCurrency(monthlyRev)}</p></div>`;
-    }).join('')}
-  </div>
-
-  ${result.recommendedAmenities && result.recommendedAmenities.length > 0 ? `
-  <h2>Recommended Amenities for 90th Percentile</h2>
-  <table class="table">
-    <tr><th>Amenity</th><th>Priority</th><th>Revenue Boost</th></tr>
-    ${result.recommendedAmenities.slice(0, 7).map(a => `
-    <tr>
-      <td>${a.name}</td>
-      <td>${a.priority}</td>
-      <td class="positive">+${a.boost}%</td>
-    </tr>
-    `).join('')}
-  </table>
-  ` : ''}
-
-  ${investment.startupCosts > 0 ? `
-  <h2>Startup Costs</h2>
-  <table class="table">
-    <tr><th>Item</th><th>Cost</th></tr>
-    ${includeDesignServices ? `<tr><td>Teeco Design Services ($7/sqft × ${propertySqft} sqft)</td><td>${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
-    ${includeSetupServices ? `<tr><td>Teeco Setup Services ($13/sqft × ${propertySqft} sqft)</td><td>${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
-    ${includeFurnishings ? `<tr><td>Furnishings (~$17.50/sqft × ${propertySqft} sqft)</td><td>${formatCurrency(calculateFurnishingsCost())}</td></tr>` : ''}
-    ${includeAmenities ? `<tr><td>Amenities (Hot Tub, Fire Pit, etc.)</td><td>${formatCurrency(amenitiesCost)}</td></tr>` : ''}
-    <tr><td><strong>Total Startup Costs</strong></td><td><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
-  </table>
-  ` : ''}
-
-  <h2>Monthly Operating Expenses</h2>
-  <table class="table">
-    <tr><th>Expense</th><th>Monthly</th></tr>
-    <tr><td>Electric</td><td>${formatCurrency(electricMonthly)}</td></tr>
-    <tr><td>Water</td><td>${formatCurrency(waterMonthly)}</td></tr>
-    <tr><td>Internet</td><td>${formatCurrency(internetMonthly)}</td></tr>
-    <tr><td>Lawn Care</td><td>${formatCurrency(lawnCareMonthly)}</td></tr>
-    <tr><td>Cleaning (per turnover)</td><td>${formatCurrency(cleaningPerTurn)}</td></tr>
-    <tr><td>Supplies</td><td>${formatCurrency(suppliesMonthly)}</td></tr>
-    ${miscMonthly > 0 ? `<tr><td>Misc</td><td>${formatCurrency(miscMonthly)}</td></tr>` : ''}
-    <tr><td><strong>Est. Monthly Operating</strong></td><td><strong>${formatCurrency(calculateMonthlyExpenses())}</strong></td></tr>
-  </table>
-
-  <div class="footer">
-    <img src="/teeco-icon-black.png" alt="Teeco" style="height: 30px; margin-bottom: 8px;" />
-    <p><strong>Edge by Teeco</strong> - STR Investment Analysis</p>
-    <p>Data powered by Airbtics & Mashvisor</p>
-    <p class="disclaimer">This report is for informational purposes only and should not be considered financial advice. Actual results may vary based on market conditions, property management, and other factors. Always conduct your own due diligence before making investment decisions.</p>
+      return { month, revenue: monthlyRev };
+    });
+    
+    // Find peak and low months
+    const sortedMonths = [...monthlyRevenues].sort((a, b) => b.revenue - a.revenue);
+    const peakMonth = sortedMonths[0];
+    const lowMonth = sortedMonths[sortedMonths.length - 1];
+    
+    // Create a printable HTML document - Professional Investment Report
+    const reportHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Investment Analysis - ${result.address || result.neighborhood}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; line-height: 1.5; }
+    .page { max-width: 800px; margin: 0 auto; padding: 40px; }
+    
+    /* Header */
+    .header { text-align: center; padding-bottom: 30px; border-bottom: 3px solid #22c55e; margin-bottom: 30px; }
+    .logo { height: 45px; margin-bottom: 20px; }
+    .property-title { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+    .property-details { font-size: 16px; color: #666; }
+    .property-details span { margin: 0 8px; }
+    
+    /* Executive Summary */
+    .executive-summary { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 16px; padding: 32px; margin-bottom: 30px; }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; text-align: center; }
+    .summary-item { }
+    .summary-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-bottom: 4px; }
+    .summary-value { font-size: 32px; font-weight: 700; color: #16a34a; }
+    .summary-value.primary { font-size: 42px; }
+    .summary-subtext { font-size: 13px; color: #666; margin-top: 4px; }
+    
+    /* Section Headers */
+    h2 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin: 30px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e5e5e5; }
+    h2 .badge { font-size: 12px; background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; margin-left: 8px; font-weight: 500; }
+    
+    /* Investment Highlights */
+    .highlights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
+    .highlight-card { background: #f8f8f8; border-radius: 12px; padding: 20px; text-align: center; }
+    .highlight-card.positive { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .highlight-card.warning { background: #fffbeb; border: 1px solid #fde68a; }
+    .highlight-icon { font-size: 24px; margin-bottom: 8px; }
+    .highlight-value { font-size: 24px; font-weight: 700; color: #1a1a1a; }
+    .highlight-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Tables */
+    .table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .table th { background: #f8f8f8; padding: 12px 16px; text-align: left; font-weight: 600; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .table td { padding: 14px 16px; border-bottom: 1px solid #eee; font-size: 14px; }
+    .table tr:last-child td { border-bottom: none; }
+    .table .total { background: #f8f8f8; font-weight: 600; }
+    .table .positive { color: #16a34a; font-weight: 600; }
+    .table .negative { color: #dc2626; }
+    .table .right { text-align: right; }
+    
+    /* Monthly Revenue Grid */
+    .monthly-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 16px 0; }
+    .month-card { background: #f8f8f8; border-radius: 8px; padding: 12px 8px; text-align: center; }
+    .month-card.peak { background: #dcfce7; border: 1px solid #86efac; }
+    .month-card.low { background: #fef3c7; border: 1px solid #fcd34d; }
+    .month-name { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .month-value { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-top: 4px; }
+    
+    /* Comps */
+    .comp-card { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #eee; }
+    .comp-card:last-child { border-bottom: none; }
+    .comp-info { flex: 1; }
+    .comp-name { font-weight: 500; color: #1a1a1a; font-size: 14px; }
+    .comp-details { font-size: 12px; color: #666; margin-top: 2px; }
+    .comp-revenue { text-align: right; }
+    .comp-revenue-value { font-weight: 600; color: #1a1a1a; font-size: 15px; }
+    .comp-revenue-details { font-size: 11px; color: #666; }
+    
+    /* Amenities */
+    .amenity-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .amenity-item { display: flex; align-items: center; padding: 12px; background: #f8f8f8; border-radius: 8px; }
+    .amenity-item.must-have { background: #f0fdf4; border-left: 3px solid #22c55e; }
+    .amenity-item.high-impact { background: #eff6ff; border-left: 3px solid #3b82f6; }
+    .amenity-icon { font-size: 20px; margin-right: 12px; }
+    .amenity-name { flex: 1; font-weight: 500; font-size: 14px; }
+    .amenity-boost { font-weight: 600; color: #16a34a; font-size: 14px; }
+    
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e5e5e5; text-align: center; }
+    .footer-logo { height: 30px; margin-bottom: 12px; opacity: 0.7; }
+    .footer-text { font-size: 12px; color: #888; }
+    .disclaimer { font-size: 10px; color: #aaa; margin-top: 16px; max-width: 600px; margin-left: auto; margin-right: auto; font-style: italic; }
+    
+    /* Print styles */
+    @media print {
+      body { padding: 0; }
+      .page { padding: 20px; }
+      .page-break { page-break-before: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header -->
+    <div class="header">
+      <img src="/teeco-logo-full.png" alt="Teeco" class="logo" onerror="this.style.display='none'" />
+      <h1 class="property-title">${result.address || result.neighborhood}</h1>
+      <p class="property-details">
+        <span>${result.city}, ${result.state}</span> • 
+        <span>${result.bedrooms} Bed / ${result.bathrooms} Bath</span> • 
+        <span>Sleeps ${guestCount || baselineGuests}</span>
+      </p>
+    </div>
+    
+    <!-- Executive Summary -->
+    <div class="executive-summary">
+      <div class="summary-grid">
+        <div class="summary-item">
+          <p class="summary-label">Projected Annual Revenue</p>
+          <p class="summary-value primary">${formatCurrency(displayRevenue)}</p>
+          <p class="summary-subtext">${formatCurrency(monthlyRevenue)}/month avg${guestBonus > 0 ? ` • +${guestBonus}% capacity bonus` : ''}</p>
+        </div>
+        <div class="summary-item">
+          <p class="summary-label">Annual Cash Flow</p>
+          <p class="summary-value">${formatCurrency(investment.cashFlow)}</p>
+          <p class="summary-subtext">${formatCurrency(Math.round(investment.cashFlow / 12))}/month</p>
+        </div>
+        <div class="summary-item">
+          <p class="summary-label">Cash-on-Cash Return</p>
+          <p class="summary-value">${investment.cashOnCashReturn.toFixed(1)}%</p>
+          <p class="summary-subtext">on ${formatCurrency(investment.totalCashNeeded)} invested</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Investment Highlights -->
+    <div class="highlights">
+      <div class="highlight-card positive">
+        <div class="highlight-icon">💰</div>
+        <div class="highlight-value">${formatCurrency(result.adr)}</div>
+        <div class="highlight-label">Avg Nightly Rate</div>
+      </div>
+      <div class="highlight-card positive">
+        <div class="highlight-icon">📊</div>
+        <div class="highlight-value">${result.occupancy}%</div>
+        <div class="highlight-label">Occupancy Rate</div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon">🏠</div>
+        <div class="highlight-value">${result.nearbyListings || 'N/A'}</div>
+        <div class="highlight-label">Active Listings</div>
+      </div>
+      <div class="highlight-card positive">
+        <div class="highlight-icon">📈</div>
+        <div class="highlight-value">${formatCurrency(peakMonth.revenue)}</div>
+        <div class="highlight-label">Peak Month (${peakMonth.month})</div>
+      </div>
+    </div>
+    
+    <!-- Investment Analysis -->
+    ${purchasePrice ? `
+    <h2>Investment Analysis</h2>
+    <table class="table">
+      <tr><td>Purchase Price</td><td class="right">${formatCurrency(parseFloat(purchasePrice))}</td></tr>
+      <tr><td>Down Payment (${downPaymentPercent}%)</td><td class="right">${formatCurrency(investment.downPayment)}</td></tr>
+      <tr><td>Loan Amount (${loanTerm}yr @ ${interestRate}%)</td><td class="right">${formatCurrency(investment.loanAmount)}</td></tr>
+      <tr><td>Monthly Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage)}</td></tr>
+      <tr class="total"><td>Total Cash Required</td><td class="right">${formatCurrency(investment.totalCashNeeded)}</td></tr>
+    </table>
+    
+    <h2>Annual Expense Breakdown</h2>
+    <table class="table">
+      <tr><td>Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage * 12)}</td></tr>
+      <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(investment.annualPropertyTax)}</td></tr>
+      <tr><td>Insurance</td><td class="right">${formatCurrency(investment.annualInsurance)}</td></tr>
+      <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(investment.annualManagement)}</td></tr>
+      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(investment.monthlyOperating * 12)}</td></tr>
+      <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
+      <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(displayRevenue)}</td></tr>
+      <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${investment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(investment.cashFlow)}</strong></td></tr>
+    </table>
+    ` : ''}
+    
+    <!-- Monthly Revenue Forecast -->
+    <h2>Monthly Revenue Forecast <span class="badge">Seasonal</span></h2>
+    <div class="monthly-grid">
+      ${monthlyRevenues.map(m => {
+        const isPeak = m.revenue === peakMonth.revenue;
+        const isLow = m.revenue === lowMonth.revenue;
+        return `<div class="month-card ${isPeak ? 'peak' : isLow ? 'low' : ''}">
+          <div class="month-name">${m.month}</div>
+          <div class="month-value">${formatCurrency(m.revenue)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <p style="font-size: 12px; color: #666; text-align: center; margin-top: 8px;">🟢 Peak Season &nbsp; 🟡 Low Season &nbsp; Annual Total: <strong>${formatCurrency(monthlyRevenues.reduce((sum, m) => sum + m.revenue, 0))}</strong></p>
+    
+    <!-- Comparable Listings -->
+    ${result.comparables && result.comparables.length > 0 ? `
+    <h2>Top Performing Comparables</h2>
+    <div>
+      ${result.comparables.slice(0, 5).map(c => `
+      <div class="comp-card">
+        <div class="comp-info">
+          <div class="comp-name">${c.name.substring(0, 45)}${c.name.length > 45 ? '...' : ''}</div>
+          <div class="comp-details">${c.bedrooms} bed • ${c.bathrooms || '-'} bath • ⭐ ${c.rating || '-'}</div>
+        </div>
+        <div class="comp-revenue">
+          <div class="comp-revenue-value">${formatCurrency(c.annualRevenue)}/yr</div>
+          <div class="comp-revenue-details">${formatCurrency(c.nightPrice)}/night • ${c.occupancy}% occ</div>
+        </div>
+      </div>
+      `).join('')}
+    </div>
+    ` : ''}
+    
+    <!-- Recommended Amenities -->
+    ${result.recommendedAmenities && result.recommendedAmenities.length > 0 ? `
+    <h2>Amenities to Reach 90th Percentile</h2>
+    <div class="amenity-grid">
+      ${result.recommendedAmenities.slice(0, 6).map(a => `
+      <div class="amenity-item ${a.priority === 'MUST HAVE' ? 'must-have' : a.priority === 'HIGH IMPACT' ? 'high-impact' : ''}">
+        <span class="amenity-icon">${a.icon || '✨'}</span>
+        <span class="amenity-name">${a.name}</span>
+        <span class="amenity-boost">+${a.boost}%</span>
+      </div>
+      `).join('')}
+    </div>
+    ` : ''}
+    
+    <!-- Startup Costs -->
+    ${investment.startupCosts > 0 ? `
+    <h2>Startup Investment</h2>
+    <table class="table">
+      ${includeDesignServices ? `<tr><td>Teeco Design Services</td><td class="right">${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
+      ${includeSetupServices ? `<tr><td>Teeco Setup Services</td><td class="right">${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
+      ${includeFurnishings ? `<tr><td>Furnishings & Decor</td><td class="right">${formatCurrency(calculateFurnishingsCost())}</td></tr>` : ''}
+      ${includeAmenities ? `<tr><td>Premium Amenities</td><td class="right">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
+      <tr class="total"><td><strong>Total Startup Investment</strong></td><td class="right"><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
+    </table>
+    ` : ''}
+    
+    <!-- Footer -->
+    <div class="footer">
+      <img src="/teeco-icon-black.png" alt="Teeco" class="footer-logo" onerror="this.style.display='none'" />
+      <p class="footer-text"><strong>Edge by Teeco</strong> • STR Investment Analysis</p>
+      <p class="footer-text">Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <p class="disclaimer">This analysis is for informational purposes only and should not be considered financial advice. Projections are based on market data and may vary based on property management, market conditions, and other factors. Always conduct your own due diligence before making investment decisions.</p>
+    </div>
   </div>
 </body>
 </html>
