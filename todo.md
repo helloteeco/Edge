@@ -277,10 +277,18 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Add recommended amenities section for reaching 90th percentile
 
 ## PDF Export Redesign (February 2026)
-- [ ] Redesign PDF with professional investment report layout
-- [ ] Add executive summary with key investment highlights
-- [ ] Include guest count/sleeps info in PDF header
-- [ ] Add startup costs breakdown to PDF
-- [ ] Fix monthly revenue to show seasonal variation (not flat)
-- [ ] Add visual hierarchy and better formatting
-- [ ] Remove unnecessary elements (timestamps, about:blank)
+- [x] Redesign PDF with professional investment report layout
+- [x] Add executive summary with key investment highlights
+- [x] Include guest count/sleeps info in PDF header
+- [x] Add startup costs breakdown to PDF
+- [x] Fix monthly revenue to show seasonal variation (not flat)
+- [x] Add visual hierarchy and better formatting
+- [x] Remove unnecessary elements (timestamps, about:blank)
+
+## Final Calculator Enhancements (February 2026)
+- [ ] Fix Y-axis scaling on monthly revenue chart to show seasonal variation
+- [ ] Add save report functionality to Saved section
+- [ ] Add notes feature for saved properties
+- [ ] Add email report option
+- [ ] Add ROI timeline chart (5-10 year projection)
+- [ ] Update PDF with ROI timeline and all helpful info for sharing
