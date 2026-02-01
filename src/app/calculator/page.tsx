@@ -77,7 +77,8 @@ interface AnalysisResult {
   revenueChangePercent: number;
   occupancyChange: string;
   occupancyChangePercent: number;
-  historical: { year: number; month: number; occupancy: number }[];
+  historical: { year: number; month: number; occupancy: number; adr?: number; revenue?: number }[];
+  recommendedAmenities?: { name: string; boost: number; priority: string; icon: string }[];
 }
 
 // ============================================================================
@@ -231,7 +232,7 @@ export default function CalculatorPage() {
         return;
       }
 
-      const { property, neighborhood, percentiles, comparables, historical } = data;
+      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities } = data;
 
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
@@ -295,6 +296,7 @@ export default function CalculatorPage() {
         occupancyChange: neighborhood?.occupancyChange || "stable",
         occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
         historical: historical || [],
+        recommendedAmenities: recommendedAmenities || [],
       };
 
       setResult(analysisResult);
@@ -1104,6 +1106,45 @@ export default function CalculatorPage() {
                         </p>
                       )}
                     </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recommended Amenities for 90th Percentile */}
+            {result.recommendedAmenities && result.recommendedAmenities.length > 0 && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>
+                  🎯 Amenities to Reach 90th Percentile
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Top performers in this market have these amenities. Add them to maximize your revenue.
+                </p>
+                <div className="space-y-2">
+                  {result.recommendedAmenities.map((amenity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-xl"
+                      style={{
+                        backgroundColor: amenity.priority === 'MUST HAVE' ? '#f0fdf4' : amenity.priority === 'HIGH IMPACT' ? '#fefce8' : '#f5f4f0'
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{amenity.icon}</span>
+                        <div>
+                          <p className="font-medium text-gray-900">{amenity.name}</p>
+                          <p className="text-xs" style={{
+                            color: amenity.priority === 'MUST HAVE' ? '#16a34a' : amenity.priority === 'HIGH IMPACT' ? '#ca8a04' : '#6b7280'
+                          }}>
+                            {amenity.priority}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">+{amenity.boost}%</p>
+                        <p className="text-xs text-gray-500">revenue boost</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
