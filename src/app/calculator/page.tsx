@@ -13,6 +13,11 @@ interface RecentSearch {
   adr: number;
   occupancy: number;
   timestamp: number;
+  // Cached full result for instant recall
+  cachedResult?: AnalysisResult;
+  cachedBedrooms?: number;
+  cachedBathrooms?: number;
+  cachedGuestCount?: number;
 }
 
 interface AddressSuggestion {
@@ -417,6 +422,11 @@ export default function CalculatorPage() {
         adr: Math.round(avgAdr),
         occupancy: Math.round(avgOccupancy),
         timestamp: Date.now(),
+        // Cache full result for instant recall
+        cachedResult: analysisResult,
+        cachedBedrooms: bedrooms,
+        cachedBathrooms: bathrooms,
+        cachedGuestCount: guestCount || bedrooms * 2,
       });
     } catch (err) {
       console.error("Analysis error:", err);
@@ -2013,17 +2023,42 @@ export default function CalculatorPage() {
                 <button
                   key={index}
                   onClick={() => {
-                    setAddress(search.address);
-                    if (bedrooms && bathrooms) {
-                      handleAnalyze(search.address);
+                    // If we have cached result, load it instantly without API call
+                    if (search.cachedResult) {
+                      setAddress(search.address);
+                      setResult(search.cachedResult);
+                      if (search.cachedBedrooms) setBedrooms(search.cachedBedrooms);
+                      if (search.cachedBathrooms) setBathrooms(search.cachedBathrooms);
+                      if (search.cachedGuestCount) setGuestCount(search.cachedGuestCount);
+                      // Auto-fill purchase price if available
+                      if (search.cachedResult.listPrice > 0 && !purchasePrice) {
+                        setPurchasePrice(search.cachedResult.listPrice.toString());
+                      }
+                      // Auto-set sqft
+                      if (search.cachedResult.sqft > 0) {
+                        setPropertySqft(search.cachedResult.sqft);
+                      }
+                    } else {
+                      // Fallback: re-analyze if no cached data (old searches)
+                      setAddress(search.address);
+                      if (bedrooms && bathrooms) {
+                        handleAnalyze(search.address);
+                      }
                     }
                   }}
                   className="w-full p-3 rounded-xl text-left hover:bg-gray-50 transition-colors border border-gray-100"
                 >
-                  <p className="font-medium text-gray-900 truncate">{search.address}</p>
-                  <p className="text-sm text-gray-500">
-                    {formatCurrency(search.annualRevenue)}/yr • {formatCurrency(search.adr)}/night • {search.occupancy}% occ
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{search.address}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatCurrency(search.annualRevenue)}/yr • {formatCurrency(search.adr)}/night • {search.occupancy}% occ
+                      </p>
+                    </div>
+                    {search.cachedResult && (
+                      <span className="ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Instant</span>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
