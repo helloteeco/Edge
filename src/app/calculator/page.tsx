@@ -538,6 +538,23 @@ export default function CalculatorPage() {
     }
   };
 
+  // Calculate guest count multiplier based on industry data
+  // Research shows ~5-8% revenue increase per additional guest capacity above baseline
+  // Baseline: bedrooms * 2 guests (standard assumption)
+  const getGuestCountMultiplier = () => {
+    if (!bedrooms || !guestCount) return 1.0;
+    
+    const baselineGuests = bedrooms * 2; // Standard: 2 guests per bedroom
+    const extraGuests = guestCount - baselineGuests;
+    
+    if (extraGuests <= 0) return 1.0; // No bonus if at or below baseline
+    
+    // Each extra guest above baseline adds ~6% revenue (industry average)
+    // Capped at 50% bonus to prevent unrealistic estimates
+    const bonus = Math.min(extraGuests * 0.06, 0.50);
+    return 1.0 + bonus;
+  };
+
   // Get display revenue based on percentile selection or custom income
   const getDisplayRevenue = () => {
     if (useCustomIncome && customAnnualIncome) {
@@ -546,28 +563,39 @@ export default function CalculatorPage() {
     
     if (!result) return 0;
     
+    // Get guest count multiplier
+    const guestMultiplier = getGuestCountMultiplier();
+    
     // Use real percentile data if available
     // NOTE: percentiles.revenue values are ALREADY ANNUAL (not monthly)
     if (result.percentiles?.revenue) {
+      let baseRevenue = 0;
       switch (revenuePercentile) {
         case "75th":
-          return result.percentiles.revenue.p75; // Already annual, don't multiply by 12
+          baseRevenue = result.percentiles.revenue.p75;
+          break;
         case "90th":
-          return result.percentiles.revenue.p90; // Already annual, don't multiply by 12
+          baseRevenue = result.percentiles.revenue.p90;
+          break;
         default:
-          return result.percentiles.revenue.p50; // Already annual, don't multiply by 12
+          baseRevenue = result.percentiles.revenue.p50;
       }
+      // Apply guest count multiplier
+      return Math.round(baseRevenue * guestMultiplier);
     }
     
     // Fallback to calculated revenue with multipliers
+    let baseRevenue = result.annualRevenue;
     switch (revenuePercentile) {
       case "75th":
-        return Math.round(result.annualRevenue * 1.25);
+        baseRevenue = Math.round(result.annualRevenue * 1.25);
+        break;
       case "90th":
-        return Math.round(result.annualRevenue * 1.45);
-      default:
-        return result.annualRevenue;
+        baseRevenue = Math.round(result.annualRevenue * 1.45);
+        break;
     }
+    // Apply guest count multiplier
+    return Math.round(baseRevenue * guestMultiplier);
   };
 
   // Calculate design cost ($7/sqft with optional 20% student discount)
@@ -706,11 +734,7 @@ export default function CalculatorPage() {
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#787060" }}>
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
+            <img src="/teeco-icon.png" alt="Teeco" className="w-8 h-8 invert" />
             <span className="text-white font-semibold">Edge by Teeco</span>
           </Link>
           <Link href="/" className="text-sm text-white/70 hover:text-white">
@@ -965,6 +989,11 @@ export default function CalculatorPage() {
                     {revenuePercentile === "75th" 
                       ? "Top 25% performers with good amenities" 
                       : "Top 10% performers with premium amenities & design"}
+                  </p>
+                )}
+                {guestCount && bedrooms && guestCount > bedrooms * 2 && (
+                  <p className="text-xs text-green-600 mt-2">
+                    +{Math.round((getGuestCountMultiplier() - 1) * 100)}% guest capacity bonus (sleeps {guestCount} vs standard {bedrooms * 2})
                   </p>
                 )}
               </div>
@@ -1285,7 +1314,7 @@ export default function CalculatorPage() {
                   </p>
                 </div>
                 
-                {/* Setup Services - $20/sqft */}
+                {/* Setup Services - $13/sqft */}
                 <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: includeSetupServices ? "#f0fdf4" : "#f5f4f0" }}>
                   <div className="flex items-center gap-3">
                     <input
@@ -1296,7 +1325,7 @@ export default function CalculatorPage() {
                     />
                     <div>
                       <p className="font-medium" style={{ color: "#2b2823" }}>Teeco Setup Services</p>
-                      <p className="text-xs text-gray-500">$20/sqft • Full property setup & staging{studentDiscount && " (20% off)"}</p>
+                      <p className="text-xs text-gray-500">$13/sqft • Full property setup & staging{studentDiscount && " (20% off)"}</p>
                     </div>
                   </div>
                   <p className="font-semibold" style={{ color: includeSetupServices ? "#22c55e" : "#787060" }}>
