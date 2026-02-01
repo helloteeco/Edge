@@ -271,7 +271,16 @@ async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bat
       occupancy: reportData.occupancy_rate,
       comparablesCount: reportData.comps?.length || 0,
       percentiles: reportData.percentiles.revenue,
+      monthlyRevenueKeys: Object.keys(reportData.monthly_revenue || {}),
+      monthlyOccKeys: Object.keys(reportData.monthly_occupancy || {}),
+      monthlyAdrKeys: Object.keys(reportData.monthly_adr || {}),
     });
+    
+    // Log sample monthly data for debugging
+    if (Object.keys(reportData.monthly_revenue || {}).length > 0) {
+      const sampleKey = Object.keys(reportData.monthly_revenue)[0];
+      console.log("Sample monthly_revenue:", sampleKey, "=", reportData.monthly_revenue[sampleKey]);
+    }
 
     // Cache the result
     airbticsCache.set(cacheKey, { data: reportData, timestamp: Date.now() });
@@ -809,7 +818,14 @@ export async function POST(request: NextRequest) {
         console.log("Using Airbtics monthly OCCUPANCY data for seasonality:", historicalData.length, "months");
       }
       
-      console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy, comps: comparableListings.length });
+      // Log the historical data being generated
+      if (historicalData.length > 0) {
+        console.log("Historical data sample:", historicalData[0], historicalData[6]);
+      } else {
+        console.log("WARNING: No historical data generated from Airbtics monthly data");
+      }
+      
+      console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy, comps: comparableListings.length, historicalMonths: historicalData.length });
     } else {
       // Fallback to Mashvisor data
       annualRevenue = adjustedMonthlyRevenue * 12;
