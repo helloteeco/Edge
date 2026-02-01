@@ -961,20 +961,32 @@ export default function CalculatorPage() {
                 {getSeasonalityData().map((month, index) => {
                   const annualRev = getDisplayRevenue() || 0;
                   const baseMonthlyRev = annualRev / 12;
-                  const baseOccupancy = result.occupancy || 55;
-                  const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
-                  const monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5)) || 0;
+                  // Use actual revenue from historical data if available, otherwise calculate from occupancy
+                  let monthlyRev = 0;
+                  if (month.revenue && month.revenue > 0) {
+                    // Use actual monthly revenue from Airbtics
+                    monthlyRev = month.revenue;
+                  } else {
+                    // Calculate from occupancy multiplier
+                    const baseOccupancy = result.occupancy || 55;
+                    const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
+                    monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
+                  }
+                  monthlyRev = monthlyRev || Math.round(baseMonthlyRev);
+                  
                   const maxRev = Math.max(...getSeasonalityData().map(m => {
-                    const mult = baseOccupancy > 0 ? (m.occupancy / baseOccupancy) : 1;
-                    return Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5)) || 0;
-                  }), 1); // Ensure maxRev is at least 1 to avoid division by zero
+                    if (m.revenue && m.revenue > 0) return m.revenue;
+                    const baseOcc = result.occupancy || 55;
+                    const mult = baseOcc > 0 ? (m.occupancy / baseOcc) : 1;
+                    return Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5)) || baseMonthlyRev;
+                  }), 1);
                   const heightPercent = maxRev > 0 ? (monthlyRev / maxRev) * 100 : 50;
                   const barColor = monthlyRev >= baseMonthlyRev * 1.1 ? '#22c55e' : monthlyRev >= baseMonthlyRev * 0.9 ? '#3b82f6' : '#f59e0b';
                   
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center">
                       <span className="text-xs font-bold mb-1" style={{ color: "#2b2823" }}>
-                        ${annualRev > 0 ? Math.round(monthlyRev / 1000) : 0}k
+                        ${monthlyRev >= 1000 ? Math.round(monthlyRev / 1000) + 'k' : formatCurrency(monthlyRev).replace('$', '')}
                       </span>
                       <div 
                         className="w-full rounded-t-md transition-all cursor-pointer hover:opacity-80"
@@ -1022,9 +1034,17 @@ export default function CalculatorPage() {
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                 {getSeasonalityData().map((month, index) => {
                   const annualRev = getDisplayRevenue() || 0;
-                  const baseOccupancy = result.occupancy || 55;
-                  const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
-                  const monthlyRev = Math.round((annualRev / 12) * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5)) || 0;
+                  const baseMonthlyRev = annualRev / 12;
+                  // Use actual revenue from historical data if available
+                  let monthlyRev = 0;
+                  if (month.revenue && month.revenue > 0) {
+                    monthlyRev = month.revenue;
+                  } else {
+                    const baseOccupancy = result.occupancy || 55;
+                    const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
+                    monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
+                  }
+                  monthlyRev = monthlyRev || Math.round(baseMonthlyRev);
                   return (
                     <div key={index} className="p-3 rounded-lg text-center" style={{ backgroundColor: "#f5f4f0" }}>
                       <p className="text-xs font-medium" style={{ color: "#787060" }}>{monthNames[month.month - 1]}</p>
@@ -1051,29 +1071,34 @@ export default function CalculatorPage() {
                   Top Performing {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
                 </h3>
                 <div className="space-y-3">
-                  {result.comparables.slice(0, 5).map((listing, index) => (
+                  {result.comparables.slice(0, 10).map((listing, index) => (
                     <a
                       key={listing.id || index}
-                      href={listing.url}
+                      href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100"
+                      className="block p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 truncate">{listing.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600">{listing.name}</p>
+                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </div>
                           <p className="text-sm text-gray-500">
                             {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.propertyType}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-green-600">{formatCurrency(listing.monthlyRevenue)}/mo</p>
+                          <p className="font-bold text-green-600">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
                           <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {listing.occupancy}% occ</p>
                         </div>
                       </div>
                       {listing.rating > 0 && (
                         <p className="text-xs text-gray-400 mt-1">
-                          ⭐ {listing.rating} ({listing.reviewsCount} reviews)
+                          ⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount} reviews)
                         </p>
                       )}
                     </a>

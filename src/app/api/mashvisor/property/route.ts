@@ -625,6 +625,29 @@ export async function POST(request: NextRequest) {
         console.log(`Airbtics provided ${comparableListings.length} comparable listings`);
       }
       
+      // Use Airbtics monthly data for seasonality if available
+      if (airbticsData.monthly_occupancy && Object.keys(airbticsData.monthly_occupancy).length > 0) {
+        // Get the last 12 months of data
+        const monthlyOcc = airbticsData.monthly_occupancy;
+        const monthlyAdr = airbticsData.monthly_adr || {};
+        const months = Object.keys(monthlyOcc).sort().slice(-12);
+        
+        historicalData = months.map(monthKey => {
+          const [year, month] = monthKey.split('-').map(Number);
+          const occ = monthlyOcc[monthKey] || adjustedOccupancy;
+          const adr = monthlyAdr[monthKey] || adjustedAdr;
+          const monthlyRev = Math.round(adr * (occ / 100) * 30);
+          return {
+            year,
+            month,
+            occupancy: occ,
+            adr: adr,
+            revenue: monthlyRev,
+          };
+        });
+        console.log("Using Airbtics monthly data for seasonality:", historicalData.length, "months");
+      }
+      
       console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy, comps: comparableListings.length });
     } else {
       // Fallback to Mashvisor data
