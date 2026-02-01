@@ -617,7 +617,7 @@ export default function CalculatorPage() {
   const investment = calculateInvestment();
 
   // Generate seasonality data (12 months)
-  const getSeasonalityData = () => {
+  const getSeasonalityData = (): { year: number; month: number; occupancy: number; revenue?: number; adr?: number }[] => {
     if (!result) return [];
     
     if (result.historical && result.historical.length >= 12) {
@@ -630,7 +630,9 @@ export default function CalculatorPage() {
     return seasonalMultipliers.map((mult, index) => ({
       year: 2025,
       month: index + 1,
-      occupancy: Math.round(Math.min(baseOccupancy * mult, 95))
+      occupancy: Math.round(Math.min(baseOccupancy * mult, 95)),
+      revenue: 0,
+      adr: 0,
     }));
   };
 
