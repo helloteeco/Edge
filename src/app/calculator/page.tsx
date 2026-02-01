@@ -434,7 +434,7 @@ export default function CalculatorPage() {
     <tr><td>Annual Gross Revenue</td><td class="positive">${formatCurrency(displayRevenue)}</td></tr>
     <tr><td>Total Annual Expenses</td><td class="negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
     <tr><td><strong>Annual Cash Flow</strong></td><td class="${investment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(investment.cashFlow)}</strong></td></tr>
-    <tr><td><strong>Cash-on-Cash Return</strong></td><td class="${investment.cashOnCash >= 0 ? 'positive' : 'negative'}"><strong>${investment.cashOnCash.toFixed(1)}%</strong></td></tr>
+    <tr><td><strong>Cash-on-Cash Return</strong></td><td class="${investment.cashOnCashReturn >= 0 ? 'positive' : 'negative'}"><strong>${investment.cashOnCashReturn.toFixed(1)}%</strong></td></tr>
   </table>
   ` : ''}
 
