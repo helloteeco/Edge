@@ -185,7 +185,7 @@ export default function SavedPage() {
                   No saved reports yet
                 </h3>
                 <p className="mb-6 max-w-sm mx-auto" style={{ color: '#787060' }}>
-                  Analyze a property in the calculator and click "Save Report" to save it here with your notes.
+                  Analyze a property in the calculator and click &quot;Save Report&quot; to save it here with your notes.
                 </p>
                 <Link
                   href="/calculator"
