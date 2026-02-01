@@ -10,6 +10,101 @@ const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 const AIRBTICS_API_KEY = process.env.AIRBTICS_API_KEY || "";
 const AIRBTICS_BASE_URL = "https://crap0y5bx5.execute-api.us-east-2.amazonaws.com/prod";
 
+// Helper function to determine market type based on location
+function getMarketType(lat: number, lng: number): string {
+  // Mountain markets (Colorado, Utah mountains, Smokies, etc.)
+  if ((lat >= 35 && lat <= 37 && lng >= -84 && lng <= -82) || // Smokies
+      (lat >= 38 && lat <= 41 && lng >= -107 && lng <= -104) || // Colorado
+      (lat >= 40 && lat <= 42 && lng >= -112 && lng <= -110)) { // Utah
+    return 'mountain';
+  }
+  // Beach markets (Florida, Gulf Coast, California coast)
+  if ((lat >= 24 && lat <= 31 && lng >= -88 && lng <= -80) || // Florida/Gulf
+      (lat >= 32 && lat <= 38 && lng >= -124 && lng <= -117)) { // California coast
+    return 'beach';
+  }
+  // Lake markets (common lake areas)
+  if ((lat >= 35 && lat <= 37 && lng >= -86 && lng <= -84) || // Tennessee lakes
+      (lat >= 42 && lat <= 47 && lng >= -90 && lng <= -82)) { // Great Lakes
+    return 'lake';
+  }
+  // Desert markets (Arizona, Nevada)
+  if ((lat >= 31 && lat <= 37 && lng >= -115 && lng <= -109)) {
+    return 'desert';
+  }
+  // Urban markets (major metros - simplified check)
+  if ((lat >= 40.5 && lat <= 41 && lng >= -74.5 && lng <= -73.5) || // NYC
+      (lat >= 33.5 && lat <= 34.5 && lng >= -118.5 && lng <= -117.5) || // LA
+      (lat >= 41.5 && lat <= 42 && lng >= -88 && lng <= -87)) { // Chicago
+    return 'urban';
+  }
+  return 'rural';
+}
+
+// Get recommended amenities based on market type and top performers
+function getRecommendedAmenities(lat: number, lng: number, comps: any[]): any[] {
+  const marketType = getMarketType(lat, lng);
+  
+  // Base amenities that boost revenue across all markets
+  const baseAmenities = [
+    { name: 'High-Speed WiFi', boost: 5, priority: 'MUST HAVE', icon: '📶' },
+    { name: 'Smart TV with Streaming', boost: 3, priority: 'MUST HAVE', icon: '📺' },
+  ];
+  
+  // Market-specific amenities
+  const marketAmenities: Record<string, any[]> = {
+    mountain: [
+      { name: 'Hot Tub', boost: 22, priority: 'MUST HAVE', icon: '♨️' },
+      { name: 'Fireplace', boost: 15, priority: 'HIGH IMPACT', icon: '🔥' },
+      { name: 'Game Room', boost: 12, priority: 'HIGH IMPACT', icon: '🎮' },
+      { name: 'Mountain Views', boost: 10, priority: 'HIGH IMPACT', icon: '🏔️' },
+      { name: 'Fire Pit', boost: 8, priority: 'NICE TO HAVE', icon: '🪵' },
+    ],
+    beach: [
+      { name: 'Pool', boost: 25, priority: 'MUST HAVE', icon: '🏊' },
+      { name: 'Ocean View', boost: 20, priority: 'HIGH IMPACT', icon: '🌊' },
+      { name: 'Beach Gear', boost: 10, priority: 'HIGH IMPACT', icon: '🏖️' },
+      { name: 'Outdoor Shower', boost: 8, priority: 'NICE TO HAVE', icon: '🚿' },
+      { name: 'Kayaks/Paddleboards', boost: 7, priority: 'NICE TO HAVE', icon: '🛶' },
+    ],
+    lake: [
+      { name: 'Boat Dock', boost: 28, priority: 'MUST HAVE', icon: '⚓' },
+      { name: 'Kayaks/Canoes', boost: 15, priority: 'HIGH IMPACT', icon: '🛶' },
+      { name: 'Lake View', boost: 12, priority: 'HIGH IMPACT', icon: '🏞️' },
+      { name: 'Fire Pit', boost: 10, priority: 'HIGH IMPACT', icon: '🪵' },
+      { name: 'Fishing Gear', boost: 6, priority: 'NICE TO HAVE', icon: '🎣' },
+    ],
+    desert: [
+      { name: 'Pool', boost: 30, priority: 'MUST HAVE', icon: '🏊' },
+      { name: 'Outdoor Kitchen', boost: 15, priority: 'HIGH IMPACT', icon: '🍳' },
+      { name: 'Fire Pit', boost: 12, priority: 'HIGH IMPACT', icon: '🪵' },
+      { name: 'Mountain Views', boost: 10, priority: 'HIGH IMPACT', icon: '🏜️' },
+      { name: 'Hot Tub', boost: 8, priority: 'NICE TO HAVE', icon: '♨️' },
+    ],
+    urban: [
+      { name: 'Parking', boost: 20, priority: 'MUST HAVE', icon: '🅿️' },
+      { name: 'Workspace', boost: 15, priority: 'HIGH IMPACT', icon: '💼' },
+      { name: 'Gym Access', boost: 10, priority: 'HIGH IMPACT', icon: '🏋️' },
+      { name: 'Rooftop/Balcony', boost: 12, priority: 'HIGH IMPACT', icon: '🌆' },
+      { name: 'Washer/Dryer', boost: 8, priority: 'NICE TO HAVE', icon: '🧺' },
+    ],
+    rural: [
+      { name: 'Hot Tub', boost: 18, priority: 'MUST HAVE', icon: '♨️' },
+      { name: 'Fire Pit', boost: 12, priority: 'HIGH IMPACT', icon: '🪵' },
+      { name: 'Outdoor Space', boost: 10, priority: 'HIGH IMPACT', icon: '🌳' },
+      { name: 'Game Room', boost: 8, priority: 'NICE TO HAVE', icon: '🎮' },
+      { name: 'Grill/BBQ', boost: 6, priority: 'NICE TO HAVE', icon: '🍖' },
+    ],
+  };
+  
+  const specificAmenities = marketAmenities[marketType] || marketAmenities.rural;
+  
+  return [
+    ...baseAmenities,
+    ...specificAmenities,
+  ].slice(0, 7); // Return top 7 amenities
+}
+
 // Cache for Airbtics reports (60 minutes per TOS)
 const airbticsCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 60 minutes
@@ -165,8 +260,9 @@ async function fetchAirbticsData(lat: number, lng: number, bedrooms: number, bat
         },
       },
       comps: rawData.comps || [],
-      monthly_occupancy: p50.monthly_occupancy || {},
+      monthly_occupancy: p50.monthly_occupancy_rate || {},
       monthly_adr: p50.monthly_adr || {},
+      monthly_revenue: p50.monthly_revenue || {},
     };
     
     console.log("Airbtics data received:", {
@@ -272,8 +368,14 @@ export async function POST(request: NextRequest) {
     let airbticsData = null;
     const coords = await geocodeAddress(address);
     
+    // Store coordinates for distance calculations and amenity recommendations
+    let latitude = 0;
+    let longitude = 0;
+    
     if (coords) {
       console.log("Geocoded coordinates:", coords);
+      latitude = coords.lat;
+      longitude = coords.lng;
       airbticsData = await fetchAirbticsData(coords.lat, coords.lng, bedrooms, bathrooms);
     }
 
@@ -598,54 +700,113 @@ export async function POST(request: NextRequest) {
       }
       
       // Extract comparable listings from Airbtics (report/all returns 30+ comps)
+      // Filter to top 5, similar bed/bath, sorted by distance (closest first)
       const airbticsComps = airbticsData.comps || [];
       if (airbticsComps.length > 0) {
-        comparableListings = airbticsComps
-          .filter((p: any) => p.annual_revenue_ltm > 0 || p.revenue_potential > 0)
-          .slice(0, 30) // Show up to 30 comparables
-          .map((p: any, index: number) => ({
-            id: p.listingID || p.id || index,
-            name: p.name || `${p.bedrooms || bedrooms} BR Listing`,
-            url: p.listing_url || `https://www.airbnb.com/rooms/${p.listingID}`,
-            image: p.thumbnail_url || p.thumbnail_url_extended || null,
-            bedrooms: parseInt(p.bedrooms) || bedrooms,
-            bathrooms: p.bathrooms || bathrooms,
-            sqft: 0,
-            nightPrice: p.avg_booked_daily_rate_ltm || adjustedAdr,
-            occupancy: p.avg_occupancy_rate_ltm || adjustedOccupancy,
-            monthlyRevenue: Math.round((p.annual_revenue_ltm || annualRevenue) / 12),
-            annualRevenue: p.annual_revenue_ltm || annualRevenue,
-            rating: p.reveiw_scores_rating || 0,  // Note: Airbtics has typo in field name
-            reviewsCount: p.visible_review_count || 0,
-            propertyType: p.room_type || "Entire home",
-          }));
+        // Calculate distance using Haversine formula
+        const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+          if (!lat2 || !lon2) return 999; // Unknown location = far away
+          const R = 3959; // Earth radius in miles
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLon = (lon2 - lon1) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c;
+        };
         
+        // Filter and sort comps
+        const filteredComps = airbticsComps
+          .filter((p: any) => {
+            // Must have revenue data
+            if (!(p.annual_revenue_ltm > 0 || p.revenue_potential > 0)) return false;
+            
+            // Filter by similar bedroom count (within +/- 1 bedroom)
+            const compBedrooms = parseInt(p.bedrooms) || 0;
+            if (Math.abs(compBedrooms - bedrooms) > 1) return false;
+            
+            return true;
+          })
+          .map((p: any, index: number) => {
+            // Calculate distance from target property
+            const compLat = parseFloat(p.latitude) || 0;
+            const compLon = parseFloat(p.longitude) || 0;
+            const distance = calcDistance(latitude, longitude, compLat, compLon);
+            
+            return {
+              id: p.listingID || p.id || index,
+              name: p.name || `${p.bedrooms || bedrooms} BR Listing`,
+              url: p.listing_url || `https://www.airbnb.com/rooms/${p.listingID}`,
+              image: p.thumbnail_url || p.thumbnail_url_extended || null,
+              bedrooms: parseInt(p.bedrooms) || bedrooms,
+              bathrooms: p.bathrooms || bathrooms,
+              sqft: 0,
+              nightPrice: p.avg_booked_daily_rate_ltm || adjustedAdr,
+              occupancy: p.avg_occupancy_rate_ltm || adjustedOccupancy,
+              monthlyRevenue: Math.round((p.annual_revenue_ltm || annualRevenue) / 12),
+              annualRevenue: p.annual_revenue_ltm || annualRevenue,
+              rating: p.reveiw_scores_rating || 0,  // Note: Airbtics has typo in field name
+              reviewsCount: p.visible_review_count || 0,
+              propertyType: p.room_type || "Entire home",
+              distance: distance,
+            };
+          })
+          // Filter to within 25 miles
+          .filter((p: any) => p.distance <= 25)
+          // Sort by distance (closest first)
+          .sort((a: any, b: any) => a.distance - b.distance)
+          // Take top 5
+          .slice(0, 5);
+        
+        comparableListings = filteredComps;
         filteredListingsCount = airbticsComps.length;
         totalListingsInArea = airbticsComps.length;
-        console.log(`Airbtics provided ${comparableListings.length} comparable listings`);
+        console.log(`Airbtics: ${airbticsComps.length} total comps, filtered to ${comparableListings.length} (similar size, within 25mi)`);
       }
       
       // Use Airbtics monthly data for seasonality if available
-      if (airbticsData.monthly_occupancy && Object.keys(airbticsData.monthly_occupancy).length > 0) {
-        // Get the last 12 months of data
-        const monthlyOcc = airbticsData.monthly_occupancy;
-        const monthlyAdr = airbticsData.monthly_adr || {};
+      // Prefer monthly_revenue directly if available, otherwise calculate from occupancy/ADR
+      const monthlyRev = airbticsData.monthly_revenue || {};
+      const monthlyOcc = airbticsData.monthly_occupancy || {};
+      const monthlyAdr = airbticsData.monthly_adr || {};
+      
+      // Use monthly_revenue if available (most accurate)
+      if (Object.keys(monthlyRev).length > 0) {
+        const months = Object.keys(monthlyRev).sort().slice(-12);
+        
+        historicalData = months.map(monthKey => {
+          const [year, month] = monthKey.split('-').map(Number);
+          const rev = typeof monthlyRev[monthKey] === 'number' ? monthlyRev[monthKey] : 0;
+          const occ = monthlyOcc[monthKey] || adjustedOccupancy;
+          const adr = monthlyAdr[monthKey] || adjustedAdr;
+          return {
+            year,
+            month,
+            occupancy: typeof occ === 'number' ? occ : adjustedOccupancy,
+            adr: typeof adr === 'number' ? adr : adjustedAdr,
+            revenue: rev,
+          };
+        });
+        console.log("Using Airbtics monthly REVENUE data for seasonality:", historicalData.length, "months");
+      } else if (Object.keys(monthlyOcc).length > 0) {
+        // Fallback to calculating from occupancy/ADR
         const months = Object.keys(monthlyOcc).sort().slice(-12);
         
         historicalData = months.map(monthKey => {
           const [year, month] = monthKey.split('-').map(Number);
           const occ = monthlyOcc[monthKey] || adjustedOccupancy;
           const adr = monthlyAdr[monthKey] || adjustedAdr;
-          const monthlyRev = Math.round(adr * (occ / 100) * 30);
+          const monthlyRevCalc = Math.round(adr * (occ / 100) * 30);
           return {
             year,
             month,
             occupancy: occ,
             adr: adr,
-            revenue: monthlyRev,
+            revenue: monthlyRevCalc,
           };
         });
-        console.log("Using Airbtics monthly data for seasonality:", historicalData.length, "months");
+        console.log("Using Airbtics monthly OCCUPANCY data for seasonality:", historicalData.length, "months");
       }
       
       console.log("Using Airbtics data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy, comps: comparableListings.length });
@@ -749,6 +910,10 @@ export async function POST(request: NextRequest) {
       
       // Historical data for seasonality chart
       historical: historicalData,
+      
+      // Recommended amenities to reach 90th percentile performance
+      // Based on market type and top performer analysis
+      recommendedAmenities: getRecommendedAmenities(latitude, longitude, airbticsData?.comps || []),
     };
 
     return NextResponse.json(result);

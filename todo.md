@@ -265,3 +265,13 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Add PDF download button for investor reports
 - [x] Ensure all data fields populate correctly
 - [x] Make calculator reliable for $250K investment decisions
+
+
+## Calculator Improvements (February 2026 - Part 2)
+- [ ] Fix seasonality to show realistic monthly variation (not flat $9k/month)
+- [ ] Use Airbtics monthly_occupancy data when available for accurate seasonal patterns
+- [ ] Improve comp selection - prioritize closest within 25mi radius
+- [ ] Filter comps by similar bedroom/bath count
+- [ ] Show top 5 most relevant comps
+- [ ] Ensure comp links are clickable and go to Airbnb listings
+- [ ] Add recommended amenities section for reaching 90th percentile
