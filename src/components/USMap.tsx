@@ -103,19 +103,19 @@ export function USMap() {
 
   const getVerdictText = (verdict: string) => {
     switch (verdict) {
-      case 'strong-buy': return { text: 'STRONG BUY', emoji: '🚀' };
-      case 'buy': return { text: 'BUY', emoji: '✅' };
-      case 'hold': return { text: 'HOLD', emoji: '⚠️' };
-      case 'caution': return { text: 'CAUTION', emoji: '⚠️' };
-      default: return { text: 'AVOID', emoji: '❌' };
+      case 'strong-buy': return { text: 'STRONG BUY' };
+      case 'buy': return { text: 'BUY' };
+      case 'hold': return { text: 'HOLD' };
+      case 'caution': return { text: 'CAUTION' };
+      default: return { text: 'AVOID' };
     }
   };
 
   const views = [
-    { key: "strScore", label: "STR Grade", icon: "📊", description: "Our overall investment score based on cash flow, affordability, and legality." },
-    { key: "appreciation", label: "Appreciation", icon: "📈", description: "Higher appreciation means your property value grows faster over time." },
-    { key: "migration", label: "Migration", icon: "🚚", description: "More people moving in often leads to rising home prices and rental demand." },
-    { key: "homeValue", label: "Home Prices", icon: "💰", description: "Lower prices mean easier entry and better cash-on-cash returns." },
+    { key: "strScore", label: "STR Grade", icon: "", description: "Our overall investment score based on cash flow, affordability, and legality." },
+    { key: "appreciation", label: "Appreciation", icon: "", description: "Higher appreciation means your property value grows faster over time." },
+    { key: "migration", label: "Migration", icon: "", description: "More people moving in often leads to rising home prices and rental demand." },
+    { key: "homeValue", label: "Home Prices", icon: "", description: "Lower prices mean easier entry and better cash-on-cash returns." },
   ];
 
   const getFilterDescription = () => {
@@ -139,8 +139,7 @@ export function USMap() {
               boxShadow: mapView === view.key ? '0 2px 8px -2px rgba(43, 40, 35, 0.2)' : 'none'
             }}
           >
-            <span>{view.icon}</span>
-            <span>{view.label}</span>
+            {view.label}
           </button>
         ))}
       </div>

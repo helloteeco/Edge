@@ -324,7 +324,7 @@ export default function SavedPage() {
                 activeTab === 'reports' ? 'bg-[#2b2823] text-white' : 'bg-white text-[#787060] hover:bg-gray-100'
               }`}
             >
-              📊 Property Reports ({savedReports.length})
+              Property Reports ({savedReports.length})
             </button>
             <button
               onClick={() => setActiveTab('markets')}
@@ -332,7 +332,7 @@ export default function SavedPage() {
                 activeTab === 'markets' ? 'bg-[#2b2823] text-white' : 'bg-white text-[#787060] hover:bg-gray-100'
               }`}
             >
-              ❤️ Markets ({savedCityData.length + savedStateData.length})
+              Markets ({savedCityData.length + savedStateData.length})
             </button>
           </div>
         </div>
@@ -351,7 +351,7 @@ export default function SavedPage() {
                   className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
                   style={{ backgroundColor: '#e5e3da' }}
                 >
-                  <span className="text-4xl">📊</span>
+                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <h3 
                   className="text-xl font-semibold mb-2"
@@ -507,7 +507,7 @@ export default function SavedPage() {
                   className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
                   style={{ backgroundColor: '#e5e3da' }}
                 >
-                  <span className="text-4xl">❤️</span>
+                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                 </div>
                 <h3 
                   className="text-xl font-semibold mb-2"

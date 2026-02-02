@@ -113,7 +113,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'vacation-home-loan',
     name: 'Vacation Home Loan',
-    icon: '🏖️',
+    icon: '',
     category: 'traditional',
     riskLevel: 'low',
     description: 'A conventional mortgage for a second home you\'ll use personally AND rent out. Lower rates than investment property loans because it\'s classified as a second home.',
@@ -127,7 +127,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'dscr-loan',
     name: 'DSCR Loan',
-    icon: '📊',
+    icon: '',
     category: 'traditional',
     riskLevel: 'low',
     description: 'Debt Service Coverage Ratio loans qualify based on the property\'s rental income, not your personal income. The property must generate enough rent to cover the mortgage payment (typically 1.0-1.25x).',
@@ -141,7 +141,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'conventional-loan',
     name: 'Conventional Investment Loan',
-    icon: '🏦',
+    icon: '',
     category: 'traditional',
     riskLevel: 'low',
     description: 'Traditional mortgage for investment properties through Fannie Mae/Freddie Mac. Best rates available but requires full income documentation.',
@@ -155,7 +155,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'portfolio-loan',
     name: 'Credit Union Portfolio Loan',
-    icon: '🤝',
+    icon: '',
     category: 'traditional',
     riskLevel: 'low',
     description: 'Loans held by local banks or credit unions (not sold to Fannie/Freddie). More flexible underwriting for unique situations.',
@@ -169,7 +169,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'hard-money',
     name: 'Hard Money Bridge Loan',
-    icon: '⚡',
+    icon: '',
     category: 'traditional',
     riskLevel: 'medium',
     description: 'Short-term loans from private lenders, secured by the property. Used for quick purchases or renovations, then refinanced into permanent financing.',
@@ -185,7 +185,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'cash-out-refi',
     name: 'Cash-Out Refinance',
-    icon: '💰',
+    icon: '',
     category: 'alternative',
     riskLevel: 'low',
     description: 'Refinance an existing property to pull out equity as cash. Use that cash as down payment for your STR.',
@@ -199,7 +199,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'heloc',
     name: 'HELOC (Home Equity Line of Credit)',
-    icon: '🏠',
+    icon: '',
     category: 'alternative',
     riskLevel: 'low',
     description: 'A revolving line of credit secured by your home equity. Draw funds as needed, pay interest only on what you use.',
@@ -213,7 +213,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'home-equity-partner',
     name: 'Home Equity Investment (HEI)',
-    icon: '🤝',
+    icon: '',
     category: 'alternative',
     riskLevel: 'medium',
     description: 'Companies like Point or Hometap give you cash for a share of your home\'s future appreciation. No monthly payments.',
@@ -229,7 +229,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: '401k-loan',
     name: '401(k) Loan',
-    icon: '🏛️',
+    icon: '',
     category: 'retirement',
     riskLevel: 'medium',
     description: 'Borrow from your own 401(k) - typically up to 50% or $50,000, whichever is less. You pay interest back to yourself.',
@@ -243,7 +243,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'sdira',
     name: 'Self-Directed IRA',
-    icon: '📋',
+    icon: '',
     category: 'retirement',
     riskLevel: 'medium',
     legalNote: '⚠️ Complex IRS rules - work with a qualified SDIRA custodian and tax professional',
@@ -259,7 +259,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'robs',
     name: 'ROBS (Rollover for Business Startups)',
-    icon: '🔄',
+    icon: '',
     category: 'retirement',
     riskLevel: 'high',
     legalNote: '⚠️ IRS scrutinizes ROBS structures - requires proper setup and ongoing compliance',
@@ -275,7 +275,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'life-insurance-loan',
     name: 'Cash Value Life Insurance Loan',
-    icon: '🛡️',
+    icon: '',
     category: 'retirement',
     riskLevel: 'low',
     description: 'Borrow against the cash value of a whole life or universal life insurance policy. The policy remains in force while you use the funds.',
@@ -291,7 +291,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'seller-financing',
     name: 'Seller Financing',
-    icon: '🤝',
+    icon: '',
     category: 'creative',
     riskLevel: 'medium',
     description: 'The seller acts as the bank - you make payments directly to them instead of a traditional lender. Great for properties that don\'t qualify for traditional financing.',
@@ -306,7 +306,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'subject-to',
     name: 'Subject-To Financing',
-    icon: '📝',
+    icon: '',
     category: 'creative',
     riskLevel: 'high',
     legalNote: '⚠️ GREY ZONE: Due-on-sale clause risk. Lender can call loan due if they discover transfer. Consult attorney.',
@@ -322,7 +322,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'lease-option',
     name: 'Lease Option (Rent-to-Own)',
-    icon: '🔑',
+    icon: '',
     category: 'creative',
     riskLevel: 'medium',
     description: 'Lease the property with an option to purchase at a predetermined price. Part of rent may credit toward purchase.',
@@ -337,7 +337,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'wraparound-mortgage',
     name: 'Wraparound Mortgage',
-    icon: '🔄',
+    icon: '',
     category: 'creative',
     riskLevel: 'high',
     legalNote: '⚠️ GREY ZONE: Similar due-on-sale risks as subject-to. Illegal in some states. Consult local attorney.',
@@ -353,7 +353,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'installment-sale',
     name: 'Installment Sale',
-    icon: '📅',
+    icon: '',
     category: 'creative',
     riskLevel: 'medium',
     description: 'Seller spreads capital gains tax over multiple years by receiving payments over time. Win-win: seller saves taxes, buyer gets financing.',
@@ -370,7 +370,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'equity-partner',
     name: 'Equity Partner',
-    icon: '👥',
+    icon: '',
     category: 'partnership',
     riskLevel: 'medium',
     description: 'Partner with someone who provides capital while you provide expertise, management, or sweat equity. Split ownership and profits.',
@@ -385,7 +385,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'gap-funding',
     name: 'Gap Funding Partner',
-    icon: '🌉',
+    icon: '',
     category: 'partnership',
     riskLevel: 'medium',
     description: 'A partner or private lender who provides the gap between your down payment and what you have. Often used with hard money loans.',
@@ -400,7 +400,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'private-money',
     name: 'Private Money Lender',
-    icon: '💼',
+    icon: '',
     category: 'partnership',
     riskLevel: 'medium',
     description: 'Borrow from individuals (not institutions) who want better returns than banks offer. Often friends, family, or professional private lenders.',
@@ -415,7 +415,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'friends-family',
     name: 'Friends & Family Loan',
-    icon: '👨‍👩‍👧‍👦',
+    icon: '',
     category: 'partnership',
     riskLevel: 'medium',
     legalNote: '⚠️ Document properly to avoid gift tax issues and relationship damage',
@@ -431,7 +431,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'land-owner-jv',
     name: 'Land Owner Joint Venture',
-    icon: '🏔️',
+    icon: '',
     category: 'partnership',
     riskLevel: 'medium',
     description: 'Partner with someone who owns land to build an STR. They contribute land, you contribute capital/expertise.',
@@ -446,7 +446,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'syndication',
     name: 'Syndication / Fund Investment',
-    icon: '🏢',
+    icon: '',
     category: 'partnership',
     riskLevel: 'medium',
     legalNote: '⚠️ SEC regulations apply. Must be accredited investor for most syndications.',
@@ -464,7 +464,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'business-credit-cards',
     name: '0% Business Credit Cards',
-    icon: '💳',
+    icon: '',
     category: 'alternative',
     riskLevel: 'high',
     legalNote: '⚠️ High risk if not managed properly. Can damage credit if misused.',
@@ -480,7 +480,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'balance-transfer',
     name: 'Balance Transfer Strategy',
-    icon: '🔄',
+    icon: '',
     category: 'alternative',
     riskLevel: 'high',
     legalNote: '⚠️ High risk. Requires excellent credit management.',
@@ -496,7 +496,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'business-loc',
     name: 'Business Line of Credit',
-    icon: '🏪',
+    icon: '',
     category: 'alternative',
     riskLevel: 'medium',
     description: 'Revolving credit line for your STR business. Draw as needed, pay interest only on what you use.',
@@ -510,7 +510,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'unsecured-business-loan',
     name: 'Unsecured Business Term Loan',
-    icon: '📄',
+    icon: '',
     category: 'alternative',
     riskLevel: 'medium',
     description: 'Fixed-term loan for your STR business without collateral. Higher rates but no assets at risk.',
@@ -524,7 +524,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'sba-7a',
     name: 'SBA 7(a) Loan',
-    icon: '🇺🇸',
+    icon: '',
     category: 'government',
     riskLevel: 'low',
     description: 'Government-backed small business loan with favorable terms. Can be used for STR business acquisition or expansion.',
@@ -538,7 +538,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'p2p-lending',
     name: 'Peer-to-Peer Lending',
-    icon: '🌐',
+    icon: '',
     category: 'alternative',
     riskLevel: 'medium',
     description: 'Borrow from individual investors through platforms like Prosper or LendingClub. Unsecured personal loans.',
@@ -552,7 +552,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'crowdfunding',
     name: 'Real Estate Crowdfunding',
-    icon: '👥',
+    icon: '',
     category: 'alternative',
     riskLevel: 'medium',
     description: 'Raise capital from many small investors through platforms. Can be debt or equity. Requires compelling deal.',
@@ -566,7 +566,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'crypto-loan',
     name: 'Crypto-Collateralized Loan',
-    icon: '₿',
+    icon: '',
     category: 'alternative',
     riskLevel: 'high',
     legalNote: '⚠️ High risk due to crypto volatility. Margin call risk if crypto drops.',
@@ -582,7 +582,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'margin-loan',
     name: 'Securities Margin Loan',
-    icon: '📈',
+    icon: '',
     category: 'alternative',
     riskLevel: 'high',
     legalNote: '⚠️ Margin call risk. Can be forced to sell at worst time.',
@@ -600,7 +600,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'va-loan',
     name: 'VA Loan',
-    icon: '🎖️',
+    icon: '',
     category: 'government',
     riskLevel: 'low',
     description: 'Zero-down mortgage for veterans and active military. Can be used for primary residence that you later convert to STR.',
@@ -615,7 +615,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'usda-loan',
     name: 'USDA Rural Development Loan',
-    icon: '🌾',
+    icon: '',
     category: 'government',
     riskLevel: 'low',
     description: 'Zero-down mortgage for rural properties. Perfect for rural STR markets. Must be primary residence initially.',
@@ -630,7 +630,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'fha-203k',
     name: 'FHA 203(k) Renovation Loan',
-    icon: '🔨',
+    icon: '',
     category: 'government',
     riskLevel: 'low',
     description: 'FHA loan that includes renovation costs. Buy a fixer-upper and finance repairs in one loan. Must be primary residence.',
@@ -645,7 +645,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'business-grants',
     name: 'Business Grants & Incentives',
-    icon: '🎁',
+    icon: '',
     category: 'government',
     riskLevel: 'low',
     description: 'Free money from government programs for small businesses, tourism development, or rural economic development.',
@@ -660,7 +660,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'local-incentives',
     name: 'Local Government Incentives',
-    icon: '🏛️',
+    icon: '',
     category: 'government',
     riskLevel: 'low',
     description: 'Tax abatements, TIF districts, facade grants, and other local programs to encourage development.',
@@ -677,7 +677,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'brrrr',
     name: 'BRRRR into STR',
-    icon: '🔁',
+    icon: '',
     category: 'creative',
     riskLevel: 'medium',
     description: 'Buy, Rehab, Rent, Refinance, Repeat - but with STR instead of long-term rental. Force appreciation through renovation, then refinance to pull out capital.',
@@ -692,7 +692,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'flip-to-str',
     name: 'Flip-to-STR',
-    icon: '🏗️',
+    icon: '',
     category: 'creative',
     riskLevel: 'medium',
     description: 'Buy undervalued property, renovate for STR use, then keep as rental instead of selling. Capture both appreciation and cash flow.',
@@ -707,7 +707,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'mtr-to-str',
     name: 'Mid-Term to Short-Term Conversion',
-    icon: '📅',
+    icon: '',
     category: 'creative',
     riskLevel: 'low',
     description: 'Start with mid-term rentals (30+ days) to build track record and cash flow, then convert to STR once established.',
@@ -722,7 +722,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'construction-loan',
     name: 'Construction Loan',
-    icon: '🏗️',
+    icon: '',
     category: 'traditional',
     riskLevel: 'medium',
     description: 'Finance new construction or major renovation. Converts to permanent mortgage after completion.',
@@ -737,7 +737,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'inherited-property',
     name: 'Inherited Property Conversion',
-    icon: '🏡',
+    icon: '',
     category: 'creative',
     riskLevel: 'low',
     description: 'Convert inherited property to STR. Often has no mortgage, providing instant equity and cash flow.',
@@ -754,7 +754,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'fsbo-split-notes',
     name: 'FSBO with Split Notes',
-    icon: '📑',
+    icon: '',
     category: 'creative',
     riskLevel: 'medium',
     legalNote: '⚠️ Complex structure - requires attorney involvement',
@@ -770,7 +770,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'equipment-financing',
     name: 'Equipment Financing',
-    icon: '🛋️',
+    icon: '',
     category: 'alternative',
     riskLevel: 'low',
     description: 'Finance STR furnishings and equipment separately from the property. Preserve cash for down payment.',
@@ -784,7 +784,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'vendor-terms',
     name: 'Vendor/Supplier Terms',
-    icon: '🏭',
+    icon: '',
     category: 'alternative',
     riskLevel: 'low',
     description: 'Negotiate payment terms with furniture suppliers, contractors, etc. Net-30, Net-60, or payment plans.',
@@ -798,7 +798,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'setup-capital-loan',
     name: 'Short-Term Setup Capital Loan',
-    icon: '🚀',
+    icon: '',
     category: 'alternative',
     riskLevel: 'medium',
     description: 'Short-term loan specifically for STR setup costs - furnishing, photography, initial marketing. Paid back from first months\' revenue.',
@@ -812,7 +812,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'deferred-fees',
     name: 'Deferred Fees Negotiation',
-    icon: '⏰',
+    icon: '',
     category: 'creative',
     riskLevel: 'low',
     description: 'Negotiate with service providers to defer fees until property generates income. Property managers, designers, etc. may accept.',
@@ -827,7 +827,7 @@ const fundingMethods: FundingMethod[] = [
   {
     id: 'barter-trade',
     name: 'Barter / Skill Trade',
-    icon: '🔄',
+    icon: '',
     category: 'creative',
     riskLevel: 'low',
     legalNote: '⚠️ IRS considers barter income taxable. Document fair market value.',
@@ -930,7 +930,7 @@ export default function FundingPage() {
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
             >
-              <span className="text-xl">💰</span>
+              
             </div>
             <h1 
               className="text-2xl font-bold"
@@ -951,7 +951,7 @@ export default function FundingPage() {
           className="rounded-xl p-4 mb-6 flex items-start gap-3"
           style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b' }}
         >
-          <span className="text-xl">⚠️</span>
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#92400e" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
           <div>
             <p className="font-semibold text-sm" style={{ color: '#92400e' }}>
               Not Financial or Legal Advice
@@ -969,7 +969,7 @@ export default function FundingPage() {
           style={{ backgroundColor: '#ecfdf5', border: '1px solid #10b981' }}
         >
           <div className="flex items-start gap-3">
-            <span className="text-xl">💡</span>
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#065f46" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
             <div>
               <p className="font-semibold text-sm" style={{ color: '#065f46' }}>
                 Why Smart Financing Beats Paying Cash
@@ -991,8 +991,8 @@ export default function FundingPage() {
         >
           {!quizStarted ? (
             <div className="p-6 text-center">
-              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl" style={{ backgroundColor: '#e5e3da' }}>
-                🎯
+              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#e5e3da' }}>
+                <svg className="w-8 h-8" fill="none" stroke="#2b2823" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               </div>
               <h2 
                 className="text-xl font-bold mb-2"
@@ -1095,7 +1095,21 @@ export default function FundingPage() {
                         border: idx === 0 ? '2px solid #22c55e' : '1px solid #d8d6cd'
                       }}
                     >
-                      <div className="text-2xl">{method.icon}</div>
+                      <div 
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: categoryConfig[method.category].bg }}
+                      >
+                        <span 
+                          className="text-xs font-bold"
+                          style={{ color: categoryConfig[method.category].color }}
+                        >
+                          {method.category === 'traditional' ? 'TL' : 
+                           method.category === 'creative' ? 'CF' :
+                           method.category === 'alternative' ? 'AS' :
+                           method.category === 'retirement' ? 'RA' :
+                           method.category === 'partnership' ? 'PT' : 'GP'}
+                        </span>
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold" style={{ color: '#2b2823' }}>{method.name}</span>
@@ -1204,10 +1218,19 @@ export default function FundingPage() {
                 className="w-full p-4 text-left flex items-start gap-3"
               >
                 <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: categoryConfig[method.category].bg }}
                 >
-                  {method.icon}
+                  <span 
+                    className="text-sm font-bold"
+                    style={{ color: categoryConfig[method.category].color }}
+                  >
+                    {method.category === 'traditional' ? 'TL' : 
+                     method.category === 'creative' ? 'CF' :
+                     method.category === 'alternative' ? 'AS' :
+                     method.category === 'retirement' ? 'RA' :
+                     method.category === 'partnership' ? 'PT' : 'GP'}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -1337,7 +1360,7 @@ export default function FundingPage() {
                         style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b' }}
                       >
                         <h4 className="text-sm font-semibold mb-1 flex items-center gap-1" style={{ color: '#92400e' }}>
-                          <span>🛡️</span> How to Do This Safely & Legally:
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> How to Do This Safely & Legally:
                         </h4>
                         <p className="text-sm" style={{ color: '#a16207' }}>{method.howToMakeSafe}</p>
                       </div>
@@ -1388,7 +1411,7 @@ export default function FundingPage() {
               boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
             }}
           >
-            <span>🏦</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
             Connect with STR Lender
           </a>
         </div>
