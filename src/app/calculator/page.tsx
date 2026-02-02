@@ -2727,7 +2727,13 @@ export default function CalculatorPage() {
               
               {/* Pricing Options */}
               <div className="space-y-3 mb-6">
-                <div className="p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" style={{ borderColor: '#e5e5e5' }}>
+                <a 
+                  href="https://buy.stripe.com/aFa4gz4C731odnE7uU8AE03"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
+                  style={{ borderColor: '#e5e5e5' }}
+                >
                   <div className="flex justify-between items-center">
                     <div className="text-left">
                       <p className="font-semibold" style={{ color: '#2b2823' }}>5 Credits</p>
@@ -2735,9 +2741,15 @@ export default function CalculatorPage() {
                     </div>
                     <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$4.99</p>
                   </div>
-                </div>
+                </a>
                 
-                <div className="p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}>
+                <a 
+                  href="https://buy.stripe.com/14A8wP7OjfOa4R83eE8AE04"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" 
+                  style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}
+                >
                   <div className="absolute -top-2 left-4 px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
                     BEST VALUE
                   </div>
@@ -2751,9 +2763,15 @@ export default function CalculatorPage() {
                       <p className="text-xs" style={{ color: '#22c55e' }}>Save 20%</p>
                     </div>
                   </div>
-                </div>
+                </a>
                 
-                <div className="p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" style={{ borderColor: '#e5e5e5' }}>
+                <a 
+                  href="https://buy.stripe.com/6oU6oH0lRgSednE7uU8AE05"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
+                  style={{ borderColor: '#e5e5e5' }}
+                >
                   <div className="flex justify-between items-center">
                     <div className="text-left">
                       <p className="font-semibold" style={{ color: '#2b2823' }}>Unlimited Monthly</p>
@@ -2764,11 +2782,11 @@ export default function CalculatorPage() {
                       <p className="text-xs" style={{ color: '#787060' }}>/month</p>
                     </div>
                   </div>
-                </div>
+                </a>
               </div>
               
               <p className="text-xs mb-4" style={{ color: '#a0a0a0' }}>
-                Payment processing coming soon. Contact us at hello@teeco.co for early access.
+                Secure payment powered by Stripe. Credits are added instantly after purchase.
               </p>
               
               <button
