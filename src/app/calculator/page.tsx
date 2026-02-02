@@ -184,36 +184,47 @@ export default function CalculatorPage() {
 
   // Check for existing authentication on mount
   useEffect(() => {
+    // First check URL for magic link token (takes priority)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    
+    if (token) {
+      console.log("[Auth] Found magic link token in URL, verifying...");
+      verifyMagicLink(token);
+      // Clean up URL immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return; // Don't check localStorage if we're verifying a token
+    }
+    
+    // No token in URL, check localStorage for existing session
     const authToken = localStorage.getItem("edge_auth_token");
     const authExpiry = localStorage.getItem("edge_auth_expiry");
     const savedEmail = localStorage.getItem("edge_auth_email");
+    
+    console.log("[Auth] Checking localStorage:", { authToken: !!authToken, authExpiry, savedEmail });
     
     if (authToken && authExpiry && savedEmail) {
       const expiryTime = parseInt(authExpiry, 10);
       if (Date.now() < expiryTime) {
         // Token still valid
+        console.log("[Auth] Valid session found, user is authenticated:", savedEmail);
         setIsAuthenticated(true);
         setAuthEmail(savedEmail);
       } else {
         // Token expired, clear auth
+        console.log("[Auth] Session expired, clearing...");
         localStorage.removeItem("edge_auth_token");
         localStorage.removeItem("edge_auth_expiry");
         localStorage.removeItem("edge_auth_email");
       }
-    }
-    
-    // Check URL for magic link token
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-    if (token) {
-      verifyMagicLink(token);
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      console.log("[Auth] No existing session found");
     }
   }, []);
   
   // Verify magic link token
   const verifyMagicLink = async (token: string) => {
+    console.log("[Auth] Starting magic link verification...");
     setShowAuthModal(true);
     setAuthStep("verifying");
     setAuthError(null);
@@ -226,24 +237,36 @@ export default function CalculatorPage() {
       });
       
       const data = await response.json();
+      console.log("[Auth] Verification response:", data);
       
       if (data.success) {
         // Store auth in localStorage (24-hour session)
         const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
-        localStorage.setItem("edge_auth_token", data.sessionToken || token);
+        const sessionToken = data.sessionToken || token;
+        
+        console.log("[Auth] Storing session:", { email: data.email, expiryTime });
+        localStorage.setItem("edge_auth_token", sessionToken);
         localStorage.setItem("edge_auth_expiry", expiryTime.toString());
         localStorage.setItem("edge_auth_email", data.email);
+        
+        // Verify storage worked
+        const storedToken = localStorage.getItem("edge_auth_token");
+        const storedExpiry = localStorage.getItem("edge_auth_expiry");
+        const storedEmail = localStorage.getItem("edge_auth_email");
+        console.log("[Auth] Verified localStorage:", { storedToken: !!storedToken, storedExpiry, storedEmail });
         
         setIsAuthenticated(true);
         setAuthEmail(data.email);
         setShowAuthModal(false);
         setAuthStep("email");
+        console.log("[Auth] User authenticated successfully!");
       } else {
+        console.error("[Auth] Verification failed:", data.error);
         setAuthError(data.error || "Invalid or expired link. Please request a new one.");
         setAuthStep("email");
       }
     } catch (err) {
-      console.error("Verification error:", err);
+      console.error("[Auth] Verification error:", err);
       setAuthError("Failed to verify. Please try again.");
       setAuthStep("email");
     }

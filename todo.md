@@ -325,4 +325,6 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Bug Fix - Magic Link Verification (February 2026)
-- [ ] Fix magic link verification error - users can't authenticate after clicking email link
+- [x] Fix magic link verification error - removed file system dependency for Vercel serverless
+
+- [ ] Fix auth persistence - users should stay logged in after magic link verification
