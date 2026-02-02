@@ -327,4 +327,11 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 ## Bug Fix - Magic Link Verification (February 2026)
 - [x] Fix magic link verification error - removed file system dependency for Vercel serverless
 
-- [ ] Fix auth persistence - users should stay logged in after magic link verification
+- [x] Fix auth persistence - check localStorage directly in handleAnalyzeClick
+
+
+## Amenities Improvements (February 2026)
+- [ ] Rename "Premium Amenities" to "Upgrades & Amenities"
+- [ ] Expand amenities search to 25-mile radius
+- [ ] Show percentage impact of each amenity on nightly rates
+- [ ] Categorize amenities by impact (Must Have, Revenue Boosters, Nice to Have)

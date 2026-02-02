@@ -919,7 +919,8 @@ export default function CalculatorPage() {
     
     <!-- Recommended Amenities -->
     ${result.recommendedAmenities && result.recommendedAmenities.length > 0 ? `
-    <h2>Amenities to Reach 90th Percentile</h2>
+    <h2>Upgrades to Reach 90th Percentile</h2>
+    <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Based on 25-mile market analysis of top-performing Airbnbs</p>
     <div class="amenity-grid">
       ${result.recommendedAmenities.slice(0, 6).map(a => `
       <div class="amenity-item ${a.priority === 'MUST HAVE' ? 'must-have' : a.priority === 'HIGH IMPACT' ? 'high-impact' : ''}">
@@ -937,7 +938,7 @@ export default function CalculatorPage() {
       ${includeDesignServices ? `<tr><td>Teeco Design Services</td><td class="right">${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
       ${includeSetupServices ? `<tr><td>Teeco Setup Services</td><td class="right">${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
       ${includeFurnishings ? `<tr><td>Furnishings & Decor</td><td class="right">${formatCurrency(calculateFurnishingsCost())}</td></tr>` : ''}
-      ${includeAmenities ? `<tr><td>Premium Amenities</td><td class="right">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
+      ${includeAmenities ? `<tr><td>Upgrades & Amenities</td><td class="right">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
       <tr class="total"><td><strong>Total Startup Investment</strong></td><td class="right"><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
     </table>
     ` : ''}
@@ -1470,7 +1471,7 @@ export default function CalculatorPage() {
                   <p className="text-xs text-gray-400 mt-2">
                     {revenuePercentile === "75th" 
                       ? "Top 25% performers with good amenities" 
-                      : "Top 10% performers with premium amenities & design"}
+                      : "Top 10% performers with upgrades & premium design"}
                   </p>
                 )}
                 {guestCount && bedrooms && guestCount > bedrooms * 2 && (
@@ -1732,10 +1733,10 @@ export default function CalculatorPage() {
             {result.recommendedAmenities && result.recommendedAmenities.length > 0 && (
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>
-                  🎯 Amenities to Reach 90th Percentile
+                  🎯 Upgrades to Reach 90th Percentile
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Top performers in this market have these amenities. Add them to maximize your revenue.
+                  Based on 25-mile market analysis of top-performing Airbnbs. These upgrades and amenities have the highest impact on revenue.
                 </p>
                 <div className="space-y-2">
                   {result.recommendedAmenities.map((amenity, index) => (
@@ -1859,7 +1860,7 @@ export default function CalculatorPage() {
                   </p>
                 </div>
                 
-                {/* Premium Amenities */}
+                {/* Upgrades & Amenities */}
                 <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: includeAmenities ? "#f0fdf4" : "#f5f4f0" }}>
                   <div className="flex items-center gap-3">
                     <input
@@ -1869,8 +1870,8 @@ export default function CalculatorPage() {
                       className="w-5 h-5 rounded"
                     />
                     <div>
-                      <p className="font-medium" style={{ color: "#2b2823" }}>Premium Amenities</p>
-                      <p className="text-xs text-gray-500">Hot tub, fire pit, sauna, etc.</p>
+                      <p className="font-medium" style={{ color: "#2b2823" }}>Upgrades & Amenities</p>
+                      <p className="text-xs text-gray-500">Hot tub, fire pit, game room, etc.</p>
                     </div>
                   </div>
                   <input
