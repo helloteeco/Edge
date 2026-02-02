@@ -1446,7 +1446,7 @@ export default function FundingPage() {
             Our network includes STR-friendly lenders, attorneys, and CPAs who can help you implement these strategies safely.
           </p>
           <a
-            href="https://teeco.co/airbnb-lender"
+            href="https://www.zillow.com/homeloans/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
