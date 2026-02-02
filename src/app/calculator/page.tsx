@@ -2764,25 +2764,6 @@ export default function CalculatorPage() {
                     </div>
                   </div>
                 </a>
-                
-                <a 
-                  href="https://buy.stripe.com/6oU6oH0lRgSednE7uU8AE05"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
-                  style={{ borderColor: '#e5e5e5' }}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">
-                      <p className="font-semibold" style={{ color: '#2b2823' }}>Unlimited Monthly</p>
-                      <p className="text-sm" style={{ color: '#787060' }}>Analyze as many as you want</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$29.99</p>
-                      <p className="text-xs" style={{ color: '#787060' }}>/month</p>
-                    </div>
-                  </div>
-                </a>
               </div>
               
               <p className="text-xs mb-4" style={{ color: '#a0a0a0' }}>
