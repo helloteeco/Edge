@@ -1403,6 +1403,80 @@ export default function CalculatorPage() {
         </div>
       </header>
 
+      {/* Credit Counter Banner */}
+      {isAuthenticated && creditsRemaining !== null && (
+        <div 
+          className="px-4 py-2.5"
+          style={{ 
+            backgroundColor: creditsRemaining > 0 ? '#f0fdf4' : '#fef2f2',
+            borderBottom: `1px solid ${creditsRemaining > 0 ? '#bbf7d0' : '#fecaca'}`
+          }}
+        >
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ 
+                  backgroundColor: creditsRemaining > 0 ? '#22c55e' : '#ef4444',
+                  color: 'white'
+                }}
+              >
+                {creditsRemaining}
+              </div>
+              <span className="text-sm font-medium" style={{ color: '#2b2823' }}>
+                {creditsRemaining > 0 
+                  ? `${creditsRemaining} Free Anal${creditsRemaining === 1 ? 'ysis' : 'yses'} Remaining`
+                  : 'No Free Analyses Left'
+                }
+              </span>
+            </div>
+            {creditsRemaining === 0 && (
+              <button
+                onClick={() => setShowPaywallModal(true)}
+                className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
+                style={{ backgroundColor: '#2b2823', color: 'white' }}
+              >
+                Get More Credits
+              </button>
+            )}
+            {creditsRemaining > 0 && creditsRemaining <= 1 && (
+              <span className="text-xs" style={{ color: '#787060' }}>
+                Running low? <button onClick={() => setShowPaywallModal(true)} className="underline font-medium">Get more</button>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Sign In Prompt Banner */}
+      {!isAuthenticated && (
+        <div 
+          className="px-4 py-2.5"
+          style={{ 
+            backgroundColor: '#f0f9ff',
+            borderBottom: '1px solid #bae6fd'
+          }}
+        >
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: '#0284c7' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm" style={{ color: '#0369a1' }}>
+                <strong>3 Free Property Analyses</strong> — Sign in to start analyzing STR investments
+              </span>
+            </div>
+            <button
+              onClick={() => { setShowAuthModal(true); setAuthStep('email'); }}
+              className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
+              style={{ backgroundColor: '#0284c7', color: 'white' }}
+            >
+              Sign In Free
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center mb-8">
