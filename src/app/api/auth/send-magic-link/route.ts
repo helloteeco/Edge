@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-import { setToken, cleanupExpiredTokens } from "@/lib/auth-store";
+import { createMagicToken } from "@/lib/magic-token";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
-
-// Generate a secure random token
-function generateToken(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
 
 // Resend API key
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_4sjg6f75_8V1zJk4yk5B2cTkHkStJdUtQ";
@@ -24,20 +18,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clean up old tokens
-    cleanupExpiredTokens();
+    const normalizedEmail = email.toLowerCase();
 
-    // Generate new token (15 minute expiry)
-    const token = generateToken();
-    setToken(token, email, 15 * 60 * 1000);
+    // Generate signed magic token (15 minute expiry)
+    const token = createMagicToken(normalizedEmail, 15);
 
     // Build magic link URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
                     "https://edge.teeco.co");
-    const magicLink = `${baseUrl}/calculator?token=${token}&email=${encodeURIComponent(email.toLowerCase())}`;
+    const magicLink = `${baseUrl}/calculator?token=${encodeURIComponent(token)}`;
 
-    // Send email via Resend REST API (no SDK needed)
+    // Send email via Resend REST API
     try {
       const emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -47,7 +39,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           from: "Edge by Teeco <noreply@edge.teeco.co>",
-          to: [email],
+          to: [normalizedEmail],
           subject: "Sign in to Edge by Teeco",
           html: `
             <!DOCTYPE html>

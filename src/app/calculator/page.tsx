@@ -205,16 +205,15 @@ export default function CalculatorPage() {
     // Check URL for magic link token
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
-    const email = urlParams.get("email");
-    if (token && email) {
-      verifyMagicLink(token, email);
+    if (token) {
+      verifyMagicLink(token);
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
   
   // Verify magic link token
-  const verifyMagicLink = async (token: string, email: string) => {
+  const verifyMagicLink = async (token: string) => {
     setShowAuthModal(true);
     setAuthStep("verifying");
     setAuthError(null);
@@ -223,7 +222,7 @@ export default function CalculatorPage() {
       const response = await fetch("/api/auth/verify-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email }),
+        body: JSON.stringify({ token }),
       });
       
       const data = await response.json();
@@ -233,10 +232,10 @@ export default function CalculatorPage() {
         const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem("edge_auth_token", data.sessionToken || token);
         localStorage.setItem("edge_auth_expiry", expiryTime.toString());
-        localStorage.setItem("edge_auth_email", email);
+        localStorage.setItem("edge_auth_email", data.email);
         
         setIsAuthenticated(true);
-        setAuthEmail(email);
+        setAuthEmail(data.email);
         setShowAuthModal(false);
         setAuthStep("email");
       } else {
