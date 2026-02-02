@@ -155,7 +155,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-base" style={{ color: '#ffffff' }}>Watch Teeco&apos;s Free Training</p>
-                    <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Learn how to buy your first high cash flow rural Airbnb</p>
+                    <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Learn how to buy your first high cash flow short-term rental</p>
                   </div>
                   <ChevronRightIcon className="w-5 h-5" color="rgba(255,255,255,0.7)" />
                 </div>
@@ -164,7 +164,7 @@ export default function HomePage() {
               {/* Resource Links Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <Link 
-                  href="https://teeco.co/airbnb-agent"
+                  href="https://www.zillow.com/professionals/real-estate-agent-reviews/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -173,11 +173,11 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <HomeEquityIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Agent</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Find an Agent</p>
                 </Link>
                 
                 <Link 
-                  href="https://teeco.co/airbnb-lender"
+                  href="https://www.zillow.com/homeloans/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -186,11 +186,11 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <DollarIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Lender</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Get Financing</p>
                 </Link>
                 
                 <Link 
-                  href="https://teeco.co/airbnb-designer"
+                  href="https://teeco.co/book-our-design-services"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -199,11 +199,11 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <PaletteIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Designer</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Design Services</p>
                 </Link>
                 
                 <Link 
-                  href="https://teeco.co/airbnb-setup"
+                  href="https://teeco.co/book-our-design-services"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -212,11 +212,11 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <SofaIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Set Up Team</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Property Setup</p>
                 </Link>
                 
                 <Link 
-                  href="https://teeco.co/airbnb-cohost"
+                  href="https://teeco.co/packages"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -225,7 +225,7 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <PartnershipIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Cohost</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Co-Hosting</p>
                 </Link>
                 
                 <Link 
