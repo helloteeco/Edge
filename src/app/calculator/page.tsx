@@ -2644,30 +2644,24 @@ export default function CalculatorPage() {
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="text-lg font-semibold text-white mb-1">Want Expert Guidance on This Deal?</h3>
                   <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
-                    Chat with Jeff AI to analyze this property using proven rural STR strategies
+                    Chat with Edge Assistant to analyze this property using proven rural STR strategies
                   </p>
                 </div>
                 <button
                   onClick={() => {
-                    const prompt = encodeURIComponent(
-                      `I'm analyzing a potential STR investment and would like your expert opinion:\n\n` +
-                      `📍 Property: ${result.address || result.neighborhood}, ${result.city}, ${result.state}\n` +
-                      `🛏️ Bedrooms: ${result.bedrooms} | 🛁 Bathrooms: ${result.bathrooms}\n` +
-                      `💰 Projected Annual Revenue: $${getDisplayRevenue().toLocaleString()}\n` +
-                      `📊 Occupancy Rate: ${result.occupancy}%\n` +
-                      `💵 ADR: $${result.adr}\n` +
-                      (purchasePrice ? `🏷️ Purchase Price: $${parseInt(purchasePrice).toLocaleString()}\n` : '') +
-                      (purchasePrice ? `📈 Cash-on-Cash Return: ${investment.cashOnCashReturn.toFixed(1)}%\n` : '') +
-                      (purchasePrice ? `💸 Monthly Cash Flow: $${Math.round(investment.monthlyCashFlow).toLocaleString()}\n` : '') +
-                      `\nBased on your experience with rural STRs, what should I look for? Is this a good deal? What questions should I ask?`
-                    );
-                    window.open(`https://chatgpt.com/g/g-68963d578178819193ee01b12d9d94a7-jeff-chheuy-ai?q=${prompt}`, '_blank');
+                    // Scroll to bottom and trigger chat assistant
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    // Find and click the chat button after a short delay
+                    setTimeout(() => {
+                      const chatButton = document.querySelector('button[class*="fixed bottom-24 right-4"]') as HTMLButtonElement;
+                      if (chatButton) chatButton.click();
+                    }, 500);
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
                   style={{ backgroundColor: "#ffffff", color: "#2b2823" }}
                 >
                   <span className="text-xl">🤖</span>
-                  Chat with Jeff AI
+                  Chat with Edge Assistant
                 </button>
               </div>
             </div>

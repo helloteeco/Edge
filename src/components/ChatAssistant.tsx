@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 type Message = {
   role: "user" | "assistant";
@@ -15,6 +15,7 @@ export function ChatAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Survey state
   const [surveyStep, setSurveyStep] = useState<SurveyStep>("none");
@@ -25,26 +26,46 @@ export function ChatAssistant() {
     email: "",
   });
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
     
     const userMessage = input.trim();
     setInput("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
+    setMessages(newMessages);
     setIsLoading(true);
 
-    // Simulate AI response (in production, this would call your API)
-    setTimeout(() => {
-      const responses = [
-        "Great question! For STR investing, I recommend focusing on markets with a Cash-on-Cash return above 15%. This means you'll earn at least 15% annually on your invested capital.",
-        "The Hidden Gems filter shows markets with high income potential but low competition. These are often smaller towns near major attractions.",
-        "When analyzing a market, look at three things: 1) Can you pay the bills? (positive cash flow), 2) What's your Cash-on-Cash return?, and 3) Is it legal to do STR there?",
-        "Mountain and lake markets typically have the best Cash-on-Cash returns because property prices are lower but vacation demand is high. Beach markets look attractive but often have lower returns due to high property costs.",
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      setMessages(prev => [...prev, { role: "assistant", content: randomResponse }]);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: "I'm having trouble connecting right now. Please try again in a moment, or reach out to hello@teeco.co for help!" 
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleSurveyAnswer = (answer: string) => {
@@ -77,6 +98,14 @@ export function ChatAssistant() {
     setSurveyStep("none");
     setSurveyData({ budget: "", timeline: "", experience: "", email: "" });
   };
+
+  // Suggested questions for new users
+  const suggestedQuestions = [
+    "What cash-on-cash return should I aim for?",
+    "How do I find a good rural market?",
+    "Can I really manage remotely?",
+    "How much money do I need to start?",
+  ];
 
   return (
     <>
@@ -135,7 +164,7 @@ export function ChatAssistant() {
               <div>
                 <h3 className="font-semibold" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Edge Assistant</h3>
                 <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-                  {mode === "menu" ? "How can I help you today?" : mode === "chat" ? "Ask me anything" : "Mentorship Survey"}
+                  {mode === "menu" ? "How can I help you today?" : mode === "chat" ? "Powered by Jeff's STR expertise" : "Mentorship Survey"}
                 </p>
               </div>
             </div>
@@ -146,7 +175,7 @@ export function ChatAssistant() {
             {mode === "menu" && (
               <div className="p-4 space-y-3">
                 <button
-                  onClick={() => window.open("https://chatgpt.com/g/g-68963d578178819193ee01b12d9d94a7-jeff-chheuy-ai", "_blank")}
+                  onClick={() => setMode("chat")}
                   className="w-full p-4 rounded-xl text-left transition-all group"
                   style={{ backgroundColor: '#e5e3da' }}
                 >
@@ -158,7 +187,7 @@ export function ChatAssistant() {
                       🤖
                     </div>
                     <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Chat with Jeff AI</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Ask Edge Assistant</div>
                       <div className="text-sm" style={{ color: '#787060' }}>Get personalized STR advice from our AI expert</div>
                     </div>
                   </div>
@@ -207,14 +236,32 @@ export function ChatAssistant() {
               <div className="flex flex-col h-full">
                 <div className="flex-1 p-4 space-y-3 overflow-y-auto">
                   {messages.length === 0 && (
-                    <div className="text-center py-8" style={{ color: '#787060' }}>
-                      <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
-                        style={{ backgroundColor: '#e5e3da' }}
-                      >
-                        <span className="text-2xl">💭</span>
+                    <div className="space-y-4">
+                      <div className="text-center py-4" style={{ color: '#787060' }}>
+                        <div 
+                          className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                          style={{ backgroundColor: '#e5e3da' }}
+                        >
+                          <span className="text-2xl">💭</span>
+                        </div>
+                        <p className="text-sm mb-4">Ask me anything about STR investing!</p>
                       </div>
-                      <p className="text-sm">Ask me anything about STR investing!</p>
+                      {/* Suggested Questions */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium" style={{ color: '#787060' }}>Try asking:</p>
+                        {suggestedQuestions.map((question, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setInput(question);
+                            }}
+                            className="w-full p-2.5 rounded-lg text-left text-sm transition-all hover:scale-[1.02]"
+                            style={{ backgroundColor: '#f5f4f0', color: '#2b2823', border: '1px solid #e5e3da' }}
+                          >
+                            {question}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                   {messages.map((msg, i) => (
@@ -248,6 +295,7 @@ export function ChatAssistant() {
                       </div>
                     </div>
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
                 <div className="p-3 bg-white" style={{ borderTop: '1px solid #d8d6cd' }}>
                   <div className="flex gap-2">
