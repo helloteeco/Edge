@@ -2582,72 +2582,35 @@ export default function CalculatorPage() {
           </div>
         )}
         
-        {/* Cross-Reference Tools Section */}
-        <div className="mt-8 p-6 rounded-2xl" style={{ backgroundColor: '#f5f4f0', border: '1px solid #e5e3da' }}>
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold mb-1" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-              📊 Verify Your Analysis
-            </h3>
-            <p className="text-sm" style={{ color: '#787060' }}>
-              We recommend cross-referencing with multiple sources before making investment decisions.
+        {/* Cross-Reference Tools - Minimal Footer Style */}
+        <div className="mt-12 pt-8" style={{ borderTop: '1px solid #e5e3da' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs" style={{ color: '#a0a0a0' }}>
+              Cross-reference your analysis: 
+              <a 
+                href="https://rabbu.com/airbnb-calculator" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="ml-1 hover:underline transition-colors"
+                style={{ color: '#787060' }}
+              >
+                Rabbu (Free)
+              </a>
+              <span className="mx-2">·</span>
+              <a 
+                href="https://www.airdna.co" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:underline transition-colors"
+                style={{ color: '#787060' }}
+              >
+                AirDNA ($34/mo)
+              </a>
+            </p>
+            <p className="text-xs" style={{ color: '#a0a0a0' }}>
+              Edge data: <span style={{ color: '#787060' }}>Airbtics</span> · 96%+ accuracy
             </p>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid #e5e3da' }}>
-                  <th className="text-left py-2 px-3 font-semibold" style={{ color: '#2b2823' }}>Tool</th>
-                  <th className="text-left py-2 px-3 font-semibold" style={{ color: '#2b2823' }}>Data Source</th>
-                  <th className="text-left py-2 px-3 font-semibold" style={{ color: '#2b2823' }}>Accuracy</th>
-                  <th className="text-left py-2 px-3 font-semibold" style={{ color: '#2b2823' }}>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e3da' }}>
-                  <td className="py-3 px-3 font-medium" style={{ color: '#2b2823' }}>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }}></span>
-                      Edge (You are here)
-                    </span>
-                  </td>
-                  <td className="py-3 px-3" style={{ color: '#787060' }}>Airbtics (Airbnb scraping + PMs)</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>96%+ verified</span>
-                  </td>
-                  <td className="py-3 px-3" style={{ color: '#787060' }}>3 free, then $4.99/5</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid #e5e3da' }}>
-                  <td className="py-3 px-3 font-medium" style={{ color: '#2b2823' }}>
-                    <a href="https://rabbu.com/airbnb-calculator" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: '#2b2823' }}>
-                      Rabbu →
-                    </a>
-                  </td>
-                  <td className="py-3 px-3" style={{ color: '#787060' }}>Airbnb scraping</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>Varies by market</span>
-                  </td>
-                  <td className="py-3 px-3" style={{ color: '#22c55e', fontWeight: 500 }}>Free</td>
-                </tr>
-                <tr>
-                  <td className="py-3 px-3 font-medium" style={{ color: '#2b2823' }}>
-                    <a href="https://www.airdna.co" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: '#2b2823' }}>
-                      AirDNA →
-                    </a>
-                  </td>
-                  <td className="py-3 px-3" style={{ color: '#787060' }}>Airbnb + Vrbo + Partners</td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>95%+ verified</span>
-                  </td>
-                  <td className="py-3 px-3" style={{ color: '#787060' }}>$34-50/mo</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <p className="text-xs text-center mt-4" style={{ color: '#a0a0a0' }}>
-            Edge uses Airbtics data, which includes Airbnb listings and property manager data for higher accuracy in most US markets.
-          </p>
         </div>
       </main>
       
