@@ -23,10 +23,8 @@ export async function POST(request: NextRequest) {
     // Generate signed magic token (15 minute expiry)
     const token = createMagicToken(normalizedEmail, 15);
 
-    // Build magic link URL - redirect to the page user was on (default to /calculator)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                    "https://edge.teeco.co");
+    // Build magic link URL - always use production domain
+    const baseUrl = "https://edge.teeco.co";
     
     // Use the redirect path from request, default to /calculator
     const targetPath = redirectPath || "/calculator";
