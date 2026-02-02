@@ -315,10 +315,14 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Resources Section Update (February 2026)
-- [ ] Replace Funding section with Resources section
-- [ ] Add "Watch Teeco's Free Training" link to Circle community
-- [ ] Add Find Airbnb Agent resource
-- [ ] Add Find Airbnb Lender resource
-- [ ] Add Find Airbnb Designer resource
-- [ ] Add Find Airbnb Set Up Team resource
-- [ ] Add Find Airbnb Cohost resource
+- [x] Replace Funding section with Resources section
+- [x] Add "Watch Teeco's Free Training" link to Circle community
+- [x] Add Airbnb Agent resource
+- [x] Add Airbnb Lender resource
+- [x] Add Airbnb Designer resource
+- [x] Add Airbnb Set Up Team resource
+- [x] Add Airbnb Cohost resource
+
+
+## Bug Fix - Magic Link Verification (February 2026)
+- [ ] Fix magic link verification error - users can't authenticate after clicking email link
