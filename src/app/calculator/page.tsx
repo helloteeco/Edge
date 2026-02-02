@@ -1432,7 +1432,7 @@ export default function CalculatorPage() {
             </div>
             {creditsRemaining === 0 && (
               <button
-                onClick={() => setShowPaywallModal(true)}
+                onClick={() => setShowPaywall(true)}
                 className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
                 style={{ backgroundColor: '#2b2823', color: 'white' }}
               >
@@ -1441,7 +1441,7 @@ export default function CalculatorPage() {
             )}
             {creditsRemaining > 0 && creditsRemaining <= 1 && (
               <span className="text-xs" style={{ color: '#787060' }}>
-                Running low? <button onClick={() => setShowPaywallModal(true)} className="underline font-medium">Get more</button>
+                Running low? <button onClick={() => setShowPaywall(true)} className="underline font-medium">Get more</button>
               </span>
             )}
           </div>
