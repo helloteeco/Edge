@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { 
   getSavedProperties, 
-  savePropertyForUser, 
-  removePropertyForUser, 
+  saveProperty, 
+  removeProperty, 
   updatePropertyNotes,
   getUser,
-  SavedProperty 
-} from "@/lib/user-store";
+  upsertUser,
+} from "@/lib/supabase";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = getUser(email);
+    const user = await getUser(email);
     
     if (!user) {
       return NextResponse.json({
@@ -33,12 +33,28 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const properties = getSavedProperties(email);
+    const properties = await getSavedProperties(email);
+
+    // Transform to match frontend expected format
+    const transformedProperties = properties.map(p => ({
+      id: p.id,
+      address: p.address,
+      savedAt: new Date(p.saved_at).getTime(),
+      notes: p.notes || "",
+      result: {
+        annualRevenue: p.annual_revenue,
+        cashOnCash: p.cash_on_cash,
+        monthlyNetCashFlow: p.monthly_net_cash_flow,
+        bedrooms: p.bedrooms,
+        bathrooms: p.bathrooms,
+        guestCount: p.guest_count,
+      },
+    }));
 
     return NextResponse.json({
       success: true,
-      properties,
-      count: properties.length,
+      properties: transformedProperties,
+      count: transformedProperties.length,
     });
 
   } catch (error) {
@@ -62,43 +78,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = getUser(email);
+    // Ensure user exists (create if not)
+    const user = await getUser(email);
     
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found. Please sign in first." },
-        { status: 401 }
-      );
+      // Create user if they don't exist
+      const newUser = await upsertUser(email);
+      if (!newUser) {
+        return NextResponse.json(
+          { success: false, error: "Failed to create user. Please sign in first." },
+          { status: 401 }
+        );
+      }
     }
 
-    const savedProperty: SavedProperty = {
-      id: property.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    const savedProperty = await saveProperty(email, {
       address: property.address,
-      savedAt: Date.now(),
       notes: property.notes || "",
-      result: property.result ? {
-        annualRevenue: property.result.annualRevenue,
-        cashOnCash: property.result.cashOnCash,
-        monthlyNetCashFlow: property.result.monthlyNetCashFlow,
-        bedrooms: property.result.bedrooms,
-        bathrooms: property.result.bathrooms,
-        guestCount: property.result.guestCount,
-      } : undefined,
-    };
+      annual_revenue: property.result?.annualRevenue,
+      cash_on_cash: property.result?.cashOnCash,
+      monthly_net_cash_flow: property.result?.monthlyNetCashFlow,
+      bedrooms: property.result?.bedrooms,
+      bathrooms: property.result?.bathrooms,
+      guest_count: property.result?.guestCount,
+    });
 
-    const updatedUser = savePropertyForUser(email, savedProperty);
-
-    if (!updatedUser) {
+    if (!savedProperty) {
       return NextResponse.json(
         { success: false, error: "Failed to save property" },
         { status: 500 }
       );
     }
 
+    // Get updated count
+    const allProperties = await getSavedProperties(email);
+
     return NextResponse.json({
       success: true,
-      property: savedProperty,
-      totalSaved: updatedUser.savedProperties.length,
+      property: {
+        id: savedProperty.id,
+        address: savedProperty.address,
+        savedAt: new Date(savedProperty.saved_at).getTime(),
+        notes: savedProperty.notes,
+        result: {
+          annualRevenue: savedProperty.annual_revenue,
+          cashOnCash: savedProperty.cash_on_cash,
+          monthlyNetCashFlow: savedProperty.monthly_net_cash_flow,
+          bedrooms: savedProperty.bedrooms,
+          bathrooms: savedProperty.bathrooms,
+          guestCount: savedProperty.guest_count,
+        },
+      },
+      totalSaved: allProperties.length,
     });
 
   } catch (error) {
@@ -122,19 +153,22 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const updatedUser = removePropertyForUser(email, propertyId);
+    const success = await removeProperty(email, propertyId);
 
-    if (!updatedUser) {
+    if (!success) {
       return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
+        { success: false, error: "Failed to remove property" },
+        { status: 500 }
       );
     }
+
+    // Get updated count
+    const allProperties = await getSavedProperties(email);
 
     return NextResponse.json({
       success: true,
       message: "Property removed",
-      totalSaved: updatedUser.savedProperties.length,
+      totalSaved: allProperties.length,
     });
 
   } catch (error) {
@@ -158,12 +192,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updatedUser = updatePropertyNotes(email, propertyId, notes || "");
+    const success = await updatePropertyNotes(email, propertyId, notes || "");
 
-    if (!updatedUser) {
+    if (!success) {
       return NextResponse.json(
-        { success: false, error: "User or property not found" },
-        { status: 404 }
+        { success: false, error: "Failed to update notes" },
+        { status: 500 }
       );
     }
 

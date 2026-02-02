@@ -70,81 +70,53 @@ export default function SavedPage() {
 
   // Load saved data
   const loadSavedData = useCallback(async () => {
-    // Always load local data first
+    // Load local market data (cities/states) - these are not user-specific
     const cities = JSON.parse(localStorage.getItem("savedCities") || "[]");
     const states = JSON.parse(localStorage.getItem("savedStates") || "[]");
-    const localReports = JSON.parse(localStorage.getItem("savedReports") || "[]");
     
     setSavedCities(cities);
     setSavedStates(states);
     
-    // If authenticated, sync with server
-    if (isAuthenticated && userEmail) {
-      setIsSyncing(true);
-      try {
-        const response = await fetch(`/api/saved-properties?email=${encodeURIComponent(userEmail)}`);
-        const data = await response.json();
-        
-        if (data.success && data.properties) {
-          // Merge server data with local data (server takes priority for conflicts)
-          const serverReports = data.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number } }) => ({
-            id: p.id,
-            address: p.address,
-            city: p.address.split(',')[1]?.trim() || '',
-            state: p.address.split(',')[2]?.trim() || '',
-            bedrooms: p.result?.bedrooms || 0,
-            bathrooms: p.result?.bathrooms || 0,
-            guestCount: p.result?.guestCount || 0,
-            annualRevenue: p.result?.annualRevenue || 0,
-            cashFlow: p.result?.monthlyNetCashFlow || 0,
-            cashOnCash: p.result?.cashOnCash || 0,
-            purchasePrice: 0,
-            notes: p.notes || '',
-            savedAt: p.savedAt,
-          }));
-          
-          // Merge: use server data, add any local-only items
-          const serverAddresses = new Set(serverReports.map((r: SavedReport) => r.address));
-          const localOnlyReports = localReports.filter((r: SavedReport) => !serverAddresses.has(r.address));
-          
-          // Upload local-only reports to server
-          for (const report of localOnlyReports) {
-            await fetch('/api/saved-properties', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: userEmail,
-                property: {
-                  address: report.address,
-                  notes: report.notes,
-                  result: {
-                    annualRevenue: report.annualRevenue,
-                    cashOnCash: report.cashOnCash,
-                    monthlyNetCashFlow: report.cashFlow,
-                    bedrooms: report.bedrooms,
-                    bathrooms: report.bathrooms,
-                    guestCount: report.guestCount,
-                  },
-                },
-              }),
-            });
-          }
-          
-          const mergedReports = [...serverReports, ...localOnlyReports];
-          setSavedReports(mergedReports);
-          localStorage.setItem("savedReports", JSON.stringify(mergedReports));
-          setLastSyncTime(Date.now());
-        } else {
-          setSavedReports(localReports);
-        }
-      } catch (error) {
-        console.error("Error syncing with server:", error);
-        setSavedReports(localReports);
-      }
-      setIsSyncing(false);
-    } else {
-      setSavedReports(localReports);
+    // Only load property reports if authenticated (user-specific data)
+    if (!isAuthenticated || !userEmail) {
+      setSavedReports([]);
+      return;
     }
+    
+    // Fetch from server when authenticated
+    setIsSyncing(true);
+    try {
+      const response = await fetch(`/api/saved-properties?email=${encodeURIComponent(userEmail)}`);
+      const data = await response.json();
+      
+      if (data.success && data.properties) {
+        // Use server data directly (user-specific)
+        const serverReports = data.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number } }) => ({
+          id: p.id,
+          address: p.address,
+          city: p.address.split(',')[1]?.trim() || '',
+          state: p.address.split(',')[2]?.trim() || '',
+          bedrooms: p.result?.bedrooms || 0,
+          bathrooms: p.result?.bathrooms || 0,
+          guestCount: p.result?.guestCount || 0,
+          annualRevenue: p.result?.annualRevenue || 0,
+          cashFlow: p.result?.monthlyNetCashFlow || 0,
+          cashOnCash: p.result?.cashOnCash || 0,
+          purchasePrice: 0,
+          notes: p.notes || '',
+          savedAt: p.savedAt,
+        }));
+        
+        setSavedReports(serverReports);
+        setLastSyncTime(Date.now());
+      } else {
+        setSavedReports([]);
+      }
+    } catch (error) {
+      console.error("Error fetching from server:", error);
+      setSavedReports([]);
+    }
+    setIsSyncing(false);
   }, [isAuthenticated, userEmail]);
 
   useEffect(() => {

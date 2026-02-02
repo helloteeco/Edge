@@ -345,6 +345,21 @@ export default function CalculatorPage() {
   const saveReport = async () => {
     if (!result) return;
     
+    // Check if user is authenticated
+    const authEmail = localStorage.getItem("edge_auth_email");
+    const authToken = localStorage.getItem("edge_auth_token");
+    const authExpiry = localStorage.getItem("edge_auth_expiry");
+    
+    const hasValidSession = authEmail && authToken && authExpiry && 
+      Date.now() < parseInt(authExpiry, 10);
+    
+    if (!hasValidSession) {
+      // Show auth modal if not signed in
+      alert("Please sign in to save reports. Your saved reports will sync across all your devices.");
+      setShowAuthModal(true);
+      return;
+    }
+    
     const investment = calculateInvestment();
     const displayRevenue = getDisplayRevenue();
     
@@ -364,47 +379,42 @@ export default function CalculatorPage() {
       savedAt: Date.now(),
     };
     
-    const existing = JSON.parse(localStorage.getItem("savedReports") || "[]");
-    // Check if already saved (by address)
-    const alreadySaved = existing.some((r: { address: string }) => r.address === report.address);
-    if (alreadySaved) {
-      alert("This property is already saved!");
-      return;
-    }
-    
-    const updated = [report, ...existing];
-    localStorage.setItem("savedReports", JSON.stringify(updated));
-    
-    // Sync with server if authenticated
-    const authEmail = localStorage.getItem("edge_auth_email");
-    if (authEmail) {
-      try {
-        await fetch('/api/saved-properties', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: authEmail,
-            property: {
-              id: report.id,
-              address: report.address,
-              notes: report.notes,
-              result: {
-                annualRevenue: report.annualRevenue,
-                cashOnCash: report.cashOnCash,
-                monthlyNetCashFlow: report.cashFlow,
-                bedrooms: report.bedrooms,
-                bathrooms: report.bathrooms,
-                guestCount: report.guestCount,
-              },
+    // Save to server (user-specific data)
+    try {
+      const response = await fetch('/api/saved-properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: authEmail,
+          property: {
+            id: report.id,
+            address: report.address,
+            notes: report.notes,
+            result: {
+              annualRevenue: report.annualRevenue,
+              cashOnCash: report.cashOnCash,
+              monthlyNetCashFlow: report.cashFlow,
+              bedrooms: report.bedrooms,
+              bathrooms: report.bathrooms,
+              guestCount: report.guestCount,
             },
-          }),
-        });
-      } catch (error) {
-        console.error("Error syncing to server:", error);
+          },
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert("Report saved! View it in the Saved section.");
+      } else if (data.error?.includes("already")) {
+        alert("This property is already saved!");
+      } else {
+        alert("Failed to save report. Please try again.");
       }
+    } catch (error) {
+      console.error("Error saving to server:", error);
+      alert("Failed to save report. Please check your connection and try again.");
     }
-    
-    alert("Report saved! View it in the Saved section.");
   };
 
   // Email report
