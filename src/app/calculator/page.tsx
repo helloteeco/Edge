@@ -211,6 +211,8 @@ export default function CalculatorPage() {
         console.log("[Auth] Valid session found, user is authenticated:", savedEmail);
         setIsAuthenticated(true);
         setAuthEmail(savedEmail);
+        // Fetch user credits
+        fetchUserCredits(savedEmail);
       } else {
         // Token expired, clear auth
         console.log("[Auth] Session expired, clearing...");
@@ -261,6 +263,9 @@ export default function CalculatorPage() {
         setShowAuthModal(false);
         setAuthStep("email");
         console.log("[Auth] User authenticated successfully!");
+        
+        // Fetch user credits
+        fetchUserCredits(data.email);
       } else {
         console.error("[Auth] Verification failed:", data.error);
         setAuthError(data.error || "Invalid or expired link. Please request a new one.");
@@ -305,7 +310,23 @@ export default function CalculatorPage() {
     }
   };
   
-  // Handle analyze button click - check auth first
+  // Fetch user credits from server
+  const fetchUserCredits = async (email: string) => {
+    try {
+      const response = await fetch(`/api/credits?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setCreditsRemaining(data.credits.remaining);
+        setCreditsLimit(data.credits.limit);
+        console.log("[Credits] Loaded:", data.credits);
+      }
+    } catch (error) {
+      console.error("[Credits] Error fetching:", error);
+    }
+  };
+  
+  // Handle analyze button click - check auth and credits first
   const handleAnalyzeClick = () => {
     // Double-check auth from localStorage in case state is stale
     const authToken = localStorage.getItem("edge_auth_token");
@@ -317,6 +338,7 @@ export default function CalculatorPage() {
     
     console.log("[Auth] Analyze clicked - isAuthenticated:", isAuthenticated, "hasValidSession:", hasValidSession);
     
+    // Check if user is authenticated
     if (!isAuthenticated && !hasValidSession) {
       setShowAuthModal(true);
       setAuthStep("email");
@@ -329,9 +351,155 @@ export default function CalculatorPage() {
       console.log("[Auth] Updating state from localStorage");
       setIsAuthenticated(true);
       setAuthEmail(savedEmail);
+      fetchUserCredits(savedEmail);
     }
     
-    handleAnalyze();
+    // Check if user has credits
+    if (creditsRemaining !== null && creditsRemaining <= 0) {
+      setShowPaywall(true);
+      return;
+    }
+    
+    // Show credit confirmation modal
+    setPendingAnalysis(address);
+    setShowCreditConfirm(true);
+  };
+  
+  // Confirm and proceed with analysis (deduct credit)
+  const confirmAnalysis = async () => {
+    const savedEmail = localStorage.getItem("edge_auth_email");
+    if (!savedEmail) return;
+    
+    setShowCreditConfirm(false);
+    
+    // First check cache (no credit needed for cached data)
+    try {
+      const cacheResponse = await fetch(`/api/property-cache?address=${encodeURIComponent(pendingAnalysis || address)}`);
+      const cacheData = await cacheResponse.json();
+      
+      if (cacheData.success && cacheData.cached && cacheData.data) {
+        console.log("[Cache] Using cached data - no credit deducted");
+        // Use cached data directly
+        handleAnalyzeWithCache(cacheData.data);
+        setPendingAnalysis(null);
+        return;
+      }
+    } catch (error) {
+      console.error("[Cache] Error checking cache:", error);
+    }
+    
+    // No cache - deduct credit first, then make API call
+    try {
+      const creditResponse = await fetch('/api/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: savedEmail, action: 'deduct' }),
+      });
+      
+      const creditData = await creditResponse.json();
+      
+      if (!creditData.success) {
+        if (creditData.needsUpgrade) {
+          setShowPaywall(true);
+        } else {
+          setError(creditData.error || "Failed to process credit. Please try again.");
+        }
+        setPendingAnalysis(null);
+        return;
+      }
+      
+      // Update credits display
+      setCreditsRemaining(creditData.remaining);
+      
+      // Now proceed with analysis
+      handleAnalyze(pendingAnalysis || undefined);
+      setPendingAnalysis(null);
+    } catch (error) {
+      console.error("[Credits] Error deducting:", error);
+      setError("Failed to process request. Please try again.");
+      setPendingAnalysis(null);
+    }
+  };
+  
+  // Handle analysis with cached data
+  const handleAnalyzeWithCache = (cachedData: Record<string, unknown>) => {
+    // Reconstruct result from cached data
+    const data = cachedData as {
+      property?: Record<string, unknown>;
+      neighborhood?: Record<string, unknown>;
+      percentiles?: Record<string, unknown>;
+      comparables?: unknown[];
+      historical?: unknown[];
+      recommendedAmenities?: unknown[];
+    };
+    
+    const parseNum = (val: unknown): number => {
+      if (typeof val === "number") return val;
+      if (typeof val === "string") return parseFloat(val) || 0;
+      return 0;
+    };
+    
+    const property = data.property || {};
+    const neighborhood = data.neighborhood || {};
+    const percentiles = data.percentiles as AnalysisResult["percentiles"];
+    
+    const avgAdr = parseNum(neighborhood?.adr);
+    const avgOccupancy = parseNum(neighborhood?.occupancy);
+    
+    let annualRevenue: number;
+    let monthlyRevenue: number;
+    
+    const percentilesTyped = percentiles as { revenue?: { p50?: number } } | null;
+    if (percentilesTyped?.revenue?.p50 && percentilesTyped.revenue.p50 > 0) {
+      annualRevenue = percentilesTyped.revenue.p50;
+      monthlyRevenue = Math.round(annualRevenue / 12);
+    } else if (parseNum(neighborhood?.annualRevenue) > 0) {
+      annualRevenue = parseNum(neighborhood?.annualRevenue);
+      monthlyRevenue = Math.round(annualRevenue / 12);
+    } else {
+      annualRevenue = 0;
+      monthlyRevenue = 0;
+    }
+    
+    const analysisResult: AnalysisResult = {
+      address: pendingAnalysis || address,
+      city: (property?.city as string) || (neighborhood?.city as string) || "",
+      state: (property?.state as string) || (neighborhood?.state as string) || "",
+      neighborhood: (neighborhood?.name as string) || "Unknown",
+      annualRevenue,
+      monthlyRevenue,
+      adr: Math.round(avgAdr),
+      occupancy: Math.round(avgOccupancy),
+      revPAN: avgAdr > 0 && avgOccupancy > 0 ? Math.round(avgAdr * (avgOccupancy / 100)) : 0,
+      bedrooms: bedrooms || 3,
+      bathrooms: bathrooms || 2,
+      sqft: parseNum(property?.sqft),
+      propertyType: (property?.propertyType as string) || "house",
+      listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
+      nearbyListings: parseNum(neighborhood?.listingsCount),
+      percentiles: percentiles || null,
+      comparables: (data.comparables as ComparableListing[]) || [],
+      revenueChange: (neighborhood?.revenueChange as string) || "stable",
+      revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
+      occupancyChange: (neighborhood?.occupancyChange as string) || "stable",
+      occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
+      historical: (data.historical as AnalysisResult["historical"]) || [],
+      recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
+    };
+    
+    setResult(analysisResult);
+    setAddress(pendingAnalysis || address);
+    
+    if (analysisResult.listPrice > 0 && !purchasePrice) {
+      setPurchasePrice(analysisResult.listPrice.toString());
+    }
+    
+    if (analysisResult.sqft > 0) {
+      setPropertySqft(analysisResult.sqft);
+    }
+    
+    setUseCustomIncome(false);
+    setCustomAnnualIncome("");
   };
 
   // Save recent search
@@ -429,6 +597,13 @@ export default function CalculatorPage() {
   const [authStep, setAuthStep] = useState<"email" | "sent" | "verifying">("email");
   const [authError, setAuthError] = useState<string | null>(null);
   const [magicToken, setMagicToken] = useState<string | null>(null);
+  
+  // Credit System
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [creditsLimit, setCreditsLimit] = useState<number>(3);
+  const [showCreditConfirm, setShowCreditConfirm] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
   
   const sendEmailReport = async () => {
     if (!emailAddress || !result) return;
@@ -655,6 +830,21 @@ export default function CalculatorPage() {
         cachedBathrooms: bathrooms,
         cachedGuestCount: guestCount || bedrooms * 2,
       });
+      
+      // Cache the API response in Supabase (60-minute TTL for Airbtics compliance)
+      try {
+        await fetch('/api/property-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: addressToAnalyze,
+            data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities },
+          }),
+        });
+        console.log("[Cache] Stored API response for 60 minutes");
+      } catch (cacheError) {
+        console.error("[Cache] Failed to cache:", cacheError);
+      }
     } catch (err) {
       console.error("Analysis error:", err);
       setError("Failed to analyze address. Please try again.");
@@ -1371,6 +1561,29 @@ export default function CalculatorPage() {
           </div>
           
           <p className="text-xs text-gray-400 mt-2">Format: 123 Main St, City, ST</p>
+          
+          {/* Credit Display */}
+          {isAuthenticated && creditsRemaining !== null && (
+            <div className="mt-4 flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" style={{ color: creditsRemaining > 0 ? "#22c55e" : "#ef4444" }} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span className="text-sm font-medium" style={{ color: "#2b2823" }}>
+                  {creditsRemaining} of {creditsLimit} free analyses remaining
+                </span>
+              </div>
+              {creditsRemaining <= 1 && (
+                <button
+                  onClick={() => setShowPaywall(true)}
+                  className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
+                  style={{ backgroundColor: "#2b2823", color: "#fff" }}
+                >
+                  Get More
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Error Message */}
@@ -2335,6 +2548,159 @@ export default function CalculatorPage() {
                 style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
               >
                 {emailSending ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Credit Confirmation Modal */}
+      {showCreditConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full" style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            {/* Close button */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => {
+                  setShowCreditConfirm(false);
+                  setPendingAnalysis(null);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="text-center">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#f5f4f0' }}>
+                <svg className="w-8 h-8" style={{ color: '#2b2823' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
+                Use 1 Analysis Credit?
+              </h2>
+              <p className="text-sm mb-2" style={{ color: '#787060' }}>
+                This will analyze the property at:
+              </p>
+              <p className="font-medium text-sm mb-4 px-4 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0', color: '#2b2823' }}>
+                {pendingAnalysis || address}
+              </p>
+              <p className="text-sm mb-6" style={{ color: '#787060' }}>
+                You have <span className="font-semibold" style={{ color: creditsRemaining && creditsRemaining > 1 ? '#22c55e' : '#ef4444' }}>{creditsRemaining} credit{creditsRemaining !== 1 ? 's' : ''}</span> remaining.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCreditConfirm(false);
+                    setPendingAnalysis(null);
+                  }}
+                  className="flex-1 py-3 rounded-xl font-medium text-sm"
+                  style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmAnalysis}
+                  className="flex-1 py-3 rounded-xl font-medium text-sm"
+                  style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                >
+                  Yes, Analyze
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Paywall Modal - Out of Credits */}
+      {showPaywall && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full" style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            {/* Close button */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setShowPaywall(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="text-center">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#fef3c7' }}>
+                <svg className="w-8 h-8" style={{ color: '#f59e0b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
+                You've Used All Free Credits
+              </h2>
+              <p className="text-sm mb-6" style={{ color: '#787060' }}>
+                You've used all {creditsLimit} of your free property analyses. Upgrade to continue analyzing properties.
+              </p>
+              
+              {/* Pricing Options */}
+              <div className="space-y-3 mb-6">
+                <div className="p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" style={{ borderColor: '#e5e5e5' }}>
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">
+                      <p className="font-semibold" style={{ color: '#2b2823' }}>5 Credits</p>
+                      <p className="text-sm" style={{ color: '#787060' }}>Best for trying out</p>
+                    </div>
+                    <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$4.99</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}>
+                  <div className="absolute -top-2 left-4 px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
+                    BEST VALUE
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">
+                      <p className="font-semibold" style={{ color: '#2b2823' }}>25 Credits</p>
+                      <p className="text-sm" style={{ color: '#787060' }}>For serious investors</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$19.99</p>
+                      <p className="text-xs" style={{ color: '#22c55e' }}>Save 20%</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" style={{ borderColor: '#e5e5e5' }}>
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">
+                      <p className="font-semibold" style={{ color: '#2b2823' }}>Unlimited Monthly</p>
+                      <p className="text-sm" style={{ color: '#787060' }}>Analyze as many as you want</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$29.99</p>
+                      <p className="text-xs" style={{ color: '#787060' }}>/month</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-xs mb-4" style={{ color: '#a0a0a0' }}>
+                Payment processing coming soon. Contact us at hello@teeco.co for early access.
+              </p>
+              
+              <button
+                onClick={() => setShowPaywall(false)}
+                className="w-full py-3 rounded-xl font-medium text-sm"
+                style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+              >
+                Maybe Later
               </button>
             </div>
           </div>

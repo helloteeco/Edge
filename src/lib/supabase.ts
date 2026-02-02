@@ -241,3 +241,192 @@ export async function getUserCount(): Promise<number> {
   
   return count || 0;
 }
+
+
+// ============================================
+// CREDIT SYSTEM - Secure server-side only
+// ============================================
+
+export interface UserCredits {
+  email: string;
+  credits_used: number;
+  credits_limit: number;
+  credits_remaining: number;
+}
+
+// Get user's credit balance (server-side validation)
+export async function getUserCredits(email: string): Promise<UserCredits | null> {
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('email, credits_used, credits_limit')
+    .eq('email', normalizedEmail)
+    .single();
+  
+  if (error || !data) {
+    console.error('Error getting user credits:', error);
+    return null;
+  }
+  
+  return {
+    email: data.email,
+    credits_used: data.credits_used || 0,
+    credits_limit: data.credits_limit || 3,
+    credits_remaining: (data.credits_limit || 3) - (data.credits_used || 0),
+  };
+}
+
+// Check if user has available credits (server-side)
+export async function hasAvailableCredits(email: string): Promise<boolean> {
+  const credits = await getUserCredits(email);
+  if (!credits) return false;
+  return credits.credits_remaining > 0;
+}
+
+// Deduct one credit from user (server-side, atomic operation)
+export async function deductCredit(email: string): Promise<{ success: boolean; remaining: number; error?: string }> {
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // First check current credits
+  const credits = await getUserCredits(normalizedEmail);
+  if (!credits) {
+    return { success: false, remaining: 0, error: 'User not found' };
+  }
+  
+  if (credits.credits_remaining <= 0) {
+    return { success: false, remaining: 0, error: 'No credits remaining' };
+  }
+  
+  // Atomic increment of credits_used
+  const { data, error } = await supabase
+    .from('users')
+    .update({ credits_used: credits.credits_used + 1 })
+    .eq('email', normalizedEmail)
+    .select('credits_used, credits_limit')
+    .single();
+  
+  if (error) {
+    console.error('Error deducting credit:', error);
+    return { success: false, remaining: credits.credits_remaining, error: 'Database error' };
+  }
+  
+  const remaining = (data.credits_limit || 3) - (data.credits_used || 0);
+  console.log(`[Credits] Deducted 1 credit from ${normalizedEmail}. Remaining: ${remaining}`);
+  
+  return { success: true, remaining };
+}
+
+// Add credits to user (for purchases)
+export async function addCredits(email: string, amount: number): Promise<{ success: boolean; new_limit: number }> {
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  const { data: user } = await supabase
+    .from('users')
+    .select('credits_limit')
+    .eq('email', normalizedEmail)
+    .single();
+  
+  if (!user) {
+    return { success: false, new_limit: 0 };
+  }
+  
+  const newLimit = (user.credits_limit || 3) + amount;
+  
+  const { error } = await supabase
+    .from('users')
+    .update({ credits_limit: newLimit })
+    .eq('email', normalizedEmail);
+  
+  if (error) {
+    console.error('Error adding credits:', error);
+    return { success: false, new_limit: user.credits_limit || 3 };
+  }
+  
+  console.log(`[Credits] Added ${amount} credits to ${normalizedEmail}. New limit: ${newLimit}`);
+  return { success: true, new_limit: newLimit };
+}
+
+// ============================================
+// PROPERTY CACHE - 60-minute TTL (Airbtics compliant)
+// ============================================
+
+export interface CachedProperty {
+  id: string;
+  address: string;
+  data: Record<string, unknown>;
+  created_at: string;
+  expires_at: string;
+}
+
+// Get cached property data (if not expired)
+export async function getCachedProperty(address: string): Promise<Record<string, unknown> | null> {
+  const normalizedAddress = address.trim();
+  
+  // Delete expired cache entries first
+  await supabase
+    .from('property_cache')
+    .delete()
+    .lt('expires_at', new Date().toISOString());
+  
+  // Check for valid cache
+  const { data, error } = await supabase
+    .from('property_cache')
+    .select('*')
+    .eq('address', normalizedAddress)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+  
+  if (error || !data) {
+    return null;
+  }
+  
+  console.log(`[Cache] Hit for: ${normalizedAddress}`);
+  return data.data;
+}
+
+// Cache property data (60-minute TTL)
+export async function cacheProperty(address: string, data: Record<string, unknown>): Promise<boolean> {
+  const normalizedAddress = address.trim();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 60 minutes
+  
+  // Upsert cache entry
+  const { error } = await supabase
+    .from('property_cache')
+    .upsert({
+      address: normalizedAddress,
+      data,
+      created_at: new Date().toISOString(),
+      expires_at: expiresAt,
+    }, {
+      onConflict: 'address',
+    });
+  
+  if (error) {
+    console.error('Error caching property:', error);
+    return false;
+  }
+  
+  console.log(`[Cache] Stored for: ${normalizedAddress} (expires: ${expiresAt})`);
+  return true;
+}
+
+// Clean up expired cache entries
+export async function cleanExpiredCache(): Promise<number> {
+  const { data, error } = await supabase
+    .from('property_cache')
+    .delete()
+    .lt('expires_at', new Date().toISOString())
+    .select();
+  
+  if (error) {
+    console.error('Error cleaning cache:', error);
+    return 0;
+  }
+  
+  const count = data?.length || 0;
+  if (count > 0) {
+    console.log(`[Cache] Cleaned ${count} expired entries`);
+  }
+  return count;
+}
