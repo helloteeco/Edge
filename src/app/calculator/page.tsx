@@ -306,12 +306,30 @@ export default function CalculatorPage() {
   
   // Handle analyze button click - check auth first
   const handleAnalyzeClick = () => {
-    if (!isAuthenticated) {
+    // Double-check auth from localStorage in case state is stale
+    const authToken = localStorage.getItem("edge_auth_token");
+    const authExpiry = localStorage.getItem("edge_auth_expiry");
+    const savedEmail = localStorage.getItem("edge_auth_email");
+    
+    const hasValidSession = authToken && authExpiry && savedEmail && 
+      Date.now() < parseInt(authExpiry, 10);
+    
+    console.log("[Auth] Analyze clicked - isAuthenticated:", isAuthenticated, "hasValidSession:", hasValidSession);
+    
+    if (!isAuthenticated && !hasValidSession) {
       setShowAuthModal(true);
       setAuthStep("email");
       setAuthError(null);
       return;
     }
+    
+    // If we have a valid session but state isn't updated, update it
+    if (!isAuthenticated && hasValidSession) {
+      console.log("[Auth] Updating state from localStorage");
+      setIsAuthenticated(true);
+      setAuthEmail(savedEmail);
+    }
+    
     handleAnalyze();
   };
 
