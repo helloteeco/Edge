@@ -62,7 +62,7 @@ export interface CityData {
       revenueBoost: number; // Percentage boost (e.g., 15 means +15%)
       priority: 'must-have' | 'high-impact' | 'nice-to-have';
     }>;
-    marketType: 'mountain' | 'beach' | 'urban' | 'lake' | 'desert' | 'rural'; // Helps determine amenity recommendations
+    marketType: 'mountain' | 'beach' | 'urban' | 'lake' | 'desert' | 'rural' | 'suburban' | 'waterfront' | 'tropical'; // Helps determine amenity recommendations
   };
   strStatus: 'legal' | 'restricted' | 'varies' | 'banned';
   permitRequired: boolean;
