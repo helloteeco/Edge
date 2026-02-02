@@ -1,6 +1,6 @@
 "use client";
-
 import { useState } from "react";
+import AuthHeader from "@/components/AuthHeader";
 
 export default function AnalyzerPage() {
   const [purchasePrice, setPurchasePrice] = useState(300000);
@@ -45,21 +45,26 @@ export default function AnalyzerPage() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
-            >
-              <span className="text-xl">🧮</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
+              >
+                <span className="text-xl">🧮</span>
+              </div>
+              <div>
+                <h1 
+                  className="text-2xl font-bold"
+                  style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Deal Analyzer
+                </h1>
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>Calculate your STR investment returns in real-time</p>
+              </div>
             </div>
-            <h1 
-              className="text-2xl font-bold"
-              style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-            >
-              Deal Analyzer
-            </h1>
+            <AuthHeader variant="dark" />
           </div>
-          <p style={{ color: 'rgba(255, 255, 255, 0.75)' }}>Calculate your STR investment returns in real-time</p>
         </div>
       </div>
 

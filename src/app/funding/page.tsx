@@ -20,6 +20,7 @@ import {
   BuildingIcon,
   ArrowRightIcon,
 } from '@/components/Icons';
+import AuthHeader from '@/components/AuthHeader';
 
 // Types
 interface FundingMethod {
@@ -944,24 +945,27 @@ export default function FundingPage() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)' }}
-            >
-              <DollarIcon className="w-6 h-6" color="#ffffff" />
-            </div>
-            <div>
-              <h1 
-                className="text-2xl font-bold"
-                style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)' }}
               >
-                Funding Options
-              </h1>
-              <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                45+ ways to fund your rural STR investment
-              </p>
+                <DollarIcon className="w-6 h-6" color="#ffffff" />
+              </div>
+              <div>
+                <h1 
+                  className="text-2xl font-bold"
+                  style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Funding Options
+                </h1>
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                  45+ ways to fund your rural STR investment
+                </p>
+              </div>
             </div>
+            <AuthHeader variant="dark" />
           </div>
         </div>
       </div>

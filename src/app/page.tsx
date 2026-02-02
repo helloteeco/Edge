@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { USMap } from "@/components/USMap";
 import { TopMarkets } from "@/components/TopMarkets";
+import AuthHeader from "@/components/AuthHeader";
 import { cityData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
   GraduationIcon,
@@ -55,6 +56,8 @@ export default function HomePage() {
                 >
                   Edge by Teeco
                 </h1>
+                {/* Auth Header - Sign In button */}
+                <AuthHeader variant="dark" />
               </div>
               <p className="text-sm sm:text-base max-w-lg" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
                 Data-driven STR market analysis to find your next profitable investment opportunity

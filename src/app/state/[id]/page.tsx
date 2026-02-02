@@ -1,8 +1,8 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getCitiesByState, getStateByCode } from "@/data/helpers";
+import AuthHeader from "@/components/AuthHeader";
 
 type SortOption = "score" | "adr" | "revenue" | "price";
 type FilterOption = "all" | "gems" | "legal" | "restricted";
@@ -220,14 +220,17 @@ export default function StatePage({ params }: { params: { id: string } }) {
                 </span>
               </div>
             </div>
-            <button
-              onClick={toggleSave}
-              className="p-3 rounded-xl transition-all hover:opacity-80"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-              aria-label={isSaved ? "Remove from saved" : "Save state"}
-            >
-              <span className="text-2xl">{isSaved ? "❤️" : "🤍"}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <AuthHeader variant="dark" />
+              <button
+                onClick={toggleSave}
+                className="p-3 rounded-xl transition-all hover:opacity-80"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                aria-label={isSaved ? "Remove from saved" : "Save state"}
+              >
+                <span className="text-2xl">{isSaved ? "❤️" : "🤍"}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

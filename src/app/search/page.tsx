@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { cityData, stateData, searchUnifiedCities, getMarketCounts, UnifiedCity, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
@@ -12,38 +12,14 @@ import {
   StarIcon,
   TrendUpIcon,
   GemIcon,
-  SaveIcon,
 } from "@/components/Icons";
-import AuthModal from "@/components/AuthModal";
+import AuthHeader from "@/components/AuthHeader";
 
 type FilterType = "all" | "states" | "cities" | "minScore" | "recommended" | "allCities";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
-  
-  // Auth state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-
-  // Check auth status on mount
-  useEffect(() => {
-    const authEmail = localStorage.getItem("edge_auth_email");
-    const authToken = localStorage.getItem("edge_auth_token");
-    
-    if (authEmail && authToken) {
-      setIsAuthenticated(true);
-      setUserEmail(authEmail);
-    }
-  }, []);
-
-  const handleSignOut = () => {
-    localStorage.removeItem("edge_auth_email");
-    localStorage.removeItem("edge_auth_token");
-    setIsAuthenticated(false);
-    setUserEmail(null);
-  };
 
   // Get market counts for display
   const marketCounts = useMemo(() => getMarketCounts(), []);
@@ -162,33 +138,8 @@ export default function SearchPage() {
               </div>
             </div>
             
-            {/* Auth Status */}
-            {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2 text-xs" style={{ color: '#16a34a' }}>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Synced
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-gray-100"
-                  style={{ color: '#787060', border: '1px solid #d8d6cd' }}
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
-              >
-                <SaveIcon className="w-3 h-3" color="#ffffff" />
-                Sign In
-              </button>
-            )}
+            {/* Auth Header */}
+            <AuthHeader variant="light" />
           </div>
           
           {/* Search Input */}
@@ -321,27 +272,20 @@ export default function SearchPage() {
                     </span>
                     <span 
                       className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+                      style={{ backgroundColor: '#f5f5f0', color: '#787060' }}
                     >
                       State
                     </span>
                   </div>
-                  <div className="text-sm mt-0.5" style={{ color: '#787060' }}>{state.abbreviation}</div>
+                  <div className="text-sm" style={{ color: '#787060' }}>
+                    {state.abbreviation} • {state.appreciation}% appreciation
+                  </div>
                   <div className="flex gap-2 mt-2">
                     <span 
                       className="px-2.5 py-1 rounded-lg text-xs font-semibold"
                       style={{ backgroundColor: getVerdictStyle(state.marketScore).bg, color: getVerdictStyle(state.marketScore).color }}
                     >
                       {getVerdictStyle(state.marketScore).text}
-                    </span>
-                    <span 
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                      style={{ 
-                        backgroundColor: state.regulation === "Legal" ? '#2b2823' : '#787060',
-                        color: '#ffffff'
-                      }}
-                    >
-                      {state.regulation}
                     </span>
                   </div>
                 </div>
@@ -352,7 +296,7 @@ export default function SearchPage() {
             </Link>
           ))}
 
-          {/* Featured Cities (with full data) */}
+          {/* Cities */}
           {results.cities.map((city) => (
             <Link
               key={city.id}
@@ -402,7 +346,9 @@ export default function SearchPage() {
                       Full Data
                     </span>
                   </div>
-                  <div className="text-sm truncate" style={{ color: '#787060' }}>{city.county}, {city.stateCode}</div>
+                  <div className="text-sm truncate" style={{ color: '#787060' }}>
+                    {city.county}, {city.stateCode}
+                  </div>
                   <div className="flex gap-2 mt-2">
                     <span 
                       className="px-2.5 py-1 rounded-lg text-xs font-semibold"
@@ -506,7 +452,6 @@ export default function SearchPage() {
                 </div>
               </Link>
             ) : (
-              // Basic city (no full STR data yet)
               <div
                 key={city.id}
                 className="block rounded-xl p-4 transition-all duration-300"
@@ -517,16 +462,16 @@ export default function SearchPage() {
                 }}
               >
                 <div className="flex items-center gap-4">
-                  {/* Placeholder Score */}
+                  {/* Placeholder Circle */}
                   <div 
                     className="w-14 h-14 rounded-xl flex flex-col items-center justify-center"
-                    style={{ backgroundColor: '#f0f0ec' }}
+                    style={{ backgroundColor: 'rgba(120, 112, 96, 0.06)' }}
                   >
                     <span 
-                      className="text-sm font-medium"
-                      style={{ color: '#9a9488' }}
+                      className="text-xl font-bold"
+                      style={{ color: '#9a9488', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                     >
-                      —
+                      --
                     </span>
                   </div>
                   
@@ -541,7 +486,7 @@ export default function SearchPage() {
                       </span>
                       <span 
                         className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: '#f5f5f0', color: '#9a9488', border: '1px solid #e5e3da' }}
+                        style={{ backgroundColor: '#fef3c7', color: '#92400e' }}
                       >
                         Coming Soon
                       </span>
@@ -613,20 +558,6 @@ export default function SearchPage() {
           </div>
         )}
       </div>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={(email) => {
-          setIsAuthenticated(true);
-          setUserEmail(email);
-          localStorage.setItem("edge_auth_email", email);
-          setShowAuthModal(false);
-        }}
-        title="Sign in to Save Searches"
-        subtitle="Sign in to save your favorite markets and sync across all your devices. No password needed."
-      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getCityById } from "@/data/helpers";
+import AuthHeader from "@/components/AuthHeader";
 
 export default function CityPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -143,6 +144,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <AuthHeader variant="dark" />
               <button
                 onClick={handleShare}
                 className="p-3 rounded-xl transition-all hover:opacity-80"

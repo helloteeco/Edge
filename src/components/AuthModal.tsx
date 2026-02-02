@@ -29,34 +29,35 @@ export default function AuthModal({
     onClose();
   };
 
-  // Send magic link email
+  // Send magic link email - using same endpoint as calculator
   const sendMagicLink = async () => {
     if (!authEmail || !authEmail.includes("@")) {
-      setAuthError("Please enter a valid email address");
+      setAuthError("Please enter a valid email address.");
       return;
     }
 
     setAuthError(null);
+    setAuthStep("verifying");
     
     try {
-      const response = await fetch("/api/auth/magic-link", {
+      const response = await fetch("/api/auth/send-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: authEmail,
-          redirectUrl: window.location.href
-        }),
+        body: JSON.stringify({ email: authEmail }),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to send magic link");
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAuthStep("sent");
+      } else {
+        setAuthError(data.error || "Failed to send email. Please try again.");
+        setAuthStep("email");
       }
-
-      setAuthStep("sent");
-    } catch (error) {
-      console.error("[Auth] Error sending magic link:", error);
-      setAuthError(error instanceof Error ? error.message : "Failed to send magic link. Please try again.");
+    } catch (err) {
+      console.error("Magic link error:", err);
+      setAuthError("Failed to send email. Please try again.");
+      setAuthStep("email");
     }
   };
 
@@ -128,8 +129,8 @@ export default function AuthModal({
         
         {authStep === "verifying" && (
           <div className="text-center py-8">
-            <div className="w-12 h-12 border-3 border-gray-200 border-t-gray-800 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-lg font-medium" style={{ color: '#2b2823' }}>Verifying...</p>
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-800 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-lg font-medium" style={{ color: '#2b2823' }}>Sending...</p>
             <p className="text-sm mt-2" style={{ color: '#787060' }}>Please wait a moment.</p>
           </div>
         )}

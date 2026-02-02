@@ -57,8 +57,12 @@ export default function SavedPage() {
   useEffect(() => {
     const authEmail = localStorage.getItem("edge_auth_email");
     const authToken = localStorage.getItem("edge_auth_token");
+    const authExpiry = localStorage.getItem("edge_auth_expiry");
     
-    if (authEmail && authToken) {
+    const hasValidSession = authEmail && authToken && authExpiry && 
+      Date.now() < parseInt(authExpiry, 10);
+    
+    if (hasValidSession) {
       setIsAuthenticated(true);
       setUserEmail(authEmail);
     }
@@ -208,6 +212,7 @@ export default function SavedPage() {
   const handleSignOut = () => {
     localStorage.removeItem("edge_auth_email");
     localStorage.removeItem("edge_auth_token");
+    localStorage.removeItem("edge_auth_expiry");
     setIsAuthenticated(false);
     setUserEmail(null);
   };
