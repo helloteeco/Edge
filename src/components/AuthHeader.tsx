@@ -38,6 +38,9 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
         localStorage.setItem("edge_auth_expiry", expiryTime.toString());
         localStorage.setItem("edge_auth_email", data.email);
         
+        // Trigger storage event for other tabs by setting a sync flag
+        localStorage.setItem("edge_auth_sync", Date.now().toString());
+        
         setIsAuthenticated(true);
         setUserEmail(data.email);
         console.log("[AuthHeader] User authenticated successfully!");
@@ -48,6 +51,26 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
       console.error("[AuthHeader] Verification error:", err);
     } finally {
       setIsVerifying(false);
+    }
+  }, []);
+
+  // Check localStorage for auth state
+  const checkAuthState = useCallback(() => {
+    const authEmail = localStorage.getItem("edge_auth_email");
+    const authToken = localStorage.getItem("edge_auth_token");
+    const authExpiry = localStorage.getItem("edge_auth_expiry");
+    
+    const hasValidSession = authEmail && authToken && authExpiry && 
+      Date.now() < parseInt(authExpiry, 10);
+    
+    if (hasValidSession) {
+      setIsAuthenticated(true);
+      setUserEmail(authEmail);
+      return true;
+    } else {
+      setIsAuthenticated(false);
+      setUserEmail(null);
+      return false;
     }
   }, []);
 
@@ -66,23 +89,44 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
     }
     
     // No token in URL, check localStorage for existing session
-    const authEmail = localStorage.getItem("edge_auth_email");
-    const authToken = localStorage.getItem("edge_auth_token");
-    const authExpiry = localStorage.getItem("edge_auth_expiry");
+    checkAuthState();
+  }, [verifyMagicLink, checkAuthState]);
+
+  // Listen for storage events from other tabs (cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // When auth state changes in another tab, update this tab
+      if (e.key === "edge_auth_sync" || e.key === "edge_auth_email" || e.key === "edge_auth_token") {
+        console.log("[AuthHeader] Storage change detected, checking auth state...");
+        checkAuthState();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
     
-    const hasValidSession = authEmail && authToken && authExpiry && 
-      Date.now() < parseInt(authExpiry, 10);
-    
-    if (hasValidSession) {
-      setIsAuthenticated(true);
-      setUserEmail(authEmail);
-    }
-  }, [verifyMagicLink]);
+    // Also poll periodically in case storage events don't fire (some browsers)
+    const pollInterval = setInterval(() => {
+      const currentAuth = localStorage.getItem("edge_auth_email");
+      if (currentAuth && !isAuthenticated) {
+        console.log("[AuthHeader] Polling detected new auth state");
+        checkAuthState();
+      } else if (!currentAuth && isAuthenticated) {
+        console.log("[AuthHeader] Polling detected sign out");
+        checkAuthState();
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(pollInterval);
+    };
+  }, [checkAuthState, isAuthenticated]);
 
   const handleSignOut = () => {
     localStorage.removeItem("edge_auth_email");
     localStorage.removeItem("edge_auth_token");
     localStorage.removeItem("edge_auth_expiry");
+    localStorage.setItem("edge_auth_sync", Date.now().toString()); // Notify other tabs
     setIsAuthenticated(false);
     setUserEmail(null);
   };
