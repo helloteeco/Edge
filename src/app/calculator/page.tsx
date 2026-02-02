@@ -181,6 +181,7 @@ export default function CalculatorPage() {
         console.error("Failed to parse recent searches:", e);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Check for existing authentication on mount
@@ -223,6 +224,7 @@ export default function CalculatorPage() {
     } else {
       console.log("[Auth] No existing session found");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Verify magic link token
@@ -2643,10 +2645,10 @@ export default function CalculatorPage() {
               </div>
               
               <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
-                You've Used All Free Credits
+                You&apos;ve Used All Free Credits
               </h2>
               <p className="text-sm mb-6" style={{ color: '#787060' }}>
-                You've used all {creditsLimit} of your free property analyses. Upgrade to continue analyzing properties.
+                You&apos;ve used all {creditsLimit} of your free property analyses. Upgrade to continue analyzing properties.
               </p>
               
               {/* Pricing Options */}
