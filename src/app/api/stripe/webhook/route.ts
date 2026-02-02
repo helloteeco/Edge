@@ -55,6 +55,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "No customer email" }, { status: 400 });
       }
       
+      // IDEMPOTENCY CHECK: Prevent duplicate processing of the same session
+      const { data: existingPurchase } = await supabase
+        .from("credit_purchases")
+        .select("id")
+        .eq("stripe_session_id", session.id)
+        .single();
+      
+      if (existingPurchase) {
+        console.log(`[Stripe Webhook] Duplicate event ignored - session ${session.id} already processed`);
+        return NextResponse.json({ success: true, message: "Already processed" });
+      }
+      
       // Get line items from Stripe API (more reliable than webhook payload)
       let creditsToAdd = 0;
       let isUnlimited = false;

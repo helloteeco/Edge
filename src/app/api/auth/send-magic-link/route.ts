@@ -5,8 +5,12 @@ import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
 
-// Resend API key
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_4sjg6f75_8V1zJk4yk5B2cTkHkStJdUtQ";
+// Resend API key - MUST be set in environment variables
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
+if (!RESEND_API_KEY) {
+  console.error("RESEND_API_KEY environment variable is not set");
+}
 
 export async function POST(request: NextRequest) {
   try {

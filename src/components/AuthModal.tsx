@@ -128,7 +128,10 @@ export default function AuthModal({
             </button>
             
             <p className="text-xs text-center mt-4" style={{ color: '#a0a0a0' }}>
-              By signing in, you agree to our Terms of Service and Privacy Policy.
+              By signing in, you agree to our{" "}
+              <a href="/terms" target="_blank" className="underline hover:opacity-80">Terms of Service</a>
+              {" "}and{" "}
+              <a href="/privacy" target="_blank" className="underline hover:opacity-80">Privacy Policy</a>.
             </p>
           </>
         )}

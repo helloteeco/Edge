@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
     if (action === "add") {
       const { amount, adminKey } = body;
       
-      // Simple admin key check (in production, use proper auth)
-      if (adminKey !== process.env.ADMIN_API_KEY && adminKey !== "teeco-admin-2026") {
+      // Admin key check - MUST be set in environment variables
+      if (!process.env.ADMIN_API_KEY || adminKey !== process.env.ADMIN_API_KEY) {
         return NextResponse.json(
           { success: false, error: "Unauthorized" },
           { status: 401 }

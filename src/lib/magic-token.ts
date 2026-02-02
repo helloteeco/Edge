@@ -1,7 +1,11 @@
 import crypto from "crypto";
 
-// Secret key for signing tokens - in production, use environment variable
-const SECRET_KEY = process.env.MAGIC_LINK_SECRET || "teeco-edge-magic-link-secret-2026";
+// Secret key for signing tokens - MUST be set in environment variables
+const SECRET_KEY = process.env.MAGIC_LINK_SECRET;
+
+if (!SECRET_KEY) {
+  console.error("CRITICAL: MAGIC_LINK_SECRET environment variable is not set");
+}
 
 interface TokenPayload {
   email: string;

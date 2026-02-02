@@ -4,7 +4,12 @@ import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 // Force dynamic rendering for this API route
 export const dynamic = "force-dynamic";
 
-const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY || "20f866598emsh7e1f8d0058d2271p1adc56jsn8653832f1320";
+// Mashvisor API key - MUST be set in environment variables
+const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY;
+
+if (!MASHVISOR_API_KEY) {
+  console.error("MASHVISOR_API_KEY environment variable is not set");
+}
 const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 
 // Airbtics API configuration (primary data source for accurate STR data)
