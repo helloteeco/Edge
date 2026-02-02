@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AuthModal from "./AuthModal";
 
 interface AuthHeaderProps {
@@ -12,9 +12,60 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  // Check auth status on mount
+  // Verify magic link token
+  const verifyMagicLink = useCallback(async (token: string) => {
+    console.log("[AuthHeader] Verifying magic link token...");
+    setIsVerifying(true);
+    
+    try {
+      const response = await fetch("/api/auth/verify-magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      
+      const data = await response.json();
+      console.log("[AuthHeader] Verification response:", data);
+      
+      if (data.success) {
+        // Store auth in localStorage (24-hour session)
+        const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
+        const sessionToken = data.sessionToken || token;
+        
+        localStorage.setItem("edge_auth_token", sessionToken);
+        localStorage.setItem("edge_auth_expiry", expiryTime.toString());
+        localStorage.setItem("edge_auth_email", data.email);
+        
+        setIsAuthenticated(true);
+        setUserEmail(data.email);
+        console.log("[AuthHeader] User authenticated successfully!");
+      } else {
+        console.error("[AuthHeader] Verification failed:", data.error);
+      }
+    } catch (err) {
+      console.error("[AuthHeader] Verification error:", err);
+    } finally {
+      setIsVerifying(false);
+    }
+  }, []);
+
+  // Check auth status on mount and handle magic link token
   useEffect(() => {
+    // First check URL for magic link token (takes priority)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    
+    if (token) {
+      console.log("[AuthHeader] Found magic link token in URL, verifying...");
+      verifyMagicLink(token);
+      // Clean up URL immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return; // Don't check localStorage if we're verifying a token
+    }
+    
+    // No token in URL, check localStorage for existing session
     const authEmail = localStorage.getItem("edge_auth_email");
     const authToken = localStorage.getItem("edge_auth_token");
     const authExpiry = localStorage.getItem("edge_auth_expiry");
@@ -26,7 +77,7 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
       setIsAuthenticated(true);
       setUserEmail(authEmail);
     }
-  }, []);
+  }, [verifyMagicLink]);
 
   const handleSignOut = () => {
     localStorage.removeItem("edge_auth_email");
@@ -57,7 +108,8 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
           backgroundColor: 'rgba(255, 255, 255, 0.1)', 
           color: '#ffffff',
           border: '1px solid rgba(255, 255, 255, 0.2)'
-        }
+        },
+        verifyingText: { color: 'rgba(255, 255, 255, 0.7)' }
       }
     : {
         signedInText: { color: '#16a34a' },
@@ -71,13 +123,19 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
         signInBtn: { 
           backgroundColor: '#2b2823', 
           color: '#ffffff' 
-        }
+        },
+        verifyingText: { color: '#787060' }
       };
 
   return (
     <>
       <div className={`flex items-center gap-2 ${className}`}>
-        {isAuthenticated ? (
+        {isVerifying ? (
+          <div className="flex items-center gap-2 text-xs" style={styles.verifyingText}>
+            <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <span>Signing in...</span>
+          </div>
+        ) : isAuthenticated ? (
           <>
             <div className="hidden sm:flex items-center gap-2 text-xs" style={styles.signedInText}>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: styles.checkColor }}>

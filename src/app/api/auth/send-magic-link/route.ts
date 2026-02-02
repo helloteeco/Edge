@@ -9,7 +9,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_4sjg6f75_8V1zJk4yk5B2cT
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, redirectPath } = await request.json();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -23,11 +23,14 @@ export async function POST(request: NextRequest) {
     // Generate signed magic token (15 minute expiry)
     const token = createMagicToken(normalizedEmail, 15);
 
-    // Build magic link URL
+    // Build magic link URL - redirect to the page user was on (default to /calculator)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
                     "https://edge.teeco.co");
-    const magicLink = `${baseUrl}/calculator?token=${encodeURIComponent(token)}`;
+    
+    // Use the redirect path from request, default to /calculator
+    const targetPath = redirectPath || "/calculator";
+    const magicLink = `${baseUrl}${targetPath}?token=${encodeURIComponent(token)}`;
 
     // Send email via Resend REST API
     try {
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
                     Sign in to Edge
                   </h1>
                   <p style="color: #787060; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0; text-align: center;">
-                    Click the button below to securely sign in to your STR investment calculator.
+                    Click the button below to securely sign in. You'll be taken right back to where you were.
                   </p>
                   
                   <!-- Button -->

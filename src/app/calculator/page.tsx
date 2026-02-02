@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import AuthHeader from "@/components/AuthHeader";
 
 // ============================================================================
 // TYPES
@@ -1191,9 +1192,12 @@ export default function CalculatorPage() {
             <img src="/teeco-icon-black.png" alt="Teeco" className="w-8 h-8 invert" />
             <span className="text-white font-semibold">Edge by Teeco</span>
           </Link>
-          <Link href="/" className="text-sm text-white/70 hover:text-white">
-            ← Back to Map
-          </Link>
+          <div className="flex items-center gap-4">
+            <AuthHeader variant="dark" />
+            <Link href="/" className="text-sm text-white/70 hover:text-white">
+              ← Back to Map
+            </Link>
+          </div>
         </div>
       </header>
 

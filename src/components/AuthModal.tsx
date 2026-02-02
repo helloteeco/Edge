@@ -29,7 +29,7 @@ export default function AuthModal({
     onClose();
   };
 
-  // Send magic link email - using same endpoint as calculator
+  // Send magic link email - includes current page URL for redirect
   const sendMagicLink = async () => {
     if (!authEmail || !authEmail.includes("@")) {
       setAuthError("Please enter a valid email address.");
@@ -40,10 +40,16 @@ export default function AuthModal({
     setAuthStep("verifying");
     
     try {
+      // Get current page path for redirect after auth
+      const currentPath = window.location.pathname;
+      
       const response = await fetch("/api/auth/send-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: authEmail }),
+        body: JSON.stringify({ 
+          email: authEmail,
+          redirectPath: currentPath // Send current page path
+        }),
       });
       
       const data = await response.json();
@@ -154,7 +160,7 @@ export default function AuthModal({
               {authEmail}
             </p>
             <p className="text-sm mb-6" style={{ color: '#787060' }}>
-              Click the link in the email to sign in. The link expires in 15 minutes.
+              Click the link in the email to sign in. You&apos;ll be brought right back here.
             </p>
             
             <div className="border-t pt-4" style={{ borderColor: '#e5e5e5' }}>
