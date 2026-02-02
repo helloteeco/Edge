@@ -13,6 +13,9 @@ import {
   MapPinIcon,
   ArrowRightIcon,
   ChevronRightIcon,
+  ScaleIcon,
+  ShoppingCartIcon,
+  ExternalLinkIcon,
 } from "@/components/Icons";
 
 // Force dynamic rendering
@@ -141,6 +144,75 @@ export default function HomePage() {
               <p className="text-sm mb-5" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
                 Everything you need to start and scale your STR business
               </p>
+              
+              {/* Featured Resources - Premium Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                {/* STR Regulations Guide */}
+                <Link 
+                  href="https://www.proper.insure/regulations/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(12px)'
+                  }}
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 opacity-5 transform translate-x-8 -translate-y-8">
+                    <ScaleIcon className="w-full h-full" color="#ffffff" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                        <ScaleIcon className="w-6 h-6" color="#4ade80" />
+                      </div>
+                      <ExternalLinkIcon className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" color="#ffffff" />
+                    </div>
+                    <h4 className="font-semibold text-base mb-1" style={{ color: '#ffffff' }}>STR Regulations by State</h4>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      Stay compliant with local laws. Interactive guide covering permits, taxes, and restrictions in all 50 states.
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>Updated Jan 2026</span>
+                      <span className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>via Proper Insurance</span>
+                    </div>
+                  </div>
+                </Link>
+                
+                {/* Teeco Common Buy List */}
+                <Link 
+                  href="https://www.amazon.com/shop/jeffchheuy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(12px)'
+                  }}
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 opacity-5 transform translate-x-8 -translate-y-8">
+                    <ShoppingCartIcon className="w-full h-full" color="#ffffff" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(251, 191, 36, 0.2)', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
+                        <ShoppingCartIcon className="w-6 h-6" color="#fbbf24" />
+                      </div>
+                      <ExternalLinkIcon className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" color="#ffffff" />
+                    </div>
+                    <h4 className="font-semibold text-base mb-1" style={{ color: '#ffffff' }}>Teeco Common Buy List</h4>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      Our curated Amazon list of essentials for setting up your STR. Tested products we use in all our properties.
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24' }}>Curated List</span>
+                      <span className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Amazon Storefront</span>
+                    </div>
+                  </div>
+                </Link>
+              </div>
               
               {/* Free Training CTA */}
               <Link 

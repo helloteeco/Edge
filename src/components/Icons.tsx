@@ -436,3 +436,34 @@ export const categoryIcons = {
   partnership: PartnershipIcon,
   government: GovernmentIcon,
 };
+
+
+// ============================================
+// RESOURCES SECTION ICONS
+// ============================================
+
+export const ScaleIcon = ({ className = "w-6 h-6", size, color = "currentColor" }: IconProps) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v18M5 8l7-5 7 5" />
+    <path d="M3 13l2-5h4l2 5" />
+    <path d="M13 13l2-5h4l2 5" />
+    <path d="M3 13a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2" />
+    <path d="M13 13a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2" />
+  </svg>
+);
+
+export const ShoppingCartIcon = ({ className = "w-6 h-6", size, color = "currentColor" }: IconProps) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1" />
+    <circle cx="20" cy="21" r="1" />
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+  </svg>
+);
+
+export const ClipboardListIcon = ({ className = "w-6 h-6", size, color = "currentColor" }: IconProps) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    <path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" />
+  </svg>
+);
