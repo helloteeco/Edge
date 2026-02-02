@@ -1,6 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  BankIcon,
+  CreativeIcon,
+  AlternativeIcon,
+  RetirementIcon,
+  PartnershipIcon,
+  GovernmentIcon,
+  ShieldCheckIcon,
+  ShieldAlertIcon,
+  DollarIcon,
+  LightbulbIcon,
+  WarningIcon,
+  TargetIcon,
+  CheckIcon,
+  XIcon,
+  ChevronDownIcon,
+  BuildingIcon,
+  ArrowRightIcon,
+} from '@/components/Icons';
 
 // Types
 interface FundingMethod {
@@ -842,14 +861,14 @@ const fundingMethods: FundingMethod[] = [
   },
 ];
 
-// Category labels and colors
-const categoryConfig = {
-  traditional: { label: 'Traditional Loans', color: '#2563eb', bg: '#dbeafe' },
-  creative: { label: 'Creative Financing', color: '#7c3aed', bg: '#ede9fe' },
-  alternative: { label: 'Alternative Sources', color: '#059669', bg: '#d1fae5' },
-  retirement: { label: 'Retirement Accounts', color: '#d97706', bg: '#fef3c7' },
-  partnership: { label: 'Partnerships', color: '#dc2626', bg: '#fee2e2' },
-  government: { label: 'Government Programs', color: '#0891b2', bg: '#cffafe' },
+// Category labels, colors, and icons
+const categoryConfig: Record<string, { label: string; color: string; bg: string; Icon: React.ComponentType<{ className?: string; color?: string }> }> = {
+  traditional: { label: 'Traditional Loans', color: '#2563eb', bg: '#dbeafe', Icon: BankIcon },
+  creative: { label: 'Creative Financing', color: '#7c3aed', bg: '#ede9fe', Icon: CreativeIcon },
+  alternative: { label: 'Alternative Sources', color: '#059669', bg: '#d1fae5', Icon: AlternativeIcon },
+  retirement: { label: 'Retirement Accounts', color: '#d97706', bg: '#fef3c7', Icon: RetirementIcon },
+  partnership: { label: 'Partnerships', color: '#dc2626', bg: '#fee2e2', Icon: PartnershipIcon },
+  government: { label: 'Government Programs', color: '#0891b2', bg: '#cffafe', Icon: GovernmentIcon },
 };
 
 const riskConfig = {
@@ -927,36 +946,40 @@ export default function FundingPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center gap-3 mb-2">
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)' }}
             >
-              
+              <DollarIcon className="w-6 h-6" color="#ffffff" />
             </div>
-            <h1 
-              className="text-2xl font-bold"
-              style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-            >
-              Funding Options
-            </h1>
+            <div>
+              <h1 
+                className="text-2xl font-bold"
+                style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                Funding Options
+              </h1>
+              <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                45+ ways to fund your rural STR investment
+              </p>
+            </div>
           </div>
-          <p style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-            45+ ways to fund your rural STR investment
-          </p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Disclaimer Banner */}
         <div 
-          className="rounded-xl p-4 mb-6 flex items-start gap-3"
-          style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b' }}
+          className="rounded-2xl p-4 mb-6 flex items-start gap-4"
+          style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', boxShadow: '0 1px 3px rgba(251, 191, 36, 0.1)' }}
         >
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#92400e" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#fef3c7' }}>
+            <WarningIcon className="w-5 h-5" color="#d97706" />
+          </div>
           <div>
             <p className="font-semibold text-sm" style={{ color: '#92400e' }}>
               Not Financial or Legal Advice
             </p>
-            <p className="text-xs mt-1" style={{ color: '#a16207' }}>
+            <p className="text-sm mt-1 leading-relaxed" style={{ color: '#a16207' }}>
               This information is for educational purposes only. Some strategies involve legal complexity or risk. 
               Always consult with a licensed attorney, CPA, and/or mortgage professional before implementing any financing strategy.
             </p>
@@ -965,21 +988,28 @@ export default function FundingPage() {
 
         {/* Cash-on-Cash Return Education */}
         <div 
-          className="rounded-xl p-4 mb-6"
-          style={{ backgroundColor: '#ecfdf5', border: '1px solid #10b981' }}
+          className="rounded-2xl p-5 mb-6"
+          style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', boxShadow: '0 1px 3px rgba(34, 197, 94, 0.1)' }}
         >
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#065f46" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#dcfce7' }}>
+              <LightbulbIcon className="w-5 h-5" color="#16a34a" />
+            </div>
             <div>
-              <p className="font-semibold text-sm" style={{ color: '#065f46' }}>
+              <p className="font-semibold" style={{ color: '#166534' }}>
                 Why Smart Financing Beats Paying Cash
               </p>
-              <p className="text-xs mt-1" style={{ color: '#047857' }}>
+              <p className="text-sm mt-2 leading-relaxed" style={{ color: '#15803d' }}>
                 <strong>Cash-on-cash return</strong> measures how hard your actual dollars work. By financing high cash flow STR deals, 
-                you can dramatically increase your returns. Example: A $250K property generating $30K/year net income yields 
-                12% if you pay all cash — but <strong>60% cash-on-cash</strong> if you put $50K down and finance the rest. 
-                The key is finding deals where rental income significantly exceeds your mortgage payment.
+                you can dramatically increase your returns.
               </p>
+              <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: '#dcfce7' }}>
+                <p className="text-sm font-medium" style={{ color: '#166534' }}>
+                  Example: A $250K property generating $30K/year net income yields 
+                  <span className="font-bold"> 12%</span> if you pay all cash — but 
+                  <span className="font-bold text-green-700"> 60% cash-on-cash</span> if you put $50K down and finance the rest.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -990,9 +1020,9 @@ export default function FundingPage() {
           style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
         >
           {!quizStarted ? (
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#e5e3da' }}>
-                <svg className="w-8 h-8" fill="none" stroke="#2b2823" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}>
+                <TargetIcon className="w-8 h-8" color="#16a34a" />
               </div>
               <h2 
                 className="text-xl font-bold mb-2"
@@ -1000,15 +1030,16 @@ export default function FundingPage() {
               >
                 Find Your Best Funding Options
               </h2>
-              <p className="text-sm mb-4 max-w-md mx-auto" style={{ color: '#787060' }}>
+              <p className="text-sm mb-6 max-w-md mx-auto" style={{ color: '#787060' }}>
                 Answer 8 quick questions about your situation and we&apos;ll recommend the funding strategies that fit you best.
               </p>
               <button
                 onClick={() => setQuizStarted(true)}
-                className="px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
-                style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ backgroundColor: '#2b2823', color: '#ffffff', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.3)' }}
               >
-                Start Quiz →
+                Start Quiz
+                <ArrowRightIcon className="w-4 h-4" />
               </button>
             </div>
           ) : !quizComplete ? (
@@ -1215,77 +1246,88 @@ export default function FundingPage() {
               {/* Header - Always visible */}
               <button
                 onClick={() => setExpandedMethod(expandedMethod === method.id ? null : method.id)}
-                className="w-full p-4 text-left flex items-start gap-3"
+                className="w-full p-4 text-left flex items-start gap-4 hover:bg-gray-50/50 transition-colors"
               >
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: categoryConfig[method.category].bg }}
-                >
-                  <span 
-                    className="text-sm font-bold"
-                    style={{ color: categoryConfig[method.category].color }}
-                  >
-                    {method.category === 'traditional' ? 'TL' : 
-                     method.category === 'creative' ? 'CF' :
-                     method.category === 'alternative' ? 'AS' :
-                     method.category === 'retirement' ? 'RA' :
-                     method.category === 'partnership' ? 'PT' : 'GP'}
-                  </span>
-                </div>
+                {(() => {
+                  const CategoryIcon = categoryConfig[method.category].Icon;
+                  return (
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: categoryConfig[method.category].bg }}
+                    >
+                      <CategoryIcon className="w-6 h-6" color={categoryConfig[method.category].color} />
+                    </div>
+                  );
+                })()}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span 
-                      className="font-semibold"
+                      className="font-semibold text-base"
                       style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                     >
                       {method.name}
                     </span>
-                    <span 
-                      className="px-2 py-0.5 rounded-full text-xs"
-                      style={{ backgroundColor: categoryConfig[method.category].bg, color: categoryConfig[method.category].color }}
-                    >
-                      {categoryConfig[method.category].label}
-                    </span>
-                    <span 
-                      className="px-2 py-0.5 rounded-full text-xs"
-                      style={{ backgroundColor: riskConfig[method.riskLevel].bg, color: riskConfig[method.riskLevel].color }}
-                    >
-                      {riskConfig[method.riskLevel].label}
-                    </span>
+                    {method.riskLevel === 'high' && (
+                      <span 
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: riskConfig[method.riskLevel].bg, color: riskConfig[method.riskLevel].color }}
+                      >
+                        <ShieldAlertIcon className="w-3 h-3" />
+                        {riskConfig[method.riskLevel].label}
+                      </span>
+                    )}
+                    {method.riskLevel === 'low' && (
+                      <span 
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: riskConfig[method.riskLevel].bg, color: riskConfig[method.riskLevel].color }}
+                      >
+                        <ShieldCheckIcon className="w-3 h-3" />
+                        {riskConfig[method.riskLevel].label}
+                      </span>
+                    )}
+                    {method.riskLevel === 'medium' && (
+                      <span 
+                        className="px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: riskConfig[method.riskLevel].bg, color: riskConfig[method.riskLevel].color }}
+                      >
+                        {riskConfig[method.riskLevel].label}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm mt-1 line-clamp-2" style={{ color: '#787060' }}>
+                  <p className="text-sm mt-1.5 line-clamp-2 leading-relaxed" style={{ color: '#787060' }}>
                     {method.description}
                   </p>
                   {method.legalNote && (
-                    <p className="text-xs mt-1 font-medium" style={{ color: '#dc2626' }}>
-                      {method.legalNote}
-                    </p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <WarningIcon className="w-3.5 h-3.5 flex-shrink-0" color="#dc2626" />
+                      <p className="text-xs font-medium" style={{ color: '#dc2626' }}>
+                        {method.legalNote}
+                      </p>
+                    </div>
                   )}
                 </div>
-                <svg 
-                  className={`w-5 h-5 flex-shrink-0 transition-transform ${expandedMethod === method.id ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                  style={{ color: '#787060' }}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDownIcon 
+                  className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${expandedMethod === method.id ? 'rotate-180' : ''}`}
+                  color="#787060"
+                />
               </button>
 
               {/* Expanded Content */}
               {expandedMethod === method.id && (
-                <div className="px-4 pb-4" style={{ borderTop: '1px solid #e5e3da' }}>
-                  <div className="pt-4 space-y-4">
+                <div className="px-4 pb-5" style={{ borderTop: '1px solid #e5e3da' }}>
+                  <div className="pt-5 space-y-5">
                     {/* Best For */}
                     <div>
-                      <h4 className="text-sm font-semibold mb-2" style={{ color: '#2b2823' }}>Best For:</h4>
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: '#2b2823' }}>
+                        <TargetIcon className="w-4 h-4" color="#2b2823" />
+                        Best For
+                      </h4>
                       <div className="flex flex-wrap gap-2">
                         {method.bestFor.map((item, idx) => (
                           <span 
                             key={idx}
-                            className="px-2 py-1 rounded-lg text-xs"
-                            style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{ backgroundColor: '#f5f5f0', color: '#2b2823', border: '1px solid #e5e3da' }}
                           >
                             {item}
                           </span>
@@ -1295,11 +1337,11 @@ export default function FundingPage() {
 
                     {/* Requirements */}
                     <div>
-                      <h4 className="text-sm font-semibold mb-2" style={{ color: '#2b2823' }}>Requirements:</h4>
-                      <ul className="space-y-1">
+                      <h4 className="text-sm font-semibold mb-3" style={{ color: '#2b2823' }}>Requirements</h4>
+                      <ul className="space-y-2">
                         {method.requirements.map((req, idx) => (
                           <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#787060' }}>
-                            <span style={{ color: '#2b2823' }}>•</span>
+                            <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#2b2823' }} />
                             {req}
                           </li>
                         ))}
@@ -1308,33 +1350,29 @@ export default function FundingPage() {
 
                     {/* Pros & Cons */}
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-1" style={{ color: '#16a34a' }}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
+                      <div className="p-4 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: '#166534' }}>
+                          <CheckIcon className="w-4 h-4" color="#16a34a" />
                           Pros
                         </h4>
-                        <ul className="space-y-1">
+                        <ul className="space-y-2">
                           {method.pros.map((pro, idx) => (
-                            <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#787060' }}>
-                              <span style={{ color: '#16a34a' }}>+</span>
+                            <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#166534' }}>
+                              <CheckIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" color="#16a34a" />
                               {pro}
                             </li>
                           ))}
                         </ul>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-1" style={{ color: '#dc2626' }}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                      <div className="p-4 rounded-xl" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
+                        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: '#991b1b' }}>
+                          <XIcon className="w-4 h-4" color="#dc2626" />
                           Cons
                         </h4>
-                        <ul className="space-y-1">
+                        <ul className="space-y-2">
                           {method.cons.map((con, idx) => (
-                            <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#787060' }}>
-                              <span style={{ color: '#dc2626' }}>-</span>
+                            <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#991b1b' }}>
+                              <XIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" color="#dc2626" />
                               {con}
                             </li>
                           ))}
@@ -1345,24 +1383,28 @@ export default function FundingPage() {
                     {/* Typical Terms */}
                     {method.typicalTerms && (
                       <div 
-                        className="p-3 rounded-xl"
-                        style={{ backgroundColor: '#f5f5f0' }}
+                        className="p-4 rounded-xl"
+                        style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
                       >
-                        <h4 className="text-sm font-semibold mb-1" style={{ color: '#2b2823' }}>Typical Terms:</h4>
-                        <p className="text-sm" style={{ color: '#787060' }}>{method.typicalTerms}</p>
+                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: '#2b2823' }}>
+                          <DollarIcon className="w-4 h-4" color="#2b2823" />
+                          Typical Terms
+                        </h4>
+                        <p className="text-sm" style={{ color: '#64748b' }}>{method.typicalTerms}</p>
                       </div>
                     )}
 
                     {/* How to Make Safe - for grey zone strategies */}
                     {method.howToMakeSafe && (
                       <div 
-                        className="p-3 rounded-xl"
-                        style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b' }}
+                        className="p-4 rounded-xl"
+                        style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d' }}
                       >
-                        <h4 className="text-sm font-semibold mb-1 flex items-center gap-1" style={{ color: '#92400e' }}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> How to Do This Safely & Legally:
+                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: '#92400e' }}>
+                          <ShieldCheckIcon className="w-4 h-4" color="#d97706" />
+                          How to Do This Safely & Legally
                         </h4>
-                        <p className="text-sm" style={{ color: '#a16207' }}>{method.howToMakeSafe}</p>
+                        <p className="text-sm leading-relaxed" style={{ color: '#a16207' }}>{method.howToMakeSafe}</p>
                       </div>
                     )}
                   </div>
@@ -1388,31 +1430,35 @@ export default function FundingPage() {
 
         {/* CTA */}
         <div 
-          className="mt-8 rounded-2xl p-6 text-center"
-          style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}
+          className="mt-8 rounded-2xl p-8 text-center"
+          style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)', boxShadow: '0 8px 32px -8px rgba(43, 40, 35, 0.4)' }}
         >
+          <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
+            <BuildingIcon className="w-7 h-7" color="#ffffff" />
+          </div>
           <h3 
-            className="font-semibold text-lg mb-2"
+            className="font-semibold text-xl mb-2"
             style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
           >
             Need Help Finding the Right Financing?
           </h3>
-          <p className="text-sm mb-4 max-w-md mx-auto" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
+          <p className="text-sm mb-6 max-w-md mx-auto leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
             Our network includes STR-friendly lenders, attorneys, and CPAs who can help you implement these strategies safely.
           </p>
           <a
             href="https://teeco.co/airbnb-lender"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
             style={{ 
               backgroundColor: '#ffffff', 
               color: '#2b2823',
               boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
             }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <BuildingIcon className="w-5 h-5" color="#2b2823" />
             Connect with STR Lender
+            <ArrowRightIcon className="w-4 h-4" color="#2b2823" />
           </a>
         </div>
 

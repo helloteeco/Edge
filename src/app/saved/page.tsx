@@ -3,6 +3,21 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { cityData, stateData } from "@/data/helpers";
+import {
+  SaveIcon,
+  DocumentIcon,
+  MapIcon,
+  CalculatorIcon,
+  RefreshIcon,
+  TrashIcon,
+  EditIcon,
+  CheckIcon,
+  XIcon,
+  ChevronRightIcon,
+  ArrowRightIcon,
+  HeartIcon,
+  CloudSyncIcon,
+} from "@/components/Icons";
 
 // Type for saved property reports
 interface SavedReport {
@@ -253,9 +268,9 @@ export default function SavedPage() {
             <div className="flex items-center gap-3">
               <div 
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: '#e5e3da' }}
+                style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}
               >
-                <span className="text-xl">💾</span>
+                <SaveIcon className="w-5 h-5" color="#16a34a" />
               </div>
               <h1 
                 className="text-2xl font-bold"
@@ -320,18 +335,32 @@ export default function SavedPage() {
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => setActiveTab('reports')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                activeTab === 'reports' ? 'bg-[#2b2823] text-white' : 'bg-white text-[#787060] hover:bg-gray-100'
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                activeTab === 'reports' 
+                  ? 'shadow-sm' 
+                  : 'hover:bg-gray-50'
               }`}
+              style={activeTab === 'reports' 
+                ? { backgroundColor: '#2b2823', color: '#ffffff' } 
+                : { backgroundColor: '#ffffff', color: '#787060', border: '1px solid #d8d6cd' }
+              }
             >
+              <DocumentIcon className="w-4 h-4" color={activeTab === 'reports' ? '#ffffff' : '#787060'} />
               Property Reports ({savedReports.length})
             </button>
             <button
               onClick={() => setActiveTab('markets')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                activeTab === 'markets' ? 'bg-[#2b2823] text-white' : 'bg-white text-[#787060] hover:bg-gray-100'
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                activeTab === 'markets' 
+                  ? 'shadow-sm' 
+                  : 'hover:bg-gray-50'
               }`}
+              style={activeTab === 'markets' 
+                ? { backgroundColor: '#2b2823', color: '#ffffff' } 
+                : { backgroundColor: '#ffffff', color: '#787060', border: '1px solid #d8d6cd' }
+              }
             >
+              <HeartIcon className="w-4 h-4" color={activeTab === 'markets' ? '#ffffff' : '#787060'} />
               Markets ({savedCityData.length + savedStateData.length})
             </button>
           </div>
@@ -348,10 +377,10 @@ export default function SavedPage() {
                 style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
               >
                 <div 
-                  className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: '#e5e3da' }}
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ backgroundColor: '#f5f5f0', border: '1px solid #e5e3da' }}
                 >
-                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  <DocumentIcon className="w-10 h-10" color="#787060" />
                 </div>
                 <h3 
                   className="text-xl font-semibold mb-2"
@@ -364,13 +393,12 @@ export default function SavedPage() {
                 </p>
                 <Link
                   href="/calculator"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
-                  style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundColor: '#2b2823', color: '#ffffff', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.3)' }}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
+                  <CalculatorIcon className="w-5 h-5" color="#ffffff" />
                   Analyze a Property
+                  <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
                 </Link>
               </div>
             ) : (
@@ -503,31 +531,30 @@ export default function SavedPage() {
                 className="rounded-2xl p-8 text-center"
                 style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
               >
-                <div 
-                  className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: '#e5e3da' }}
-                >
-                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-                </div>
-                <h3 
-                  className="text-xl font-semibold mb-2"
-                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-                >
-                  No saved markets yet
-                </h3>
-                <p className="mb-6 max-w-sm mx-auto" style={{ color: '#787060' }}>
-                  Tap the heart icon on any market to save it here for quick access.
-                </p>
-                <Link
-                  href="/search"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
-                  style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  Explore Markets
-                </Link>
+              <div 
+                className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}
+              >
+                <HeartIcon className="w-10 h-10" color="#f87171" />
+              </div>
+              <h3 
+                className="text-xl font-semibold mb-2"
+                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                No saved markets yet
+              </h3>
+              <p className="mb-6 max-w-sm mx-auto" style={{ color: '#787060' }}>
+                Tap the heart icon on any market to save it here for quick access.
+              </p>
+              <Link
+                href="/search"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ backgroundColor: '#2b2823', color: '#ffffff', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.3)' }}
+              >
+                <MapIcon className="w-5 h-5" color="#ffffff" />
+                Explore Markets
+                <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
+              </Link>
               </div>
             ) : (
               <div className="space-y-6">
@@ -562,12 +589,13 @@ export default function SavedPage() {
                 {/* Saved States */}
                 {savedStateData.length > 0 && (
                   <div>
-                    <h2 
-                      className="font-semibold mb-3 flex items-center gap-2"
-                      style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-                    >
-                      <span>🗺️</span> States ({savedStateData.length})
-                    </h2>
+                  <h2 
+                    className="font-semibold mb-3 flex items-center gap-2"
+                    style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
+                    <MapIcon className="w-5 h-5" color="#2b2823" />
+                    States ({savedStateData.length})
+                  </h2>
                     <div className="space-y-3">
                       {savedStateData.map((state) => (
                         <div
@@ -630,7 +658,8 @@ export default function SavedPage() {
                       className="font-semibold mb-3 flex items-center gap-2"
                       style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                     >
-                      <span>🏙️</span> Cities & Counties ({savedCityData.length})
+                      <HomeEquityIcon className="w-5 h-5" color="#2b2823" />
+                      Cities & Counties ({savedCityData.length})
                     </h2>
                     <div className="space-y-3">
                       {savedCityData.map((city) => (

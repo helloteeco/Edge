@@ -3,6 +3,16 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { cityData, stateData } from "@/data/helpers";
+import {
+  SearchIcon,
+  XIcon,
+  ChevronRightIcon,
+  MapIcon,
+  HomeEquityIcon,
+  StarIcon,
+  TrendUpIcon,
+  GemIcon,
+} from "@/components/Icons";
 
 type FilterType = "all" | "states" | "cities" | "minScore" | "recommended";
 
@@ -73,11 +83,11 @@ export default function SearchPage() {
   };
 
   const filters = [
-    { key: "all", label: "All" },
-    { key: "states", label: "States" },
-    { key: "cities", label: "Cities" },
-    { key: "minScore", label: "Score 70+" },
-    { key: "recommended", label: "Hidden Gems" },
+    { key: "all", label: "All", Icon: null },
+    { key: "states", label: "States", Icon: MapIcon },
+    { key: "cities", label: "Cities", Icon: HomeEquityIcon },
+    { key: "minScore", label: "Score 70+", Icon: TrendUpIcon },
+    { key: "recommended", label: "Hidden Gems", Icon: GemIcon },
   ];
 
   return (
@@ -92,19 +102,25 @@ export default function SearchPage() {
         }}
       >
         <div className="max-w-4xl mx-auto px-4 py-5">
-          <h1 
-            className="text-2xl font-bold mb-5"
-            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-          >
-            Search Markets
-          </h1>
+          <div className="flex items-center gap-3 mb-5">
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: '#f0f9ff', border: '1px solid #7dd3fc' }}
+            >
+              <SearchIcon className="w-5 h-5" color="#0284c7" />
+            </div>
+            <h1 
+              className="text-2xl font-bold"
+              style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+            >
+              Search Markets
+            </h1>
+          </div>
           
           {/* Search Input */}
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#787060' }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <SearchIcon className="w-5 h-5" color="#787060" />
             </div>
             <input
               type="text"
@@ -124,30 +140,32 @@ export default function SearchPage() {
                 className="absolute right-4 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
                 style={{ color: '#787060' }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XIcon className="w-5 h-5" color="#787060" />
               </button>
             )}
           </div>
 
           {/* Filters */}
           <div className="flex gap-2 overflow-x-auto py-4 -mx-4 px-4 scrollbar-hide">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key as FilterType)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all"
-                style={{ 
-                  backgroundColor: filter === f.key ? '#2b2823' : '#ffffff',
-                  color: filter === f.key ? '#ffffff' : '#787060',
-                  border: filter === f.key ? 'none' : '1px solid #d8d6cd',
-                  boxShadow: filter === f.key ? '0 2px 8px -2px rgba(43, 40, 35, 0.2)' : 'none'
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
+            {filters.map((f) => {
+              const IconComponent = f.Icon;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key as FilterType)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all"
+                  style={{ 
+                    backgroundColor: filter === f.key ? '#2b2823' : '#ffffff',
+                    color: filter === f.key ? '#ffffff' : '#787060',
+                    border: filter === f.key ? 'none' : '1px solid #d8d6cd',
+                    boxShadow: filter === f.key ? '0 2px 8px -2px rgba(43, 40, 35, 0.2)' : 'none'
+                  }}
+                >
+                  {IconComponent && <IconComponent className="w-4 h-4" color={filter === f.key ? '#ffffff' : '#787060'} />}
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -242,9 +260,7 @@ export default function SearchPage() {
                 </div>
 
                 {/* Arrow */}
-                <svg className="w-5 h-5 transition-colors" style={{ color: '#d8d6cd' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRightIcon className="w-5 h-5" color="#d8d6cd" />
               </div>
             </Link>
           ))}
@@ -312,9 +328,7 @@ export default function SearchPage() {
                 </div>
 
                 {/* Arrow */}
-                <svg className="w-5 h-5 transition-colors" style={{ color: '#d8d6cd' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRightIcon className="w-5 h-5" color="#d8d6cd" />
               </div>
             </Link>
           ))}
@@ -322,16 +336,14 @@ export default function SearchPage() {
           {/* Empty State */}
           {totalResults === 0 && (
             <div 
-              className="rounded-xl p-10 text-center"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}
+              className="rounded-2xl p-10 text-center"
+              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
             >
               <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: '#e5e3da' }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: '#f5f5f0', border: '1px solid #e5e3da' }}
               >
-                <svg className="w-8 h-8" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <SearchIcon className="w-8 h-8" color="#787060" />
               </div>
               <h3 
                 className="text-lg font-semibold mb-2"
