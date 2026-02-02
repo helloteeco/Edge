@@ -16,6 +16,11 @@ import {
   ScaleIcon,
   ShoppingCartIcon,
   ExternalLinkIcon,
+  SearchMarketIcon,
+  CalculatorIcon,
+  ContractIcon,
+  SetupIcon,
+  RocketIcon,
 } from "@/components/Icons";
 
 // Force dynamic rendering
@@ -84,8 +89,134 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Journey Stepper - Your Path to STR Success */}
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+        <div 
+          className="rounded-2xl p-5 sm:p-6"
+          style={{ 
+            backgroundColor: '#ffffff', 
+            border: '1px solid #d8d6cd',
+            boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+          }}
+        >
+          <div className="text-center mb-5">
+            <h2 
+              className="text-lg sm:text-xl font-semibold mb-1"
+              style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+            >
+              Your Path to STR Success
+            </h2>
+            <p className="text-sm" style={{ color: '#787060' }}>
+              Edge helps you nail Step 1 — finding the right market
+            </p>
+          </div>
+          
+          {/* Journey Steps */}
+          <div className="relative">
+            {/* Connection Line - Hidden on mobile */}
+            <div 
+              className="hidden sm:block absolute top-6 left-[10%] right-[10%] h-0.5"
+              style={{ backgroundColor: '#e5e3da' }}
+            />
+            
+            {/* Steps Grid */}
+            <div className="grid grid-cols-5 gap-2 sm:gap-4">
+              {[
+                { 
+                  step: 1, 
+                  icon: SearchMarketIcon, 
+                  title: 'Research', 
+                  desc: 'Find your market',
+                  active: true,
+                  color: '#2b2823'
+                },
+                { 
+                  step: 2, 
+                  icon: CalculatorIcon, 
+                  title: 'Analyze', 
+                  desc: 'Run the numbers',
+                  active: true,
+                  color: '#2b2823'
+                },
+                { 
+                  step: 3, 
+                  icon: ContractIcon, 
+                  title: 'Acquire', 
+                  desc: 'Close the deal',
+                  active: false,
+                  color: '#787060'
+                },
+                { 
+                  step: 4, 
+                  icon: SetupIcon, 
+                  title: 'Setup', 
+                  desc: 'Design & furnish',
+                  active: false,
+                  color: '#787060'
+                },
+                { 
+                  step: 5, 
+                  icon: RocketIcon, 
+                  title: 'Scale', 
+                  desc: 'Grow portfolio',
+                  active: false,
+                  color: '#787060'
+                },
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center text-center relative z-10">
+                  <div 
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 transition-all"
+                    style={{ 
+                      backgroundColor: item.active ? '#2b2823' : '#e5e3da',
+                      boxShadow: item.active ? '0 4px 12px -2px rgba(43, 40, 35, 0.3)' : 'none'
+                    }}
+                  >
+                    <item.icon className="w-5 h-5 sm:w-6 sm:h-6" color={item.active ? '#ffffff' : '#787060'} />
+                  </div>
+                  <span 
+                    className="text-xs sm:text-sm font-semibold"
+                    style={{ color: item.color }}
+                  >
+                    {item.title}
+                  </span>
+                  <span 
+                    className="text-[10px] sm:text-xs hidden sm:block"
+                    style={{ color: '#9a958c' }}
+                  >
+                    {item.desc}
+                  </span>
+                  {item.active && i === 0 && (
+                    <span 
+                      className="absolute -top-1 -right-1 sm:top-0 sm:right-0 text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                      style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
+                    >
+                      YOU ARE HERE
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* CTA to Full Training */}
+          <div className="mt-5 pt-4 border-t" style={{ borderColor: '#e5e3da' }}>
+            <Link 
+              href="https://login.circle.so/sign_up?request_host=teeco.circle.so&user%5Binvitation_token%5D=24bf3e259d3f754c41c323f1eda7eb88a49991b0-87b646d2-7efe-4bec-a0b8-a03098b44aa2#email"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 text-sm font-medium transition-all hover:opacity-80"
+              style={{ color: '#2b2823' }}
+            >
+              <GraduationIcon className="w-4 h-4" color="#2b2823" />
+              <span>Want the full roadmap? <span className="underline">Watch our free training</span></span>
+              <ArrowRightIcon className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Map Section */}
         <div 
           className="rounded-2xl p-5 sm:p-7 mb-8"
