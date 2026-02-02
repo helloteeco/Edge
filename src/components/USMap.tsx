@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getStateByCode } from "@/data/helpers";
+import { getInventoryByState } from "@/data/inventory-data";
 
-type MapView = "appreciation" | "migration" | "homeValue" | "strScore";
+type MapView = "appreciation" | "migration" | "homeValue" | "strScore" | "inventoryLevel" | "inventoryGrowth" | "priceCuts" | "daysOnMarket";
 
 const statePositions: Record<string, { row: number; col: number }> = {
   // Row 0: ME at top (shifted everything else down by 1)
@@ -66,12 +67,51 @@ const getGradeBgColor = (grade: string) => {
   }
 };
 
+// Inventory level colors (low inventory = green for buyers, high = red)
+const getInventoryLevelColor = (level: string) => {
+  switch (level) {
+    case 'low': return 'bg-emerald-600 text-white';
+    case 'moderate': return 'bg-amber-300 text-amber-900';
+    case 'high': return 'bg-orange-400 text-white';
+    case 'very-high': return 'bg-red-500 text-white';
+    default: return 'bg-gray-300 text-gray-700';
+  }
+};
+
+// Inventory growth colors (higher growth = more supply = better for buyers)
+const getInventoryGrowthColor = (growth: number) => {
+  if (growth < 0) return 'bg-red-400 text-white';
+  if (growth < 10) return 'bg-amber-300 text-amber-900';
+  if (growth < 18) return 'bg-emerald-300 text-emerald-900';
+  if (growth < 25) return 'bg-emerald-500 text-white';
+  return 'bg-emerald-600 text-white';
+};
+
+// Price cuts colors (higher = more seller desperation = better for buyers)
+const getPriceCutsColor = (pct: number) => {
+  if (pct < 12) return 'bg-red-400 text-white';
+  if (pct < 16) return 'bg-amber-300 text-amber-900';
+  if (pct < 22) return 'bg-emerald-300 text-emerald-900';
+  if (pct < 28) return 'bg-emerald-500 text-white';
+  return 'bg-emerald-600 text-white';
+};
+
+// Days on market colors (higher = slower market = more negotiating power)
+const getDaysOnMarketColor = (days: number) => {
+  if (days < 30) return 'bg-red-400 text-white';
+  if (days < 40) return 'bg-amber-300 text-amber-900';
+  if (days < 55) return 'bg-emerald-300 text-emerald-900';
+  if (days < 70) return 'bg-emerald-500 text-white';
+  return 'bg-emerald-600 text-white';
+};
+
 export function USMap() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [mapView, setMapView] = useState<MapView>("strScore");
 
   const getStateColor = (stateCode: string) => {
     const state = getStateByCode(stateCode);
+    const inventory = getInventoryByState(stateCode);
     if (!state) return "bg-[#e5e3da] text-[#787060]";
     
     switch (mapView) {
@@ -92,6 +132,14 @@ export function USMap() {
         if (state.netMigration > 0) return "bg-emerald-300 text-emerald-900";
         if (state.netMigration > -50000) return "bg-amber-300 text-amber-900";
         return "bg-red-400 text-white";
+      case "inventoryLevel":
+        return inventory ? getInventoryLevelColor(inventory.inventoryLevel) : "bg-[#e5e3da] text-[#787060]";
+      case "inventoryGrowth":
+        return inventory ? getInventoryGrowthColor(inventory.inventoryGrowthYoY) : "bg-[#e5e3da] text-[#787060]";
+      case "priceCuts":
+        return inventory ? getPriceCutsColor(inventory.priceCutPercent) : "bg-[#e5e3da] text-[#787060]";
+      case "daysOnMarket":
+        return inventory ? getDaysOnMarketColor(inventory.daysOnMarket) : "bg-[#e5e3da] text-[#787060]";
       default:
         return "bg-[#e5e3da] text-[#787060]";
     }
@@ -99,6 +147,10 @@ export function USMap() {
 
   const selectedStateData = selectedState 
     ? getStateByCode(selectedState) 
+    : null;
+  
+  const selectedInventoryData = selectedState
+    ? getInventoryByState(selectedState)
     : null;
 
   const getVerdictText = (verdict: string) => {
@@ -112,15 +164,218 @@ export function USMap() {
   };
 
   const views = [
-    { key: "strScore", label: "STR Grade", icon: "", description: "Our overall investment score based on cash flow, affordability, and legality." },
-    { key: "appreciation", label: "Appreciation", icon: "", description: "Higher appreciation means your property value grows faster over time." },
-    { key: "migration", label: "Migration", icon: "", description: "More people moving in often leads to rising home prices and rental demand." },
-    { key: "homeValue", label: "Home Prices", icon: "", description: "Lower prices mean easier entry and better cash-on-cash returns." },
+    { key: "strScore", label: "STR Grade", description: "Our overall investment score based on cash flow, affordability, and legality." },
+    { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
+    { key: "migration", label: "Migration", description: "More people moving in often leads to rising home prices and rental demand." },
+    { key: "homeValue", label: "Home Prices", description: "Lower prices mean easier entry and better cash-on-cash returns." },
+    { key: "inventoryLevel", label: "Inventory Level", description: "Current housing supply level. Low inventory = seller's market, high = buyer's market." },
+    { key: "inventoryGrowth", label: "Inventory Growth", description: "Year-over-year change in active listings. Rising inventory creates buying opportunities." },
+    { key: "priceCuts", label: "Price Cuts %", description: "Percentage of listings with price reductions. Higher = more negotiating power for buyers." },
+    { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },
   ];
 
   const getFilterDescription = () => {
     const view = views.find(v => v.key === mapView);
     return view?.description || "";
+  };
+
+  const renderLegend = () => {
+    switch (mapView) {
+      case "strScore":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>F</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>D</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>C</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-teal-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>B/B+</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>A/A+</span>
+            </div>
+          </>
+        );
+      case "homeValue":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;$200K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>$200-300K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>$300-400K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;$400K</span>
+            </div>
+          </>
+        );
+      case "appreciation":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;0%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>0-2%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>2-4%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>4-5.5%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;5.5%</span>
+            </div>
+          </>
+        );
+      case "migration":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;-50K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>-50K to 0</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>0-50K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>50-100K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;100K</span>
+            </div>
+          </>
+        );
+      case "inventoryLevel":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Low</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Moderate</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>High</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Very High</span>
+            </div>
+          </>
+        );
+      case "inventoryGrowth":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;0%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>0-10%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>10-18%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>18-25%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;25%</span>
+            </div>
+          </>
+        );
+      case "priceCuts":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;12%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>12-16%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>16-22%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>22-28%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;28%</span>
+            </div>
+          </>
+        );
+      case "daysOnMarket":
+        return (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;30 days</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>30-40</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>40-55</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>55-70</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;70 days</span>
+            </div>
+          </>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -181,64 +436,7 @@ export function USMap() {
       {/* Legend - keeping map colors for visual distinction */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs">
         <span className="font-semibold" style={{ color: '#2b2823' }}>Legend:</span>
-        {mapView === "strScore" ? (
-          <>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>F</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>D</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>C</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-teal-500 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>B/B+</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>A/A+</span>
-            </div>
-          </>
-        ) : mapView === "homeValue" ? (
-          <>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;$200K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>$200-300K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>$300-400K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;$400K</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>Low</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>Medium</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>High</span>
-            </div>
-          </>
-        )}
+        {renderLegend()}
       </div>
 
       {/* Selected State Card */}
@@ -336,6 +534,60 @@ export function USMap() {
                 <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Markets</div>
               </div>
             </div>
+            
+            {/* Inventory Stats - Show when inventory data is available */}
+            {selectedInventoryData && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                <div 
+                  className="rounded-xl p-3 text-center"
+                  style={{ backgroundColor: '#e5e3da' }}
+                >
+                  <div 
+                    className="text-lg sm:text-xl font-bold capitalize"
+                    style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
+                    {selectedInventoryData.inventoryLevel.replace('-', ' ')}
+                  </div>
+                  <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Inventory Level</div>
+                </div>
+                <div 
+                  className="rounded-xl p-3 text-center"
+                  style={{ backgroundColor: '#e5e3da' }}
+                >
+                  <div 
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: selectedInventoryData.inventoryGrowthYoY >= 0 ? '#16a34a' : '#dc2626' }}
+                  >
+                    {selectedInventoryData.inventoryGrowthYoY >= 0 ? "+" : ""}{selectedInventoryData.inventoryGrowthYoY}%
+                  </div>
+                  <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Inventory YoY</div>
+                </div>
+                <div 
+                  className="rounded-xl p-3 text-center"
+                  style={{ backgroundColor: '#e5e3da' }}
+                >
+                  <div 
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
+                    {selectedInventoryData.priceCutPercent}%
+                  </div>
+                  <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Price Cuts</div>
+                </div>
+                <div 
+                  className="rounded-xl p-3 text-center"
+                  style={{ backgroundColor: '#e5e3da' }}
+                >
+                  <div 
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                  >
+                    {selectedInventoryData.daysOnMarket}
+                  </div>
+                  <div className="text-xs mt-0.5" style={{ color: '#787060' }}>Days on Market</div>
+                </div>
+              </div>
+            )}
             
             {/* City Grade Distribution Preview */}
             <div 
