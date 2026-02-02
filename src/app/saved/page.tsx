@@ -17,6 +17,7 @@ import {
   ArrowRightIcon,
   HeartIcon,
   CloudSyncIcon,
+  HomeEquityIcon,
 } from "@/components/Icons";
 
 // Type for saved property reports
