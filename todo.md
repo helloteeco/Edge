@@ -306,5 +306,5 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Issues to Fix (February 2026)
-- [ ] Magic link emails not actually being sent (need email service integration)
-- [ ] edge.teeco.co site not loading - investigate deployment
+- [x] Magic link emails not actually being sent (need email service integration) - Resend integrated
+- [x] edge.teeco.co site not loading - site is working fine
