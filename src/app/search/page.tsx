@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { cityData, stateData, searchUnifiedCities, getMarketCounts, UnifiedCity, DATA_LAST_UPDATED } from "@/data/helpers";
+import { cityData, stateData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
   SearchIcon,
   XIcon,
@@ -17,23 +17,114 @@ import AuthHeader from "@/components/AuthHeader";
 
 type FilterType = "all" | "states" | "cities" | "minScore" | "recommended" | "allCities";
 
+// Type for server-side city search results
+interface ServerCity {
+  id: string;
+  name: string;
+  state: string;
+  county: string | null;
+  population: number;
+  hasFullData: boolean;
+  marketScore: number | null;
+  cashOnCash: number | null;
+  avgADR: number | null;
+  occupancy: number | null;
+  strMonthlyRevenue: number | null;
+  medianHomeValue: number | null;
+  regulation: string | null;
+  fullData: Record<string, unknown> | null;
+}
+
+interface SearchResponse {
+  cities: ServerCity[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  
+  // Server-side search state for "allCities" filter
+  const [serverCities, setServerCities] = useState<ServerCity[]>([]);
+  const [serverLoading, setServerLoading] = useState(false);
+  const [serverPage, setServerPage] = useState(1);
+  const [serverHasMore, setServerHasMore] = useState(false);
+  const [serverTotal, setServerTotal] = useState(0);
 
   // Get market counts for display
   const marketCounts = useMemo(() => getMarketCounts(), []);
 
+  // Debounced server search for allCities filter
+  const searchServerCities = useCallback(async (searchQuery: string, page: number, append: boolean = false) => {
+    setServerLoading(true);
+    try {
+      const params = new URLSearchParams({
+        q: searchQuery,
+        page: page.toString(),
+        limit: '50',
+        sortBy: 'population',
+        sortOrder: 'desc',
+      });
+      
+      const response = await fetch(`/api/cities/search?${params}`);
+      if (!response.ok) throw new Error('Search failed');
+      
+      const data: SearchResponse = await response.json();
+      
+      if (append) {
+        setServerCities(prev => [...prev, ...data.cities]);
+      } else {
+        setServerCities(data.cities);
+      }
+      setServerHasMore(data.pagination.hasMore);
+      setServerTotal(data.pagination.total);
+      setServerPage(page);
+    } catch (error) {
+      console.error('Server search error:', error);
+    } finally {
+      setServerLoading(false);
+    }
+  }, []);
+
+  // Effect to trigger server search when filter is allCities
+  useEffect(() => {
+    if (filter === "allCities") {
+      const debounceTimer = setTimeout(() => {
+        searchServerCities(query, 1, false);
+      }, 300); // 300ms debounce
+      
+      return () => clearTimeout(debounceTimer);
+    } else {
+      // Clear server results when switching away from allCities
+      setServerCities([]);
+      setServerTotal(0);
+      setServerHasMore(false);
+    }
+  }, [filter, query, searchServerCities]);
+
+  // Load more function for infinite scroll
+  const loadMore = useCallback(() => {
+    if (!serverLoading && serverHasMore) {
+      searchServerCities(query, serverPage + 1, true);
+    }
+  }, [serverLoading, serverHasMore, query, serverPage, searchServerCities]);
+
+  // Client-side filtering for featured cities and states
   const results = useMemo(() => {
     const searchLower = query.toLowerCase();
     
-    // For "allCities" filter, use unified search (includes basic cities)
+    // For "allCities" filter, use server-side results
     if (filter === "allCities") {
-      const unifiedResults = searchUnifiedCities(query, 100);
       return { 
         cities: [], 
         states: [], 
-        unifiedCities: unifiedResults 
+        serverCities: serverCities 
       };
     }
     
@@ -70,10 +161,12 @@ export default function SearchPage() {
     cityResults.sort((a, b) => b.marketScore - a.marketScore);
     stateResults.sort((a, b) => b.marketScore - a.marketScore);
 
-    return { cities: cityResults, states: stateResults, unifiedCities: [] as UnifiedCity[] };
-  }, [query, filter]);
+    return { cities: cityResults, states: stateResults, serverCities: [] as ServerCity[] };
+  }, [query, filter, serverCities]);
 
-  const totalResults = results.cities.length + results.states.length + results.unifiedCities.length;
+  const totalResults = filter === "allCities" 
+    ? serverTotal 
+    : results.cities.length + results.states.length;
 
   const getVerdictStyle = (score: number) => {
     if (score >= 80) return { text: "STRONG BUY", bg: '#2b2823', color: '#ffffff' };
@@ -200,11 +293,17 @@ export default function SearchPage() {
         {/* Results Count */}
         <div className="flex items-center justify-between mb-5">
           <p className="text-sm" style={{ color: '#787060' }}>
-            <span className="font-semibold" style={{ color: '#2b2823' }}>{totalResults}</span> results found
-            {filter === "allCities" && query && (
-              <span className="ml-2 text-xs" style={{ color: '#787060' }}>
-                (searching all US cities)
-              </span>
+            {filter === "allCities" && serverLoading && serverCities.length === 0 ? (
+              <span style={{ color: '#787060' }}>Searching...</span>
+            ) : (
+              <>
+                <span className="font-semibold" style={{ color: '#2b2823' }}>{totalResults.toLocaleString()}</span> results found
+                {filter === "allCities" && query && (
+                  <span className="ml-2 text-xs" style={{ color: '#787060' }}>
+                    (searching all US cities)
+                  </span>
+                )}
+              </>
             )}
           </p>
           {filter === "recommended" && (
@@ -265,20 +364,20 @@ export default function SearchPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span 
-                      className="font-semibold transition-colors"
+                      className="font-semibold transition-colors truncate"
                       style={{ color: '#2b2823' }}
                     >
                       {state.name}
                     </span>
                     <span 
-                      className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: '#f5f5f0', color: '#787060' }}
+                      className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: '#f0f9ff', color: '#0284c7' }}
                     >
                       State
                     </span>
                   </div>
-                  <div className="text-sm" style={{ color: '#787060' }}>
-                    {state.abbreviation} • {state.appreciation}% appreciation
+                  <div className="text-sm truncate" style={{ color: '#787060' }}>
+                    {state.cityCount} cities • ${state.avgADR}/night avg
                   </div>
                   <div className="flex gap-2 mt-2">
                     <span 
@@ -286,6 +385,15 @@ export default function SearchPage() {
                       style={{ backgroundColor: getVerdictStyle(state.marketScore).bg, color: getVerdictStyle(state.marketScore).color }}
                     >
                       {getVerdictStyle(state.marketScore).text}
+                    </span>
+                    <span 
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ 
+                        backgroundColor: state.regulation === "Legal" ? '#2b2823' : '#787060',
+                        color: '#ffffff'
+                      }}
+                    >
+                      {state.regulation}
                     </span>
                   </div>
                 </div>
@@ -296,7 +404,7 @@ export default function SearchPage() {
             </Link>
           ))}
 
-          {/* Cities */}
+          {/* Featured Cities (client-side) */}
           {results.cities.map((city) => (
             <Link
               key={city.id}
@@ -347,7 +455,7 @@ export default function SearchPage() {
                     </span>
                   </div>
                   <div className="text-sm truncate" style={{ color: '#787060' }}>
-                    {city.county}, {city.stateCode}
+                    {city.county}, {city.stateCode} • Pop. {city.population.toLocaleString()}
                   </div>
                   <div className="flex gap-2 mt-2">
                     <span 
@@ -374,8 +482,8 @@ export default function SearchPage() {
             </Link>
           ))}
 
-          {/* Unified Cities (all cities including basic) */}
-          {results.unifiedCities.map((city) => (
+          {/* Server-side Cities (All Cities filter) */}
+          {results.serverCities.map((city) => (
             city.hasFullData ? (
               <Link
                 key={city.id}
@@ -399,13 +507,13 @@ export default function SearchPage() {
                   {/* Score Circle */}
                   <div 
                     className="w-14 h-14 rounded-xl flex flex-col items-center justify-center"
-                    style={getScoreBgStyle(city.fullData!.marketScore)}
+                    style={getScoreBgStyle(city.marketScore || 0)}
                   >
                     <span 
                       className="text-xl font-bold"
-                      style={{ ...getScoreStyle(city.fullData!.marketScore), fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                      style={{ ...getScoreStyle(city.marketScore || 0), fontFamily: 'Source Serif Pro, Georgia, serif' }}
                     >
-                      {city.fullData!.marketScore}
+                      {city.marketScore}
                     </span>
                   </div>
                   
@@ -426,24 +534,26 @@ export default function SearchPage() {
                       </span>
                     </div>
                     <div className="text-sm truncate" style={{ color: '#787060' }}>
-                      {city.fullData!.county}, {city.state} • Pop. {city.population.toLocaleString()}
+                      {city.county && `${city.county}, `}{city.state} • Pop. {city.population.toLocaleString()}
                     </div>
                     <div className="flex gap-2 mt-2">
                       <span 
                         className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                        style={{ backgroundColor: getVerdictStyle(city.fullData!.marketScore).bg, color: getVerdictStyle(city.fullData!.marketScore).color }}
+                        style={{ backgroundColor: getVerdictStyle(city.marketScore || 0).bg, color: getVerdictStyle(city.marketScore || 0).color }}
                       >
-                        {getVerdictStyle(city.fullData!.marketScore).text}
+                        {getVerdictStyle(city.marketScore || 0).text}
                       </span>
-                      <span 
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                        style={{ 
-                          backgroundColor: city.fullData!.regulation === "Legal" ? '#2b2823' : '#787060',
-                          color: '#ffffff'
-                        }}
-                      >
-                        {city.fullData!.regulation}
-                      </span>
+                      {city.regulation && (
+                        <span 
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                          style={{ 
+                            backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
+                            color: '#ffffff'
+                          }}
+                        >
+                          {city.regulation}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -508,8 +618,29 @@ export default function SearchPage() {
             )
           ))}
 
+          {/* Loading indicator for server search */}
+          {filter === "allCities" && serverLoading && (
+            <div className="flex justify-center py-8">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#787060', borderTopColor: 'transparent' }}></div>
+                <span style={{ color: '#787060' }}>Loading cities...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Load More button for server results */}
+          {filter === "allCities" && serverHasMore && !serverLoading && (
+            <button
+              onClick={loadMore}
+              className="w-full py-4 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+              style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+            >
+              Load More Cities ({serverCities.length} of {serverTotal.toLocaleString()})
+            </button>
+          )}
+
           {/* Empty State */}
-          {totalResults === 0 && (
+          {totalResults === 0 && !serverLoading && (
             <div 
               className="rounded-2xl p-10 text-center"
               style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
@@ -546,7 +677,7 @@ export default function SearchPage() {
         </div>
 
         {/* Info Banner for All Cities filter */}
-        {filter === "allCities" && results.unifiedCities.length > 0 && (
+        {filter === "allCities" && results.serverCities.length > 0 && (
           <div 
             className="mt-6 rounded-xl p-4 text-center"
             style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}
