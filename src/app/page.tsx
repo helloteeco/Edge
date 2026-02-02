@@ -107,7 +107,7 @@ export default function HomePage() {
               Your Path to STR Success
             </h2>
             <p className="text-sm" style={{ color: '#787060' }}>
-              Edge helps you nail Step 1 — finding the right market
+              Edge guides you through every step of your STR journey
             </p>
           </div>
           
@@ -142,25 +142,25 @@ export default function HomePage() {
                   step: 3, 
                   icon: ContractIcon, 
                   title: 'Acquire', 
-                  desc: 'Close the deal',
-                  active: false,
-                  color: '#787060'
+                  desc: 'Get financing',
+                  active: true,
+                  color: '#2b2823'
                 },
                 { 
                   step: 4, 
                   icon: SetupIcon, 
                   title: 'Setup', 
                   desc: 'Design & furnish',
-                  active: false,
-                  color: '#787060'
+                  active: true,
+                  color: '#2b2823'
                 },
                 { 
                   step: 5, 
                   icon: RocketIcon, 
                   title: 'Scale', 
                   desc: 'Grow portfolio',
-                  active: false,
-                  color: '#787060'
+                  active: true,
+                  color: '#2b2823'
                 },
               ].map((item, i) => (
                 <div key={i} className="flex flex-col items-center text-center relative z-10">
@@ -185,12 +185,12 @@ export default function HomePage() {
                   >
                     {item.desc}
                   </span>
-                  {item.active && i === 0 && (
+                  {i === 0 && (
                     <span 
                       className="absolute -top-1 -right-1 sm:top-0 sm:right-0 text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                       style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
                     >
-                      YOU ARE HERE
+                      START HERE
                     </span>
                   )}
                 </div>
@@ -208,7 +208,7 @@ export default function HomePage() {
               style={{ color: '#2b2823' }}
             >
               <GraduationIcon className="w-4 h-4" color="#2b2823" />
-              <span>Want the full roadmap? <span className="underline">Watch our free training</span></span>
+              <span>Ready to start? <span className="underline">Join our free community</span></span>
               <ArrowRightIcon className="w-4 h-4" />
             </Link>
           </div>
