@@ -208,7 +208,7 @@ export default function HomePage() {
               style={{ color: '#2b2823' }}
             >
               <GraduationIcon className="w-4 h-4" color="#2b2823" />
-              <span>Ready to start? <span className="underline">Join our free community</span></span>
+              <span>Want the full roadmap? <span className="underline">Watch our free training</span></span>
               <ArrowRightIcon className="w-4 h-4" />
             </Link>
           </div>
