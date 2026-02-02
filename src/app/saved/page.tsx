@@ -19,6 +19,7 @@ import {
   CloudSyncIcon,
   HomeEquityIcon,
 } from "@/components/Icons";
+import AuthModal from "@/components/AuthModal";
 
 // Type for saved property reports
 interface SavedReport {
@@ -50,6 +51,7 @@ export default function SavedPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Check auth status on mount
   useEffect(() => {
@@ -314,8 +316,8 @@ export default function SavedPage() {
                 </button>
               </div>
             ) : (
-              <Link
-                href="/calculator"
+              <button
+                onClick={() => setShowAuthModal(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
               >
@@ -323,7 +325,7 @@ export default function SavedPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
                 Sign In to Sync
-              </Link>
+              </button>
             )}
           </div>
           <p className="ml-13" style={{ color: '#787060' }}>
@@ -721,6 +723,21 @@ export default function SavedPage() {
           </>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(email) => {
+          setIsAuthenticated(true);
+          setUserEmail(email);
+          localStorage.setItem("edge_auth_email", email);
+          setShowAuthModal(false);
+          loadSavedData();
+        }}
+        title="Sign in to Sync"
+        subtitle="Sign in to sync your saved reports across all your devices. No password needed."
+      />
     </div>
   );
 }

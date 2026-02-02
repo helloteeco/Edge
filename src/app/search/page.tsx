@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { cityData, stateData, searchUnifiedCities, getMarketCounts, UnifiedCity, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
@@ -12,13 +12,38 @@ import {
   StarIcon,
   TrendUpIcon,
   GemIcon,
+  SaveIcon,
 } from "@/components/Icons";
+import AuthModal from "@/components/AuthModal";
 
 type FilterType = "all" | "states" | "cities" | "minScore" | "recommended" | "allCities";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const authEmail = localStorage.getItem("edge_auth_email");
+    const authToken = localStorage.getItem("edge_auth_token");
+    
+    if (authEmail && authToken) {
+      setIsAuthenticated(true);
+      setUserEmail(authEmail);
+    }
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("edge_auth_email");
+    localStorage.removeItem("edge_auth_token");
+    setIsAuthenticated(false);
+    setUserEmail(null);
+  };
 
   // Get market counts for display
   const marketCounts = useMemo(() => getMarketCounts(), []);
@@ -116,24 +141,54 @@ export default function SearchPage() {
         }}
       >
         <div className="max-w-4xl mx-auto px-4 py-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: '#f0f9ff', border: '1px solid #7dd3fc' }}
-            >
-              <SearchIcon className="w-5 h-5" color="#0284c7" />
-            </div>
-            <div>
-              <h1 
-                className="text-2xl font-bold"
-                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: '#f0f9ff', border: '1px solid #7dd3fc' }}
               >
-                Search Markets
-              </h1>
-              <p className="text-xs" style={{ color: '#787060' }}>
-                {marketCounts.total.toLocaleString()}+ cities • {marketCounts.withFullData} with full STR data • Updated {DATA_LAST_UPDATED}
-              </p>
+                <SearchIcon className="w-5 h-5" color="#0284c7" />
+              </div>
+              <div>
+                <h1 
+                  className="text-2xl font-bold"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Search Markets
+                </h1>
+                <p className="text-xs" style={{ color: '#787060' }}>
+                  {marketCounts.total.toLocaleString()}+ cities • {marketCounts.withFullData} with full STR data • Updated {DATA_LAST_UPDATED}
+                </p>
+              </div>
             </div>
+            
+            {/* Auth Status */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 text-xs" style={{ color: '#16a34a' }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Synced
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-gray-100"
+                  style={{ color: '#787060', border: '1px solid #d8d6cd' }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+              >
+                <SaveIcon className="w-3 h-3" color="#ffffff" />
+                Sign In
+              </button>
+            )}
           </div>
           
           {/* Search Input */}
@@ -558,6 +613,20 @@ export default function SearchPage() {
           </div>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(email) => {
+          setIsAuthenticated(true);
+          setUserEmail(email);
+          localStorage.setItem("edge_auth_email", email);
+          setShowAuthModal(false);
+        }}
+        title="Sign in to Save Searches"
+        subtitle="Sign in to save your favorite markets and sync across all your devices. No password needed."
+      />
     </div>
   );
 }
