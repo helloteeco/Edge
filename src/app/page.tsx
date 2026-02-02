@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { USMap } from "@/components/USMap";
 import { TopMarkets } from "@/components/TopMarkets";
-import { cityData } from "@/data/helpers";
+import { cityData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
   GraduationIcon,
   HomeEquityIcon,
@@ -65,8 +65,8 @@ export default function HomePage() {
             <div className="flex gap-3">
               {[
                 { value: '50', label: 'States Analyzed' },
-                { value: String(cityData.length), label: 'Markets Tracked' },
-                { value: 'Live', label: 'Market Data' },
+                { value: `${Math.floor(getMarketCounts().total / 1000)}K+`, label: 'Cities Covered' },
+                { value: String(getMarketCounts().withFullData), label: 'Full STR Data' },
               ].map((stat, i) => (
                 <div 
                   key={i}

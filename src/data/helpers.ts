@@ -1,5 +1,6 @@
 import { cityData as cityDataByState, CityData } from "./city-data";
 import { stateData as stateDataByCode, StateData } from "./state-data";
+import { basicCityData, BasicCityData } from "./basic-city-data";
 import { calculateScore, calculateStateScore, calculateCashOnCash, ScoringBreakdown } from "@/lib/scoring";
 
 // Flatten city data into array with state code
@@ -416,3 +417,140 @@ export function lookupAddress(address: string): AddressLookupResult {
 // Export pre-computed arrays for direct import
 export const cityData = getAllCities();
 export const stateData = getAllStates();
+
+// ============================================
+// TWO-TIER CITY DATA SYSTEM
+// Tier 1: Featured markets with full STR data (609 cities)
+// Tier 2: All US cities with basic data (13,000+ cities)
+// ============================================
+
+// Unified city interface for search results
+export interface UnifiedCity {
+  id: string;
+  name: string;
+  state: string;
+  population: number;
+  hasFullData: boolean;
+  // Full data fields (only present if hasFullData = true)
+  fullData?: FlatCity;
+}
+
+// Get all basic cities (Tier 2)
+export function getAllBasicCities(): BasicCityData[] {
+  const cities: BasicCityData[] = [];
+  for (const [stateCode, stateCities] of Object.entries(basicCityData)) {
+    for (const city of stateCities) {
+      cities.push(city);
+    }
+  }
+  return cities;
+}
+
+// Get unified city list (merges Tier 1 and Tier 2)
+export function getUnifiedCities(): UnifiedCity[] {
+  const fullDataCities = getAllCities();
+  const fullDataIds = new Set(fullDataCities.map(c => c.id));
+  
+  const unified: UnifiedCity[] = [];
+  
+  // Add all full data cities first
+  for (const city of fullDataCities) {
+    unified.push({
+      id: city.id,
+      name: city.name,
+      state: city.stateCode,
+      population: city.population,
+      hasFullData: true,
+      fullData: city,
+    });
+  }
+  
+  // Add basic cities that don't have full data
+  for (const [stateCode, stateCities] of Object.entries(basicCityData)) {
+    for (const city of stateCities) {
+      // Skip if we already have full data for this city
+      if (fullDataIds.has(city.id)) continue;
+      
+      // Also check by name+state match
+      const nameMatch = fullDataCities.find(
+        c => c.name.toLowerCase() === city.name.toLowerCase() && c.stateCode === city.state
+      );
+      if (nameMatch) continue;
+      
+      unified.push({
+        id: city.id,
+        name: city.name,
+        state: city.state,
+        population: city.population,
+        hasFullData: false,
+      });
+    }
+  }
+  
+  return unified;
+}
+
+// Search unified cities (both tiers)
+export function searchUnifiedCities(query: string, limit: number = 50): UnifiedCity[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  
+  const allCities = getUnifiedCities();
+  
+  // Score and filter cities
+  const scored = allCities
+    .map(city => {
+      let score = 0;
+      const nameLower = city.name.toLowerCase();
+      const stateLower = city.state.toLowerCase();
+      
+      // Exact name match
+      if (nameLower === q) score += 100;
+      // Name starts with query
+      else if (nameLower.startsWith(q)) score += 50;
+      // Name contains query
+      else if (nameLower.includes(q)) score += 20;
+      // State code match
+      else if (stateLower === q) score += 30;
+      else return null; // No match
+      
+      // Boost for having full data
+      if (city.hasFullData) score += 25;
+      
+      // Boost for larger population
+      score += Math.min(city.population / 100000, 10);
+      
+      return { city, score };
+    })
+    .filter((item): item is { city: UnifiedCity; score: number } => item !== null)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(item => item.city);
+  
+  return scored;
+}
+
+// Get total market counts
+export function getMarketCounts(): { total: number; withFullData: number } {
+  const fullDataCount = getAllCities().length;
+  const basicCities = getAllBasicCities();
+  
+  // Count unique cities (some basic cities overlap with full data)
+  const fullDataIds = new Set(getAllCities().map(c => c.id));
+  const fullDataNames = new Set(getAllCities().map(c => `${c.name.toLowerCase()}-${c.stateCode}`));
+  
+  let uniqueBasicCount = 0;
+  for (const city of basicCities) {
+    if (!fullDataIds.has(city.id) && !fullDataNames.has(`${city.name.toLowerCase()}-${city.state}`)) {
+      uniqueBasicCount++;
+    }
+  }
+  
+  return {
+    total: fullDataCount + uniqueBasicCount,
+    withFullData: fullDataCount,
+  };
+}
+
+// Data freshness info
+export const DATA_LAST_UPDATED = 'February 2026';

@@ -439,6 +439,17 @@ export function USMap() {
         {renderLegend()}
       </div>
 
+      {/* Last Updated Badge */}
+      <div className="flex justify-center">
+        <div 
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
+          style={{ backgroundColor: '#f5f4f0', border: '1px solid #d8d6cd' }}
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span style={{ color: '#787060' }}>Data last updated: <span className="font-medium" style={{ color: '#2b2823' }}>February 2026</span></span>
+        </div>
+      </div>
+
       {/* Selected State Card */}
       {selectedStateData && (
         <div 
