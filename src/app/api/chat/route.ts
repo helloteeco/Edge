@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -83,6 +84,26 @@ const SYSTEM_PROMPT = `You are the Edge Assistant, an AI expert on rural short-t
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for AI endpoint (expensive calls)
+    const clientIP = getClientIP(request);
+    const rateLimitResult = rateLimit(`chat:${clientIP}`, RATE_LIMITS.ai);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Too many requests. Please wait before trying again.",
+          retryAfter: rateLimitResult.resetIn 
+        },
+        { 
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitResult.resetIn),
+            "X-RateLimit-Remaining": "0",
+          }
+        }
+      );
+    }
+
     if (!OPENAI_API_KEY) {
       return NextResponse.json(
         { error: "OpenAI API key not configured" },

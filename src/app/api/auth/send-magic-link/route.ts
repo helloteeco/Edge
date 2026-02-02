@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createMagicToken } from "@/lib/magic-token";
+import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -9,6 +10,17 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_4sjg6f75_8V1zJk4yk5B2cT
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Strict rate limiting for auth endpoints
+    const clientIP = getClientIP(request);
+    const rateLimitResult = rateLimit(`auth:${clientIP}`, RATE_LIMITS.strict);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { success: false, error: "Too many attempts. Please wait a minute before trying again." },
+        { status: 429 }
+      );
+    }
+
     const { email, redirectPath } = await request.json();
 
     if (!email || !email.includes("@")) {

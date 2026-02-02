@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserCredits, deductCredit, addCredits } from "@/lib/supabase";
+import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -7,6 +8,13 @@ export const dynamic = "force-dynamic";
 // GET - Check user's credit balance
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const clientIP = getClientIP(request);
+    const rateLimitResult = rateLimit(`credits-get:${clientIP}`, RATE_LIMITS.relaxed);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
+    }
+
     const email = request.nextUrl.searchParams.get("email");
     
     if (!email) {
@@ -45,6 +53,13 @@ export async function GET(request: NextRequest) {
 // POST - Deduct a credit (called before API request)
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for credit operations
+    const clientIP = getClientIP(request);
+    const rateLimitResult = rateLimit(`credits-post:${clientIP}`, RATE_LIMITS.standard);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await request.json();
     const { email, action } = body;
     

@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import Stripe from "stripe";
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2024-12-18.acacia",
+});
+
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Credit amounts for each product
 const PRODUCT_CREDITS: Record<string, number> = {
@@ -10,11 +18,36 @@ const PRODUCT_CREDITS: Record<string, number> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Get the raw body for signature verification
+    const body = await request.text();
+    const signature = request.headers.get("stripe-signature");
+
+    // SECURITY: Verify webhook signature
+    if (!WEBHOOK_SECRET) {
+      console.error("[Stripe Webhook] STRIPE_WEBHOOK_SECRET not configured");
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+    }
+
+    if (!signature) {
+      console.error("[Stripe Webhook] No signature provided");
+      return NextResponse.json({ error: "No signature" }, { status: 401 });
+    }
+
+    let event: Stripe.Event;
     
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      console.error(`[Stripe Webhook] Signature verification failed: ${errorMessage}`);
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    console.log(`[Stripe Webhook] Verified event: ${event.type}`);
+
     // Handle checkout.session.completed event
-    if (body.type === "checkout.session.completed") {
-      const session = body.data.object;
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
       const customerEmail = session.customer_details?.email;
       
       if (!customerEmail) {
@@ -22,24 +55,30 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "No customer email" }, { status: 400 });
       }
       
-      // Get the line items to determine which product was purchased
-      const lineItems = session.line_items?.data || [];
-      
+      // Get line items from Stripe API (more reliable than webhook payload)
       let creditsToAdd = 0;
       let isUnlimited = false;
       
-      // Check each line item for matching products
-      for (const item of lineItems) {
-        const productId = item.price?.product;
-        if (productId && PRODUCT_CREDITS[productId]) {
-          creditsToAdd += PRODUCT_CREDITS[productId] * (item.quantity || 1);
-          if (PRODUCT_CREDITS[productId] === 999) {
-            isUnlimited = true;
+      try {
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+        
+        for (const item of lineItems.data) {
+          const productId = typeof item.price?.product === "string" 
+            ? item.price.product 
+            : item.price?.product?.id;
+          
+          if (productId && PRODUCT_CREDITS[productId]) {
+            creditsToAdd += PRODUCT_CREDITS[productId] * (item.quantity || 1);
+            if (PRODUCT_CREDITS[productId] === 999) {
+              isUnlimited = true;
+            }
           }
         }
+      } catch (lineItemError) {
+        console.error("[Stripe Webhook] Error fetching line items:", lineItemError);
       }
       
-      // If no line items in webhook, try to determine from amount
+      // Fallback: determine from amount if line items failed
       if (creditsToAdd === 0) {
         const amountTotal = session.amount_total;
         if (amountTotal === 499) creditsToAdd = 5;
@@ -71,7 +110,6 @@ export async function POST(request: NextRequest) {
       
       if (userData) {
         // Update existing user - increase credits_limit
-        // credits_remaining = credits_limit - credits_used
         const newLimit = (userData.credits_limit || 3) + creditsToAdd;
         
         const { error: updateError } = await supabase
@@ -124,12 +162,19 @@ export async function POST(request: NextRequest) {
     }
     
     // Handle subscription events
-    if (body.type === "customer.subscription.created" || body.type === "customer.subscription.updated") {
-      const subscription = body.data.object;
-      const customerEmail = subscription.customer_email;
+    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription;
+      
+      // Get customer email from Stripe
+      let customerEmail: string | null = null;
+      if (typeof subscription.customer === "string") {
+        const customer = await stripe.customers.retrieve(subscription.customer);
+        if (!("deleted" in customer)) {
+          customerEmail = customer.email;
+        }
+      }
       
       if (customerEmail && subscription.status === "active") {
-        // Check if user exists
         const { data: existingUser } = await supabase
           .from("users")
           .select("email")
@@ -158,12 +203,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Handle subscription cancellation
-    if (body.type === "customer.subscription.deleted") {
-      const subscription = body.data.object;
-      const customerEmail = subscription.customer_email;
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription;
+      
+      let customerEmail: string | null = null;
+      if (typeof subscription.customer === "string") {
+        const customer = await stripe.customers.retrieve(subscription.customer);
+        if (!("deleted" in customer)) {
+          customerEmail = customer.email;
+        }
+      }
       
       if (customerEmail) {
-        // Reset to 3 free credits when subscription ends
         await supabase
           .from("users")
           .update({
@@ -180,3 +231,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Webhook error" }, { status: 500 });
   }
 }
+
+// Disable body parsing for webhook signature verification
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};

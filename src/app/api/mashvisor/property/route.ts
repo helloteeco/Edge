@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Force dynamic rendering for this API route
 export const dynamic = "force-dynamic";
@@ -352,6 +353,16 @@ function getBedroomMultiplier(bedrooms: number): number {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for property analysis (uses credits)
+    const clientIP = getClientIP(request);
+    const rateLimitResult = rateLimit(`property:${clientIP}`, RATE_LIMITS.standard);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait before analyzing another property." },
+        { status: 429 }
+      );
+    }
+
     const { address, bedrooms = 3, bathrooms = 2, accommodates = 6 } = await request.json();
 
     if (!address) {
