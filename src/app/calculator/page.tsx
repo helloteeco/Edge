@@ -1725,6 +1725,38 @@ export default function CalculatorPage() {
                       </svg>
                       PDF
                     </button>
+                    
+                    {/* Share via Text Button */}
+                    <button
+                      onClick={() => {
+                        const displayRevenue = getDisplayRevenue();
+                        const shareText = 
+                          `Check out this STR investment I'm analyzing:\n\n` +
+                          `📍 ${result.address || result.neighborhood}, ${result.city}, ${result.state}\n` +
+                          `🛏️ ${result.bedrooms} bed / ${result.bathrooms} bath\n` +
+                          `💰 Projected: $${displayRevenue.toLocaleString()}/year\n` +
+                          `📊 ${result.occupancy}% occupancy | $${result.adr}/night\n` +
+                          (purchasePrice && !investment.needsPrice ? `📈 ${investment.cashOnCashReturn.toFixed(1)}% cash-on-cash return\n` : '') +
+                          `\nAnalyzed with Edge by Teeco: edge.teeco.co`;
+                        
+                        // Use SMS link for mobile, fallback to clipboard for desktop
+                        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                          window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
+                        } else {
+                          navigator.clipboard.writeText(shareText).then(() => {
+                            alert('Report summary copied to clipboard! Paste it into your messaging app.');
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                      style={{ backgroundColor: "#22c55e", color: "#ffffff" }}
+                      title="Share via Text"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      Text
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2527,6 +2559,207 @@ export default function CalculatorPage() {
                   </div>
                 </>
               )}
+            </div>
+
+            {/* Deal Score Badge */}
+            {!investment.needsPrice && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Deal Score</h3>
+                  {(() => {
+                    // Calculate deal score based on multiple factors
+                    const cocScore = Math.min(40, Math.max(0, investment.cashOnCashReturn * 4)); // 0-40 points (10% CoC = 40 pts)
+                    const cashFlowScore = Math.min(30, Math.max(0, (investment.monthlyCashFlow / 500) * 30)); // 0-30 points ($500/mo = 30 pts)
+                    const occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20)); // 0-20 points (70% occ = 20 pts)
+                    const dataScore = result.percentiles ? 10 : 5; // 10 points for good data, 5 for limited
+                    const totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+                    
+                    let verdict = "PASS";
+                    let verdictColor = "#f59e0b";
+                    let verdictBg = "#fef3c7";
+                    let explanation = "This deal may work but requires careful consideration.";
+                    
+                    if (totalScore >= 75) {
+                      verdict = "STRONG BUY";
+                      verdictColor = "#16a34a";
+                      verdictBg = "#dcfce7";
+                      explanation = "Excellent returns with strong market fundamentals.";
+                    } else if (totalScore >= 60) {
+                      verdict = "GOOD DEAL";
+                      verdictColor = "#22c55e";
+                      verdictBg = "#ecfdf5";
+                      explanation = "Solid investment with good cash flow potential.";
+                    } else if (totalScore >= 45) {
+                      verdict = "CONSIDER";
+                      verdictColor = "#eab308";
+                      verdictBg = "#fefce8";
+                      explanation = "Moderate returns - may need value-add strategy.";
+                    } else {
+                      verdict = "CAUTION";
+                      verdictColor = "#ef4444";
+                      verdictBg = "#fef2f2";
+                      explanation = "Low returns at current price - negotiate or pass.";
+                    }
+                    
+                    return (
+                      <>
+                        <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl mb-4" style={{ backgroundColor: verdictBg }}>
+                          <span className="text-5xl font-bold" style={{ color: verdictColor }}>{totalScore}</span>
+                          <div className="text-left">
+                            <span className="text-sm text-gray-500">/100</span>
+                            <p className="text-xl font-bold" style={{ color: verdictColor }}>{verdict}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">{explanation}</p>
+                        
+                        {/* Score Breakdown */}
+                        <div className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                            <p className="text-gray-500">Cash-on-Cash</p>
+                            <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(cocScore)}/40</p>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                            <p className="text-gray-500">Cash Flow</p>
+                            <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(cashFlowScore)}/30</p>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                            <p className="text-gray-500">Occupancy</p>
+                            <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(occupancyScore)}/20</p>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                            <p className="text-gray-500">Data Quality</p>
+                            <p className="font-bold" style={{ color: "#2b2823" }}>{dataScore}/10</p>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Talk to Teeco CTA */}
+            <div className="rounded-2xl p-6" style={{ backgroundColor: "#2b2823" }}>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="text-lg font-semibold text-white mb-1">Want Expert Guidance on This Deal?</h3>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+                    Chat with Jeff AI to analyze this property using proven rural STR strategies
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const prompt = encodeURIComponent(
+                      `I'm analyzing a potential STR investment and would like your expert opinion:\n\n` +
+                      `📍 Property: ${result.address || result.neighborhood}, ${result.city}, ${result.state}\n` +
+                      `🛏️ Bedrooms: ${result.bedrooms} | 🛁 Bathrooms: ${result.bathrooms}\n` +
+                      `💰 Projected Annual Revenue: $${getDisplayRevenue().toLocaleString()}\n` +
+                      `📊 Occupancy Rate: ${result.occupancy}%\n` +
+                      `💵 ADR: $${result.adr}\n` +
+                      (purchasePrice ? `🏷️ Purchase Price: $${parseInt(purchasePrice).toLocaleString()}\n` : '') +
+                      (purchasePrice ? `📈 Cash-on-Cash Return: ${investment.cashOnCashReturn.toFixed(1)}%\n` : '') +
+                      (purchasePrice ? `💸 Monthly Cash Flow: $${Math.round(investment.monthlyCashFlow).toLocaleString()}\n` : '') +
+                      `\nBased on your experience with rural STRs, what should I look for? Is this a good deal? What questions should I ask?`
+                    );
+                    window.open(`https://chatgpt.com/g/g-68963d578178819193ee01b12d9d94a7-jeff-chheuy-ai?q=${prompt}`, '_blank');
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
+                  style={{ backgroundColor: "#ffffff", color: "#2b2823" }}
+                >
+                  <span className="text-xl">🤖</span>
+                  Chat with Jeff AI
+                </button>
+              </div>
+            </div>
+
+            {/* Your Next Steps Checklist */}
+            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Your Next Steps</h3>
+              <p className="text-sm text-gray-500 mb-4">Follow this checklist to move forward with confidence</p>
+              
+              <div className="space-y-3">
+                {/* Step 1 - Completed */}
+                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: "#ecfdf5" }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#22c55e" }}>
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-800">Analyzed property revenue potential</p>
+                    <p className="text-sm text-green-600">You've run the numbers - great first step!</p>
+                  </div>
+                </div>
+                
+                {/* Step 2 */}
+                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2" style={{ borderColor: "#d8d6cd" }}>
+                    <span className="text-xs font-bold" style={{ color: "#787060" }}>2</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium" style={{ color: "#2b2823" }}>Get pre-approved for financing</p>
+                    <p className="text-sm text-gray-500">Know your budget before making offers</p>
+                  </div>
+                </div>
+                
+                {/* Step 3 */}
+                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2" style={{ borderColor: "#d8d6cd" }}>
+                    <span className="text-xs font-bold" style={{ color: "#787060" }}>3</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium" style={{ color: "#2b2823" }}>Connect with a local STR-friendly agent</p>
+                    <p className="text-sm text-gray-500">Find someone who understands the STR market</p>
+                  </div>
+                </div>
+                
+                {/* Step 4 */}
+                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2" style={{ borderColor: "#d8d6cd" }}>
+                    <span className="text-xs font-bold" style={{ color: "#787060" }}>4</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium" style={{ color: "#2b2823" }}>Tour properties & verify assumptions</p>
+                    <p className="text-sm text-gray-500">See the property and neighborhood in person</p>
+                  </div>
+                </div>
+                
+                {/* Step 5 */}
+                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2" style={{ borderColor: "#d8d6cd" }}>
+                    <span className="text-xs font-bold" style={{ color: "#787060" }}>5</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium" style={{ color: "#2b2823" }}>Design, furnish & launch your STR</p>
+                    <p className="text-sm text-gray-500">Set up your property for 5-star reviews</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mentorship CTA */}
+              <div className="mt-5 p-4 rounded-xl" style={{ backgroundColor: "#fef3c7", border: "1px solid #fcd34d" }}>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎓</span>
+                  <div className="flex-1">
+                    <p className="font-semibold" style={{ color: "#92400e" }}>Need help with steps 2-5?</p>
+                    <p className="text-sm mt-1" style={{ color: "#a16207" }}>
+                      Teeco's 1:1 mentorship walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
+                    </p>
+                    <a 
+                      href="https://teeco.co/fund-your-financial-freedom"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
+                      style={{ backgroundColor: "#92400e", color: "#ffffff" }}
+                    >
+                      Learn About Mentorship
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
