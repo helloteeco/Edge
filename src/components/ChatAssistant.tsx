@@ -146,7 +146,7 @@ export function ChatAssistant() {
             {mode === "menu" && (
               <div className="p-4 space-y-3">
                 <button
-                  onClick={() => setMode("chat")}
+                  onClick={() => window.open("https://chatgpt.com/g/g-68963d578178819193ee01b12d9d94a7-jeff-chheuy-ai", "_blank")}
                   className="w-full p-4 rounded-xl text-left transition-all group"
                   style={{ backgroundColor: '#e5e3da' }}
                 >
@@ -155,11 +155,11 @@ export function ChatAssistant() {
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110"
                       style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
                     >
-                      💬
+                      🤖
                     </div>
                     <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Ask a Question</div>
-                      <div className="text-sm" style={{ color: '#787060' }}>Get help with STR investing</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Chat with Jeff AI</div>
+                      <div className="text-sm" style={{ color: '#787060' }}>Get personalized STR advice from our AI expert</div>
                     </div>
                   </div>
                 </button>
