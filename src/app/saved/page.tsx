@@ -38,11 +38,24 @@ interface SavedReport {
   savedAt: number;
 }
 
+// Type for analysis history (from calculator recent searches)
+interface AnalysisHistory {
+  address: string;
+  annualRevenue: number;
+  adr: number;
+  occupancy: number;
+  timestamp: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  guestCount?: number;
+}
+
 export default function SavedPage() {
   const [savedCities, setSavedCities] = useState<string[]>([]);
   const [savedStates, setSavedStates] = useState<string[]>([]);
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
-  const [activeTab, setActiveTab] = useState<'reports' | 'markets'>('reports');
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistory[]>([]);
+  const [activeTab, setActiveTab] = useState<'reports' | 'markets' | 'history'>('reports');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   
@@ -73,6 +86,20 @@ export default function SavedPage() {
     // Load local market data (cities/states) - these are not user-specific
     const cities = JSON.parse(localStorage.getItem("savedCities") || "[]");
     const states = JSON.parse(localStorage.getItem("savedStates") || "[]");
+    
+    // Load analysis history from calculator recent searches
+    const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+    const historyData: AnalysisHistory[] = recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number }) => ({
+      address: s.address,
+      annualRevenue: s.annualRevenue,
+      adr: s.adr,
+      occupancy: s.occupancy,
+      timestamp: s.timestamp,
+      bedrooms: s.cachedBedrooms,
+      bathrooms: s.cachedBathrooms,
+      guestCount: s.cachedGuestCount,
+    }));
+    setAnalysisHistory(historyData);
     
     setSavedCities(cities);
     setSavedStates(states);
@@ -343,6 +370,23 @@ export default function SavedPage() {
               <HeartIcon className="w-4 h-4" color={activeTab === 'markets' ? '#ffffff' : '#787060'} />
               Markets ({savedCityData.length + savedStateData.length})
             </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                activeTab === 'history' 
+                  ? 'shadow-sm' 
+                  : 'hover:bg-gray-50'
+              }`}
+              style={activeTab === 'history' 
+                ? { backgroundColor: '#2b2823', color: '#ffffff' } 
+                : { backgroundColor: '#ffffff', color: '#787060', border: '1px solid #d8d6cd' }
+              }
+            >
+              <svg className="w-4 h-4" fill="none" stroke={activeTab === 'history' ? '#ffffff' : '#787060'} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History ({analysisHistory.length})
+            </button>
           </div>
         </div>
       </div>
@@ -451,30 +495,40 @@ export default function SavedPage() {
                       </div>
                     </div>
                     
-                    {/* Notes Section */}
+                    {/* Notes Section - Improved UI */}
                     <div className="px-4 pb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4" fill="none" stroke="#787060" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span className="text-xs font-medium uppercase tracking-wide" style={{ color: '#787060' }}>Your Notes</span>
+                      </div>
                       {editingNoteId === report.id ? (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <textarea
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
-                            placeholder="Add your notes about this property..."
-                            className="w-full p-3 rounded-lg border text-sm resize-none"
-                            style={{ borderColor: '#d8d6cd', minHeight: '80px' }}
+                            placeholder="Add your personal notes about this property...
+
+• What did you like about it?
+• Any concerns or red flags?
+• Next steps to take?"
+                            className="w-full p-4 rounded-xl border-2 text-sm resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                            style={{ borderColor: '#d8d6cd', minHeight: '120px', backgroundColor: '#fafafa' }}
                             autoFocus
                           />
                           <div className="flex gap-2">
                             <button
                               onClick={() => updateReportNotes(report.id, noteText)}
-                              className="px-3 py-1.5 rounded-lg text-sm font-medium"
+                              className="px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]"
                               style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                             >
                               Save Note
                             </button>
                             <button
                               onClick={() => setEditingNoteId(null)}
-                              className="px-3 py-1.5 rounded-lg text-sm font-medium"
-                              style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+                              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-gray-100"
+                              style={{ backgroundColor: '#f5f5f0', color: '#787060' }}
                             >
                               Cancel
                             </button>
@@ -483,15 +537,23 @@ export default function SavedPage() {
                       ) : (
                         <div 
                           onClick={() => startEditingNote(report)}
-                          className="p-3 rounded-lg cursor-pointer transition-all hover:bg-gray-50"
-                          style={{ backgroundColor: '#f8f8f8', border: '1px dashed #d8d6cd' }}
+                          className="p-4 rounded-xl cursor-pointer transition-all hover:shadow-sm group"
+                          style={{ backgroundColor: report.notes ? '#fffbeb' : '#f8f8f8', border: report.notes ? '1px solid #fcd34d' : '1px dashed #d8d6cd' }}
                         >
                           {report.notes ? (
-                            <p className="text-sm whitespace-pre-wrap" style={{ color: '#2b2823' }}>{report.notes}</p>
+                            <div className="flex items-start gap-2">
+                              <span className="text-amber-500">📝</span>
+                              <p className="text-sm whitespace-pre-wrap flex-1" style={{ color: '#2b2823' }}>{report.notes}</p>
+                              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#787060' }}>Edit</span>
+                            </div>
                           ) : (
-                            <p className="text-sm italic" style={{ color: '#9a9488' }}>
-                              📝 Click to add notes about this property...
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400">📝</span>
+                              <p className="text-sm" style={{ color: '#9a9488' }}>
+                                Click to add your personal notes...
+                              </p>
+                              <span className="text-xs ml-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#787060' }}>+ Add Note</span>
+                            </div>
                           )}
                         </div>
                       )}
@@ -695,6 +757,97 @@ export default function SavedPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <>
+            {analysisHistory.length === 0 ? (
+              <div 
+                className="rounded-2xl p-8 text-center"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+              >
+                <div 
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ backgroundColor: '#f5f5f0', border: '1px solid #e5e3da' }}
+                >
+                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 
+                  className="text-xl font-semibold mb-2"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  No analysis history yet
+                </h3>
+                <p className="mb-6 max-w-sm mx-auto" style={{ color: '#787060' }}>
+                  Your recent property analyses will appear here. Start by analyzing a property in the calculator.
+                </p>
+                <Link
+                  href="/calculator"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundColor: '#2b2823', color: '#ffffff', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.3)' }}
+                >
+                  <CalculatorIcon className="w-5 h-5" color="#ffffff" />
+                  Analyze a Property
+                  <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm mb-4" style={{ color: '#787060' }}>
+                  Recent analyses from this device. Save a report to sync it across devices.
+                </p>
+                {analysisHistory.sort((a, b) => b.timestamp - a.timestamp).map((item, index) => (
+                  <div
+                    key={`${item.address}-${index}`}
+                    className="rounded-xl p-4 flex items-center gap-4"
+                    style={{ 
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #d8d6cd',
+                      boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
+                    }}
+                  >
+                    <div 
+                      className="w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0"
+                      style={{ backgroundColor: '#f0fdf4' }}
+                    >
+                      <span className="text-lg font-bold" style={{ color: '#16a34a' }}>
+                        {formatCurrency(item.annualRevenue / 1000)}K
+                      </span>
+                      <span className="text-[10px]" style={{ color: '#787060' }}>/yr</span>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate" style={{ color: '#2b2823' }}>
+                        {item.address}
+                      </div>
+                      <div className="text-sm" style={{ color: '#787060' }}>
+                        {item.bedrooms ? `${item.bedrooms}BR` : ''}{item.bathrooms ? `/${item.bathrooms}BA` : ''}
+                        {item.guestCount ? ` • Sleeps ${item.guestCount}` : ''}
+                      </div>
+                      <div className="flex flex-wrap gap-3 mt-1 text-sm">
+                        <span style={{ color: '#787060' }}>${item.adr?.toFixed(0) || '—'} ADR</span>
+                        <span style={{ color: '#787060' }}>{(item.occupancy * 100)?.toFixed(0) || '—'}% Occ</span>
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: '#9a9488' }}>
+                        Analyzed {formatDate(item.timestamp)}
+                      </div>
+                    </div>
+                    
+                    <Link
+                      href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-[1.02]"
+                      style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                    >
+                      Re-analyze
+                    </Link>
+                  </div>
+                ))}
               </div>
             )}
           </>
