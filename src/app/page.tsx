@@ -107,7 +107,7 @@ export default function HomePage() {
           <TopMarkets />
         </div>
         
-        {/* CTA Section - Gray/Black theme */}
+        {/* Resources Section */}
         <div 
           className="mt-8 rounded-2xl p-6 sm:p-8"
           style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}
@@ -118,44 +118,103 @@ export default function HomePage() {
                 className="text-xl sm:text-2xl font-semibold mb-2"
                 style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
               >
-                Ready to Start Investing?
+                Resources
               </h3>
               <p className="text-sm mb-4" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-                Get personalized guidance from our STR mentorship program
+                Everything you need to start and scale your STR business
               </p>
               
-              {/* Mentorship Details */}
-              <div 
-                className="rounded-xl p-5 mb-5"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(8px)' }}
+              {/* Free Training CTA */}
+              <Link 
+                href="https://login.circle.so/sign_up?request_host=teeco.circle.so&user%5Binvitation_token%5D=24bf3e259d3f754c41c323f1eda7eb88a49991b0-87b646d2-7efe-4bec-a0b8-a03098b44aa2#email"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-xl p-4 mb-4 transition-all hover:opacity-90"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(8px)' }}
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">⏱️</span>
-                  <span className="font-semibold" style={{ color: '#ffffff' }}>
-                    Only ~3 hours/week to manage once set up
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
+                    <span className="text-xl">🎓</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold" style={{ color: '#ffffff' }}>Watch Teeco&apos;s Free Training</p>
+                    <p className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Learn how to buy your first high cash flow rural Airbnb</p>
+                  </div>
+                  <svg className="w-5 h-5" fill="none" stroke="rgba(255,255,255,0.7)" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
-                <ul className="text-sm space-y-2 ml-7" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-                  <li>• <strong style={{ color: '#ffffff' }}>Full guided experience:</strong> 9 total calls</li>
-                  <li>• <strong style={{ color: '#ffffff' }}>Complete journey:</strong> Deal → Setup & Design → Live STR</li>
-                  <li>• <strong style={{ color: '#ffffff' }}>Remote setup:</strong> We can set up your Airbnb while you keep your job</li>
-                  <li>• <strong style={{ color: '#ffffff' }}>Flexible options:</strong> Programs tailored to your available time</li>
-                </ul>
+              </Link>
+              
+              {/* Resource Links Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <Link 
+                  href="https://teeco.co/airbnb-agent"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-4 text-center transition-all hover:opacity-80"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                >
+                  <span className="text-2xl block mb-2">🏠</span>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Agent</p>
+                </Link>
+                
+                <Link 
+                  href="https://teeco.co/airbnb-lender"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-4 text-center transition-all hover:opacity-80"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                >
+                  <span className="text-2xl block mb-2">💰</span>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Lender</p>
+                </Link>
+                
+                <Link 
+                  href="https://teeco.co/airbnb-designer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-4 text-center transition-all hover:opacity-80"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                >
+                  <span className="text-2xl block mb-2">🎨</span>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Designer</p>
+                </Link>
+                
+                <Link 
+                  href="https://teeco.co/airbnb-setup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-4 text-center transition-all hover:opacity-80"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                >
+                  <span className="text-2xl block mb-2">🛋️</span>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Set Up Team</p>
+                </Link>
+                
+                <Link 
+                  href="https://teeco.co/airbnb-cohost"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-4 text-center transition-all hover:opacity-80"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                >
+                  <span className="text-2xl block mb-2">🤝</span>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Airbnb Cohost</p>
+                </Link>
+                
+                <Link 
+                  href="https://teeco.co/fund-your-financial-freedom"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-4 text-center transition-all hover:opacity-80"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                >
+                  <span className="text-2xl block mb-2">📚</span>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Mentorship</p>
+                </Link>
               </div>
             </div>
-            <Link 
-              href="https://teeco.co/fund-your-financial-freedom"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-8 py-3.5 font-semibold rounded-xl transition-all duration-200 text-center hover:opacity-90"
-              style={{ 
-                backgroundColor: '#ffffff', 
-                color: '#2b2823',
-                boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.15)'
-              }}
-            >
-              Learn More About Mentorship
-            </Link>
           </div>
         </div>
 

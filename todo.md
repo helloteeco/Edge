@@ -309,6 +309,16 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Magic link emails not actually being sent (need email service integration) - Resend integrated
 - [x] edge.teeco.co site not loading - site is working fine
 
-- [ ] Fix magic link click to auto-login users (not require re-signin)
-- [ ] Load saved data tied to user email after login
-- [ ] Make calculator accessible after magic link verification
+- [x] Fix magic link click to auto-login users (not require re-signin) - Using JWT tokens
+- [x] Load saved data tied to user email after login
+- [x] Make calculator accessible after magic link verification
+
+
+## Resources Section Update (February 2026)
+- [ ] Replace Funding section with Resources section
+- [ ] Add "Watch Teeco's Free Training" link to Circle community
+- [ ] Add Find Airbnb Agent resource
+- [ ] Add Find Airbnb Lender resource
+- [ ] Add Find Airbnb Designer resource
+- [ ] Add Find Airbnb Set Up Team resource
+- [ ] Add Find Airbnb Cohost resource
