@@ -1484,7 +1484,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img src="/teeco-icon-black.png" alt="Teeco" className="w-8 h-8 invert" />
-            <span className="text-white font-semibold">Edge by Teeco</span>
+            <div>
+              <span className="text-white font-semibold">Edge by Teeco</span>
+              <p className="text-xs text-white/60 hidden sm:block">Your unfair advantage in STR investing</p>
+            </div>
           </Link>
           <div className="flex items-center gap-4">
             <AuthHeader variant="dark" />
@@ -2842,15 +2845,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                         {/* CTA at bottom */}
                         <div className="mt-6 pt-4 border-t" style={{ borderColor: "#e5e3da" }}>
                           <p className="text-sm text-center mb-3" style={{ color: "#787060" }}>
-                            Want personalized guidance on this deal?
+                            Ready to take the next step?
                           </p>
                           <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <a
-                              href="mailto:hello@teeco.co?subject=Deal Analysis Help&body=Hi, I just analyzed a property and would love your expert opinion."
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all"
+                              href="https://login.circle.so/sign_up?request_host=teeco.circle.so&user%5Binvitation_token%5D=24bf3e259d3f754c41c323f1eda7eb88a49991b0-87b646d2-7efe-4bec-a0b8-a03098b44aa2#email"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
                               style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
                             >
-                              📧 Email Teeco
+                              🎓 Watch Free Training
                             </a>
                             <button
                               onClick={() => {
@@ -2861,7 +2866,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                                   if (chatButton) chatButton.click();
                                 }, 100);
                               }}
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
                               style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
                             >
                               💬 Ask More Questions

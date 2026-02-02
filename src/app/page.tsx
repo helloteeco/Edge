@@ -62,7 +62,7 @@ export default function HomePage() {
                 <AuthHeader variant="dark" />
               </div>
               <p className="text-sm sm:text-base max-w-lg" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-                Data-driven STR market analysis to find your next profitable investment opportunity
+                Your unfair advantage in STR investing
               </p>
             </div>
             
