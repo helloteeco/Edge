@@ -183,7 +183,7 @@ export function ChatAssistant() {
                   </div>
                 </button>
                 <button
-                  onClick={() => window.open("https://teeco.co", "_blank")}
+                  onClick={() => window.open("https://teeco.co/before-after-photos", "_blank")}
                   className="w-full p-4 rounded-xl text-left transition-all group"
                   style={{ backgroundColor: '#e5e3da' }}
                 >
@@ -192,11 +192,11 @@ export function ChatAssistant() {
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110"
                       style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
                     >
-                      🏠
+                      🎨
                     </div>
                     <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Co-hosting Services</div>
-                      <div className="text-sm" style={{ color: '#787060' }}>Professional property management</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Design & Setup Services</div>
+                      <div className="text-sm" style={{ color: '#787060' }}>Transform your property into a 5-star STR</div>
                     </div>
                   </div>
                 </button>

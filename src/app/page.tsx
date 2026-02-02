@@ -218,6 +218,108 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Social Proof Section - Badges & Testimonials */}
+      <div className="max-w-5xl mx-auto px-4 pt-4 pb-2">
+        <div 
+          className="rounded-2xl p-5 sm:p-6"
+          style={{ 
+            backgroundColor: '#ffffff', 
+            border: '1px solid #d8d6cd',
+            boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+          }}
+        >
+          {/* Trust Badges Row */}
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mb-6 pb-6" style={{ borderBottom: '1px solid #e5e3da' }}>
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#FF5A5F"/>
+              </svg>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Airbnb Superhost</p>
+                <p className="text-xs" style={{ color: '#787060' }}>5-Star Rating</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Top 10% of Homes</p>
+                <p className="text-xs" style={{ color: '#787060' }}>Guest Favorite</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <span className="text-lg">🏅</span>
+                <span className="text-xl font-bold ml-1" style={{ color: '#2b2823' }}>5.0</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Perfect Rating</p>
+                <p className="text-xs" style={{ color: '#787060' }}>Across All Properties</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Testimonials */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Testimonial 1 */}
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#f9f8f6' }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-sm font-semibold" style={{ color: '#2b2823' }}>BB</div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Brad B.</p>
+                  <p className="text-xs" style={{ color: '#787060' }}>STR Investor</p>
+                </div>
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#4a4640' }}>
+                "We were blown away by their <span className="font-semibold" style={{ color: '#787060' }}>design, attention to budget, and efficiency</span>. We couldn't be happier, and our guests give us rave reviews!"
+              </p>
+            </div>
+            
+            {/* Testimonial 2 */}
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#f9f8f6' }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center text-sm font-semibold" style={{ color: '#2b2823' }}>LC</div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Luke C.</p>
+                  <p className="text-xs" style={{ color: '#787060' }}>Property Owner</p>
+                </div>
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#4a4640' }}>
+                "Teeco is a <span className="font-semibold" style={{ color: '#787060' }}>top-notch company</span> that delivers outstanding results. Their expertise, dedication, and passion for design are truly unparalleled."
+              </p>
+            </div>
+            
+            {/* Testimonial 3 */}
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#f9f8f6' }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-200 to-amber-300 flex items-center justify-center text-sm font-semibold" style={{ color: '#2b2823' }}>AN</div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Astrid N.</p>
+                  <p className="text-xs" style={{ color: '#787060' }}>First-Time Host</p>
+                </div>
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#4a4640' }}>
+                "I cannot express enough how happy I am. No stress, just a <span className="font-semibold" style={{ color: '#787060' }}>beautifully furnished space</span> that went beyond what I had in mind."
+              </p>
+            </div>
+          </div>
+          
+          {/* See Our Work CTA */}
+          <div className="mt-5 pt-4 text-center" style={{ borderTop: '1px solid #e5e3da' }}>
+            <Link 
+              href="https://teeco.co/before-after-photos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-all hover:opacity-80"
+              style={{ color: '#2b2823' }}
+            >
+              <PaletteIcon className="w-4 h-4" color="#2b2823" />
+              <span>See our design transformations <span className="underline">Before & After Photos</span></span>
+              <ArrowRightIcon className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Map Section */}
