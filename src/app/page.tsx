@@ -270,7 +270,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#4a4640' }}>
-                "We were blown away by their <span className="font-semibold" style={{ color: '#787060' }}>design, attention to budget, and efficiency</span>. We couldn't be happier, and our guests give us rave reviews!"
+                &ldquo;We were blown away by their <span className="font-semibold" style={{ color: '#787060' }}>design, attention to budget, and efficiency</span>. We couldn&apos;t be happier, and our guests give us rave reviews!&rdquo;
               </p>
             </div>
             
@@ -284,7 +284,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#4a4640' }}>
-                "Teeco is a <span className="font-semibold" style={{ color: '#787060' }}>top-notch company</span> that delivers outstanding results. Their expertise, dedication, and passion for design are truly unparalleled."
+                &ldquo;Teeco is a <span className="font-semibold" style={{ color: '#787060' }}>top-notch company</span> that delivers outstanding results. Their expertise, dedication, and passion for design are truly unparalleled.&rdquo;
               </p>
             </div>
             
@@ -298,7 +298,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#4a4640' }}>
-                "I cannot express enough how happy I am. No stress, just a <span className="font-semibold" style={{ color: '#787060' }}>beautifully furnished space</span> that went beyond what I had in mind."
+                &ldquo;I cannot express enough how happy I am. No stress, just a <span className="font-semibold" style={{ color: '#787060' }}>beautifully furnished space</span> that went beyond what I had in mind.&rdquo;
               </p>
             </div>
           </div>

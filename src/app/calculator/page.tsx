@@ -755,7 +755,7 @@ export default function CalculatorPage() {
       let monthlyRevenue: number;
       
       if (percentiles?.revenue?.p50 > 0) {
-        // p50 is ALREADY annual revenue - don't multiply by 12 again!
+        // p50 is ALREADY annual revenue - don&apos;t multiply by 12 again!
         annualRevenue = percentiles.revenue.p50;
         monthlyRevenue = Math.round(annualRevenue / 12);
       } else if (parseNum(neighborhood?.annualRevenue) > 0) {
@@ -2687,7 +2687,7 @@ export default function CalculatorPage() {
                   </div>
                   <div>
                     <p className="font-medium text-green-800">Analyzed property revenue potential</p>
-                    <p className="text-sm text-green-600">You've run the numbers - great first step!</p>
+                    <p className="text-sm text-green-600">You&apos;ve run the numbers - great first step!</p>
                   </div>
                 </div>
                 
@@ -2743,7 +2743,7 @@ export default function CalculatorPage() {
                   <div className="flex-1">
                     <p className="font-semibold" style={{ color: "#92400e" }}>Need help with steps 2-5?</p>
                     <p className="text-sm mt-1" style={{ color: "#a16207" }}>
-                      Teeco's 1:1 mentorship walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
+                      Teeco&apos;s 1:1 mentorship walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
                     </p>
                     <a 
                       href="https://teeco.co/fund-your-financial-freedom"
