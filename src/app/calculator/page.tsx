@@ -144,6 +144,11 @@ export default function CalculatorPage() {
   const [suppliesMonthly, setSuppliesMonthly] = useState(50);
   const [miscMonthly, setMiscMonthly] = useState(0);
 
+  // AI Analysis State
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isLoadingAiAnalysis, setIsLoadingAiAnalysis] = useState(false);
+  const [showAiAnalysis, setShowAiAnalysis] = useState(false);
+
   // Load recent searches from localStorage (with 60-minute cache expiration for API compliance)
   const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
   
@@ -1362,6 +1367,93 @@ export default function CalculatorPage() {
   };
 
   const investment = calculateInvestment();
+
+  // Get AI Analysis of the deal
+  const getAiAnalysis = async () => {
+    if (!result || investment.needsPrice) return;
+    
+    setIsLoadingAiAnalysis(true);
+    setShowAiAnalysis(true);
+    setAiAnalysis(null);
+    
+    const displayRevenue = useCustomIncome && customAnnualIncome 
+      ? parseFloat(customAnnualIncome) 
+      : revenuePercentile === "75th" && result.percentiles?.revenue?.p75
+        ? result.percentiles.revenue.p75
+        : revenuePercentile === "90th" && result.percentiles?.revenue?.p90
+          ? result.percentiles.revenue.p90
+          : result.annualRevenue;
+    
+    const analysisPrompt = `I need a comprehensive $500-level consulting analysis of this STR investment deal. Please analyze every aspect and help me think like a sophisticated investor.
+
+## PROPERTY DATA
+- **Location:** ${result.address || result.neighborhood}, ${result.city}, ${result.state}
+- **Property Type:** ${result.propertyType || 'Single Family'}
+- **Bedrooms:** ${result.bedrooms} | **Bathrooms:** ${result.bathrooms}
+- **Square Feet:** ${result.sqft || propertySqft}
+- **Nearby STR Listings:** ${result.nearbyListings || 'Unknown'}
+
+## REVENUE PROJECTIONS
+- **Projected Annual Revenue:** $${displayRevenue.toLocaleString()}
+- **Average Daily Rate (ADR):** $${result.adr}
+- **Occupancy Rate:** ${result.occupancy}%
+- **Monthly Average:** $${Math.round(displayRevenue / 12).toLocaleString()}
+${result.percentiles ? `- **Market 75th Percentile Revenue:** $${result.percentiles.revenue.p75.toLocaleString()}
+- **Market 90th Percentile Revenue:** $${result.percentiles.revenue.p90.toLocaleString()}` : ''}
+
+## INVESTMENT STRUCTURE
+- **Purchase Price:** $${parseInt(purchasePrice).toLocaleString()}
+- **Down Payment:** ${downPaymentPercent}% ($${investment.downPayment.toLocaleString()})
+- **Loan Amount:** $${investment.loanAmount.toLocaleString()} at ${interestRate}% for ${loanTerm} years
+- **Monthly Mortgage (P&I):** $${investment.monthlyMortgage.toLocaleString()}
+- **Total Cash Required:** $${investment.totalCashNeeded.toLocaleString()}
+
+## ANNUAL EXPENSES
+- **Mortgage (P&I):** $${(investment.monthlyMortgage * 12).toLocaleString()}
+- **Property Tax (${propertyTaxRate}%):** $${investment.annualPropertyTax.toLocaleString()}
+- **Insurance:** $${investment.annualInsurance.toLocaleString()}
+- **Management Fee (${managementFeePercent}%):** $${investment.annualManagement.toLocaleString()}
+- **Operating Expenses:** $${(investment.monthlyOperating * 12).toLocaleString()}
+- **Total Annual Expenses:** $${investment.totalAnnualExpenses.toLocaleString()}
+
+## KEY METRICS
+- **Annual Cash Flow:** $${investment.cashFlow.toLocaleString()}
+- **Monthly Cash Flow:** $${Math.round(investment.monthlyCashFlow).toLocaleString()}
+- **Cash-on-Cash Return:** ${investment.cashOnCashReturn.toFixed(1)}%
+- **10-Year Projected Cash Flow:** $${(investment.cashFlow * 10).toLocaleString()}
+
+Please provide:
+1. **Deal Quality Assessment** - Is this a good deal? Rate it and explain why.
+2. **What These Numbers Really Mean** - Translate the metrics into plain English impact on their life.
+3. **Hidden Considerations** - What are they NOT thinking about that could make or break this deal?
+4. **Comparison to Benchmarks** - How does this compare to what successful STR investors target?
+5. **Red Flags & Green Lights** - Specific concerns or exciting opportunities in this deal.
+6. **Questions to Ask** - 3-5 specific questions they should investigate before buying.
+7. **The Wealth-Building Perspective** - Help them see how this fits into building long-term wealth.
+8. **Bottom Line Recommendation** - Your honest assessment and suggested next steps.
+
+Be specific, use the actual numbers, and help them think like a sophisticated investor who's done this many times.`;
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: analysisPrompt }],
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get AI analysis");
+      
+      const data = await response.json();
+      setAiAnalysis(data.message);
+    } catch (error) {
+      console.error("AI Analysis error:", error);
+      setAiAnalysis("I'm having trouble generating the analysis right now. Please try again in a moment, or reach out to hello@teeco.co for personalized guidance!");
+    } finally {
+      setIsLoadingAiAnalysis(false);
+    }
+  };
 
   // Generate seasonality data (12 months)
   const getSeasonalityData = (): { year: number; month: number; occupancy: number; revenue?: number; adr?: number }[] => {
@@ -2638,33 +2730,150 @@ export default function CalculatorPage() {
               </div>
             )}
 
-            {/* Talk to Teeco CTA */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#2b2823" }}>
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1 text-center sm:text-left">
-                  <h3 className="text-lg font-semibold text-white mb-1">Want Expert Guidance on This Deal?</h3>
-                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
-                    Chat with Edge Assistant to analyze this property using proven rural STR strategies
-                  </p>
+            {/* AI Analysis CTA */}
+            {!investment.needsPrice && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#2b2823" }}>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex-1 text-center sm:text-left">
+                    <h3 className="text-lg font-semibold text-white mb-1">Get $500-Level Deal Analysis</h3>
+                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+                      Our AI will analyze every aspect of this deal and help you think like a sophisticated investor
+                    </p>
+                  </div>
+                  <button
+                    onClick={getAiAnalysis}
+                    disabled={isLoadingAiAnalysis}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-105 disabled:opacity-70"
+                    style={{ backgroundColor: "#ffffff", color: "#2b2823" }}
+                  >
+                    {isLoadingAiAnalysis ? (
+                      <>
+                        <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xl">🤖</span>
+                        Get AI Analysis
+                      </>
+                    )}
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    // Scroll to bottom and trigger chat assistant
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                    // Find and click the chat button after a short delay
-                    setTimeout(() => {
-                      const chatButton = document.querySelector('button[class*="fixed bottom-24 right-4"]') as HTMLButtonElement;
-                      if (chatButton) chatButton.click();
-                    }, 500);
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
-                  style={{ backgroundColor: "#ffffff", color: "#2b2823" }}
-                >
-                  <span className="text-xl">🤖</span>
-                  Chat with Edge Assistant
-                </button>
               </div>
-            </div>
+            )}
+
+            {/* AI Analysis Modal */}
+            {showAiAnalysis && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+                <div 
+                  className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl"
+                  style={{ backgroundColor: "#ffffff" }}
+                >
+                  {/* Modal Header */}
+                  <div className="sticky top-0 z-10 px-6 py-4 border-b" style={{ backgroundColor: "#2b2823", borderColor: "#3d3a34" }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+                          <span className="text-xl">🤖</span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-white">Edge AI Analysis</h3>
+                          <p className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                            {result?.address || result?.neighborhood}, {result?.city}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowAiAnalysis(false)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                        style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+                      >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Modal Content */}
+                  <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 80px)" }}>
+                    {isLoadingAiAnalysis ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: "#e5e3da" }}>
+                          <svg className="animate-spin w-8 h-8" style={{ color: "#787060" }} viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                        <p className="text-lg font-medium" style={{ color: "#2b2823" }}>Analyzing your deal...</p>
+                        <p className="text-sm" style={{ color: "#787060" }}>This may take 10-15 seconds</p>
+                      </div>
+                    ) : aiAnalysis ? (
+                      <div className="prose prose-sm max-w-none">
+                        <div 
+                          className="text-sm leading-relaxed whitespace-pre-wrap"
+                          style={{ color: "#2b2823" }}
+                        >
+                          {aiAnalysis.split('\n').map((line, i) => {
+                            // Style headers
+                            if (line.startsWith('## ') || line.startsWith('**') && line.endsWith('**')) {
+                              return (
+                                <p key={i} className="font-bold text-base mt-4 mb-2" style={{ color: "#2b2823" }}>
+                                  {line.replace(/^## |\*\*/g, '')}
+                                </p>
+                              );
+                            }
+                            // Style numbered items
+                            if (/^\d+\./.test(line)) {
+                              return (
+                                <p key={i} className="font-semibold mt-3 mb-1" style={{ color: "#2b2823" }}>
+                                  {line}
+                                </p>
+                              );
+                            }
+                            // Regular text
+                            return <p key={i} className="mb-2">{line}</p>;
+                          })}
+                        </div>
+                        
+                        {/* CTA at bottom */}
+                        <div className="mt-6 pt-4 border-t" style={{ borderColor: "#e5e3da" }}>
+                          <p className="text-sm text-center mb-3" style={{ color: "#787060" }}>
+                            Want personalized guidance on this deal?
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <a
+                              href="mailto:hello@teeco.co?subject=Deal Analysis Help&body=Hi, I just analyzed a property and would love your expert opinion."
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all"
+                              style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
+                            >
+                              📧 Email Teeco
+                            </a>
+                            <button
+                              onClick={() => {
+                                setShowAiAnalysis(false);
+                                // Open chat assistant
+                                setTimeout(() => {
+                                  const chatButton = document.querySelector('button[class*="fixed bottom-24 right-4"]') as HTMLButtonElement;
+                                  if (chatButton) chatButton.click();
+                                }, 100);
+                              }}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all"
+                              style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
+                            >
+                              💬 Ask More Questions
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Your Next Steps Checklist */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
