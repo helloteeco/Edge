@@ -295,6 +295,32 @@ export default function CalculatorPage() {
         
         // Fetch user credits
         fetchUserCredits(data.email);
+        
+        // Restore pending analysis state if it exists
+        const pendingAddress = localStorage.getItem("edge_pending_address");
+        const pendingBedrooms = localStorage.getItem("edge_pending_bedrooms");
+        const pendingBathrooms = localStorage.getItem("edge_pending_bathrooms");
+        const pendingGuests = localStorage.getItem("edge_pending_guests");
+        
+        if (pendingAddress) {
+          console.log("[Auth] Restoring pending analysis state:", { pendingAddress, pendingBedrooms, pendingBathrooms, pendingGuests });
+          setAddress(pendingAddress);
+          if (pendingBedrooms) setBedrooms(parseInt(pendingBedrooms, 10));
+          if (pendingBathrooms) setBathrooms(parseInt(pendingBathrooms, 10));
+          if (pendingGuests) setGuestCount(parseInt(pendingGuests, 10));
+          
+          // Clear pending state from localStorage
+          localStorage.removeItem("edge_pending_address");
+          localStorage.removeItem("edge_pending_bedrooms");
+          localStorage.removeItem("edge_pending_bathrooms");
+          localStorage.removeItem("edge_pending_guests");
+          
+          // Auto-trigger the credit confirmation modal after a short delay
+          setTimeout(() => {
+            setPendingAnalysis(pendingAddress);
+            setShowCreditConfirm(true);
+          }, 500);
+        }
       } else {
         console.error("[Auth] Verification failed:", data.error);
         setAuthError(data.error || "Invalid or expired link. Please request a new one.");
@@ -369,6 +395,14 @@ export default function CalculatorPage() {
     
     // Check if user is authenticated
     if (!isAuthenticated && !hasValidSession) {
+      // Save pending analysis state to localStorage before showing auth modal
+      // This allows us to restore state after magic link redirect
+      localStorage.setItem("edge_pending_address", address);
+      localStorage.setItem("edge_pending_bedrooms", bedrooms?.toString() || "");
+      localStorage.setItem("edge_pending_bathrooms", bathrooms?.toString() || "");
+      localStorage.setItem("edge_pending_guests", guestCount?.toString() || "");
+      console.log("[Auth] Saved pending analysis state:", { address, bedrooms, bathrooms, guestCount });
+      
       setShowAuthModal(true);
       setAuthStep("email");
       setAuthError(null);
