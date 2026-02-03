@@ -424,3 +424,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix floating heart button overlapping with AI chat button - move higher up
 - [x] Fix dark screen staying after double-tap heart animation
 - [x] Fix magic link redirect to return to Calculator page with preserved state
+- [ ] Fix Sign in to Sync modal not centered on mobile screen

@@ -205,16 +205,26 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
         </div>
       )}
 
-      {/* Login Prompt Modal */}
+      {/* Login Prompt Modal - Using portal-like fixed positioning */}
       {showLoginPrompt && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4" 
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4" 
+          style={{ 
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
           onClick={() => setShowLoginPrompt(false)}
         >
           <div 
             className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-down"
-            style={{ backgroundColor: '#ffffff' }}
+            style={{ 
+              backgroundColor: '#ffffff',
+              margin: 'auto',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center relative">
