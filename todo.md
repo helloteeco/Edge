@@ -422,4 +422,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Set up Open Graph meta tags for state pages (rich link previews)
 - [ ] Include branded share text with Edge tagline
 - [x] Fix floating heart button overlapping with AI chat button - move higher up
-- [ ] Fix dark screen staying after double-tap heart animation
+- [x] Fix dark screen staying after double-tap heart animation
