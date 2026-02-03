@@ -304,7 +304,7 @@ async function mashvisorFetch(endpoint: string) {
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "x-rapidapi-key": MASHVISOR_API_KEY,
+      "x-rapidapi-key": MASHVISOR_API_KEY || "",
       "x-rapidapi-host": MASHVISOR_HOST,
     },
   });
