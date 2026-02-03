@@ -138,10 +138,20 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error("OpenAI API error:", error);
+      const errorText = await response.text();
+      console.error("OpenAI API error:", response.status, errorText);
+      // Return more specific error for debugging
+      let errorMessage = "Failed to get AI response";
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error?.message) {
+          errorMessage = errorJson.error.message;
+        }
+      } catch {
+        // Keep default error message
+      }
       return NextResponse.json(
-        { error: "Failed to get AI response" },
+        { error: errorMessage },
         { status: 500 }
       );
     }
