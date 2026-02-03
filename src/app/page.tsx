@@ -33,56 +33,61 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   const [activeJourneyInfo, setActiveJourneyInfo] = useState<string | null>(null);
   
-  // Journey stage info content
+  // Journey stage info content - accurate Edge features
   const journeyInfo: Record<string, { title: string; description: string; features: string[] }> = {
     'Research': {
       title: 'Research Markets',
-      description: 'Edge helps you discover the best STR markets with real data.',
+      description: 'Find high cash flow STR markets with real investor data.',
       features: [
-        'Interactive map showing STR performance by state',
-        'Top markets ranked by revenue potential',
-        'Filter by bedroom count and property type',
-        'Compare markets side-by-side'
+        'Interactive map tracking appreciation, migration, home prices & inventory',
+        'STR Grade scoring to identify high cash flow markets',
+        'Dynamic Top 10 Markets list that updates as we add more cities',
+        'Search tab to explore specific markets in depth',
+        'STR regulations guide & community buy list resources'
       ]
     },
     'Analyze': {
       title: 'Analyze Deals',
-      description: 'Run the numbers on any property with our AI-powered calculator.',
+      description: 'Get thorough metrics and generate professional reports.',
       features: [
-        'Accurate revenue estimates from real Airbnb data',
-        'Monthly seasonality projections',
-        'Cash flow analysis with all expenses',
-        'AI-powered deal analysis and recommendations'
+        'Deep deal analysis with accurate revenue estimates',
+        'Generate reports to email investors or save for yourself',
+        'AI Analysis to help interpret returns if you\'re new',
+        'Save section to review old reports and add personal notes',
+        '3 free analyses included, more available if needed'
       ]
     },
     'Acquire': {
       title: 'Acquire Property',
-      description: 'Get connected with STR-friendly lenders and financing options.',
+      description: 'Discover 45+ creative ways to fund your STR investment.',
       features: [
-        'DSCR loans that qualify on rental income',
-        'Down payment as low as 15-20%',
-        'Pre-qualified lender connections',
-        'Funding calculator to plan your purchase'
+        'Funding tab with 45+ different financing strategies',
+        'Quick quiz to identify your 5 most likely funding options',
+        'Links to Zillow for finding agents and lenders',
+        'Edge AI Assistant can answer funding questions',
+        'Apply to our mentorship program for personalized guidance'
       ]
     },
     'Setup': {
       title: 'Setup & Design',
-      description: 'Transform your property into a top-performing rental.',
+      description: 'Professional in-house services to launch your STR.',
       features: [
-        'Professional design consultations',
-        'Furniture packages and setup guides',
-        'Photography and listing optimization',
-        'Launch support to get your first bookings'
+        'In-house professional design services for Teeco students',
+        'Property setup and furnishing services',
+        'Co-hosting services to manage your listing',
+        'Link to design & setup services in Edge Assistant',
+        '1-hour free video training to get started'
       ]
     },
     'Scale': {
       title: 'Scale Your Portfolio',
-      description: 'Grow from one property to a thriving STR business.',
+      description: 'Grow with mentorship, community, and ongoing education.',
       features: [
-        'Portfolio tracking and performance analytics',
-        'Advanced market research for expansion',
-        'Community of successful STR investors',
-        'Ongoing education and strategy sessions'
+        'Mentorship coaching program application',
+        'Access to "The Book on Rural Airbnb Investing"',
+        'Free video training library',
+        'Edge AI Assistant trained on STR investing knowledge',
+        'Community resources and ongoing support'
       ]
     }
   };
