@@ -426,3 +426,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix magic link redirect to return to Calculator page with preserved state
 - [x] Fix Sign in to Sync modal not centered on mobile screen
 - [x] Fix magic link email - move Sign In button to top so its visible without expanding
+- [ ] Fix Sign in to Sync modal centering - use React Portal to escape parent container
