@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, ReactNode, useEffect } from "react";
+import AuthModal from "./AuthModal";
 
 // Save limit constant - can be easily changed
 export const SAVE_LIMIT = 10;
@@ -18,6 +19,27 @@ export function isAtSaveLimit(): boolean {
   return getTotalSavedCount() >= SAVE_LIMIT;
 }
 
+// Helper to check if user is logged in
+function isUserLoggedIn(): boolean {
+  if (typeof window === 'undefined') return false;
+  const authEmail = localStorage.getItem("edge_auth_email");
+  const authToken = localStorage.getItem("edge_auth_token");
+  const authExpiry = localStorage.getItem("edge_auth_expiry");
+  return !!(authEmail && authToken && authExpiry && Date.now() < parseInt(authExpiry, 10));
+}
+
+// Helper to check if login prompt has been shown
+function hasShownLoginPrompt(): boolean {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem("edge_shown_login_prompt") === "true";
+}
+
+// Helper to mark login prompt as shown
+function markLoginPromptShown(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem("edge_shown_login_prompt", "true");
+}
+
 interface DoubleTapSaveProps {
   children: ReactNode;
   isSaved: boolean;
@@ -28,6 +50,8 @@ interface DoubleTapSaveProps {
 export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" }: DoubleTapSaveProps) {
   const [showHeart, setShowHeart] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [heartPosition, setHeartPosition] = useState({ x: 0, y: 0 });
   const [animationType, setAnimationType] = useState<'pop' | 'shake'>('pop');
   const lastTapRef = useRef<number>(0);
@@ -84,6 +108,14 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
           setShowHeart(true);
           onToggleSave();
           setTimeout(() => setShowHeart(false), 1000);
+          
+          // Show login prompt after first save if not logged in
+          if (!isUserLoggedIn() && !hasShownLoginPrompt()) {
+            setTimeout(() => {
+              setShowLoginPrompt(true);
+              markLoginPromptShown();
+            }, 1200); // Show after heart animation
+          }
         }
       }
       
@@ -172,6 +204,59 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
           </div>
         </div>
       )}
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div 
+            className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-down"
+            style={{ backgroundColor: '#ffffff' }}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fef2f2' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="#ef4444">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: '#2b2823' }}>Market Saved!</h3>
+              <p className="text-sm mb-6" style={{ color: '#787060' }}>
+                Sign in to sync your saved markets across all your devices and never lose them.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setShowLoginPrompt(false);
+                    setShowAuthModal(true);
+                  }}
+                  className="w-full py-3 rounded-xl font-medium text-white transition-all hover:opacity-90 active:scale-98"
+                  style={{ backgroundColor: '#2b2823' }}
+                >
+                  Sign In to Sync
+                </button>
+                <button
+                  onClick={() => setShowLoginPrompt(false)}
+                  className="w-full py-3 rounded-xl font-medium transition-all hover:opacity-80"
+                  style={{ color: '#787060' }}
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          // Optionally trigger a sync of saved items here
+        }}
+        title="Sign in to Edge"
+        subtitle="Sign in to save your favorite markets and sync across all your devices. No password needed."
+      />
     </div>
   );
 }
