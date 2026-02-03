@@ -1001,19 +1001,22 @@ export default function FundingPage() {
             </div>
             <div>
               <p className="font-semibold" style={{ color: '#166534' }}>
-                Why Smart Financing Beats Paying Cash
+                Why Most Investors Use Financing
               </p>
               <p className="text-sm mt-2 leading-relaxed" style={{ color: '#15803d' }}>
-                <strong>Cash-on-cash return</strong> measures how hard your actual dollars work. By financing high cash flow STR deals, 
-                you can dramatically increase your returns.
+                <strong>The reality:</strong> Most people can&apos;t pay $400K cash for a property. And here&apos;s the thing — you don&apos;t need to. 
+                While a loan means monthly payments, the math often works in your favor.
               </p>
               <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: '#dcfce7' }}>
                 <p className="text-sm font-medium" style={{ color: '#166534' }}>
-                  Example: A $250K property generating $30K/year net income yields 
-                  <span className="font-bold"> 12%</span> if you pay all cash — but 
-                  <span className="font-bold text-green-700"> 60% cash-on-cash</span> if you put $50K down and finance the rest.
+                  <strong>Real example:</strong> A $300K property making $40K/year. Pay all cash? You get $40K profit (13% return). 
+                  Put 20% down ($60K) with a loan? Your mortgage is ~$1,500/month ($18K/year). You keep $22K profit — that&apos;s a 
+                  <span className="font-bold text-green-700"> 37% return</span> on your $60K, and you still have $240K to invest elsewhere.
                 </p>
               </div>
+              <p className="text-xs mt-3" style={{ color: '#22c55e' }}>
+                💡 <strong>The trade-off:</strong> Yes, you&apos;ll have less cash in your pocket each month. But your return on the money you actually invested is much higher — and you can buy multiple properties instead of just one.
+              </p>
             </div>
           </div>
         </div>

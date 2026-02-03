@@ -431,3 +431,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Extend cache expiration from 60 minutes to 90 days for property analyses
 - [x] Improve History tab layout - better spacing, avoid overlap with chat button
 - [x] Add delete option for history reports with confirmation dialog warning about credit usage
+- [ ] Update financing education card to be more balanced - mention trade-offs but explain why leverage makes sense
