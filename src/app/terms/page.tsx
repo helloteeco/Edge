@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import Image from "next/image";
+
 export const metadata = {
   title: "Terms of Service | Edge by Teeco",
   description: "Terms of Service for Edge by Teeco - STR Investment Analysis Platform",
@@ -12,7 +14,7 @@ export default function TermsPage() {
       <div style={{ background: "linear-gradient(135deg, #2b2823 0%, #3d3a34 50%, #2b2823 100%)" }}>
         <div className="max-w-4xl mx-auto px-4 py-6">
           <Link href="/" className="flex items-center gap-3 mb-4">
-            <img src="/teeco-icon-black.png" alt="Teeco" className="w-8 h-8 invert" />
+            <Image src="/teeco-icon-black.png" alt="Teeco" width={32} height={32} className="w-8 h-8 invert" />
             <span className="text-xl font-bold text-white" style={{ fontFamily: "Source Serif Pro, Georgia, serif" }}>
               Edge by Teeco
             </span>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
 
 // ============================================================================
@@ -1504,7 +1505,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/teeco-icon-black.png" alt="Teeco" className="w-8 h-8 invert" />
+            <Image src="/teeco-icon-black.png" alt="Teeco" width={32} height={32} className="w-8 h-8 invert" />
             <div>
               <span className="text-white font-semibold">Edge by Teeco</span>
               <p className="text-xs text-white/60 hidden sm:block">Your unfair advantage in STR investing</p>
@@ -3442,7 +3443,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <>
                 {/* Logo */}
                 <div className="flex justify-center mb-6">
-                  <img src="/teeco-logocopy.PNG" alt="Teeco" className="h-10" />
+                  <Image src="/teeco-logocopy.PNG" alt="Teeco" width={120} height={40} className="h-10 w-auto" />
                 </div>
                 
                 <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#2b2823' }}>

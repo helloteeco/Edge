@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -93,7 +94,7 @@ export default function AuthModal({
           <>
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <img src="/teeco-logocopy.PNG" alt="Teeco" className="h-10" />
+              <Image src="/teeco-logocopy.PNG" alt="Teeco" width={120} height={40} className="h-10 w-auto" />
             </div>
             
             <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#2b2823' }}>
