@@ -1682,7 +1682,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
           )}
           
           {/* Address Input */}
-          <div className="flex gap-3">
+          <div className="flex gap-3" style={{ position: "relative", zIndex: showSuggestions ? 100 : 1 }}>
             <div className="flex-1 relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
                 <svg className="w-5 h-5" style={{ color: "#787060" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1717,20 +1717,26 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               {showSuggestions && suggestions.length > 0 && (
                 <div 
                   ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50"
+                  className="absolute left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 overflow-y-auto"
+                  style={{ 
+                    top: "100%",
+                    zIndex: 9999,
+                    maxHeight: "min(300px, 50vh)",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1)"
+                  }}
                 >
                   {suggestions.map((suggestion, index) => (
                     <button
                       key={index}
                       onClick={() => handleSelectSuggestion(suggestion)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start gap-3 border-b border-gray-100 last:border-b-0"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100 flex items-start gap-3 border-b border-gray-100 last:border-b-0"
                     >
                       <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "#787060" }} fill="currentColor" viewBox="0 0 24 24">
                         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                       </svg>
-                      <div>
-                        <p className="font-medium text-gray-900">{suggestion.streetLine || suggestion.street}</p>
-                        <p className="text-sm text-gray-500">{suggestion.locationLine || `${suggestion.city}, ${suggestion.state}`}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 truncate">{suggestion.streetLine || suggestion.street}</p>
+                        <p className="text-sm text-gray-500 truncate">{suggestion.locationLine || `${suggestion.city}, ${suggestion.state}`}</p>
                       </div>
                     </button>
                   ))}
