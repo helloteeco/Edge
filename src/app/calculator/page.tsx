@@ -3357,12 +3357,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
       {/* Paywall Modal - Out of Credits */}
       {showPaywall && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full" style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto" style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             {/* Close button */}
-            <div className="flex justify-end mb-2">
+            <div className="flex justify-end">
               <button
                 onClick={() => setShowPaywall(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-all"
+                className="p-2 -mr-2 -mt-2 rounded-lg hover:bg-gray-100 transition-all"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -3370,51 +3370,63 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </button>
             </div>
             
-            <div className="text-center">
+            <div className="text-center px-2">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#fef3c7' }}>
-                <svg className="w-8 h-8" style={{ color: '#f59e0b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: '#fef3c7' }}>
+                <svg className="w-10 h-10" style={{ color: '#f59e0b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               
-              <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
+              <h2 className="text-2xl font-bold mb-3" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
                 You&apos;ve Used Your Free Analyses
               </h2>
-              <p className="text-sm mb-3" style={{ color: '#787060' }}>
+              <p className="text-base mb-6" style={{ color: '#787060' }}>
                 You&apos;ve analyzed {creditsLimit} properties for free (worth ${creditsLimit}).
               </p>
               
               {/* Value Reminder */}
-              <div className="text-left mb-4 p-3 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
-                <p className="text-xs font-semibold mb-2" style={{ color: '#2b2823' }}>Each analysis gives you:</p>
-                <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
-                  <li>✓ Revenue projections from real Airbnb data</li>
-                  <li>✓ Cash-on-cash return calculations</li>
-                  <li>✓ AI-powered deal analysis</li>
-                  <li>✓ Comparable property insights</li>
+              <div className="text-left mb-6 p-4 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: '#2b2823' }}>Each analysis gives you:</p>
+                <ul className="text-sm space-y-2" style={{ color: '#787060' }}>
+                  <li className="flex items-start gap-2">
+                    <span style={{ color: '#22c55e' }}>✓</span>
+                    <span>Revenue projections from real Airbnb data</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span style={{ color: '#22c55e' }}>✓</span>
+                    <span>Cash-on-cash return calculations</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span style={{ color: '#22c55e' }}>✓</span>
+                    <span>AI-powered deal analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span style={{ color: '#22c55e' }}>✓</span>
+                    <span>Comparable property insights</span>
+                  </li>
                 </ul>
               </div>
               
-              <p className="text-sm mb-4" style={{ color: '#787060' }}>
+              <p className="text-base mb-5" style={{ color: '#787060' }}>
                 Continue analyzing to find your perfect STR investment:
               </p>
               
               {/* Pricing Options */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-4 mb-8">
                 <a 
                   href="https://buy.stripe.com/aFa4gz4C731odnE7uU8AE03"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
+                  className="block p-5 rounded-2xl border-2 cursor-pointer hover:border-gray-400 hover:shadow-md transition-all" 
                   style={{ borderColor: '#e5e5e5' }}
                 >
                   <div className="flex justify-between items-center">
                     <div className="text-left">
-                      <p className="font-semibold" style={{ color: '#2b2823' }}>5 Credits</p>
-                      <p className="text-sm" style={{ color: '#787060' }}>Best for trying out</p>
+                      <p className="text-lg font-semibold" style={{ color: '#2b2823' }}>5 Credits</p>
+                      <p className="text-sm mt-1" style={{ color: '#787060' }}>Best for trying out</p>
                     </div>
-                    <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$4.99</p>
+                    <p className="text-2xl font-bold" style={{ color: '#2b2823' }}>$4.99</p>
                   </div>
                 </a>
                 
@@ -3422,32 +3434,32 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   href="https://buy.stripe.com/14A8wP7OjfOa4R83eE8AE04"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" 
+                  className="block p-5 rounded-2xl border-2 cursor-pointer hover:border-green-600 hover:shadow-md transition-all relative" 
                   style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}
                 >
-                  <div className="absolute -top-2 left-4 px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
+                  <div className="absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
                     BEST VALUE
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mt-1">
                     <div className="text-left">
-                      <p className="font-semibold" style={{ color: '#2b2823' }}>25 Credits</p>
-                      <p className="text-sm" style={{ color: '#787060' }}>For serious investors</p>
+                      <p className="text-lg font-semibold" style={{ color: '#2b2823' }}>25 Credits</p>
+                      <p className="text-sm mt-1" style={{ color: '#787060' }}>For serious investors</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$19.99</p>
-                      <p className="text-xs" style={{ color: '#22c55e' }}>Save 20%</p>
+                      <p className="text-2xl font-bold" style={{ color: '#2b2823' }}>$19.99</p>
+                      <p className="text-sm font-medium" style={{ color: '#22c55e' }}>Save 20%</p>
                     </div>
                   </div>
                 </a>
               </div>
               
-              <p className="text-xs mb-4" style={{ color: '#a0a0a0' }}>
+              <p className="text-sm mb-5" style={{ color: '#a0a0a0' }}>
                 Secure payment powered by Stripe. Credits are added instantly after purchase.
               </p>
               
               <button
                 onClick={() => setShowPaywall(false)}
-                className="w-full py-3 rounded-xl font-medium text-sm"
+                className="w-full py-4 rounded-xl font-medium"
                 style={{ backgroundColor: '#e5e3da', color: '#787060' }}
               >
                 Maybe Later
