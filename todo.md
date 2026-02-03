@@ -394,7 +394,16 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Social Section Update (February 2026)
-- [ ] Replace follower count display with clean single IG icon
-- [ ] Add dropdown with @jeffchheuy and @teeco.co options when IG icon tapped
-- [ ] Add "Share Edge with friends" button
-- [ ] Add YouTube icon linking directly to youtube.com/@jeffchheuy
+- [x] Replace follower count display with clean single IG icon
+- [x] Add dropdown with @jeffchheuy and @teeco.co options when IG icon tapped
+- [x] Add "Share Edge with friends" button
+- [x] Add YouTube icon linking directly to youtube.com/@jeffchheuy
+
+
+## Legend Order Update (February 2026)
+- [ ] Flip all map legends to show best values (green) first instead of worst (red) first
+
+
+## Login Prompt for Saves (February 2026)
+- [ ] Show login prompt after first save for non-logged-in users
+- [ ] Allow users to sync their saved markets across devices by logging in

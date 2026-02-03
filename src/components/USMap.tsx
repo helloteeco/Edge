@@ -237,57 +237,58 @@ export function USMap() {
     return view?.description || "";
   };
 
-  // STANDARDIZED LEGEND - Always shows worst (red) to best (green), left to right
+  // STANDARDIZED LEGEND - Always shows best (green) to worst (red), left to right
+  // Leads with positive values to build trust and show investors what "good" looks like first
   const renderLegend = () => {
     switch (mapView) {
       case "strScore":
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>F</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>D</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>C</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>A/A+</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>B/B+</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>A/A+</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>C</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>D</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>F</span>
             </div>
           </>
         );
       case "homeValue":
-        // Order: worst (expensive/red) to best (affordable/green)
+        // Order: best (affordable/green) to worst (expensive/red)
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;$450K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>$350-450K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>$250-350K</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;$200K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>$200-250K</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;$200K</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>$250-350K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>$350-450K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;$450K</span>
             </div>
           </>
         );
@@ -295,24 +296,24 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;0%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>0-2%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>2-4%</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;5.5%</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>4-5.5%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;5.5%</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>2-4%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>0-2%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;0%</span>
             </div>
           </>
         );
@@ -320,24 +321,24 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;-50K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>-50K-0</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>0-50K</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;100K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>50-100K</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;100K</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>0-50K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>-50K-0</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;-50K</span>
             </div>
           </>
         );
@@ -345,24 +346,24 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>Very Low</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>Low</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>Moderate</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Very High</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>High</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>Very High</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Moderate</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Low</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Very Low</span>
             </div>
           </>
         );
@@ -370,24 +371,24 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;0%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>0-10%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>10-18%</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;25%</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>18-25%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;25%</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>10-18%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>0-10%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;0%</span>
             </div>
           </>
         );
@@ -395,24 +396,24 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;12%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>12-16%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>16-22%</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;28%</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>22-28%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;28%</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>16-22%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>12-16%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;12%</span>
             </div>
           </>
         );
@@ -420,24 +421,24 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;30</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>30-40</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>40-55</span>
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&gt;70 days</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>55-70</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;70 days</span>
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>40-55</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>30-40</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>&lt;30</span>
             </div>
           </>
         );
