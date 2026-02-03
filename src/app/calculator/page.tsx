@@ -3400,7 +3400,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <div className="space-y-3 mb-4">
                 {/* Tier 1: Starter - Makes middle look smart */}
                 <a 
-                  href="https://buy.stripe.com/9B628r5GbfOa2J03eE8AE07"
+                  href={`https://buy.stripe.com/9B628r5GbfOa2J03eE8AE07?prefilled_email=${encodeURIComponent(authEmail || '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
@@ -3417,7 +3417,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 
                 {/* Tier 2: Pro - BEST VALUE - Where most buyers land */}
                 <a 
-                  href="https://buy.stripe.com/9B614ngkP1XkdnEaH68AE09"
+                  href={`https://buy.stripe.com/9B614ngkP1XkdnEaH68AE09?prefilled_email=${encodeURIComponent(authEmail || '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block p-4 rounded-xl border-2 cursor-pointer hover:border-green-600 transition-all relative" 
@@ -3440,7 +3440,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 
                 {/* Tier 3: Power - Price anchor that makes Pro look like a deal */}
                 <a 
-                  href="https://buy.stripe.com/eVq3cv7Oj1Xk6Zg7uU8AE06"
+                  href={`https://buy.stripe.com/eVq3cv7Oj1Xk6Zg7uU8AE06?prefilled_email=${encodeURIComponent(authEmail || '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" 
