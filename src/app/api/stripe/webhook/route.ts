@@ -11,9 +11,15 @@ const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Credit amounts for each product
 const PRODUCT_CREDITS: Record<string, number> = {
-  "prod_TuHyUGcl0kVMMT": 5,   // 5 Credits Pack
-  "prod_TuHyWbVIQO6qfC": 25,  // 25 Credits Pack
-  "prod_TuHy40OPqZCfrL": 999, // Unlimited Monthly (set high number)
+  // Current active products (Feb 3, 2026)
+  "prod_TufSWvaZZDzaXk": 5,    // 5 Analysis Credits - Starter Pack ($4.99)
+  "prod_TufY8I7l7RceCQ": 25,   // 25 Analysis Credits - Pro Pack ($19.99)
+  "prod_TueedpsdbnL8qL": 100,  // 100 Analysis Credits - Power Pack ($69.99)
+  
+  // Legacy products (keep for existing purchases)
+  "prod_TuHyUGcl0kVMMT": 5,    // Old 5 Credits Pack
+  "prod_TuHyWbVIQO6qfC": 25,   // Old 25 Credits Pack
+  "prod_TuHy40OPqZCfrL": 999,  // Unlimited Monthly
 };
 
 export async function POST(request: NextRequest) {
@@ -93,10 +99,11 @@ export async function POST(request: NextRequest) {
       // Fallback: determine from amount if line items failed
       if (creditsToAdd === 0) {
         const amountTotal = session.amount_total;
-        if (amountTotal === 499) creditsToAdd = 5;
-        else if (amountTotal === 1999) creditsToAdd = 25;
+        if (amountTotal === 499) creditsToAdd = 5;           // $4.99 = 5 credits
+        else if (amountTotal === 1999) creditsToAdd = 25;    // $19.99 = 25 credits
+        else if (amountTotal === 6999) creditsToAdd = 100;   // $69.99 = 100 credits
         else if (amountTotal === 2999) {
-          creditsToAdd = 999;
+          creditsToAdd = 999;                                 // $29.99 = Unlimited
           isUnlimited = true;
         }
       }
