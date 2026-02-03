@@ -427,4 +427,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix Sign in to Sync modal not centered on mobile screen
 - [x] Fix magic link email - move Sign In button to top so its visible without expanding
 - [x] Fix Sign in to Sync modal centering - use React Portal to escape parent container
-- [ ] Fix Vercel build error - DYNAMIC_SERVER_USAGE in cities/search route
+- [x] Fix Vercel build error - DYNAMIC_SERVER_USAGE in cities/search route
