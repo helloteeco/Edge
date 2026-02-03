@@ -149,6 +149,9 @@ export default function CalculatorPage() {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAiAnalysis, setIsLoadingAiAnalysis] = useState(false);
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
+  
+  // Force refresh state (bypasses cache, always uses credit)
+  const [forceRefresh, setForceRefresh] = useState(false);
 
   // Lock body scroll when AI Analysis modal is open
   useEffect(() => {
@@ -212,7 +215,7 @@ export default function CalculatorPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle URL params (address, bedrooms, bathrooms, guests, cached)
+  // Handle URL params (address, bedrooms, bathrooms, guests, cached, force)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const addressParam = urlParams.get("address");
@@ -220,12 +223,18 @@ export default function CalculatorPage() {
     const bathroomsParam = urlParams.get("bathrooms");
     const guestsParam = urlParams.get("guests");
     const cachedParam = urlParams.get("cached");
+    const forceParam = urlParams.get("force");
     
     if (addressParam) {
       setAddress(addressParam);
       if (bedroomsParam) setBedrooms(parseInt(bedroomsParam, 10));
       if (bathroomsParam) setBathrooms(parseInt(bathroomsParam, 10));
       if (guestsParam) setGuestCount(parseInt(guestsParam, 10));
+      
+      // If force=true, set forceRefresh to bypass cache on next analysis
+      if (forceParam === "true") {
+        setForceRefresh(true);
+      }
       
       // If cached=true, load from localStorage cache instead of making API call
       if (cachedParam === "true") {
@@ -473,20 +482,25 @@ export default function CalculatorPage() {
     
     setShowCreditConfirm(false);
     
-    // First check cache (no credit needed for cached data)
-    try {
-      const cacheResponse = await fetch(`/api/property-cache?address=${encodeURIComponent(pendingAnalysis || address)}`);
-      const cacheData = await cacheResponse.json();
-      
-      if (cacheData.success && cacheData.cached && cacheData.data) {
-        console.log("[Cache] Using cached data - no credit deducted");
-        // Use cached data directly
-        handleAnalyzeWithCache(cacheData.data);
-        setPendingAnalysis(null);
-        return;
+    // Check cache ONLY if not forcing refresh
+    if (!forceRefresh) {
+      try {
+        const cacheResponse = await fetch(`/api/property-cache?address=${encodeURIComponent(pendingAnalysis || address)}`);
+        const cacheData = await cacheResponse.json();
+        
+        if (cacheData.success && cacheData.cached && cacheData.data) {
+          console.log("[Cache] Using cached data - no credit deducted");
+          // Use cached data directly
+          handleAnalyzeWithCache(cacheData.data);
+          setPendingAnalysis(null);
+          setForceRefresh(false);
+          return;
+        }
+      } catch (error) {
+        console.error("[Cache] Error checking cache:", error);
       }
-    } catch (error) {
-      console.error("[Cache] Error checking cache:", error);
+    } else {
+      console.log("[Cache] Force refresh enabled - bypassing cache, will use credit");
     }
     
     // No cache - deduct credit first, then make API call
@@ -515,6 +529,7 @@ export default function CalculatorPage() {
       // Now proceed with analysis
       handleAnalyze(pendingAnalysis || undefined);
       setPendingAnalysis(null);
+      setForceRefresh(false);
     } catch (error) {
       console.error("[Credits] Error deducting:", error);
       setError("Failed to process request. Please try again.");
@@ -1896,7 +1911,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
             <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold" style={{ color: "#2b2823" }}>{result.neighborhood}</h3>
+                  <h3 className="text-base sm:text-lg font-semibold" style={{ color: "#2b2823" }}>{result.address || result.neighborhood}</h3>
                   <p className="text-xs sm:text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
                   {result.percentiles && (
                     <p className="text-xs text-gray-400 mt-1 sm:hidden">
@@ -3405,8 +3420,15 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </ul>
               </div>
               
+              {forceRefresh && (
+                <div className="text-left mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef3c7', border: '1px solid #fcd34d' }}>
+                  <p className="text-xs font-semibold" style={{ color: '#92400e' }}>⚠️ Fresh Analysis Requested</p>
+                  <p className="text-xs mt-1" style={{ color: '#a16207' }}>This will fetch new data from our API and use 1 credit, even if cached data exists.</p>
+                </div>
+              )}
+              
               <p className="text-sm mb-4" style={{ color: '#787060' }}>
-                Uses 1 of your <span className="font-semibold" style={{ color: '#22c55e' }}>
+                {forceRefresh ? 'Will use' : 'Uses'} 1 of your <span className="font-semibold" style={{ color: '#22c55e' }}>
                   {freeCreditsRemaining > 0 
                     ? `${freeCreditsRemaining} free` 
                     : `${purchasedCreditsRemaining}`
