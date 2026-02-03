@@ -212,6 +212,42 @@ export default function CalculatorPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handle URL params (address, bedrooms, bathrooms, guests, cached)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const addressParam = urlParams.get("address");
+    const bedroomsParam = urlParams.get("bedrooms");
+    const bathroomsParam = urlParams.get("bathrooms");
+    const guestsParam = urlParams.get("guests");
+    const cachedParam = urlParams.get("cached");
+    
+    if (addressParam) {
+      setAddress(addressParam);
+      if (bedroomsParam) setBedrooms(parseInt(bedroomsParam, 10));
+      if (bathroomsParam) setBathrooms(parseInt(bathroomsParam, 10));
+      if (guestsParam) setGuestCount(parseInt(guestsParam, 10));
+      
+      // If cached=true, load from localStorage cache instead of making API call
+      if (cachedParam === "true") {
+        const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+        const cachedSearch = recentSearches.find((s: { address: string }) => s.address === addressParam);
+        if (cachedSearch?.cachedResult) {
+          setResult(cachedSearch.cachedResult);
+          if (cachedSearch.cachedResult.listPrice > 0) {
+            setPurchasePrice(cachedSearch.cachedResult.listPrice.toString());
+          }
+          if (cachedSearch.cachedResult.sqft > 0) {
+            setPropertySqft(cachedSearch.cachedResult.sqft);
+          }
+        }
+      }
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Check for existing authentication on mount
   useEffect(() => {
     // First check URL for magic link token (takes priority)
@@ -1648,7 +1684,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
       <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 overflow-x-hidden">
         {/* Hero Section */}
         <div className="text-center mb-8">
-          <p className="text-sm font-medium mb-2" style={{ color: "#787060" }}>STR Investment Calculator</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <p className="text-sm font-medium" style={{ color: "#787060" }}>STR Investment Calculator</p>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e8f5e9', color: '#2e7d32' }}>AI-Assisted</span>
+          </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
             Analyze any rental property<br />in the United States
           </h1>
@@ -2004,6 +2043,29 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     +{Math.round((getGuestCountMultiplier() - 1) * 100)}% guest capacity bonus (sleeps {guestCount} vs standard {bedrooms * 2})
                   </p>
                 )}
+              </div>
+
+              {/* Google Maps Location */}
+              <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
+                <div className="p-3 flex items-center justify-between" style={{ backgroundColor: '#f5f4f0' }}>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Property Location</span>
+                  </div>
+                  <span className="text-xs" style={{ color: '#787060' }}>Scroll to explore area</span>
+                </div>
+                <iframe
+                  width="100%"
+                  height="250"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(result.address || `${result.neighborhood}, ${result.city}, ${result.state}`)}&zoom=15`}
+                />
               </div>
 
               {/* Custom Income Override */}

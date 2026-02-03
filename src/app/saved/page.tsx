@@ -48,6 +48,7 @@ interface AnalysisHistory {
   bedrooms?: number;
   bathrooms?: number;
   guestCount?: number;
+  cachedResult?: Record<string, unknown>;
 }
 
 export default function SavedPage() {
@@ -92,7 +93,7 @@ export default function SavedPage() {
     
     // Load analysis history from calculator recent searches
     const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
-    const historyData: AnalysisHistory[] = recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number }) => ({
+    const historyData: AnalysisHistory[] = recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number; cachedResult?: Record<string, unknown> }) => ({
       address: s.address,
       annualRevenue: s.annualRevenue,
       adr: s.adr,
@@ -101,6 +102,7 @@ export default function SavedPage() {
       bedrooms: s.cachedBedrooms,
       bathrooms: s.cachedBathrooms,
       guestCount: s.cachedGuestCount,
+      cachedResult: s.cachedResult,
     }));
     setAnalysisHistory(historyData);
     
@@ -851,14 +853,25 @@ export default function SavedPage() {
                     </div>
                     
                     <div className="mt-4 pt-4 flex gap-3" style={{ borderTop: '1px solid #f0ede6' }}>
-                      <Link
-                        href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
-                        style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
-                      >
-                        <RefreshIcon className="w-4 h-4" color="#ffffff" />
-                        Re-analyze
-                      </Link>
+                      {item.cachedResult ? (
+                        <Link
+                          href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}&cached=true`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+                          style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                        >
+                          <DocumentIcon className="w-4 h-4" color="#ffffff" />
+                          View Results
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+                          style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                        >
+                          <RefreshIcon className="w-4 h-4" color="#ffffff" />
+                          Re-analyze
+                        </Link>
+                      )}
                       <button
                         onClick={() => setDeleteConfirmAddress(item.address)}
                         className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
