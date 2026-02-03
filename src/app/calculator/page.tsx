@@ -152,6 +152,14 @@ export default function CalculatorPage() {
   
   // Force refresh state (bypasses cache, always uses credit)
   const [forceRefresh, setForceRefresh] = useState(false);
+  
+  // Market mismatch detection
+  const [marketMismatch, setMarketMismatch] = useState<{
+    searched: string;
+    returned: string;
+    creditRefunded: boolean;
+  } | null>(null);
+  const [unsupportedAddresses, setUnsupportedAddresses] = useState<string[]>([]);
 
   // Lock body scroll when AI Analysis modal is open
   useEffect(() => {
@@ -210,6 +218,16 @@ export default function CalculatorPage() {
         localStorage.setItem("edge_recent_searches", JSON.stringify(withExpiredCachesCleared));
       } catch (e) {
         console.error("Failed to parse recent searches:", e);
+      }
+    }
+    
+    // Load unsupported addresses list
+    const savedUnsupported = localStorage.getItem("edge_unsupported_addresses");
+    if (savedUnsupported) {
+      try {
+        setUnsupportedAddresses(JSON.parse(savedUnsupported));
+      } catch (e) {
+        console.error("Failed to parse unsupported addresses:", e);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -467,6 +485,13 @@ export default function CalculatorPage() {
     // Check if user has credits
     if (creditsRemaining !== null && creditsRemaining <= 0) {
       setShowPaywall(true);
+      return;
+    }
+    
+    // Check if this address was previously flagged as unsupported
+    const normalizedAddress = address.toLowerCase().trim();
+    if (unsupportedAddresses.includes(normalizedAddress)) {
+      setError("This address doesn't have local market data available. The nearest market data may not be accurate for your location. Try searching for a property in a larger nearby city.");
       return;
     }
     
@@ -927,6 +952,70 @@ export default function CalculatorPage() {
 
       setResult(analysisResult);
       setAddress(addressToAnalyze);
+      
+      // ========== MARKET MISMATCH DETECTION ==========
+      // Extract city from the searched address
+      const addressParts = addressToAnalyze.split(',').map(p => p.trim());
+      // Typically: "123 Main St", "City", "State ZIP" or "123 Main St, City, State"
+      let searchedCity = '';
+      if (addressParts.length >= 2) {
+        // Second part is usually the city
+        searchedCity = addressParts[1].toLowerCase().replace(/[^a-z\s]/g, '').trim();
+      }
+      
+      const returnedCity = (analysisResult.city || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
+      const returnedNeighborhood = (analysisResult.neighborhood || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
+      
+      // Check if there's a mismatch (city in address doesn't match API's city or neighborhood)
+      const cityMatches = searchedCity && (
+        returnedCity.includes(searchedCity) || 
+        searchedCity.includes(returnedCity) ||
+        returnedNeighborhood.includes(searchedCity) ||
+        searchedCity.includes(returnedNeighborhood)
+      );
+      
+      if (searchedCity && !cityMatches && returnedCity) {
+        console.log(`[Mismatch] Searched: "${searchedCity}" but API returned: "${returnedCity}" / "${returnedNeighborhood}"`);
+        
+        // This is a market mismatch - refund the credit
+        const savedEmail = localStorage.getItem("edge_auth_email");
+        if (savedEmail) {
+          try {
+            const refundResponse = await fetch('/api/credits', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: savedEmail, action: 'refund', reason: 'market_mismatch' }),
+            });
+            const refundData = await refundResponse.json();
+            
+            if (refundData.success) {
+              setCreditsRemaining(refundData.remaining);
+              console.log('[Mismatch] Credit refunded successfully');
+            }
+          } catch (refundErr) {
+            console.error('[Mismatch] Failed to refund credit:', refundErr);
+          }
+        }
+        
+        // Set mismatch state to show warning
+        setMarketMismatch({
+          searched: addressParts.slice(1).join(', '), // City, State part
+          returned: `${analysisResult.city || analysisResult.neighborhood}, ${analysisResult.state}`,
+          creditRefunded: true,
+        });
+        
+        // Add to unsupported addresses list
+        const normalizedAddress = addressToAnalyze.toLowerCase().trim();
+        if (!unsupportedAddresses.includes(normalizedAddress)) {
+          const newUnsupported = [...unsupportedAddresses, normalizedAddress];
+          setUnsupportedAddresses(newUnsupported);
+          localStorage.setItem('edge_unsupported_addresses', JSON.stringify(newUnsupported));
+        }
+      } else {
+        // No mismatch - clear any previous mismatch state
+        setMarketMismatch(null);
+      }
+      // ========== END MISMATCH DETECTION ==========
       
       // Auto-fill purchase price if available
       if (analysisResult.listPrice > 0 && !purchasePrice) {
@@ -1907,6 +1996,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         {/* Results */}
         {result && (
           <div className="space-y-6">
+            {/* Market Mismatch Warning */}
+            {marketMismatch && (
+              <div className="rounded-xl p-4 border-2" style={{ backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-base" style={{ color: '#92400e' }}>Market Data Mismatch</h4>
+                    <p className="text-sm mt-1" style={{ color: '#a16207' }}>
+                      You searched for: <strong>{marketMismatch.searched}</strong>
+                    </p>
+                    <p className="text-sm" style={{ color: '#a16207' }}>
+                      Showing data for: <strong>{marketMismatch.returned}</strong>
+                    </p>
+                    <p className="text-xs mt-2" style={{ color: '#b45309' }}>
+                      Airbtics doesn&apos;t have specific data for your location. These estimates are based on the nearest market with available data. <strong>Use these numbers as a rough reference only.</strong>
+                    </p>
+                    {marketMismatch.creditRefunded && (
+                      <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: '#dcfce7' }}>
+                        <span className="text-lg">✅</span>
+                        <span className="text-sm font-medium" style={{ color: '#166534' }}>
+                          Your credit has been automatically refunded
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-xs mt-3" style={{ color: '#92400e' }}>
+                      💡 <strong>Tip:</strong> Try searching for a property in a larger nearby city for more accurate data.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Revenue Estimate Card */}
             <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

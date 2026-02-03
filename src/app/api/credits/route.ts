@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCredits, deductCredit, addCredits } from "@/lib/supabase";
+import { getUserCredits, deductCredit, addCredits, refundCredit } from "@/lib/supabase";
 import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Force dynamic rendering
@@ -88,6 +88,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         remaining: result.remaining,
+      });
+    }
+    
+    // Refund action (for market mismatch)
+    if (action === "refund") {
+      const result = await refundCredit(email);
+      
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error, remaining: result.remaining },
+          { status: 400 }
+        );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        remaining: result.remaining,
+        message: "Credit refunded due to market mismatch",
       });
     }
     

@@ -317,6 +317,40 @@ export async function deductCredit(email: string): Promise<{ success: boolean; r
   return { success: true, remaining };
 }
 
+// Refund one credit to user (for market mismatch)
+export async function refundCredit(email: string): Promise<{ success: boolean; remaining: number; error?: string }> {
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Get current credits
+  const credits = await getUserCredits(normalizedEmail);
+  if (!credits) {
+    return { success: false, remaining: 0, error: 'User not found' };
+  }
+  
+  // Only refund if they've used at least 1 credit
+  if (credits.credits_used <= 0) {
+    return { success: false, remaining: credits.credits_remaining, error: 'No credits to refund' };
+  }
+  
+  // Decrement credits_used (effectively refunding 1 credit)
+  const { data, error } = await supabase
+    .from('users')
+    .update({ credits_used: credits.credits_used - 1 })
+    .eq('email', normalizedEmail)
+    .select('credits_used, credits_limit')
+    .single();
+  
+  if (error) {
+    console.error('Error refunding credit:', error);
+    return { success: false, remaining: credits.credits_remaining, error: 'Database error' };
+  }
+  
+  const remaining = (data.credits_limit || 3) - (data.credits_used || 0);
+  console.log(`[Credits] Refunded 1 credit to ${normalizedEmail}. Remaining: ${remaining}`);
+  
+  return { success: true, remaining };
+}
+
 // Add credits to user (for purchases)
 export async function addCredits(email: string, amount: number): Promise<{ success: boolean; new_limit: number }> {
   const normalizedEmail = email.toLowerCase().trim();
