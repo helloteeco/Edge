@@ -851,13 +851,6 @@ export default function SavedPage() {
                     </div>
                     
                     <div className="mt-4 pt-4 flex gap-3" style={{ borderTop: '1px solid #f0ede6' }}>
-                      <button
-                        onClick={() => setDeleteConfirmAddress(item.address)}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
-                        style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
-                      >
-                        <TrashIcon className="w-4 h-4" color="#dc2626" />
-                      </button>
                       <Link
                         href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
@@ -866,6 +859,13 @@ export default function SavedPage() {
                         <RefreshIcon className="w-4 h-4" color="#ffffff" />
                         Re-analyze
                       </Link>
+                      <button
+                        onClick={() => setDeleteConfirmAddress(item.address)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
+                        style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
+                      >
+                        <TrashIcon className="w-4 h-4" color="#dc2626" />
+                      </button>
                     </div>
                   </div>
                 ))}
