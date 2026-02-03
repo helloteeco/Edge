@@ -40,6 +40,7 @@ interface MashvisorNeighborhood {
 export default function StatePage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [isSaved, setIsSaved] = useState(false);
+  const [saveCount, setSaveCount] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("score");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   
@@ -57,11 +58,25 @@ export default function StatePage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("savedStates") || "[]");
     setIsSaved(saved.includes(state?.abbreviation));
+    
+    // Fetch save count from API
+    if (state?.abbreviation) {
+      fetch(`/api/market-saves?marketId=${state.abbreviation}&marketType=state`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setSaveCount(data.count);
+          }
+        })
+        .catch(console.error);
+    }
   }, [state?.abbreviation]);
 
-  const toggleSave = () => {
+  const toggleSave = async () => {
     const saved = JSON.parse(localStorage.getItem("savedStates") || "[]");
     let updated;
+    const wasSaved = isSaved;
+    
     if (isSaved) {
       updated = saved.filter((code: string) => code !== state?.abbreviation);
     } else {
@@ -69,6 +84,25 @@ export default function StatePage({ params }: { params: { id: string } }) {
     }
     localStorage.setItem("savedStates", JSON.stringify(updated));
     setIsSaved(!isSaved);
+    
+    // Update save count in backend
+    try {
+      const res = await fetch('/api/market-saves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marketId: state?.abbreviation,
+          marketType: 'state',
+          action: wasSaved ? 'decrement' : 'increment'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveCount(data.count);
+      }
+    } catch (error) {
+      console.error('Error updating save count:', error);
+    }
   };
 
   const handleShare = () => {
@@ -213,11 +247,24 @@ export default function StatePage({ params }: { params: { id: string } }) {
           <div className="flex items-start justify-between">
             <div>
               <h1 
-                className="text-2xl sm:text-3xl font-bold mb-2"
+                className="text-2xl sm:text-3xl font-bold mb-1"
                 style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
               >
                 {state.name}
               </h1>
+              {saveCount !== null && saveCount >= 50 && (
+                <div className="flex items-center gap-1 mb-2">
+                  <span 
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'rgba(255, 255, 255, 0.9)' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    {saveCount >= 1000 ? `${(saveCount / 1000).toFixed(1)}K` : saveCount} saved
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span 
                   className="px-3 py-1 rounded-full text-xs font-semibold"
@@ -653,14 +700,36 @@ export default function StatePage({ params }: { params: { id: string } }) {
                     {city.regulation}
                   </span>
                 </div>
-                <div 
-                  className="flex items-center gap-1 text-sm font-medium transition-all"
-                  style={{ color: '#2b2823' }}
-                >
-                  View
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const shareText = `${city.name}, ${state.abbreviation} - STR Grade: ${city.grade}\n\n💰 Monthly Revenue: $${city.strMonthlyRevenue.toLocaleString()}\n📊 Score: ${city.marketScore}/100\n🏠 Median Price: $${city.medianHomeValue.toLocaleString()}\n\nCheck it out on Edge ↓\n${window.location.origin}/city/${city.id}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
+                      if (navigator.share) {
+                        navigator.share({ text: shareText });
+                      } else {
+                        navigator.clipboard.writeText(shareText);
+                        alert('Link copied to clipboard!');
+                      }
+                    }}
+                    className="p-1.5 rounded-lg transition-all hover:opacity-70"
+                    style={{ backgroundColor: '#e5e3da' }}
+                    title="Share this market"
+                  >
+                    <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </button>
+                  <div 
+                    className="flex items-center gap-1 text-sm font-medium transition-all"
+                    style={{ color: '#2b2823' }}
+                  >
+                    View
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </Link>

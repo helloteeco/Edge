@@ -430,3 +430,166 @@ export async function cleanExpiredCache(): Promise<number> {
   }
   return count;
 }
+
+
+// ============================================
+// MARKET SAVE COUNTS - Track saves per city/state
+// ============================================
+
+export interface MarketSaveCount {
+  market_id: string;
+  market_type: 'city' | 'state';
+  save_count: number;
+}
+
+// Increment save count for a market (city or state)
+export async function incrementMarketSaveCount(
+  marketId: string, 
+  marketType: 'city' | 'state'
+): Promise<boolean> {
+  const normalizedId = marketId.toLowerCase().trim();
+  
+  // Try to get existing record
+  const { data: existing } = await supabase
+    .from('market_save_counts')
+    .select('*')
+    .eq('market_id', normalizedId)
+    .eq('market_type', marketType)
+    .single();
+  
+  if (existing) {
+    // Increment existing count
+    const { error } = await supabase
+      .from('market_save_counts')
+      .update({ 
+        save_count: existing.save_count + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('market_id', normalizedId)
+      .eq('market_type', marketType);
+    
+    if (error) {
+      console.error('Error incrementing market save count:', error);
+      return false;
+    }
+  } else {
+    // Create new record
+    const { error } = await supabase
+      .from('market_save_counts')
+      .insert({
+        market_id: normalizedId,
+        market_type: marketType,
+        save_count: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    
+    if (error) {
+      console.error('Error creating market save count:', error);
+      return false;
+    }
+  }
+  
+  console.log(`[SaveCount] Incremented ${marketType} ${normalizedId}`);
+  return true;
+}
+
+// Decrement save count for a market (when unsaved)
+export async function decrementMarketSaveCount(
+  marketId: string, 
+  marketType: 'city' | 'state'
+): Promise<boolean> {
+  const normalizedId = marketId.toLowerCase().trim();
+  
+  const { data: existing } = await supabase
+    .from('market_save_counts')
+    .select('*')
+    .eq('market_id', normalizedId)
+    .eq('market_type', marketType)
+    .single();
+  
+  if (existing && existing.save_count > 0) {
+    const { error } = await supabase
+      .from('market_save_counts')
+      .update({ 
+        save_count: existing.save_count - 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('market_id', normalizedId)
+      .eq('market_type', marketType);
+    
+    if (error) {
+      console.error('Error decrementing market save count:', error);
+      return false;
+    }
+    
+    console.log(`[SaveCount] Decremented ${marketType} ${normalizedId}`);
+  }
+  
+  return true;
+}
+
+// Get save count for a single market
+export async function getMarketSaveCount(
+  marketId: string, 
+  marketType: 'city' | 'state'
+): Promise<number> {
+  const normalizedId = marketId.toLowerCase().trim();
+  
+  const { data, error } = await supabase
+    .from('market_save_counts')
+    .select('save_count')
+    .eq('market_id', normalizedId)
+    .eq('market_type', marketType)
+    .single();
+  
+  if (error || !data) {
+    return 0;
+  }
+  
+  return data.save_count;
+}
+
+// Get save counts for multiple markets (batch)
+export async function getMarketSaveCounts(
+  marketIds: string[], 
+  marketType: 'city' | 'state'
+): Promise<Record<string, number>> {
+  const normalizedIds = marketIds.map(id => id.toLowerCase().trim());
+  
+  const { data, error } = await supabase
+    .from('market_save_counts')
+    .select('market_id, save_count')
+    .eq('market_type', marketType)
+    .in('market_id', normalizedIds);
+  
+  if (error || !data) {
+    return {};
+  }
+  
+  const counts: Record<string, number> = {};
+  data.forEach(item => {
+    counts[item.market_id] = item.save_count;
+  });
+  
+  return counts;
+}
+
+// Get top saved markets
+export async function getTopSavedMarkets(
+  marketType: 'city' | 'state',
+  limit: number = 10
+): Promise<MarketSaveCount[]> {
+  const { data, error } = await supabase
+    .from('market_save_counts')
+    .select('*')
+    .eq('market_type', marketType)
+    .order('save_count', { ascending: false })
+    .limit(limit);
+  
+  if (error || !data) {
+    return [];
+  }
+  
+  return data;
+}

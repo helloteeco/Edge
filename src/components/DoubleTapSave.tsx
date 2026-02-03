@@ -293,7 +293,7 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
     <>
       <button
         onClick={handleClick}
-        className="fixed bottom-24 left-4 z-40 flex flex-col items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
+        className="fixed bottom-32 right-4 z-40 flex flex-col items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
         style={{ 
           backgroundColor: isSaved ? '#ef4444' : '#ffffff',
           border: '2px solid #d8d6cd',

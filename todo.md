@@ -401,9 +401,23 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Legend Order Update (February 2026)
-- [ ] Flip all map legends to show best values (green) first instead of worst (red) first
+- [x] Flip all map legends to show best values (green) first instead of worst (red) first
 
 
 ## Login Prompt for Saves (February 2026)
-- [ ] Show login prompt after first save for non-logged-in users
-- [ ] Allow users to sync their saved markets across devices by logging in
+- [x] Show login prompt after first save for non-logged-in users
+- [x] Allow users to sync their saved markets across devices by logging in
+
+
+## Heart Button & Save Counts (February 2026)
+- [ ] Move floating heart button to right side above AI agent
+- [ ] Create backend API to track save counts per city/state
+- [ ] Add save count badges to city and state cards (show only when 50+ saves)
+- [ ] Use rounded numbers (e.g., "2.1K saved")
+
+
+## Share Buttons & Link Previews (February 2026)
+- [ ] Add share buttons to city/state cards in list views
+- [ ] Set up Open Graph meta tags for city pages (rich link previews)
+- [ ] Set up Open Graph meta tags for state pages (rich link previews)
+- [ ] Include branded share text with Edge tagline

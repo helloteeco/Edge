@@ -9,17 +9,53 @@ import { DoubleTapSave, FloatingSaveButton } from "@/components/DoubleTapSave";
 export default function CityPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [isSaved, setIsSaved] = useState(false);
+  const [saveCount, setSaveCount] = useState<number | null>(null);
 
   const city = getCityById(id);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("savedCities") || "[]");
     setIsSaved(saved.includes(city?.id));
-  }, [city?.id]);
+    
+    // Fetch save count from API
+    if (city?.id) {
+      fetch(`/api/market-saves?marketId=${city.id}&marketType=city`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setSaveCount(data.count);
+          }
+        })
+        .catch(console.error);
+    }
+    
+    // Update document title and meta tags for sharing
+    if (city) {
+      document.title = `${city.name}, ${city.stateCode} - STR Grade ${city.grade} | Edge`;
+      
+      // Update Open Graph meta tags dynamically
+      const updateMetaTag = (property: string, content: string) => {
+        let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', property);
+          document.head.appendChild(meta);
+        }
+        meta.content = content;
+      };
+      
+      updateMetaTag('og:title', `${city.name}, ${city.stateCode} - STR Grade ${city.grade}`);
+      updateMetaTag('og:description', `Monthly Revenue: $${city.strMonthlyRevenue.toLocaleString()} | Score: ${city.marketScore}/100 | Median Price: $${city.medianHomeValue.toLocaleString()}`);
+      updateMetaTag('og:type', 'website');
+      updateMetaTag('og:site_name', 'Edge by Teeco');
+    }
+  }, [city?.id, city]);
 
-  const toggleSave = () => {
+  const toggleSave = async () => {
     const saved = JSON.parse(localStorage.getItem("savedCities") || "[]");
     let updated;
+    const wasSaved = isSaved;
+    
     if (isSaved) {
       updated = saved.filter((cid: string) => cid !== city?.id);
     } else {
@@ -27,6 +63,25 @@ export default function CityPage({ params }: { params: { id: string } }) {
     }
     localStorage.setItem("savedCities", JSON.stringify(updated));
     setIsSaved(!isSaved);
+    
+    // Update save count in backend
+    try {
+      const res = await fetch('/api/market-saves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marketId: city?.id,
+          marketType: 'city',
+          action: wasSaved ? 'decrement' : 'increment'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveCount(data.count);
+      }
+    } catch (error) {
+      console.error('Error updating save count:', error);
+    }
   };
 
   const handleShare = () => {
@@ -126,7 +181,20 @@ export default function CityPage({ params }: { params: { id: string } }) {
               >
                 {city.name}
               </h1>
-              <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{city.county}, {city.stateCode}</p>
+              <div className="flex items-center gap-2">
+                <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{city.county}, {city.stateCode}</p>
+                {saveCount !== null && saveCount >= 50 && (
+                  <span 
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'rgba(255, 255, 255, 0.9)' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    {saveCount >= 1000 ? `${(saveCount / 1000).toFixed(1)}K` : saveCount}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-3">
                 <span 
                   className="px-3 py-1 rounded-full text-xs font-semibold"
