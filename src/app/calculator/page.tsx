@@ -1566,13 +1566,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         </div>
       </header>
 
-      {/* Credit Counter Banner */}
+      {/* Credit Counter Banner - Subtle brand-aligned design */}
       {isAuthenticated && creditsRemaining !== null && (
         <div 
           className="px-4 py-2.5"
           style={{ 
-            backgroundColor: creditsRemaining > 0 ? '#f0fdf4' : '#fef2f2',
-            borderBottom: `1px solid ${creditsRemaining > 0 ? '#bbf7d0' : '#fecaca'}`
+            backgroundColor: creditsRemaining > 0 ? '#f5f4f0' : '#fef2f2',
+            borderBottom: `1px solid ${creditsRemaining > 0 ? '#e5e3da' : '#fecaca'}`
           }}
         >
           <div className="max-w-6xl mx-auto flex items-center justify-between">
