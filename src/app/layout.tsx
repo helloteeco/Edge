@@ -12,14 +12,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Edge by Teeco - STR Investment Analysis",
-  description: "Your unfair advantage in STR investing. Data-driven market analysis for short-term rental investments across 600+ US markets.",
+  description: "Find high cash flow short-term rental markets with AI-powered analysis. 609 markets tracked, instant deal analysis, and expert resources.",
   icons: {
     icon: "/favicon.ico",
   },
   metadataBase: new URL("https://edge.teeco.co"),
   openGraph: {
-    title: "Edge by Teeco",
-    description: "Your unfair advantage in STR investing. Data-driven market analysis for short-term rental investments.",
+    title: "Find Your Next STR Investment",
+    description: "609 markets analyzed • AI-powered deal analysis • Free to start. The data-driven way to find high cash flow Airbnb investments.",
     type: "website",
     url: "https://edge.teeco.co",
     siteName: "Edge by Teeco",
@@ -28,15 +28,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Edge by Teeco - Your unfair advantage in STR investing",
+        alt: "Edge by Teeco - Interactive US map showing STR investment opportunities across 609 markets",
       },
     ],
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Edge by Teeco",
-    description: "Your unfair advantage in STR investing. Data-driven market analysis for short-term rental investments.",
+    title: "Find Your Next STR Investment",
+    description: "609 markets analyzed • AI-powered deal analysis • Free to start. The data-driven way to find high cash flow Airbnb investments.",
     images: ["/og-image.png"],
   },
   robots: {
