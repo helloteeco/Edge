@@ -209,16 +209,30 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
       {/* Login Prompt Modal - Using React Portal to render at document body */}
       {showLoginPrompt && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4" 
           style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
             backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 99999,
+            boxSizing: 'border-box',
           }}
           onClick={() => setShowLoginPrompt(false)}
         >
           <div 
-            className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-down"
             style={{ 
               backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '340px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
