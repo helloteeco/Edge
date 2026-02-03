@@ -434,3 +434,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Update financing education card to be more balanced - mention trade-offs but explain why leverage makes sense
 - [x] Compress funding page educational cards - make them collapsible to show quiz sooner
 - [x] Improve spacing in 'You've Used Your Free Analyses' modal - add breathing room
+- [ ] Implement 3-tier Hormozi pricing with 100-credit Power tier

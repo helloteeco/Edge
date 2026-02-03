@@ -3396,24 +3396,26 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 You&apos;ve used your {creditsLimit} free analyses. Unlock more to continue.
               </p>
               
-              {/* Pricing Options */}
+              {/* Pricing Options - Hormozi 3-Tier */}
               <div className="space-y-3 mb-4">
+                {/* Tier 1: Starter - Makes middle look smart */}
                 <a 
                   href="https://buy.stripe.com/aFa4gz4C731odnE7uU8AE03"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
+                  className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
                   style={{ borderColor: '#e5e5e5' }}
                 >
                   <div className="flex justify-between items-center">
                     <div className="text-left">
-                      <p className="font-semibold" style={{ color: '#2b2823' }}>5 Credits</p>
-                      <p className="text-xs" style={{ color: '#787060' }}>$1/analysis</p>
+                      <p className="font-semibold text-sm" style={{ color: '#2b2823' }}>5 Credits</p>
+                      <p className="text-xs" style={{ color: '#787060' }}>$1.00/analysis</p>
                     </div>
-                    <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$4.99</p>
+                    <p className="text-lg font-bold" style={{ color: '#2b2823' }}>$4.99</p>
                   </div>
                 </a>
                 
+                {/* Tier 2: Pro - BEST VALUE - Where most buyers land */}
                 <a 
                   href="https://buy.stripe.com/14A8wP7OjfOa4R83eE8AE04"
                   target="_blank"
@@ -3422,16 +3424,39 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}
                 >
                   <div className="absolute -top-2 left-3 px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
-                    BEST VALUE
+                    MOST POPULAR
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-left">
-                      <p className="font-semibold" style={{ color: '#2b2823' }}>25 Credits</p>
+                      <p className="font-bold" style={{ color: '#2b2823' }}>25 Credits</p>
                       <p className="text-xs" style={{ color: '#787060' }}>$0.80/analysis</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold" style={{ color: '#2b2823' }}>$19.99</p>
-                      <p className="text-xs font-medium" style={{ color: '#22c55e' }}>Save 20%</p>
+                      <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>Save 20%</p>
+                    </div>
+                  </div>
+                </a>
+                
+                {/* Tier 3: Power - Price anchor that makes Pro look like a deal */}
+                <a 
+                  href="https://buy.stripe.com/eVq3cv7Oj1Xk6Zg7uU8AE06"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" 
+                  style={{ borderColor: '#e5e5e5', backgroundColor: '#fafafa' }}
+                >
+                  <div className="absolute -top-2 left-3 px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
+                    BEST RATE
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">
+                      <p className="font-semibold text-sm" style={{ color: '#2b2823' }}>100 Credits</p>
+                      <p className="text-xs" style={{ color: '#787060' }}>$0.70/analysis</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold" style={{ color: '#2b2823' }}>$69.99</p>
+                      <p className="text-xs font-medium" style={{ color: '#787060' }}>Save 30%</p>
                     </div>
                   </div>
                 </a>
