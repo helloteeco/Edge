@@ -71,7 +71,7 @@ export default function HomePage() {
               {[
                 { value: '50', label: 'States Analyzed' },
                 { value: `${Math.floor(getMarketCounts().total / 1000)}K+`, label: 'Cities Covered' },
-                { value: String(getMarketCounts().withFullData), label: 'Full STR Data' },
+                { value: String(getMarketCounts().withFullData), label: 'Markets w/ Data' },
               ].map((stat, i) => (
                 <div 
                   key={i}

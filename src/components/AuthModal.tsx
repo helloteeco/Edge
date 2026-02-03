@@ -8,6 +8,7 @@ interface AuthModalProps {
   onSuccess: (email: string) => void;
   title?: string;
   subtitle?: string;
+  showValuePreview?: boolean;
 }
 
 type AuthStep = "email" | "verifying" | "sent";
@@ -16,8 +17,9 @@ export default function AuthModal({
   isOpen, 
   onClose, 
   onSuccess,
-  title = "Sign in to Sync",
-  subtitle = "Enter your email to receive a secure sign-in link. No password needed."
+  title = "Sign in Free",
+  subtitle = "No password needed. No credit card required.",
+  showValuePreview = true
 }: AuthModalProps) {
   const [authStep, setAuthStep] = useState<AuthStep>("email");
   const [authEmail, setAuthEmail] = useState("");
@@ -97,9 +99,53 @@ export default function AuthModal({
             <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#2b2823' }}>
               {title}
             </h2>
-            <p className="text-center text-sm mb-6" style={{ color: '#787060' }}>
+            <p className="text-center text-sm mb-4" style={{ color: '#787060' }}>
               {subtitle}
             </p>
+            
+            {/* Value Preview - What You Get */}
+            {showValuePreview && (
+              <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: '#166534' }}>
+                  ✨ What you&apos;ll unlock:
+                </p>
+                <ul className="space-y-2 text-sm" style={{ color: '#15803d' }}>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span><strong>3 free property analyses</strong> (worth $3)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>Revenue projections with comparables</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>Cash-on-cash return calculator</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>AI-powered deal analysis</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>Save & sync across devices</span>
+                  </li>
+                </ul>
+                <p className="text-xs mt-3 pt-3 border-t" style={{ color: '#166534', borderColor: '#bbf7d0' }}>
+                  Then just $1/analysis (or $0.80 in bulk)
+                </p>
+              </div>
+            )}
             
             {authError && (
               <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200">
@@ -124,7 +170,7 @@ export default function AuthModal({
               className="w-full py-4 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
               style={{ backgroundColor: '#2b2823' }}
             >
-              Send Magic Link
+              Get Started Free
             </button>
             
             <p className="text-xs text-center mt-4" style={{ color: '#a0a0a0' }}>

@@ -1520,8 +1520,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
               <span className="text-sm font-medium" style={{ color: '#2b2823' }}>
                 {creditsRemaining > 0 
-                  ? `${creditsRemaining} Free Anal${creditsRemaining === 1 ? 'ysis' : 'yses'} Remaining`
-                  : 'No Free Analyses Left'
+                  ? `${creditsRemaining} Free Anal${creditsRemaining === 1 ? 'ysis' : 'yses'} Available`
+                  : 'Ready to continue? Get more credits'
                 }
               </span>
             </div>
@@ -1558,7 +1558,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm" style={{ color: '#0369a1' }}>
-                <strong>3 Free Property Analyses</strong> — Sign in to start analyzing STR investments
+                <strong>3 Free Property Analyses</strong> — Then just $1/analysis (or $0.80 in bulk)
               </span>
             </div>
             <button
@@ -1894,8 +1894,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 <p className="text-4xl font-bold" style={{ color: "#22c55e" }}>
                   {formatCurrency(getDisplayRevenue())}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  {formatCurrency(getDisplayRevenue() / 12)}/month
+                {/* Confidence Range */}
+                <p className="text-sm mt-1" style={{ color: "#787060" }}>
+                  Range: {formatCurrency(Math.round(getDisplayRevenue() * 0.8))} – {formatCurrency(Math.round(getDisplayRevenue() * 1.2))}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby listings
                 </p>
                 {revenuePercentile !== "average" && (
                   <p className="text-xs text-gray-400 mt-2">
@@ -3123,23 +3127,33 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
             
             <div className="text-center">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#f5f4f0' }}>
-                <svg className="w-8 h-8" style={{ color: '#2b2823' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#f0fdf4' }}>
+                <svg className="w-8 h-8" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
               
               <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
-                Use 1 Analysis Credit?
+                Analyze This Property
               </h2>
-              <p className="text-sm mb-2" style={{ color: '#787060' }}>
-                This will analyze the property at:
-              </p>
               <p className="font-medium text-sm mb-4 px-4 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0', color: '#2b2823' }}>
                 {pendingAnalysis || address}
               </p>
-              <p className="text-sm mb-6" style={{ color: '#787060' }}>
-                You have <span className="font-semibold" style={{ color: creditsRemaining && creditsRemaining > 1 ? '#22c55e' : '#ef4444' }}>{creditsRemaining} credit{creditsRemaining !== 1 ? 's' : ''}</span> remaining.
+              
+              {/* What you'll get */}
+              <div className="text-left mb-4 p-3 rounded-lg" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: '#166534' }}>This analysis includes:</p>
+                <ul className="text-xs space-y-1" style={{ color: '#15803d' }}>
+                  <li>✓ Revenue projection with confidence range</li>
+                  <li>✓ Comparable property data</li>
+                  <li>✓ Cash-on-cash return calculator</li>
+                  <li>✓ AI-powered deal analysis</li>
+                </ul>
+              </div>
+              
+              <p className="text-sm mb-4" style={{ color: '#787060' }}>
+                Uses 1 of your <span className="font-semibold" style={{ color: '#22c55e' }}>{creditsRemaining} free</span> {creditsRemaining === 1 ? 'analysis' : 'analyses'}.
+                {creditsRemaining && creditsRemaining > 1 && ` You'll have ${creditsRemaining - 1} left.`}
               </p>
               
               <div className="flex gap-3">
@@ -3156,9 +3170,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 <button
                   onClick={confirmAnalysis}
                   className="flex-1 py-3 rounded-xl font-medium text-sm"
-                  style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
                 >
-                  Yes, Analyze
+                  ✓ Analyze Property
                 </button>
               </div>
             </div>
@@ -3191,10 +3205,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
               
               <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
-                You&apos;ve Used All Free Credits
+                You&apos;ve Used Your Free Analyses
               </h2>
-              <p className="text-sm mb-6" style={{ color: '#787060' }}>
-                You&apos;ve used all {creditsLimit} of your free property analyses. Upgrade to continue analyzing properties.
+              <p className="text-sm mb-3" style={{ color: '#787060' }}>
+                You&apos;ve analyzed {creditsLimit} properties for free (worth ${creditsLimit}).
+              </p>
+              
+              {/* Value Reminder */}
+              <div className="text-left mb-4 p-3 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: '#2b2823' }}>Each analysis gives you:</p>
+                <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
+                  <li>✓ Revenue projections from real Airbnb data</li>
+                  <li>✓ Cash-on-cash return calculations</li>
+                  <li>✓ AI-powered deal analysis</li>
+                  <li>✓ Comparable property insights</li>
+                </ul>
+              </div>
+              
+              <p className="text-sm mb-4" style={{ color: '#787060' }}>
+                Continue analyzing to find your perfect STR investment:
               </p>
               
               {/* Pricing Options */}
