@@ -59,6 +59,9 @@ export default function SavedPage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   
+  // Delete confirmation state
+  const [deleteConfirmAddress, setDeleteConfirmAddress] = useState<string | null>(null);
+  
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -206,6 +209,15 @@ export default function SavedPage() {
   const startEditingNote = (report: SavedReport) => {
     setEditingNoteId(report.id);
     setNoteText(report.notes || "");
+  };
+
+  // Delete a history item from localStorage
+  const deleteHistoryItem = (address: string) => {
+    const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+    const updated = recentSearches.filter((s: { address: string }) => s.address !== address);
+    localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
+    setAnalysisHistory(prev => prev.filter(h => h.address !== address));
+    setDeleteConfirmAddress(null);
   };
 
   const handleSignOut = () => {
@@ -838,10 +850,17 @@ export default function SavedPage() {
                       </div>
                     </div>
                     
-                    <div className="mt-4 pt-4" style={{ borderTop: '1px solid #f0ede6' }}>
+                    <div className="mt-4 pt-4 flex gap-3" style={{ borderTop: '1px solid #f0ede6' }}>
+                      <button
+                        onClick={() => setDeleteConfirmAddress(item.address)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
+                        style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
+                      >
+                        <TrashIcon className="w-4 h-4" color="#dc2626" />
+                      </button>
                       <Link
                         href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
                         style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                       >
                         <RefreshIcon className="w-4 h-4" color="#ffffff" />
@@ -855,6 +874,86 @@ export default function SavedPage() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmAddress && (
+        <div 
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 99999,
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setDeleteConfirmAddress(null)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '340px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              {/* Warning Icon */}
+              <div 
+                className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: '#fef2f2' }}
+              >
+                <svg className="w-8 h-8" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              
+              <h3 className="text-lg font-semibold mb-2" style={{ color: '#2b2823' }}>
+                Delete This Analysis?
+              </h3>
+              
+              <p className="text-sm mb-2" style={{ color: '#787060' }}>
+                This will remove the cached data for:
+              </p>
+              <p className="text-sm font-medium mb-4 px-2 py-2 rounded-lg" style={{ color: '#2b2823', backgroundColor: '#f5f5f0' }}>
+                {deleteConfirmAddress}
+              </p>
+              
+              <div 
+                className="text-sm mb-6 p-3 rounded-lg"
+                style={{ backgroundColor: '#fef3c7', border: '1px solid #fcd34d', color: '#92400e' }}
+              >
+                <strong>⚠️ Note:</strong> If you want to analyze this property again, you&apos;ll need to use a credit.
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirmAddress(null)}
+                  className="flex-1 py-3 rounded-xl font-medium transition-all hover:opacity-80"
+                  style={{ backgroundColor: '#f5f5f0', color: '#787060' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteHistoryItem(deleteConfirmAddress)}
+                  className="flex-1 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Auth Modal */}
       <AuthModal
