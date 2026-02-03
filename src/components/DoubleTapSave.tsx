@@ -31,9 +31,10 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
   const [heartPosition, setHeartPosition] = useState({ x: 0, y: 0 });
   const [animationType, setAnimationType] = useState<'pop' | 'shake'>('pop');
   const lastTapRef = useRef<number>(0);
+  const lastTapPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handleDoubleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300; // ms
 
@@ -92,12 +93,40 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
     }
   }, [isSaved, onToggleSave]);
 
+  // Handle touch start to record position
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    lastTapPositionRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
+  }, []);
+
+  // Handle touch end for double-tap detection on mobile
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Use the stored position from touchstart
+    const mockEvent = {
+      ...e,
+      clientX: lastTapPositionRef.current.x,
+      clientY: lastTapPositionRef.current.y,
+      preventDefault: () => e.preventDefault()
+    } as unknown as React.TouchEvent;
+    handleDoubleTap(mockEvent);
+  }, [handleDoubleTap]);
+
+  // Handle click for desktop double-click
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    // On touch devices, ignore click events (use touch events instead)
+    if ('ontouchstart' in window) return;
+    handleDoubleTap(e);
+  }, [handleDoubleTap]);
+
   return (
     <div 
       ref={containerRef}
       className={`relative ${className}`}
-      onClick={handleTap}
-      onTouchEnd={handleTap}
+      onClick={handleClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {children}
       
@@ -179,7 +208,7 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
     <>
       <button
         onClick={handleClick}
-        className="fixed bottom-24 right-4 z-40 flex flex-col items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
+        className="fixed bottom-24 left-4 z-40 flex flex-col items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
         style={{ 
           backgroundColor: isSaved ? '#ef4444' : '#ffffff',
           border: '2px solid #d8d6cd',

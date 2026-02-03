@@ -382,6 +382,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Build Fix & Social Links (February 2026)
-- [ ] Fix TypeScript error: strFriendly property on FlatState type
-- [ ] Add Instagram link to @teeco.co (220 followers)
-- [ ] Add Instagram link to @jeffchheuy (15k followers - CEO)
+- [x] Fix TypeScript error: strFriendly property on FlatState type
+- [x] Add Instagram link to @teeco.co (220 followers)
+- [x] Add Instagram link to @jeffchheuy (15k followers - CEO)
+
+
+## Bug Fixes (February 2026)
+- [ ] Fix map swipe - should work on entire map area, not just tab titles
+- [ ] Fix double-tap detection - currently triggers on single tap
+- [ ] Move floating heart button - currently hidden behind Edge assistant chat box

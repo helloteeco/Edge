@@ -448,13 +448,10 @@ export function USMap() {
 
   return (
     <div className="space-y-5">
-      {/* Map View Filters - with swipe gesture support */}
+      {/* Map View Filters */}
       <div 
         ref={tabContainerRef}
         className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide touch-pan-x"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {views.map((view) => (
@@ -493,8 +490,14 @@ export function USMap() {
         <p className="text-sm" style={{ color: '#787060' }}>{getFilterDescription()}</p>
       </div>
 
-      {/* Map Grid */}
-      <div className="rounded-2xl p-4" style={{ backgroundColor: '#f5f4f0' }}>
+      {/* Map Grid - with swipe gesture support on entire map area */}
+      <div 
+        className="rounded-2xl p-4 touch-pan-y"
+        style={{ backgroundColor: '#f5f4f0' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(11, 1fr)' }}>
           {Array.from({ length: 99 }).map((_, index) => {
             const row = Math.floor(index / 11);
