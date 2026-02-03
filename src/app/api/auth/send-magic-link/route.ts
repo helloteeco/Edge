@@ -65,44 +65,32 @@ export async function POST(request: NextRequest) {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
-              <div style="max-width: 480px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #e5e3da 0%, #f5f3eb 100%); padding: 32px; text-align: center;">
-                  <div style="display: inline-block; background: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-                    <img src="https://edge.teeco.co/teeco-logocopy.PNG" alt="Teeco" style="height: 36px; display: block;" />
-                  </div>
-                  <p style="color: #2b2823; font-size: 14px; font-weight: 600; margin: 16px 0 0 0; letter-spacing: 0.5px;">EDGE BY TEECO</p>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #ffffff;">
+              <div style="max-width: 400px; margin: 0 auto; padding: 24px 16px;">
+                <!-- Sign In Button - FIRST so it's visible in preview -->
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <a href="${magicLink}" style="display: inline-block; background: #2b2823; color: white; font-size: 18px; font-weight: 600; text-decoration: none; padding: 16px 48px; border-radius: 12px;">
+                    Sign In to Edge
+                  </a>
                 </div>
                 
-                <!-- Content -->
-                <div style="padding: 40px 32px;">
-                  <h1 style="color: #2b2823; font-size: 24px; margin: 0 0 16px 0; text-align: center;">
-                    Sign in to Edge
-                  </h1>
-                  <p style="color: #787060; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0; text-align: center;">
-                    Click the button below to securely sign in. You'll be taken right back to where you were.
-                  </p>
-                  
-                  <!-- Button -->
-                  <div style="text-align: center; margin-bottom: 32px;">
-                    <a href="${magicLink}" style="display: inline-block; background: #2b2823; color: white; font-size: 16px; font-weight: 600; text-decoration: none; padding: 16px 48px; border-radius: 12px;">
-                      Sign In
-                    </a>
-                  </div>
-                  
-                  <p style="color: #a0a0a0; font-size: 14px; line-height: 1.5; margin: 0; text-align: center;">
-                    This link expires in 15 minutes. If you didn't request this email, you can safely ignore it.
-                  </p>
-                </div>
+                <!-- Brief explanation -->
+                <p style="color: #787060; font-size: 14px; line-height: 1.5; margin: 0 0 16px 0; text-align: center;">
+                  Tap the button above to sign in securely.
+                </p>
+                
+                <!-- Expiry note -->
+                <p style="color: #a0a0a0; font-size: 12px; margin: 0 0 24px 0; text-align: center;">
+                  Link expires in 15 minutes.
+                </p>
+                
+                <!-- Divider -->
+                <div style="border-top: 1px solid #e5e5e5; margin: 0 0 16px 0;"></div>
                 
                 <!-- Footer -->
-                <div style="background: #f9f9f9; padding: 24px 32px; border-top: 1px solid #e5e5e5;">
-                  <p style="color: #a0a0a0; font-size: 12px; margin: 0; text-align: center;">
-                    Edge by Teeco • STR Investment Calculator<br>
-                    <a href="https://edge.teeco.co" style="color: #787060;">edge.teeco.co</a>
-                  </p>
-                </div>
+                <p style="color: #a0a0a0; font-size: 11px; margin: 0; text-align: center;">
+                  Edge by Teeco • <a href="https://edge.teeco.co" style="color: #787060;">edge.teeco.co</a>
+                </p>
               </div>
             </body>
             </html>
