@@ -12,14 +12,36 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Edge by Teeco - STR Investment Analysis",
-  description: "Find your next short-term rental investment with data-driven market analysis",
+  description: "Your unfair advantage in STR investing. Data-driven market analysis for short-term rental investments across 600+ US markets.",
   icons: {
     icon: "/favicon.ico",
   },
+  metadataBase: new URL("https://edge.teeco.co"),
   openGraph: {
-    title: "Edge by Teeco - STR Investment Analysis",
-    description: "Find your next short-term rental investment with data-driven market analysis",
+    title: "Edge by Teeco",
+    description: "Your unfair advantage in STR investing. Data-driven market analysis for short-term rental investments.",
     type: "website",
+    url: "https://edge.teeco.co",
+    siteName: "Edge by Teeco",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Edge by Teeco - Your unfair advantage in STR investing",
+      },
+    ],
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Edge by Teeco",
+    description: "Your unfair advantage in STR investing. Data-driven market analysis for short-term rental investments.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
