@@ -421,3 +421,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Set up Open Graph meta tags for city pages (rich link previews)
 - [ ] Set up Open Graph meta tags for state pages (rich link previews)
 - [ ] Include branded share text with Edge tagline
+- [ ] Fix floating heart button overlapping with AI chat button - move higher up
