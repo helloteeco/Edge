@@ -3310,6 +3310,30 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             )}
 
+            {/* Monthly Costs CTA */}
+            <div className="rounded-2xl p-5" style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd" }}>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💡</span>
+                <div className="flex-1">
+                  <p className="font-semibold" style={{ color: "#0369a1" }}>Not sure about monthly costs?</p>
+                  <p className="text-sm mt-1" style={{ color: "#0284c7" }}>
+                    Ask our Edge assistant about typical recurring costs in this city - utilities, cleaning, supplies, and more.
+                  </p>
+                  <button
+                    onClick={() => {
+                      // Open chat assistant with a pre-filled question about costs
+                      const chatButton = document.querySelector('button[class*="fixed bottom-24 right-4"]') as HTMLButtonElement;
+                      if (chatButton) chatButton.click();
+                    }}
+                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
+                    style={{ backgroundColor: "#0369a1", color: "#ffffff" }}
+                  >
+                    💬 Ask About Monthly Costs
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Your Next Steps Checklist */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Your Next Steps</h3>

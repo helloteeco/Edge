@@ -540,7 +540,7 @@ export function USMap() {
         </div>
       </div>
 
-      {/* State Detail Popup */}
+      {/* State Detail Popup - Simplified */}
       {selectedStateData && (
         <div className="rounded-2xl p-5 shadow-lg border" style={{ backgroundColor: '#ffffff', borderColor: '#d8d6cd' }}>
           <div className="flex items-start justify-between mb-4">
@@ -566,62 +566,9 @@ export function USMap() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>Median Home</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                ${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K
-              </div>
-            </div>
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>Appreciation</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                {selectedStateData.appreciation.toFixed(1)}%
-              </div>
-            </div>
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>Net Migration</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                {selectedStateData.netMigration > 0 ? '+' : ''}{(selectedStateData.netMigration / 1000).toFixed(0)}K
-              </div>
-            </div>
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>STR Status</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                {selectedStateData.regulation === 'Legal' ? 'Friendly' : selectedStateData.regulation}
-              </div>
-            </div>
-          </div>
-
-          {/* Inventory Data */}
-          {selectedInventoryData && (
-            <div className="grid grid-cols-2 gap-3 mb-4 pt-3 border-t" style={{ borderColor: '#e5e3da' }}>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Inventory Level</div>
-                <div className="text-lg font-bold capitalize" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.inventoryLevel.replace('-', ' ')}
-                </div>
-              </div>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Inventory Growth</div>
-                <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.inventoryGrowthYoY > 0 ? '+' : ''}{selectedInventoryData.inventoryGrowthYoY.toFixed(1)}%
-                </div>
-              </div>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Price Cuts</div>
-                <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.priceCutPercent.toFixed(1)}%
-                </div>
-              </div>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Days on Market</div>
-                <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.daysOnMarket} days
-                </div>
-              </div>
-            </div>
-          )}
+          <p className="text-sm mb-4" style={{ color: '#787060' }}>
+            Explore cities and markets in {selectedStateData.name} to find your next STR investment opportunity.
+          </p>
 
           <Link
             href={`/state/${selectedState?.toLowerCase()}`}

@@ -711,13 +711,11 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <HomeEquityIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Find an Agent</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Find a Great Agent</p>
                 </Link>
                 
                 <Link 
-                  href="https://www.zillow.com/homeloans/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/funding"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
                 >
@@ -728,7 +726,7 @@ export default function HomePage() {
                 </Link>
                 
                 <Link 
-                  href="https://teeco.co/book-our-design-services"
+                  href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -741,7 +739,7 @@ export default function HomePage() {
                 </Link>
                 
                 <Link 
-                  href="https://teeco.co/book-our-design-services"
+                  href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
