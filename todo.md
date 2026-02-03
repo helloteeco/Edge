@@ -345,11 +345,11 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Build Warnings & Mobile UX (February 2026)
-- [ ] Fix Image optimization warnings - replace <img> with Next.js <Image /> in:
-  - [ ] src/app/calculator/page.tsx (lines 1607, 3445)
-  - [ ] src/app/page.tsx (line 116)
-  - [ ] src/app/privacy/page.tsx (line 15)
-  - [ ] src/app/terms/page.tsx (line 15)
-  - [ ] src/components/AuthModal.tsx (line 96)
+- [x] Fix Image optimization warnings - replace <img> with Next.js <Image /> in:
+  - [x] src/app/calculator/page.tsx (lines 1607, 3445)
+  - [x] src/app/page.tsx (line 116)
+  - [x] src/app/privacy/page.tsx (line 15)
+  - [x] src/app/terms/page.tsx (line 15)
+  - [x] src/components/AuthModal.tsx (line 96)
 - [ ] Fix city search dynamic route error
-- [ ] Add touch-swipe gestures for mobile map tab navigation
+- [x] Add touch-swipe gestures for mobile map tab navigation
