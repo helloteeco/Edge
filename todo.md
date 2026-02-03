@@ -341,7 +341,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Fix STR Grade legend: Replace teal with light green for B/B+ grades
 - [ ] Fix Home Prices legend order: Show from worst (>$450K red) to best (<$200K green)
 - [ ] Ensure consistent green gradient: emerald-400 (light) → emerald-600 (dark) for best values
-- [ ] Verify all 8 map tabs use same color scale pattern
+- [x] Verify all 8 map tabs use same color scale pattern
+- [x] Fix teal color issue - changed from green to emerald palette for true green appearance
 
 
 ## Build Warnings & Mobile UX (February 2026)
@@ -353,3 +354,7 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
   - [x] src/components/AuthModal.tsx (line 96)
 - [ ] Fix city search dynamic route error
 - [x] Add touch-swipe gestures for mobile map tab navigation
+
+## Tab Order UX Improvement (February 2026)
+- [ ] Reorder map tabs: STR Grade first, then familiar → technical
+  - New order: STR Grade → Home Prices → Appreciation → Days on Market → Price Cuts % → Migration → Inventory Level → Inventory Growth

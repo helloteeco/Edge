@@ -121,15 +121,17 @@ export function USMap() {
   const touchEndX = useRef<number>(0);
   const isSwiping = useRef<boolean>(false);
 
+  // Tab order: STR Grade (our value prop) first, then familiar metrics → technical metrics
+  // This builds user confidence by starting with recognizable concepts
   const views = [
     { key: "strScore", label: "STR Grade", description: "Our overall investment score based on cash flow, affordability, and legality." },
-    { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
-    { key: "migration", label: "Migration", description: "More people moving in often leads to rising home prices and rental demand." },
     { key: "homeValue", label: "Home Prices", description: "Lower prices mean easier entry and better cash-on-cash returns." },
+    { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
+    { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },
+    { key: "priceCuts", label: "Price Cuts %", description: "Percentage of listings with price reductions. Higher = more negotiating power for buyers." },
+    { key: "migration", label: "Migration", description: "More people moving in often leads to rising home prices and rental demand." },
     { key: "inventoryLevel", label: "Inventory Level", description: "Current housing supply. High inventory = buyer's market with more choices and negotiating power." },
     { key: "inventoryGrowth", label: "Inventory Growth", description: "Year-over-year change in active listings. Rising inventory creates buying opportunities." },
-    { key: "priceCuts", label: "Price Cuts %", description: "Percentage of listings with price reductions. Higher = more negotiating power for buyers." },
-    { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },
   ];
 
   const currentViewIndex = views.findIndex(v => v.key === mapView);
