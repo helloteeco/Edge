@@ -207,12 +207,27 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
 
       {/* Login Prompt Modal */}
       {showLoginPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4" 
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowLoginPrompt(false)}
+        >
           <div 
             className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-down"
             style={{ backgroundColor: '#ffffff' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-center">
+            <div className="text-center relative">
+              {/* Close button */}
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="absolute -top-2 -right-2 p-2 rounded-full hover:bg-gray-100 transition-all"
+                style={{ color: '#787060' }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
               <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fef2f2' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="#ef4444">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
