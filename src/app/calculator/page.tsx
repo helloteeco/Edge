@@ -149,6 +149,27 @@ export default function CalculatorPage() {
   const [isLoadingAiAnalysis, setIsLoadingAiAnalysis] = useState(false);
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
 
+  // Lock body scroll when AI Analysis modal is open
+  useEffect(() => {
+    if (showAiAnalysis) {
+      // Save current scroll position and lock body
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Restore scroll position when modal closes
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showAiAnalysis]);
+
   // Load recent searches from localStorage (with 60-minute cache expiration for API compliance)
   const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
   
@@ -2782,13 +2803,21 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
             {/* AI Analysis Modal */}
             {showAiAnalysis && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+              <div 
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                onClick={(e) => {
+                  // Close modal when clicking backdrop
+                  if (e.target === e.currentTarget) setShowAiAnalysis(false);
+                }}
+              >
                 <div 
-                  className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl"
-                  style={{ backgroundColor: "#ffffff" }}
+                  className="relative w-full max-w-2xl flex flex-col rounded-2xl"
+                  style={{ backgroundColor: "#ffffff", maxHeight: "85vh" }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Modal Header */}
-                  <div className="sticky top-0 z-10 px-6 py-4 border-b" style={{ backgroundColor: "#2b2823", borderColor: "#3d3a34" }}>
+                  {/* Modal Header - Fixed */}
+                  <div className="flex-shrink-0 px-6 py-4 border-b rounded-t-2xl" style={{ backgroundColor: "#2b2823", borderColor: "#3d3a34" }}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
@@ -2813,8 +2842,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     </div>
                   </div>
                   
-                  {/* Modal Content */}
-                  <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 80px)" }}>
+                  {/* Modal Content - Scrollable */}
+                  <div 
+                    className="flex-1 p-6 overflow-y-auto overscroll-contain"
+                    style={{ WebkitOverflowScrolling: "touch" }}
+                  >
                     {isLoadingAiAnalysis ? (
                       <div className="flex flex-col items-center justify-center py-12">
                         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: "#e5e3da" }}>
