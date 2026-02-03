@@ -361,7 +361,14 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Double-Tap Save Feature (February 2026)
-- [ ] Add double-tap gesture detection on city/state cards
-- [ ] Show Instagram-style heart animation when item is saved
-- [ ] Add floating heart button that scrolls with card content
-- [ ] Subtle feedback to confirm save action
+- [x] Add double-tap gesture detection on city/state cards
+- [x] Show Instagram-style heart animation when item is saved
+- [x] Add floating heart button that scrolls with card content
+- [x] Subtle feedback to confirm save action
+
+
+## Save Limit Feature (February 2026)
+- [ ] Implement 10-save limit for cities and states combined
+- [ ] Show friendly notification when limit is reached
+- [ ] Display save count on floating button (e.g., "7/10")
+- [ ] Heart animation shakes when at limit instead of popping
