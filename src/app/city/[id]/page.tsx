@@ -30,7 +30,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
   };
 
   const handleShare = () => {
-    const text = `Check out ${city?.name}, ${city?.stateCode} on Edge by Teeco!\n\nGrade: ${city?.grade}\nScore: ${city?.marketScore}/100\nMonthly Revenue: $${city?.strMonthlyRevenue.toLocaleString()}\nMedian Price: $${city?.medianHomeValue.toLocaleString()}\n\n${window.location.href}`;
+    const text = `${city?.name}, ${city?.stateCode} - STR Investment Analysis\n\n📊 Grade: ${city?.grade}\n📈 Score: ${city?.marketScore}/100\n💰 Monthly Revenue: $${city?.strMonthlyRevenue.toLocaleString()}\n🏠 Median Price: $${city?.medianHomeValue.toLocaleString()}\n\n${window.location.href}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
     
     if (navigator.share) {
       navigator.share({ title: `${city?.name} STR Analysis`, text, url: window.location.href });

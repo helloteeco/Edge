@@ -368,7 +368,14 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Save Limit Feature (February 2026)
-- [ ] Implement 10-save limit for cities and states combined
-- [ ] Show friendly notification when limit is reached
-- [ ] Display save count on floating button (e.g., "7/10")
-- [ ] Heart animation shakes when at limit instead of popping
+- [x] Implement 10-save limit for cities and states combined
+- [x] Show friendly notification when limit is reached
+- [x] Display save count on floating button (e.g., "7/10")
+- [x] Heart animation shakes when at limit instead of popping
+
+
+## Viral Marketing Branding (February 2026)
+- [ ] Update share text on city pages with Edge branding and tagline
+- [ ] Update share text on state pages with Edge branding and tagline
+- [ ] Add branding footer to PDF reports
+- [ ] Include "Edge by Teeco | edge.teeco.co | Your unfair advantage in STR investing"

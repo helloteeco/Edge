@@ -1022,7 +1022,9 @@ export default function CalculatorPage() {
     
     /* Footer */
     .footer { margin-top: 48px; padding-top: 32px; border-top: 1px solid #e5e3da; text-align: center; }
-    .footer-brand { font-size: 18px; font-weight: 700; color: #2b2823; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .footer-brand { font-size: 20px; font-weight: 700; color: #2b2823; margin-bottom: 4px; letter-spacing: -0.5px; }
+    .footer-url { font-size: 14px; color: #2b2823; font-weight: 500; margin-bottom: 8px; }
+    .footer-tagline { font-size: 13px; color: #787060; font-style: italic; margin-bottom: 16px; }
     .footer-text { font-size: 12px; color: #787060; }
     .disclaimer { font-size: 10px; color: #a0a0a0; margin-top: 20px; max-width: 550px; margin-left: auto; margin-right: auto; line-height: 1.5; }
     
@@ -1200,7 +1202,8 @@ export default function CalculatorPage() {
     <!-- Footer -->
     <div class="footer">
       <div class="footer-brand">Edge by Teeco</div>
-      <p class="footer-text">STR Investment Analysis</p>
+      <p class="footer-url">edge.teeco.co</p>
+      <p class="footer-tagline">Your unfair advantage in STR investing</p>
       <p class="footer-text">Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
       <p class="disclaimer">This analysis is for informational purposes only and should not be considered financial advice. Projections are based on market data and may vary based on property management, market conditions, and other factors. Always conduct your own due diligence before making investment decisions.</p>
     </div>
