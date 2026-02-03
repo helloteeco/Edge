@@ -2032,20 +2032,20 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     </div>
                     
                     {/* Chart Area */}
-                    <div className="flex-1">
-                      <div className="flex items-end justify-between gap-1 h-48 border-l border-b" style={{ borderColor: '#e5e3da' }}>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex items-end h-44 border-l border-b" style={{ borderColor: '#e5e3da' }}>
                         {monthlyRevenues.map((monthlyRev, index) => {
                           // Calculate height based on Y-axis range (not from 0)
                           const heightPercent = yAxisRange > 0 ? ((monthlyRev - yAxisMin) / yAxisRange) * 100 : 50;
                           const barColor = monthlyRev >= baseMonthlyRev * 1.1 ? '#22c55e' : monthlyRev >= baseMonthlyRev * 0.9 ? '#3b82f6' : '#f59e0b';
                           
                           return (
-                            <div key={index} className="flex-1 flex flex-col items-center justify-end h-full">
-                              <span className="text-xs font-bold mb-1" style={{ color: "#2b2823" }}>
-                                ${monthlyRev >= 1000 ? Math.round(monthlyRev / 1000) + 'k' : monthlyRev}
+                            <div key={index} className="flex-1 flex flex-col items-center justify-end h-full px-[1px] sm:px-1">
+                              <span className="text-[8px] sm:text-[10px] font-semibold mb-1" style={{ color: "#2b2823" }}>
+                                {monthlyRev >= 1000 ? Math.round(monthlyRev / 1000) + 'k' : monthlyRev}
                               </span>
                               <div 
-                                className="w-full rounded-t-md transition-all cursor-pointer hover:opacity-80"
+                                className="w-full max-w-[16px] sm:max-w-[20px] rounded-t transition-all cursor-pointer hover:opacity-80"
                                 style={{ 
                                   height: `${Math.max(heightPercent, 5)}%`,
                                   backgroundColor: barColor,
@@ -2056,10 +2056,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                           );
                         })}
                       </div>
-                      <div className="flex justify-between gap-1 mt-1">
+                      <div className="flex mt-1">
                         {monthNames.map((name, index) => (
                           <div key={index} className="flex-1 text-center">
-                            <span className="text-xs text-gray-400">{name}</span>
+                            <span className="text-[8px] sm:text-[10px]" style={{ color: "#787060" }}>
+                              {name.charAt(0)}<span className="hidden sm:inline">{name.slice(1)}</span>
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -2631,11 +2633,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       {/* X-axis labels */}
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => (
-                          <div key={year} className="flex-1 text-center">
-                            <span className="text-xs" style={{ color: "#787060" }}>Yr {year}</span>
+                          <div key={year} className="flex-1 text-center min-w-0">
+                            <span className="text-[10px] sm:text-xs whitespace-nowrap" style={{ color: "#787060" }}>{year}</span>
                           </div>
                         ))}
                       </div>
+                      <p className="text-[10px] text-center mt-1" style={{ color: "#a0a0a0" }}>Years</p>
                     </div>
                     
                     {/* 10-Year Summary */}
@@ -2826,33 +2829,120 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     ) : aiAnalysis ? (
                       <div className="prose prose-sm max-w-none">
                         <div 
-                          className="text-sm leading-relaxed whitespace-pre-wrap"
+                          className="text-sm leading-relaxed"
                           style={{ color: "#2b2823" }}
                         >
                           {aiAnalysis.split('\n').map((line, i) => {
-                            // Style headers
-                            if (line.startsWith('## ') || line.startsWith('**') && line.endsWith('**')) {
+                            // Skip empty lines
+                            if (!line.trim()) return <div key={i} className="h-2"></div>;
+                            
+                            // Style ### headers (h3)
+                            if (line.startsWith('### ')) {
                               return (
-                                <p key={i} className="font-bold text-base mt-4 mb-2" style={{ color: "#2b2823" }}>
-                                  {line.replace(/^## |\*\*/g, '')}
-                                </p>
+                                <h4 key={i} className="font-bold text-base mt-5 mb-2" style={{ color: "#2b2823" }}>
+                                  {line.replace(/^### /, '')}
+                                </h4>
                               );
                             }
-                            // Style numbered items
-                            if (/^\d+\./.test(line)) {
+                            // Style ## headers (h2)
+                            if (line.startsWith('## ')) {
                               return (
-                                <p key={i} className="font-semibold mt-3 mb-1" style={{ color: "#2b2823" }}>
-                                  {line}
-                                </p>
+                                <h3 key={i} className="font-bold text-lg mt-6 mb-2" style={{ color: "#2b2823" }}>
+                                  {line.replace(/^## /, '')}
+                                </h3>
                               );
                             }
-                            // Regular text
-                            return <p key={i} className="mb-2">{line}</p>;
+                            // Style numbered items (e.g., "1. Title")
+                            if (/^\d+\.\s/.test(line)) {
+                              return (
+                                <h4 key={i} className="font-semibold text-base mt-4 mb-2" style={{ color: "#2b2823" }}>
+                                  {line.replace(/\*\*/g, '')}
+                                </h4>
+                              );
+                            }
+                            // Process inline formatting for regular text
+                            const formatLine = (text: string) => {
+                              // Replace **bold** with styled spans
+                              const parts = text.split(/(\*\*[^*]+\*\*)/);
+                              return parts.map((part, j) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                  return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
+                                }
+                                return part;
+                              });
+                            };
+                            // Regular text with inline formatting
+                            return <p key={i} className="mb-2 leading-relaxed">{formatLine(line)}</p>;
                           })}
                         </div>
                         
-                        {/* CTA at bottom */}
+                        {/* Share Analysis */}
                         <div className="mt-6 pt-4 border-t" style={{ borderColor: "#e5e3da" }}>
+                          <p className="text-sm text-center mb-3" style={{ color: "#787060" }}>
+                            Share this analysis
+                          </p>
+                          <div className="flex flex-wrap gap-2 justify-center mb-6">
+                            <button
+                              onClick={() => {
+                                const text = `Edge AI Analysis for ${result?.address || result?.neighborhood}, ${result?.city}\n\n${aiAnalysis?.replace(/[#*]/g, '') || ''}`;
+                                if (navigator.share) {
+                                  navigator.share({ title: 'Edge AI Analysis', text });
+                                } else {
+                                  navigator.clipboard.writeText(text);
+                                  alert('Analysis copied to clipboard!');
+                                }
+                              }}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
+                              style={{ backgroundColor: "#22c55e", color: "#ffffff" }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Text
+                            </button>
+                            <button
+                              onClick={() => {
+                                const subject = encodeURIComponent(`Edge AI Analysis - ${result?.address || result?.neighborhood}, ${result?.city}`);
+                                const body = encodeURIComponent(`Edge AI Analysis\n\n${aiAnalysis?.replace(/[#*]/g, '') || ''}\n\n---\nAnalyzed with Edge by Teeco: https://edge.teeco.co`);
+                                window.open(`mailto:?subject=${subject}&body=${body}`);
+                              }}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
+                              style={{ backgroundColor: "#787060", color: "#ffffff" }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              Email
+                            </button>
+                            <button
+                              onClick={async () => {
+                                // Trigger PDF generation with AI analysis included
+                                const analysisText = aiAnalysis?.replace(/[#*]/g, '') || '';
+                                // Store analysis in session for PDF
+                                sessionStorage.setItem('aiAnalysisForPdf', analysisText);
+                                // Find and click the PDF button
+                                const pdfButton = document.querySelector('[data-pdf-button]') as HTMLButtonElement;
+                                if (pdfButton) {
+                                  pdfButton.click();
+                                } else {
+                                  // Fallback - copy to clipboard
+                                  navigator.clipboard.writeText(analysisText);
+                                  alert('Analysis copied! Use the PDF button in the results to generate a full report.');
+                                }
+                              }}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
+                              style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              PDF
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* CTA at bottom */}
+                        <div className="pt-4 border-t" style={{ borderColor: "#e5e3da" }}>
                           <p className="text-sm text-center mb-3" style={{ color: "#787060" }}>
                             Ready to take the next step?
                           </p>

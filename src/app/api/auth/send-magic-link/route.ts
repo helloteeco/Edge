@@ -68,8 +68,11 @@ export async function POST(request: NextRequest) {
             <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
               <div style="max-width: 480px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 <!-- Header -->
-                <div style="background: #2b2823; padding: 32px; text-align: center;">
-                  <img src="https://edge.teeco.co/teeco-logocopy.PNG" alt="Teeco" style="height: 40px;" />
+                <div style="background: linear-gradient(135deg, #e5e3da 0%, #f5f3eb 100%); padding: 32px; text-align: center;">
+                  <div style="display: inline-block; background: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                    <img src="https://edge.teeco.co/teeco-logocopy.PNG" alt="Teeco" style="height: 36px; display: block;" />
+                  </div>
+                  <p style="color: #2b2823; font-size: 14px; font-weight: 600; margin: 16px 0 0 0; letter-spacing: 0.5px;">EDGE BY TEECO</p>
                 </div>
                 
                 <!-- Content -->
