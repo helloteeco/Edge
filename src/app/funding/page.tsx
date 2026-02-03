@@ -888,6 +888,7 @@ export default function FundingPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showQuizResults, setShowQuizResults] = useState(false);
+  const [showFinancingTip, setShowFinancingTip] = useState(false);
 
   const handleAnswer = (value: string, tags: string[]) => {
     const newAnswers = { ...answers, [quizQuestions[currentQuestion].id]: value };
@@ -971,54 +972,57 @@ export default function FundingPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Disclaimer Banner */}
-        <div 
-          className="rounded-2xl p-4 mb-6 flex items-start gap-4"
-          style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', boxShadow: '0 1px 3px rgba(251, 191, 36, 0.1)' }}
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#fef3c7' }}>
-            <WarningIcon className="w-5 h-5" color="#d97706" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm" style={{ color: '#92400e' }}>
-              Not Financial or Legal Advice
-            </p>
-            <p className="text-sm mt-1 leading-relaxed" style={{ color: '#a16207' }}>
-              This information is for educational purposes only. Some strategies involve legal complexity or risk. 
-              Always consult with a licensed attorney, CPA, and/or mortgage professional before implementing any financing strategy.
+        {/* Compact Info Banner - Disclaimer + Tip Combined */}
+        <div className="mb-4">
+          {/* Disclaimer - Always visible but compact */}
+          <div 
+            className="rounded-xl px-4 py-3 flex items-center gap-3 mb-3"
+            style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d' }}
+          >
+            <WarningIcon className="w-5 h-5 flex-shrink-0" color="#d97706" />
+            <p className="text-xs" style={{ color: '#92400e' }}>
+              <strong>Disclaimer:</strong> Educational only. Consult a licensed professional before implementing.
             </p>
           </div>
-        </div>
-
-        {/* Cash-on-Cash Return Education */}
-        <div 
-          className="rounded-2xl p-5 mb-6"
-          style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', boxShadow: '0 1px 3px rgba(34, 197, 94, 0.1)' }}
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#dcfce7' }}>
-              <LightbulbIcon className="w-5 h-5" color="#16a34a" />
+          
+          {/* Collapsible Financing Tip */}
+          <button
+            onClick={() => setShowFinancingTip(!showFinancingTip)}
+            className="w-full rounded-xl px-4 py-3 flex items-center justify-between gap-3 transition-all"
+            style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}
+          >
+            <div className="flex items-center gap-3">
+              <LightbulbIcon className="w-5 h-5 flex-shrink-0" color="#16a34a" />
+              <p className="text-sm font-medium text-left" style={{ color: '#166534' }}>
+                Why most investors use financing (not cash)
+              </p>
             </div>
-            <div>
-              <p className="font-semibold" style={{ color: '#166534' }}>
-                Why Most Investors Use Financing
+            <ChevronDownIcon 
+              className={`w-4 h-4 flex-shrink-0 transition-transform ${showFinancingTip ? 'rotate-180' : ''}`} 
+              color="#16a34a" 
+            />
+          </button>
+          
+          {/* Expanded Content */}
+          {showFinancingTip && (
+            <div 
+              className="mt-2 rounded-xl p-4"
+              style={{ backgroundColor: '#dcfce7', border: '1px solid #86efac' }}
+            >
+              <p className="text-sm mb-3" style={{ color: '#15803d' }}>
+                Most people can&apos;t pay $400K cash — and you don&apos;t need to. The math often works in your favor.
               </p>
-              <p className="text-sm mt-2 leading-relaxed" style={{ color: '#15803d' }}>
-                <strong>The reality:</strong> Most people can&apos;t pay $400K cash for a property. And here&apos;s the thing — you don&apos;t need to. 
-                While a loan means monthly payments, the math often works in your favor.
-              </p>
-              <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: '#dcfce7' }}>
+              <div className="p-3 rounded-lg mb-3" style={{ backgroundColor: '#f0fdf4' }}>
                 <p className="text-sm font-medium" style={{ color: '#166534' }}>
-                  <strong>Real example:</strong> A $300K property making $40K/year. Pay all cash? You get $40K profit (13% return). 
-                  Put 20% down ($60K) with a loan? Your mortgage is ~$1,500/month ($18K/year). You keep $22K profit — that&apos;s a 
-                  <span className="font-bold text-green-700"> 37% return</span> on your $60K, and you still have $240K to invest elsewhere.
+                  <strong>Example:</strong> $300K property, $40K/year income. All cash = 13% return. 
+                  20% down ($60K) with loan = <span className="font-bold">37% return</span> on your money.
                 </p>
               </div>
-              <p className="text-xs mt-3" style={{ color: '#22c55e' }}>
-                💡 <strong>The trade-off:</strong> Yes, you&apos;ll have less cash in your pocket each month. But your return on the money you actually invested is much higher — and you can buy multiple properties instead of just one.
+              <p className="text-xs" style={{ color: '#22c55e' }}>
+                💡 Trade-off: Less monthly cash, but higher ROI and ability to buy multiple properties.
               </p>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Quiz Section */}
