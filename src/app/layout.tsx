@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Edge by Teeco - STR Investment Analysis",
-  description: "Find high cash flow short-term rental markets with AI-powered analysis. 609 markets tracked, instant deal analysis, and expert resources.",
+  description: "Find high cash flow short-term rental markets with AI-powered analysis. 671 markets tracked, instant deal analysis, and expert resources.",
   icons: {
     icon: "/favicon.ico",
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Edge by Teeco - Interactive US map showing STR investment opportunities across 609 markets",
+        alt: "Edge by Teeco - Interactive US map showing STR investment opportunities across 671 markets",
       },
     ],
     locale: "en_US",
