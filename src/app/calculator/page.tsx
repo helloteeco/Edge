@@ -3400,7 +3400,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <div className="space-y-3 mb-4">
                 {/* Tier 1: Starter - Makes middle look smart */}
                 <a 
-                  href="https://buy.stripe.com/aFa4gz4C731odnE7uU8AE03"
+                  href="https://buy.stripe.com/9B628r5GbfOa2J03eE8AE07"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
@@ -3417,7 +3417,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 
                 {/* Tier 2: Pro - BEST VALUE - Where most buyers land */}
                 <a 
-                  href="https://buy.stripe.com/14A8wP7OjfOa4R83eE8AE04"
+                  href="https://buy.stripe.com/9B614ngkP1XkdnEaH68AE09"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block p-4 rounded-xl border-2 cursor-pointer hover:border-green-600 transition-all relative" 
