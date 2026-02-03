@@ -423,4 +423,4 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Include branded share text with Edge tagline
 - [x] Fix floating heart button overlapping with AI chat button - move higher up
 - [x] Fix dark screen staying after double-tap heart animation
-- [ ] Fix magic link redirect to return to Calculator page with preserved state
+- [x] Fix magic link redirect to return to Calculator page with preserved state
