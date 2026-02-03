@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { USMap } from "@/components/USMap";
@@ -30,6 +31,62 @@ import {
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
+  const [activeJourneyInfo, setActiveJourneyInfo] = useState<string | null>(null);
+  
+  // Journey stage info content
+  const journeyInfo: Record<string, { title: string; description: string; features: string[] }> = {
+    'Research': {
+      title: 'Research Markets',
+      description: 'Edge helps you discover the best STR markets with real data.',
+      features: [
+        'Interactive map showing STR performance by state',
+        'Top markets ranked by revenue potential',
+        'Filter by bedroom count and property type',
+        'Compare markets side-by-side'
+      ]
+    },
+    'Analyze': {
+      title: 'Analyze Deals',
+      description: 'Run the numbers on any property with our AI-powered calculator.',
+      features: [
+        'Accurate revenue estimates from real Airbnb data',
+        'Monthly seasonality projections',
+        'Cash flow analysis with all expenses',
+        'AI-powered deal analysis and recommendations'
+      ]
+    },
+    'Acquire': {
+      title: 'Acquire Property',
+      description: 'Get connected with STR-friendly lenders and financing options.',
+      features: [
+        'DSCR loans that qualify on rental income',
+        'Down payment as low as 15-20%',
+        'Pre-qualified lender connections',
+        'Funding calculator to plan your purchase'
+      ]
+    },
+    'Setup': {
+      title: 'Setup & Design',
+      description: 'Transform your property into a top-performing rental.',
+      features: [
+        'Professional design consultations',
+        'Furniture packages and setup guides',
+        'Photography and listing optimization',
+        'Launch support to get your first bookings'
+      ]
+    },
+    'Scale': {
+      title: 'Scale Your Portfolio',
+      description: 'Grow from one property to a thriving STR business.',
+      features: [
+        'Portfolio tracking and performance analytics',
+        'Advanced market research for expansion',
+        'Community of successful STR investors',
+        'Ongoing education and strategy sessions'
+      ]
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
       {/* Informational Banner - Subtle cream-dark */}
@@ -169,18 +226,19 @@ export default function HomePage() {
                 },
               ].map((item, i) => (
                 <div key={i} className="flex flex-col items-center text-center relative z-10">
-                  <div 
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 transition-all"
+                  <button
+                    onClick={() => setActiveJourneyInfo(activeJourneyInfo === item.title ? null : item.title)}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     style={{ 
-                      backgroundColor: item.active ? '#2b2823' : '#e5e3da',
+                      backgroundColor: activeJourneyInfo === item.title ? '#22c55e' : (item.active ? '#2b2823' : '#e5e3da'),
                       boxShadow: item.active ? '0 4px 12px -2px rgba(43, 40, 35, 0.3)' : 'none'
                     }}
                   >
                     <item.icon className="w-5 h-5 sm:w-6 sm:h-6" color={item.active ? '#ffffff' : '#787060'} />
-                  </div>
+                  </button>
                   <span 
                     className="text-xs sm:text-sm font-semibold"
-                    style={{ color: item.color }}
+                    style={{ color: activeJourneyInfo === item.title ? '#22c55e' : item.color }}
                   >
                     {item.title}
                   </span>
@@ -190,7 +248,7 @@ export default function HomePage() {
                   >
                     {item.desc}
                   </span>
-                  {i === 0 && (
+                  {i === 0 && !activeJourneyInfo && (
                     <span 
                       className="absolute -top-1 -right-1 sm:top-0 sm:right-0 text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                       style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
@@ -201,6 +259,47 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+            
+            {/* Info Popup */}
+            {activeJourneyInfo && journeyInfo[activeJourneyInfo] && (
+              <div 
+                className="mt-4 p-4 rounded-xl animate-in fade-in slide-in-from-top-2 duration-200"
+                style={{ 
+                  backgroundColor: '#f8f7f4',
+                  border: '1px solid #e5e3da'
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-sm sm:text-base mb-1" style={{ color: '#2b2823' }}>
+                      {journeyInfo[activeJourneyInfo].title}
+                    </h4>
+                    <p className="text-xs sm:text-sm mb-3" style={{ color: '#787060' }}>
+                      {journeyInfo[activeJourneyInfo].description}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {journeyInfo[activeJourneyInfo].features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm" style={{ color: '#2b2823' }}>
+                          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#22c55e' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <button
+                    onClick={() => setActiveJourneyInfo(null)}
+                    className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors flex-shrink-0"
+                    style={{ backgroundColor: '#e5e3da' }}
+                  >
+                    <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* CTA to Full Training */}
