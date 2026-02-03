@@ -1713,16 +1713,18 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               )}
               
-              {/* Suggestions dropdown */}
-              {showSuggestions && suggestions.length > 0 && (
+              {/* Suggestions dropdown - using fixed position to escape all containers */}
+              {showSuggestions && suggestions.length > 0 && inputRef.current && (
                 <div 
                   ref={suggestionsRef}
-                  className="absolute left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 overflow-y-auto"
+                  className="fixed bg-white rounded-xl border border-gray-200 overflow-y-auto"
                   style={{ 
-                    top: "100%",
-                    zIndex: 9999,
-                    maxHeight: "min(300px, 50vh)",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1)"
+                    top: inputRef.current.getBoundingClientRect().bottom + 4,
+                    left: inputRef.current.getBoundingClientRect().left,
+                    width: inputRef.current.getBoundingClientRect().width,
+                    zIndex: 99999,
+                    maxHeight: "min(280px, 40vh)",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15)"
                   }}
                 >
                   {suggestions.map((suggestion, index) => (
