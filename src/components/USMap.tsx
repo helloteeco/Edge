@@ -165,7 +165,8 @@ export function USMap() {
     isSwiping.current = false;
     touchStartX.current = 0;
     touchEndX.current = 0;
-  }, [currentViewIndex, views]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentViewIndex]); // views is a constant array defined in component, doesn't need to be in deps
 
   // Scroll active tab into view
   useEffect(() => {
@@ -509,11 +510,8 @@ export function USMap() {
                   key={stateCode}
                   onClick={() => setSelectedState(stateCode === selectedState ? null : stateCode)}
                   className={`aspect-square rounded-lg text-xs font-bold flex items-center justify-center transition-all hover:scale-105 ${getStateColor(stateCode)} ${
-                    selectedState === stateCode ? 'ring-2 ring-offset-1' : ''
+                    selectedState === stateCode ? 'ring-2 ring-offset-1 ring-[#2b2823]' : ''
                   }`}
-                  style={{
-                    ...(selectedState === stateCode && { ringColor: '#2b2823' })
-                  }}
                 >
                   {stateCode}
                 </button>

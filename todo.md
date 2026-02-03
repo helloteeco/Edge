@@ -356,5 +356,5 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Add touch-swipe gestures for mobile map tab navigation
 
 ## Tab Order UX Improvement (February 2026)
-- [ ] Reorder map tabs: STR Grade first, then familiar → technical
+- [x] Reorder map tabs: STR Grade first, then familiar → technical
   - New order: STR Grade → Home Prices → Appreciation → Days on Market → Price Cuts % → Migration → Inventory Level → Inventory Growth
