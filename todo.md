@@ -388,6 +388,13 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Bug Fixes (February 2026)
-- [ ] Fix map swipe - should work on entire map area, not just tab titles
-- [ ] Fix double-tap detection - currently triggers on single tap
-- [ ] Move floating heart button - currently hidden behind Edge assistant chat box
+- [x] Fix map swipe - should work on entire map area, not just tab titles
+- [x] Fix double-tap detection - currently triggers on single tap
+- [x] Move floating heart button - currently hidden behind Edge assistant chat box
+
+
+## Social Section Update (February 2026)
+- [ ] Replace follower count display with clean single IG icon
+- [ ] Add dropdown with @jeffchheuy and @teeco.co options when IG icon tapped
+- [ ] Add "Share Edge with friends" button
+- [ ] Add YouTube icon linking directly to youtube.com/@jeffchheuy
