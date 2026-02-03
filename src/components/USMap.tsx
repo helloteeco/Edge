@@ -37,9 +37,9 @@ const statePositions: Record<string, { row: number; col: number }> = {
 // Map colors - keeping map interactive colors for visual distinction
 const getAppreciationColor = (value: number) => {
   if (value < 0) return "bg-red-400 text-white";
-  if (value < 2) return "bg-amber-300 text-amber-900";
-  if (value < 4) return "bg-emerald-300 text-emerald-900";
-  if (value < 5.5) return "bg-emerald-500 text-white";
+  if (value < 2) return "bg-orange-400 text-white";
+  if (value < 4) return "bg-amber-300 text-amber-900";
+  if (value < 5.5) return "bg-emerald-400 text-white";
   return "bg-emerald-600 text-white";
 };
 
@@ -67,13 +67,14 @@ const getGradeBgColor = (grade: string) => {
   }
 };
 
-// Inventory level colors (low inventory = green for buyers, high = red)
+// Inventory level colors (HIGH inventory = green for buyers = more choices, less competition)
 const getInventoryLevelColor = (level: string) => {
   switch (level) {
-    case 'low': return 'bg-emerald-600 text-white';
+    case 'very-high': return 'bg-emerald-600 text-white';  // Best for buyers
+    case 'high': return 'bg-emerald-400 text-white';
     case 'moderate': return 'bg-amber-300 text-amber-900';
-    case 'high': return 'bg-orange-400 text-white';
-    case 'very-high': return 'bg-red-500 text-white';
+    case 'low': return 'bg-orange-400 text-white';
+    case 'very-low': return 'bg-red-400 text-white';  // Worst for buyers
     default: return 'bg-gray-300 text-gray-700';
   }
 };
@@ -81,27 +82,27 @@ const getInventoryLevelColor = (level: string) => {
 // Inventory growth colors (higher growth = more supply = better for buyers)
 const getInventoryGrowthColor = (growth: number) => {
   if (growth < 0) return 'bg-red-400 text-white';
-  if (growth < 10) return 'bg-amber-300 text-amber-900';
-  if (growth < 18) return 'bg-emerald-300 text-emerald-900';
-  if (growth < 25) return 'bg-emerald-500 text-white';
+  if (growth < 10) return 'bg-orange-400 text-white';
+  if (growth < 18) return 'bg-amber-300 text-amber-900';
+  if (growth < 25) return 'bg-emerald-400 text-white';
   return 'bg-emerald-600 text-white';
 };
 
 // Price cuts colors (higher = more seller desperation = better for buyers)
 const getPriceCutsColor = (pct: number) => {
   if (pct < 12) return 'bg-red-400 text-white';
-  if (pct < 16) return 'bg-amber-300 text-amber-900';
-  if (pct < 22) return 'bg-emerald-300 text-emerald-900';
-  if (pct < 28) return 'bg-emerald-500 text-white';
+  if (pct < 16) return 'bg-orange-400 text-white';
+  if (pct < 22) return 'bg-amber-300 text-amber-900';
+  if (pct < 28) return 'bg-emerald-400 text-white';
   return 'bg-emerald-600 text-white';
 };
 
 // Days on market colors (higher = slower market = more negotiating power)
 const getDaysOnMarketColor = (days: number) => {
   if (days < 30) return 'bg-red-400 text-white';
-  if (days < 40) return 'bg-amber-300 text-amber-900';
-  if (days < 55) return 'bg-emerald-300 text-emerald-900';
-  if (days < 70) return 'bg-emerald-500 text-white';
+  if (days < 40) return 'bg-orange-400 text-white';
+  if (days < 55) return 'bg-amber-300 text-amber-900';
+  if (days < 70) return 'bg-emerald-400 text-white';
   return 'bg-emerald-600 text-white';
 };
 
@@ -122,15 +123,15 @@ export function USMap() {
       case "homeValue":
         // Low prices = green (more affordable = better for investors)
         if (state.medianHomeValue < 200000) return "bg-emerald-600 text-white";
-        if (state.medianHomeValue < 250000) return "bg-emerald-500 text-white";
-        if (state.medianHomeValue < 300000) return "bg-emerald-300 text-emerald-900";
-        if (state.medianHomeValue < 400000) return "bg-amber-300 text-amber-900";
+        if (state.medianHomeValue < 250000) return "bg-emerald-400 text-white";
+        if (state.medianHomeValue < 350000) return "bg-amber-300 text-amber-900";
+        if (state.medianHomeValue < 450000) return "bg-orange-400 text-white";
         return "bg-red-400 text-white";
       case "migration":
         if (state.netMigration > 100000) return "bg-emerald-600 text-white";
-        if (state.netMigration > 50000) return "bg-emerald-500 text-white";
-        if (state.netMigration > 0) return "bg-emerald-300 text-emerald-900";
-        if (state.netMigration > -50000) return "bg-amber-300 text-amber-900";
+        if (state.netMigration > 50000) return "bg-emerald-400 text-white";
+        if (state.netMigration > 0) return "bg-amber-300 text-amber-900";
+        if (state.netMigration > -50000) return "bg-orange-400 text-white";
         return "bg-red-400 text-white";
       case "inventoryLevel":
         return inventory ? getInventoryLevelColor(inventory.inventoryLevel) : "bg-[#e5e3da] text-[#787060]";
@@ -168,7 +169,7 @@ export function USMap() {
     { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
     { key: "migration", label: "Migration", description: "More people moving in often leads to rising home prices and rental demand." },
     { key: "homeValue", label: "Home Prices", description: "Lower prices mean easier entry and better cash-on-cash returns." },
-    { key: "inventoryLevel", label: "Inventory Level", description: "Current housing supply level. Low inventory = seller's market, high = buyer's market." },
+    { key: "inventoryLevel", label: "Inventory Level", description: "Current housing supply. High inventory = buyer's market with more choices and negotiating power." },
     { key: "inventoryGrowth", label: "Inventory Growth", description: "Year-over-year change in active listings. Rising inventory creates buying opportunities." },
     { key: "priceCuts", label: "Price Cuts %", description: "Percentage of listings with price reductions. Higher = more negotiating power for buyers." },
     { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },
@@ -214,16 +215,20 @@ export function USMap() {
               <span style={{ color: '#787060' }}>&lt;$200K</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>$200-300K</span>
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>$200-250K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>$300-400K</span>
+              <span style={{ color: '#787060' }}>$250-350K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>$350-450K</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&gt;$400K</span>
+              <span style={{ color: '#787060' }}>&gt;$450K</span>
             </div>
           </>
         );
@@ -235,15 +240,15 @@ export function USMap() {
               <span style={{ color: '#787060' }}>&lt;0%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>0-2%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>2-4%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>4-5.5%</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -260,15 +265,15 @@ export function USMap() {
               <span style={{ color: '#787060' }}>&lt;-50K</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>-50K to 0</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>0-50K</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>50-100K</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -281,7 +286,11 @@ export function USMap() {
         return (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
+              <span style={{ color: '#787060' }}>Very Low</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>Low</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -289,11 +298,11 @@ export function USMap() {
               <span style={{ color: '#787060' }}>Moderate</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>High</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-red-500 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-600 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>Very High</span>
             </div>
           </>
@@ -306,15 +315,15 @@ export function USMap() {
               <span style={{ color: '#787060' }}>&lt;0%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>0-10%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>10-18%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>18-25%</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -331,15 +340,15 @@ export function USMap() {
               <span style={{ color: '#787060' }}>&lt;12%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>12-16%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>16-22%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>22-28%</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -356,15 +365,15 @@ export function USMap() {
               <span style={{ color: '#787060' }}>&lt;30 days</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>30-40</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-300 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>40-55</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-sm" />
+              <div className="w-5 h-5 bg-emerald-400 rounded-md shadow-sm" />
               <span style={{ color: '#787060' }}>55-70</span>
             </div>
             <div className="flex items-center gap-1.5">
