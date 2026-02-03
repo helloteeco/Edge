@@ -584,7 +584,7 @@ export function USMap() {
             <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
               <div className="text-xs" style={{ color: '#787060' }}>STR Status</div>
               <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                {selectedStateData.strFriendly ? 'Friendly' : 'Varies'}
+                {selectedStateData.regulation === 'Legal' ? 'Friendly' : selectedStateData.regulation}
               </div>
             </div>
           </div>

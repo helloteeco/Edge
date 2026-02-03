@@ -375,7 +375,13 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Viral Marketing Branding (February 2026)
-- [ ] Update share text on city pages with Edge branding and tagline
-- [ ] Update share text on state pages with Edge branding and tagline
-- [ ] Add branding footer to PDF reports
-- [ ] Include "Edge by Teeco | edge.teeco.co | Your unfair advantage in STR investing"
+- [x] Update share text on city pages with Edge branding and tagline
+- [x] Update share text on state pages with Edge branding and tagline
+- [x] Add branding footer to PDF reports
+- [x] Include "Edge by Teeco | edge.teeco.co | Your unfair advantage in STR investing"
+
+
+## Build Fix & Social Links (February 2026)
+- [ ] Fix TypeScript error: strFriendly property on FlatState type
+- [ ] Add Instagram link to @teeco.co (220 followers)
+- [ ] Add Instagram link to @jeffchheuy (15k followers - CEO)
