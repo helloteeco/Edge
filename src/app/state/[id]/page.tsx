@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getCitiesByState, getStateByCode } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
+import { DoubleTapSave, FloatingSaveButton } from "@/components/DoubleTapSave";
 
 type SortOption = "score" | "adr" | "revenue" | "price";
 type FilterOption = "all" | "gems" | "legal" | "restricted";
@@ -179,6 +180,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
   };
 
   return (
+    <DoubleTapSave isSaved={isSaved} onToggleSave={toggleSave}>
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
@@ -665,5 +667,9 @@ export default function StatePage({ params }: { params: { id: string } }) {
         </div>
       </div>
     </div>
+    
+    {/* Floating Save Button */}
+    <FloatingSaveButton isSaved={isSaved} onToggleSave={toggleSave} />
+    </DoubleTapSave>
   );
 }

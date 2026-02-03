@@ -358,3 +358,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 ## Tab Order UX Improvement (February 2026)
 - [x] Reorder map tabs: STR Grade first, then familiar → technical
   - New order: STR Grade → Home Prices → Appreciation → Days on Market → Price Cuts % → Migration → Inventory Level → Inventory Growth
+
+
+## Double-Tap Save Feature (February 2026)
+- [ ] Add double-tap gesture detection on city/state cards
+- [ ] Show Instagram-style heart animation when item is saved
+- [ ] Add floating heart button that scrolls with card content
+- [ ] Subtle feedback to confirm save action
