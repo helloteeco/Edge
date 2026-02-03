@@ -528,3 +528,127 @@ p {
 .border-cream { border-color: var(--cream-dark); }
 .border-mocha { border-color: var(--teeco-mocha); }
 .border-gray { border-color: var(--teeco-gray); }
+
+
+/* =============================================
+   MOBILE OVERFLOW FIXES - Premium UX
+   ============================================= */
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Ensure main content respects viewport */
+main {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Mobile-specific fixes for calculator results */
+@media (max-width: 768px) {
+  /* Fix action buttons overflow */
+  .flex.items-center.gap-2 {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  /* Ensure cards don't overflow */
+  .rounded-2xl {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Fix listing cards - text truncation */
+  .truncate {
+    max-width: calc(100vw - 180px);
+  }
+  
+  /* Fix revenue display on listings */
+  .text-right {
+    flex-shrink: 0;
+    min-width: fit-content;
+  }
+  
+  /* Ensure flex containers wrap properly */
+  .flex.justify-between {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  /* Fix percentile selector buttons */
+  .flex.gap-2.mb-4 {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .flex.gap-2.mb-4::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Ensure text wraps properly */
+  p, span, h1, h2, h3, h4, h5, h6 {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Fix monthly revenue grid */
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+  
+  /* Smaller padding on mobile for cards */
+  .p-6 {
+    padding: 1rem;
+  }
+  
+  /* Fix chart container */
+  .relative.h-48,
+  .relative.h-52 {
+    max-width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  /* Stack header elements vertically */
+  .flex.items-center.justify-between.mb-4 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  /* Action buttons - smaller and wrap */
+  .flex.items-center.gap-2 button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  /* Listing name truncation */
+  .font-medium.text-gray-900.truncate {
+    max-width: calc(100vw - 140px);
+    font-size: 0.875rem;
+  }
+  
+  /* Revenue text smaller */
+  .font-bold.text-green-600 {
+    font-size: 0.875rem;
+  }
+  
+  /* Monthly grid - 3 columns on very small screens */
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* Reduce main padding */
+  .px-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

@@ -1478,7 +1478,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f5f4f0" }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f5f4f0" }}>
       {/* Header */}
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -1572,7 +1572,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 overflow-x-hidden">
         {/* Hero Section */}
         <div className="text-center mb-8">
           <p className="text-sm font-medium mb-2" style={{ color: "#787060" }}>STR Investment Calculator</p>
@@ -1583,7 +1583,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         </div>
 
         {/* Search Box */}
-        <div className="rounded-2xl p-6 mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+        <div className="rounded-2xl p-4 sm:p-6 mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
           <h2 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Property Details</h2>
           
           {/* Bedroom/Bathroom Selector - REQUIRED */}
@@ -1768,57 +1768,62 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         {result && (
           <div className="space-y-6">
             {/* Revenue Estimate Card */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <div className="flex items-center justify-between mb-4">
+            <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>{result.neighborhood}</h3>
-                  <p className="text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
-                </div>
-                <div className="flex items-center gap-3">
+                  <h3 className="text-base sm:text-lg font-semibold" style={{ color: "#2b2823" }}>{result.neighborhood}</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
                   {result.percentiles && (
-                    <div className="text-right text-xs text-gray-500">
+                    <p className="text-xs text-gray-400 mt-1 sm:hidden">
+                      Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {result.percentiles && (
+                    <div className="text-right text-xs text-gray-500 hidden sm:block">
                       Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
                     </div>
                   )}
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     {/* Save Report Button */}
                     <button
                       onClick={saveReport}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
                       style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
                       title="Save Report"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                       </svg>
-                      Save
+                      <span className="hidden sm:inline">Save</span>
                     </button>
                     
                     {/* Email Button */}
                     <button
                       onClick={() => setShowEmailModal(true)}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
                       style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
                       title="Email Report"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      Email
+                      <span className="hidden sm:inline">Email</span>
                     </button>
                     
                     {/* PDF Download Button */}
                     <button
                       onClick={downloadPDFReport}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
                       style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
                       title="Download PDF Report"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      PDF
+                      <span className="hidden sm:inline">PDF</span>
                     </button>
                     
                     {/* Share via Text Button */}
@@ -1843,26 +1848,26 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                           });
                         }
                       }}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
                       style={{ backgroundColor: "#22c55e", color: "#ffffff" }}
                       title="Share via Text"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      Text
+                      <span className="hidden sm:inline">Text</span>
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Percentile Selector */}
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-1.5 sm:gap-2 mb-4 overflow-x-auto">
                 {(["average", "75th", "90th"] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => setRevenuePercentile(p)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-w-0 ${
                       revenuePercentile === p
                         ? "text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1874,10 +1879,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       <span className="block text-xs opacity-75">
                         {formatCurrency(
                           p === "average" 
-                            ? result.percentiles.revenue.p50  // Already annual
+                            ? result.percentiles.revenue.p50
                             : p === "75th" 
-                              ? result.percentiles.revenue.p75  // Already annual
-                              : result.percentiles.revenue.p90  // Already annual
+                              ? result.percentiles.revenue.p75
+                              : result.percentiles.revenue.p90
                         )}/yr
                       </span>
                     )}
@@ -1886,12 +1891,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
 
               {/* Revenue Display */}
-              <div className="text-center py-6 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                <p className="text-sm font-medium mb-1" style={{ color: "#787060" }}>
+              <div className="text-center py-4 sm:py-6 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                <p className="text-xs sm:text-sm font-medium mb-1" style={{ color: "#787060" }}>
                   {revenuePercentile === "average" ? "Estimated Annual Revenue" : 
                    revenuePercentile === "75th" ? "75th Percentile Revenue" : "90th Percentile Revenue"}
                 </p>
-                <p className="text-4xl font-bold" style={{ color: "#22c55e" }}>
+                <p className="text-3xl sm:text-4xl font-bold" style={{ color: "#22c55e" }}>
                   {formatCurrency(getDisplayRevenue())}
                 </p>
                 {/* Confidence Range */}
@@ -2133,22 +2138,22 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
+                      className="block p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600">{listing.name}</p>
-                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base" style={{ maxWidth: 'calc(100vw - 120px)' }}>{listing.name}</p>
+                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs sm:text-sm text-gray-500">
                             {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.propertyType}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-green-600">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
+                        <div className="text-left sm:text-right flex-shrink-0">
+                          <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
                           <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {listing.occupancy}% occ</p>
                         </div>
                       </div>
