@@ -627,3 +627,208 @@ export async function getTopSavedMarkets(
   
   return data;
 }
+
+// ============================================
+// LIMITED DATA LOCATIONS - Informed choice system
+// ============================================
+
+export interface LimitedDataLocation {
+  id: string;
+  city: string;
+  state: string;
+  searched_address: string | null;
+  nearest_market_city: string | null;
+  nearest_market_state: string | null;
+  distance_miles: number | null;
+  first_detected_at: string;
+  last_checked_at: string;
+  check_count: number;
+  is_active: boolean;
+  released_at: string | null;
+  released_reason: string | null;
+}
+
+export interface LimitedDataInfo {
+  hasLimitedData: boolean;
+  nearestMarket: string | null;
+  distanceMiles: number | null;
+}
+
+// Check if a location has limited data and get nearest market info
+export async function checkLimitedDataLocation(city: string, state: string): Promise<LimitedDataInfo> {
+  const normalizedCity = city.toLowerCase().trim();
+  const normalizedState = state.toLowerCase().trim();
+  
+  const { data, error } = await supabase
+    .from('limited_data_locations')
+    .select('nearest_market_city, nearest_market_state, distance_miles, is_active')
+    .eq('city', normalizedCity)
+    .eq('state', normalizedState)
+    .eq('is_active', true)
+    .single();
+  
+  if (error || !data) {
+    return { hasLimitedData: false, nearestMarket: null, distanceMiles: null };
+  }
+  
+  const nearestMarket = data.nearest_market_city && data.nearest_market_state
+    ? `${data.nearest_market_city}, ${data.nearest_market_state}`
+    : null;
+  
+  return {
+    hasLimitedData: data.is_active,
+    nearestMarket,
+    distanceMiles: data.distance_miles,
+  };
+}
+
+// Legacy function for backwards compatibility
+export async function isLocationUnsupported(city: string, state: string): Promise<boolean> {
+  const result = await checkLimitedDataLocation(city, state);
+  return result.hasLimitedData;
+}
+
+// Add a location to the limited data list (on mismatch detection)
+export async function addLimitedDataLocation(
+  city: string,
+  state: string,
+  searchedAddress: string,
+  nearestMarketCity: string,
+  nearestMarketState: string,
+  distanceMiles?: number
+): Promise<boolean> {
+  const normalizedCity = city.toLowerCase().trim();
+  const normalizedState = state.toLowerCase().trim();
+  const normalizedNearestCity = nearestMarketCity.toLowerCase().trim();
+  const normalizedNearestState = nearestMarketState.toUpperCase().trim();
+  
+  // Check if already exists
+  const { data: existing } = await supabase
+    .from('limited_data_locations')
+    .select('id, check_count')
+    .eq('city', normalizedCity)
+    .eq('state', normalizedState)
+    .single();
+  
+  if (existing) {
+    // Update check count and last_checked_at
+    const { error } = await supabase
+      .from('limited_data_locations')
+      .update({
+        last_checked_at: new Date().toISOString(),
+        check_count: existing.check_count + 1,
+        nearest_market_city: normalizedNearestCity,
+        nearest_market_state: normalizedNearestState,
+        distance_miles: distanceMiles || null,
+        is_active: true,
+        released_at: null,
+        released_reason: null,
+      })
+      .eq('id', existing.id);
+    
+    if (error) {
+      console.error('Error updating limited data location:', error);
+      return false;
+    }
+    
+    console.log(`[LimitedData] Updated: ${normalizedCity}, ${normalizedState} (check #${existing.check_count + 1})`);
+    return true;
+  }
+  
+  // Insert new entry
+  const { error } = await supabase
+    .from('limited_data_locations')
+    .insert({
+      city: normalizedCity,
+      state: normalizedState,
+      searched_address: searchedAddress,
+      nearest_market_city: normalizedNearestCity,
+      nearest_market_state: normalizedNearestState,
+      distance_miles: distanceMiles || null,
+    });
+  
+  if (error) {
+    console.error('Error adding limited data location:', error);
+    return false;
+  }
+  
+  console.log(`[LimitedData] Added: ${normalizedCity}, ${normalizedState} -> nearest: ${normalizedNearestCity}, ${normalizedNearestState}`);
+  return true;
+}
+
+// Legacy function for backwards compatibility
+export async function addUnsupportedLocation(
+  city: string,
+  state: string,
+  searchedAddress: string,
+  returnedMarket: string
+): Promise<boolean> {
+  const marketParts = returnedMarket.split(',').map(p => p.trim());
+  const nearestCity = marketParts[0] || '';
+  const nearestState = marketParts[1] || '';
+  return addLimitedDataLocation(city, state, searchedAddress, nearestCity, nearestState);
+}
+
+// Release a location (when data becomes available)
+export async function releaseLimitedDataLocation(
+  city: string,
+  state: string,
+  reason: string
+): Promise<boolean> {
+  const normalizedCity = city.toLowerCase().trim();
+  const normalizedState = state.toLowerCase().trim();
+  
+  const { error } = await supabase
+    .from('limited_data_locations')
+    .update({
+      is_active: false,
+      released_at: new Date().toISOString(),
+      released_reason: reason,
+    })
+    .eq('city', normalizedCity)
+    .eq('state', normalizedState);
+  
+  if (error) {
+    console.error('Error releasing location:', error);
+    return false;
+  }
+  
+  console.log(`[LimitedData] Released: ${normalizedCity}, ${normalizedState} - ${reason}`);
+  return true;
+}
+
+// Legacy alias
+export const releaseUnsupportedLocation = releaseLimitedDataLocation;
+
+// Get all limited data locations (for admin)
+export async function getAllLimitedDataLocations(): Promise<LimitedDataLocation[]> {
+  const { data, error } = await supabase
+    .from('limited_data_locations')
+    .select('*')
+    .order('check_count', { ascending: false });
+  
+  if (error || !data) {
+    console.error('Error getting limited data locations:', error);
+    return [];
+  }
+  
+  return data;
+}
+
+// Legacy alias
+export const getAllUnsupportedLocations = getAllLimitedDataLocations;
+
+// Get active limited data locations only
+export async function getActiveLimitedDataLocations(): Promise<LimitedDataLocation[]> {
+  const { data, error } = await supabase
+    .from('limited_data_locations')
+    .select('*')
+    .eq('is_active', true)
+    .order('check_count', { ascending: false });
+  
+  if (error || !data) {
+    return [];
+  }
+  
+  return data;
+}

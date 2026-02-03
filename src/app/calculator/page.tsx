@@ -160,6 +160,15 @@ export default function CalculatorPage() {
     creditRefunded: boolean;
   } | null>(null);
   const [unsupportedAddresses, setUnsupportedAddresses] = useState<string[]>([]);
+  
+  // Limited data warning modal
+  const [showLimitedDataWarning, setShowLimitedDataWarning] = useState(false);
+  const [limitedDataInfo, setLimitedDataInfo] = useState<{
+    searchedCity: string;
+    searchedState: string;
+    nearestMarket: string;
+    distanceMiles: number | null;
+  } | null>(null);
 
   // Lock body scroll when AI Analysis modal is open
   useEffect(() => {
@@ -447,7 +456,7 @@ export default function CalculatorPage() {
   };
   
   // Handle analyze button click - check auth and credits first
-  const handleAnalyzeClick = () => {
+  const handleAnalyzeClick = async () => {
     // Double-check auth from localStorage in case state is stale
     const authToken = localStorage.getItem("edge_auth_token");
     const authExpiry = localStorage.getItem("edge_auth_expiry");
@@ -488,11 +497,43 @@ export default function CalculatorPage() {
       return;
     }
     
-    // Check if this address was previously flagged as unsupported
-    const normalizedAddress = address.toLowerCase().trim();
-    if (unsupportedAddresses.includes(normalizedAddress)) {
-      setError("This address doesn't have local market data available. The nearest market data may not be accurate for your location. Try searching for a property in a larger nearby city.");
-      return;
+    // Extract city and state from address for limited data check
+    const addressParts = address.split(',').map(p => p.trim());
+    let searchedCity = '';
+    let searchedState = '';
+    if (addressParts.length >= 2) {
+      searchedCity = addressParts[1].toLowerCase().replace(/[^a-z\s]/g, '').trim();
+    }
+    if (addressParts.length >= 3) {
+      // Extract state code (first 2 letters after city)
+      searchedState = addressParts[2].replace(/[^a-zA-Z]/g, '').trim().substring(0, 2).toUpperCase();
+    }
+    
+    // Check if this location has limited data (pre-search check)
+    if (searchedCity && searchedState) {
+      try {
+        const limitedDataResponse = await fetch(
+          `/api/limited-data-locations?city=${encodeURIComponent(searchedCity)}&state=${encodeURIComponent(searchedState)}`
+        );
+        const limitedData = await limitedDataResponse.json();
+        
+        if (limitedData.success && limitedData.hasLimitedData) {
+          console.log('[LimitedData] Pre-search check found limited data:', limitedData);
+          // Show warning modal instead of proceeding directly
+          setLimitedDataInfo({
+            searchedCity: searchedCity,
+            searchedState: searchedState,
+            nearestMarket: limitedData.nearestMarket || 'Unknown',
+            distanceMiles: limitedData.distanceMiles,
+          });
+          setPendingAnalysis(address);
+          setShowLimitedDataWarning(true);
+          return;
+        }
+      } catch (err) {
+        console.error('[LimitedData] Pre-search check error:', err);
+        // Continue with normal flow if check fails
+      }
     }
     
     // Show credit confirmation modal
@@ -977,39 +1018,36 @@ export default function CalculatorPage() {
       if (searchedCity && !cityMatches && returnedCity) {
         console.log(`[Mismatch] Searched: "${searchedCity}" but API returned: "${returnedCity}" / "${returnedNeighborhood}"`);
         
-        // This is a market mismatch - refund the credit
-        const savedEmail = localStorage.getItem("edge_auth_email");
-        if (savedEmail) {
-          try {
-            const refundResponse = await fetch('/api/credits', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: savedEmail, action: 'refund', reason: 'market_mismatch' }),
-            });
-            const refundData = await refundResponse.json();
-            
-            if (refundData.success) {
-              setCreditsRemaining(refundData.remaining);
-              console.log('[Mismatch] Credit refunded successfully');
-            }
-          } catch (refundErr) {
-            console.error('[Mismatch] Failed to refund credit:', refundErr);
-          }
-        }
-        
-        // Set mismatch state to show warning
+        // Set mismatch state to show persistent warning banner
+        // Note: No auto-refund since user was warned and chose to proceed
         setMarketMismatch({
           searched: addressParts.slice(1).join(', '), // City, State part
           returned: `${analysisResult.city || analysisResult.neighborhood}, ${analysisResult.state}`,
-          creditRefunded: true,
+          creditRefunded: false, // User made informed choice, no refund
         });
         
-        // Add to unsupported addresses list
-        const normalizedAddress = addressToAnalyze.toLowerCase().trim();
-        if (!unsupportedAddresses.includes(normalizedAddress)) {
-          const newUnsupported = [...unsupportedAddresses, normalizedAddress];
-          setUnsupportedAddresses(newUnsupported);
-          localStorage.setItem('edge_unsupported_addresses', JSON.stringify(newUnsupported));
+        // Add to GLOBAL limited data locations database (warns all future users)
+        try {
+          const searchedState = addressParts.length >= 3 
+            ? addressParts[2].replace(/[^a-zA-Z]/g, '').trim().substring(0, 2).toUpperCase()
+            : analysisResult.state;
+          
+          await fetch('/api/limited-data-locations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'add',
+              city: searchedCity,
+              state: searchedState,
+              searchedAddress: addressToAnalyze,
+              nearestMarketCity: analysisResult.city || analysisResult.neighborhood,
+              nearestMarketState: analysisResult.state,
+              // Distance could be calculated if we had coordinates
+            }),
+          });
+          console.log('[LimitedData] Added to global limited data locations');
+        } catch (globalErr) {
+          console.error('[LimitedData] Failed to add to global list:', globalErr);
         }
       } else {
         // No mismatch - clear any previous mismatch state
@@ -2012,14 +2050,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     <p className="text-xs mt-2" style={{ color: '#b45309' }}>
                       Airbtics doesn&apos;t have specific data for your location. These estimates are based on the nearest market with available data. <strong>Use these numbers as a rough reference only.</strong>
                     </p>
-                    {marketMismatch.creditRefunded && (
-                      <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: '#dcfce7' }}>
-                        <span className="text-lg">✅</span>
-                        <span className="text-sm font-medium" style={{ color: '#166534' }}>
-                          Your credit has been automatically refunded
-                        </span>
-                      </div>
-                    )}
+                    <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: '#fef9c3' }}>
+                      <span className="text-lg">ℹ️</span>
+                      <span className="text-sm" style={{ color: '#854d0e' }}>
+                        You chose to proceed with nearest market data
+                      </span>
+                    </div>
                     <p className="text-xs mt-3" style={{ color: '#92400e' }}>
                       💡 <strong>Tip:</strong> Try searching for a property in a larger nearby city for more accurate data.
                     </p>
@@ -3491,6 +3527,100 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               >
                 {emailSending ? 'Sending...' : 'Send Email'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Limited Data Warning Modal */}
+      {showLimitedDataWarning && limitedDataInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full" style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            {/* Close button */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => {
+                  setShowLimitedDataWarning(false);
+                  setLimitedDataInfo(null);
+                  setPendingAnalysis(null);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="text-center">
+              {/* Warning Icon */}
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#fef3c7' }}>
+                <svg className="w-8 h-8" style={{ color: '#f59e0b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              
+              <h2 className="text-xl font-bold mb-2" style={{ color: '#92400e' }}>
+                Limited Data Available
+              </h2>
+              
+              <div className="text-left mb-4 p-4 rounded-xl" style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d' }}>
+                <p className="text-sm mb-2" style={{ color: '#92400e' }}>
+                  <strong>You searched for:</strong><br />
+                  <span className="capitalize">{limitedDataInfo.searchedCity}</span>, {limitedDataInfo.searchedState}
+                </p>
+                <p className="text-sm mb-2" style={{ color: '#92400e' }}>
+                  <strong>Nearest market with data:</strong><br />
+                  <span className="capitalize">{limitedDataInfo.nearestMarket}</span>
+                  {limitedDataInfo.distanceMiles && (
+                    <span className="ml-1 text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fde68a', color: '#92400e' }}>
+                      ~{limitedDataInfo.distanceMiles} mi away
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs mt-3" style={{ color: '#b45309' }}>
+                  Airbtics doesn&apos;t have specific rental data for this location. The estimates shown will be based on the nearest market, which may not accurately reflect your area.
+                </p>
+              </div>
+              
+              <div className="text-left mb-4 p-3 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                <p className="text-xs" style={{ color: '#787060' }}>
+                  💡 <strong>Tip:</strong> For more accurate data, try searching for a property in a larger nearby city.
+                </p>
+              </div>
+              
+              <p className="text-sm mb-4" style={{ color: '#787060' }}>
+                Proceed anyway? This will use 1 of your <span className="font-semibold" style={{ color: '#22c55e' }}>
+                  {freeCreditsRemaining > 0 
+                    ? `${freeCreditsRemaining} free` 
+                    : `${purchasedCreditsRemaining}`
+                  }
+                </span> {freeCreditsRemaining > 0 ? 'analyses' : 'credits'}.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowLimitedDataWarning(false);
+                    setLimitedDataInfo(null);
+                    setPendingAnalysis(null);
+                  }}
+                  className="flex-1 py-3 rounded-xl font-medium text-sm"
+                  style={{ backgroundColor: '#e5e3da', color: '#787060' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowLimitedDataWarning(false);
+                    setShowCreditConfirm(true);
+                  }}
+                  className="flex-1 py-3 rounded-xl font-medium text-sm"
+                  style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
+                >
+                  Use Nearest Market (1 credit)
+                </button>
+              </div>
             </div>
           </div>
         </div>

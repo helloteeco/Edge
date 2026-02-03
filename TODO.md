@@ -4,9 +4,13 @@
 
 - [x] Fix Re-analyze button to force fresh API call (bypass cache) and use credit with warning
 - [x] Fix address display to always show user's entered address, not API response market name
-- [ ] Implement Market Mismatch Warning system
-  - [ ] Detect when API returns data from different location than searched
-  - [ ] Show prominent warning banner when mismatch detected
-  - [ ] Automatic credit refund when mismatch detected (one-time per address)
-  - [ ] Block re-analysis of unsupported addresses
-  - [ ] Store unsupported addresses in localStorage to prevent future credit waste
+- [x] Implement Market Mismatch Warning system (per-user localStorage)
+
+## Informed Choice System for Limited Data Locations
+
+- [ ] Update unsupported_locations table to store nearest_market and distance
+- [ ] Create pre-search warning modal showing nearest market info
+- [ ] Let users choose: "Use Nearest Market (1 credit)" or "Cancel"
+- [ ] If they proceed, show persistent banner that data is from different market
+- [ ] No auto-refund since user made informed choice
+- [ ] Track locations in database for future release when data available
