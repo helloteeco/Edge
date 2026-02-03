@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { getStateByCode } from "@/data/helpers";
 import { getInventoryByState } from "@/data/inventory-data";
@@ -113,6 +113,66 @@ const getDaysOnMarketColor = (days: number) => {
 export function USMap() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [mapView, setMapView] = useState<MapView>("strScore");
+  
+  // Touch swipe handling for tab navigation
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const isSwiping = useRef<boolean>(false);
+
+  const views = [
+    { key: "strScore", label: "STR Grade", description: "Our overall investment score based on cash flow, affordability, and legality." },
+    { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
+    { key: "migration", label: "Migration", description: "More people moving in often leads to rising home prices and rental demand." },
+    { key: "homeValue", label: "Home Prices", description: "Lower prices mean easier entry and better cash-on-cash returns." },
+    { key: "inventoryLevel", label: "Inventory Level", description: "Current housing supply. High inventory = buyer's market with more choices and negotiating power." },
+    { key: "inventoryGrowth", label: "Inventory Growth", description: "Year-over-year change in active listings. Rising inventory creates buying opportunities." },
+    { key: "priceCuts", label: "Price Cuts %", description: "Percentage of listings with price reductions. Higher = more negotiating power for buyers." },
+    { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },
+  ];
+
+  const currentViewIndex = views.findIndex(v => v.key === mapView);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    isSwiping.current = true;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isSwiping.current) return;
+    touchEndX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isSwiping.current) return;
+    
+    const swipeDistance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50; // Minimum distance for a valid swipe
+    
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      if (swipeDistance > 0 && currentViewIndex < views.length - 1) {
+        // Swipe left - go to next tab
+        setMapView(views[currentViewIndex + 1].key as MapView);
+      } else if (swipeDistance < 0 && currentViewIndex > 0) {
+        // Swipe right - go to previous tab
+        setMapView(views[currentViewIndex - 1].key as MapView);
+      }
+    }
+    
+    isSwiping.current = false;
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  }, [currentViewIndex, views]);
+
+  // Scroll active tab into view
+  useEffect(() => {
+    if (tabContainerRef.current) {
+      const activeButton = tabContainerRef.current.querySelector('[data-active="true"]');
+      if (activeButton) {
+        activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [mapView]);
 
   const getStateColor = (stateCode: string) => {
     const state = getStateByCode(stateCode);
@@ -167,17 +227,6 @@ export function USMap() {
       default: return { text: 'AVOID' };
     }
   };
-
-  const views = [
-    { key: "strScore", label: "STR Grade", description: "Our overall investment score based on cash flow, affordability, and legality." },
-    { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
-    { key: "migration", label: "Migration", description: "More people moving in often leads to rising home prices and rental demand." },
-    { key: "homeValue", label: "Home Prices", description: "Lower prices mean easier entry and better cash-on-cash returns." },
-    { key: "inventoryLevel", label: "Inventory Level", description: "Current housing supply. High inventory = buyer's market with more choices and negotiating power." },
-    { key: "inventoryGrowth", label: "Inventory Growth", description: "Year-over-year change in active listings. Rising inventory creates buying opportunities." },
-    { key: "priceCuts", label: "Price Cuts %", description: "Percentage of listings with price reductions. Higher = more negotiating power for buyers." },
-    { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },
-  ];
 
   const getFilterDescription = () => {
     const view = views.find(v => v.key === mapView);
@@ -272,7 +321,7 @@ export function USMap() {
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>-50K to 0</span>
+              <span style={{ color: '#787060' }}>-50K-0</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-amber-300 rounded-md shadow-sm" />
@@ -368,7 +417,7 @@ export function USMap() {
           <>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-red-400 rounded-md shadow-sm" />
-              <span style={{ color: '#787060' }}>&lt;30 days</span>
+              <span style={{ color: '#787060' }}>&lt;30</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 bg-orange-400 rounded-md shadow-sm" />
@@ -395,11 +444,19 @@ export function USMap() {
 
   return (
     <div className="space-y-5">
-      {/* Map View Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      {/* Map View Filters - with swipe gesture support */}
+      <div 
+        ref={tabContainerRef}
+        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide touch-pan-x"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {views.map((view) => (
           <button
             key={view.key}
+            data-active={mapView === view.key}
             onClick={() => setMapView(view.key as MapView)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all"
             style={{
@@ -410,6 +467,20 @@ export function USMap() {
           >
             {view.label}
           </button>
+        ))}
+      </div>
+
+      {/* Swipe indicator dots for mobile */}
+      <div className="flex justify-center gap-1.5 md:hidden">
+        {views.map((view, index) => (
+          <div
+            key={view.key}
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === currentViewIndex 
+                ? 'bg-[#2b2823] w-4' 
+                : 'bg-[#d8d6cd]'
+            }`}
+          />
         ))}
       </div>
 

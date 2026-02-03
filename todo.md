@@ -342,3 +342,14 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Fix Home Prices legend order: Show from worst (>$450K red) to best (<$200K green)
 - [ ] Ensure consistent green gradient: emerald-400 (light) → emerald-600 (dark) for best values
 - [ ] Verify all 8 map tabs use same color scale pattern
+
+
+## Build Warnings & Mobile UX (February 2026)
+- [ ] Fix Image optimization warnings - replace <img> with Next.js <Image /> in:
+  - [ ] src/app/calculator/page.tsx (lines 1607, 3445)
+  - [ ] src/app/page.tsx (line 116)
+  - [ ] src/app/privacy/page.tsx (line 15)
+  - [ ] src/app/terms/page.tsx (line 15)
+  - [ ] src/components/AuthModal.tsx (line 96)
+- [ ] Fix city search dynamic route error
+- [ ] Add touch-swipe gestures for mobile map tab navigation
