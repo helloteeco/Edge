@@ -428,3 +428,5 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix magic link email - move Sign In button to top so its visible without expanding
 - [x] Fix Sign in to Sync modal centering - use React Portal to escape parent container
 - [x] Fix Vercel build error - DYNAMIC_SERVER_USAGE in cities/search route
+- [ ] Extend cache expiration from 60 minutes to 90 days for property analyses
+- [ ] Improve History tab layout - better spacing, avoid overlap with chat button

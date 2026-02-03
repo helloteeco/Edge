@@ -348,7 +348,7 @@ export async function addCredits(email: string, amount: number): Promise<{ succe
 }
 
 // ============================================
-// PROPERTY CACHE - 60-minute TTL (Airbtics compliant)
+// PROPERTY CACHE - 90-day TTL
 // ============================================
 
 export interface CachedProperty {
@@ -385,10 +385,10 @@ export async function getCachedProperty(address: string): Promise<Record<string,
   return data.data;
 }
 
-// Cache property data (60-minute TTL)
+// Cache property data (90-day TTL)
 export async function cacheProperty(address: string, data: Record<string, unknown>): Promise<boolean> {
   const normalizedAddress = address.trim();
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 60 minutes
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(); // 90 days
   
   // Upsert cache entry
   const { error } = await supabase

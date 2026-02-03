@@ -798,54 +798,56 @@ export default function SavedPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm mb-4" style={{ color: '#787060' }}>
+              <div className="space-y-4 pb-24">
+                <p className="text-sm" style={{ color: '#787060' }}>
                   Recent analyses from this device. Save a report to sync it across devices.
                 </p>
                 {analysisHistory.sort((a, b) => b.timestamp - a.timestamp).map((item, index) => (
                   <div
                     key={`${item.address}-${index}`}
-                    className="rounded-xl p-4 flex items-center gap-4"
+                    className="rounded-2xl p-5"
                     style={{ 
                       backgroundColor: '#ffffff',
-                      border: '1px solid #d8d6cd',
-                      boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
+                      border: '1px solid #e5e3da',
+                      boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
                     }}
                   >
-                    <div 
-                      className="w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0"
-                      style={{ backgroundColor: '#f0fdf4' }}
-                    >
-                      <span className="text-lg font-bold" style={{ color: '#16a34a' }}>
-                        {formatCurrency(item.annualRevenue / 1000)}K
-                      </span>
-                      <span className="text-[10px]" style={{ color: '#787060' }}>/yr</span>
+                    <div className="flex items-start gap-4">
+                      <div 
+                        className="w-16 h-16 rounded-xl flex flex-col items-center justify-center shrink-0"
+                        style={{ backgroundColor: '#f0fdf4', border: '1px solid #dcfce7' }}
+                      >
+                        <span className="text-xl font-bold" style={{ color: '#16a34a' }}>
+                          ${Math.round(item.annualRevenue / 1000)}K
+                        </span>
+                        <span className="text-xs" style={{ color: '#22c55e' }}>/yr</span>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-base mb-1 line-clamp-2" style={{ color: '#2b2823' }}>
+                          {item.address}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: '#787060' }}>
+                          <span>${item.adr?.toFixed(0) || '—'} ADR</span>
+                          <span className="w-1 h-1 rounded-full" style={{ backgroundColor: '#d8d6cd' }}></span>
+                          <span>{(item.occupancy * 100)?.toFixed(0) || '—'}% Occ</span>
+                        </div>
+                        <div className="text-xs mt-2" style={{ color: '#9a9488' }}>
+                          Analyzed {formatDate(item.timestamp)}
+                        </div>
+                      </div>
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate" style={{ color: '#2b2823' }}>
-                        {item.address}
-                      </div>
-                      <div className="text-sm" style={{ color: '#787060' }}>
-                        {item.bedrooms ? `${item.bedrooms}BR` : ''}{item.bathrooms ? `/${item.bathrooms}BA` : ''}
-                        {item.guestCount ? ` • Sleeps ${item.guestCount}` : ''}
-                      </div>
-                      <div className="flex flex-wrap gap-3 mt-1 text-sm">
-                        <span style={{ color: '#787060' }}>${item.adr?.toFixed(0) || '—'} ADR</span>
-                        <span style={{ color: '#787060' }}>{(item.occupancy * 100)?.toFixed(0) || '—'}% Occ</span>
-                      </div>
-                      <div className="text-xs mt-1" style={{ color: '#9a9488' }}>
-                        Analyzed {formatDate(item.timestamp)}
-                      </div>
+                    <div className="mt-4 pt-4" style={{ borderTop: '1px solid #f0ede6' }}>
+                      <Link
+                        href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+                        style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                      >
+                        <RefreshIcon className="w-4 h-4" color="#ffffff" />
+                        Re-analyze
+                      </Link>
                     </div>
-                    
-                    <Link
-                      href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}`}
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-[1.02]"
-                      style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
-                    >
-                      Re-analyze
-                    </Link>
                   </div>
                 ))}
               </div>

@@ -171,8 +171,9 @@ export default function CalculatorPage() {
     }
   }, [showAiAnalysis]);
 
-  // Load recent searches from localStorage (with 60-minute cache expiration for API compliance)
-  const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
+  // Load recent searches from localStorage (with 90-day cache expiration)
+  // Note: This caches the analysis results locally, not re-fetching from API
+  const CACHE_EXPIRATION_MS = 90 * 24 * 60 * 60 * 1000; // 90 days in milliseconds
   
   useEffect(() => {
     const saved = localStorage.getItem("edge_recent_searches");
@@ -181,7 +182,7 @@ export default function CalculatorPage() {
         const parsed = JSON.parse(saved) as RecentSearch[];
         const now = Date.now();
         
-        // Filter out expired cached results (older than 60 minutes)
+        // Filter out expired cached results (older than 90 days)
         // Keep the search entry but remove the cached data
         const withExpiredCachesCleared = parsed.map(search => {
           if (search.cachedResult && search.timestamp) {
@@ -894,7 +895,7 @@ export default function CalculatorPage() {
         cachedGuestCount: guestCount || bedrooms * 2,
       });
       
-      // Cache the API response in Supabase (60-minute TTL for Airbtics compliance)
+      // Cache the API response in Supabase (90-day TTL)
       try {
         await fetch('/api/property-cache', {
           method: 'POST',
@@ -904,7 +905,7 @@ export default function CalculatorPage() {
             data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities },
           }),
         });
-        console.log("[Cache] Stored API response for 60 minutes");
+        console.log("[Cache] Stored API response for 90 days");
       } catch (cacheError) {
         console.error("[Cache] Failed to cache:", cacheError);
       }
