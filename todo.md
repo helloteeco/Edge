@@ -335,3 +335,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Expand amenities search to 25-mile radius
 - [ ] Show percentage impact of each amenity on nightly rates
 - [ ] Categorize amenities by impact (Must Have, Revenue Boosters, Nice to Have)
+
+
+## Legend Fixes (February 2026)
+- [ ] Fix STR Grade legend: Replace teal with light green for B/B+ grades
+- [ ] Fix Home Prices legend order: Show from worst (>$450K red) to best (<$200K green)
+- [ ] Ensure consistent green gradient: emerald-400 (light) → emerald-600 (dark) for best values
+- [ ] Verify all 8 map tabs use same color scale pattern
