@@ -375,6 +375,7 @@ export default function CalculatorPage() {
       if (data.success) {
         setCreditsRemaining(data.credits.remaining);
         setCreditsLimit(data.credits.limit);
+        setCreditsUsed(data.credits.used);
         console.log("[Credits] Loaded:", data.credits);
       }
     } catch (error) {
@@ -665,9 +666,16 @@ export default function CalculatorPage() {
   // Credit System
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const [creditsLimit, setCreditsLimit] = useState<number>(3);
+  const [creditsUsed, setCreditsUsed] = useState<number>(0);
   const [showCreditConfirm, setShowCreditConfirm] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
+  
+  // Calculate free vs purchased credits (free credits = first 3)
+  const FREE_CREDITS_TOTAL = 3;
+  const freeCreditsRemaining = Math.max(0, FREE_CREDITS_TOTAL - creditsUsed);
+  const purchasedCreditsRemaining = creditsRemaining !== null ? Math.max(0, creditsRemaining - freeCreditsRemaining) : 0;
+  const hasPurchasedCredits = creditsLimit > FREE_CREDITS_TOTAL;
   
   const sendEmailReport = async () => {
     if (!emailAddress || !result) return;
@@ -1580,7 +1588,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
               <span className="text-sm font-medium" style={{ color: '#2b2823' }}>
                 {creditsRemaining > 0 
-                  ? `${creditsRemaining} Free Anal${creditsRemaining === 1 ? 'ysis' : 'yses'} Available`
+                  ? (freeCreditsRemaining > 0 && purchasedCreditsRemaining > 0
+                      ? `${freeCreditsRemaining} Free + ${purchasedCreditsRemaining} Credits`
+                      : freeCreditsRemaining > 0
+                        ? `${freeCreditsRemaining} Free Anal${freeCreditsRemaining === 1 ? 'ysis' : 'yses'} Available`
+                        : `${purchasedCreditsRemaining} Credit${purchasedCreditsRemaining === 1 ? '' : 's'} Available`
+                    )
                   : 'Ready to continue? Get more credits'
                 }
               </span>
@@ -1594,7 +1607,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 Get More Credits
               </button>
             )}
-            {creditsRemaining > 0 && creditsRemaining <= 1 && (
+            {creditsRemaining > 0 && creditsRemaining <= 2 && (
               <span className="text-xs" style={{ color: '#787060' }}>
                 Running low? <button onClick={() => setShowPaywall(true)} className="underline font-medium">Get more</button>
               </span>
@@ -1809,7 +1822,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
                 <span className="text-sm font-medium" style={{ color: "#2b2823" }}>
-                  {creditsRemaining} of {creditsLimit} free analyses remaining
+                  {freeCreditsRemaining > 0 && purchasedCreditsRemaining > 0
+                    ? `${freeCreditsRemaining} Free + ${purchasedCreditsRemaining} Credits`
+                    : freeCreditsRemaining > 0
+                      ? `${freeCreditsRemaining} of 3 free analyses remaining`
+                      : `${purchasedCreditsRemaining} credit${purchasedCreditsRemaining === 1 ? '' : 's'} remaining`
+                  }
                 </span>
               </div>
               {creditsRemaining <= 1 && (
@@ -3326,7 +3344,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
               
               <p className="text-sm mb-4" style={{ color: '#787060' }}>
-                Uses 1 of your <span className="font-semibold" style={{ color: '#22c55e' }}>{creditsRemaining} free</span> {creditsRemaining === 1 ? 'analysis' : 'analyses'}.
+                Uses 1 of your <span className="font-semibold" style={{ color: '#22c55e' }}>
+                  {freeCreditsRemaining > 0 
+                    ? `${freeCreditsRemaining} free` 
+                    : `${purchasedCreditsRemaining}`
+                  }
+                </span> {freeCreditsRemaining > 0 ? (freeCreditsRemaining === 1 ? 'analysis' : 'analyses') : (purchasedCreditsRemaining === 1 ? 'credit' : 'credits')}.
                 {creditsRemaining && creditsRemaining > 1 && ` You'll have ${creditsRemaining - 1} left.`}
               </p>
               
@@ -3393,7 +3416,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 Get More Analyses
               </h2>
               <p className="text-sm mb-4" style={{ color: '#787060' }}>
-                You&apos;ve used your {creditsLimit} free analyses. Unlock more to continue.
+                {freeCreditsRemaining > 0 
+                  ? `You have ${freeCreditsRemaining} free ${freeCreditsRemaining === 1 ? 'analysis' : 'analyses'} left. Get more credits for unlimited access.`
+                  : `You've used your 3 free analyses. Unlock more to continue.`
+                }
               </p>
               
               {/* Pricing Options - Hormozi 3-Tier */}
