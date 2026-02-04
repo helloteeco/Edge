@@ -85,13 +85,29 @@ export default function CityPage({ params }: { params: { id: string } }) {
   };
 
   const handleShare = () => {
-    const text = `${city?.name}, ${city?.stateCode} - STR Investment Analysis\n\n📊 Grade: ${city?.grade}\n📈 Score: ${city?.marketScore}/100\n💰 Monthly Revenue: $${city?.strMonthlyRevenue.toLocaleString()}\n🏠 Median Price: $${city?.medianHomeValue.toLocaleString()}\n\n${window.location.href}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
+    // Create shareable data object for city
+    const shareData = {
+      type: "city",
+      id: city?.id,
+      name: city?.name,
+      state: city?.stateCode,
+      grade: city?.grade,
+      score: city?.marketScore,
+      revenue: city?.strMonthlyRevenue,
+      price: city?.medianHomeValue,
+    };
+    
+    // Encode data for URL
+    const encoded = btoa(JSON.stringify(shareData));
+    const shareUrl = `https://edge.teeco.co/share?d=${encoded}`;
+    
+    const text = `Check out this STR market:\n\n${shareUrl}`;
     
     if (navigator.share) {
-      navigator.share({ title: `${city?.name} STR Analysis`, text, url: window.location.href });
+      navigator.share({ title: `${city?.name} STR Analysis`, text, url: shareUrl });
     } else {
       navigator.clipboard.writeText(text);
-      alert("Analysis copied to clipboard!");
+      alert("Share link copied to clipboard!");
     }
   };
 

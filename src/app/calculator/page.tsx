@@ -2134,21 +2134,35 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     <button
                       onClick={() => {
                         const displayRevenue = getDisplayRevenue();
-                        const shareText = 
-                          `Check out this STR investment I'm analyzing:\n\n` +
-                          `📍 ${result.address || result.neighborhood}, ${result.city}, ${result.state}\n` +
-                          `🛏️ ${result.bedrooms} bed / ${result.bathrooms} bath\n` +
-                          `💰 Projected: $${displayRevenue.toLocaleString()}/year\n` +
-                          `📊 ${result.occupancy}% occupancy | $${result.adr}/night\n` +
-                          (purchasePrice && !investment.needsPrice ? `📈 ${investment.cashOnCashReturn.toFixed(1)}% cash-on-cash return\n` : '') +
-                          `\nAnalyzed with Edge by Teeco: edge.teeco.co`;
+                        
+                        // Create shareable data object
+                        const shareData = {
+                          type: "deal",
+                          address: result.address || result.neighborhood,
+                          city: result.city,
+                          state: result.state,
+                          bedrooms: result.bedrooms,
+                          bathrooms: result.bathrooms,
+                          revenue: displayRevenue,
+                          occupancy: result.occupancy,
+                          adr: result.adr,
+                          coc: investment.cashOnCashReturn || 0,
+                          purchasePrice: purchasePrice || undefined,
+                        };
+                        
+                        // Encode data for URL
+                        const encoded = btoa(JSON.stringify(shareData));
+                        const shareUrl = `https://edge.teeco.co/share?d=${encoded}`;
+                        
+                        // Create share text with link
+                        const shareText = `Check out this STR investment I'm analyzing:\n\n${shareUrl}`;
                         
                         // Use SMS link for mobile, fallback to clipboard for desktop
                         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                           window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
                         } else {
                           navigator.clipboard.writeText(shareText).then(() => {
-                            alert('Report summary copied to clipboard! Paste it into your messaging app.');
+                            alert('Share link copied to clipboard! Paste it into your messaging app.');
                           });
                         }
                       }}
