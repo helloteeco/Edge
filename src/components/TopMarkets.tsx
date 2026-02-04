@@ -153,15 +153,12 @@ export function TopMarkets() {
         >
           How We Score Markets
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" style={{ color: '#787060' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style={{ color: '#787060' }}>
           <div className="flex items-center gap-1.5">
-            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>35pts</strong></span>
+            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>40pts</strong></span>
           </div>
           <div className="flex items-center gap-1.5">
             <span>Affordability: <strong style={{ color: '#2b2823' }}>25pts</strong></span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span>STR Legality: <strong style={{ color: '#2b2823' }}>15pts</strong></span>
           </div>
           <div className="flex items-center gap-1.5">
             <span>Landlord Friendly: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
@@ -169,10 +166,10 @@ export function TopMarkets() {
           <div className="flex items-center gap-1.5">
             <span>Market Headroom: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Appreciation: <strong style={{ color: '#2b2823' }}>5pts</strong></span>
-          </div>
         </div>
+        <p className="text-xs mt-2" style={{ color: '#9a9080' }}>
+          Note: Always verify local STR regulations before investing. Rules vary by municipality.
+        </p>
       </div>
     </div>
   );

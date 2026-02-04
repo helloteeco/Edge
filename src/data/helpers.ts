@@ -69,11 +69,9 @@ function calculateCityScore(city: CityData, stateCode: string): ScoringBreakdown
   return calculateScore({
     monthlyRevenue: city.rental.monthlyRevenue,
     medianHomePrice: city.rental.medianHomePrice,
-    strStatus: city.strStatus,
-    permitRequired: city.permitRequired,
     stateCode: stateCode,
     listingsPerThousand: city.saturationRisk.listingsPerThousand,
-    oneYearAppreciation: getStateAppreciation(stateCode),
+    population: city.population,
   });
 }
 

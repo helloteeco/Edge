@@ -287,7 +287,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
                   className="text-2xl font-bold"
                   style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
-                  {city.marketScore}/100
+                  {city.marketScore}/85
                 </div>
                 <div className="text-sm" style={{ color: '#787060' }}>{verdictInfo.emoji} {verdictInfo.text}</div>
               </div>
@@ -298,12 +298,10 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>Score Breakdown</div>
               
               {[
-                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 35 },
+                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 40 },
                 { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 25 },
-                { icon: '⚖️', label: 'STR Legality', score: city.scoring.legality.score, max: 15 },
                 { icon: '🤝', label: 'Landlord Friendly', score: city.scoring.landlordFriendly.score, max: 10 },
                 { icon: '📊', label: 'Market Headroom', score: city.scoring.marketHeadroom.score, max: 10 },
-                { icon: '📈', label: 'Appreciation', score: city.scoring.appreciation.score, max: 5 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
                   <span className="text-sm">{item.icon}</span>
@@ -551,34 +549,50 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        {/* Regulation Info */}
+        {/* Check Local Regulations */}
         <div 
           className="rounded-2xl p-5 mb-4"
-          style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+          style={{ backgroundColor: '#fff8e6', border: '1px solid #e6d9a8', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
         >
           <h3 
-            className="font-semibold mb-3"
+            className="font-semibold mb-3 flex items-center gap-2"
             style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
           >
-            📋 Regulation Status
+            ⚠️ Check Local STR Regulations
           </h3>
-          <div className="flex items-center gap-2 mb-3">
-            <span 
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ 
-                backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
-                color: '#ffffff'
-              }}
-            >
-              {city.regulation}
-            </span>
-            <span className="text-sm" style={{ color: '#787060' }}>({city.scoring.legality.rating})</span>
-          </div>
-          <p className="text-sm" style={{ color: '#787060' }}>
-            {city.regulation === "Legal"
-              ? "Short-term rentals are allowed in this area. Always verify local ordinances before purchasing."
-              : "Some restrictions apply. Research local permit requirements and zoning laws carefully."}
+          <p className="text-sm mb-4" style={{ color: '#787060' }}>
+            STR regulations vary significantly by city, county, and even neighborhood. Before investing, always verify:
           </p>
+          <ul className="text-sm space-y-2 mb-4" style={{ color: '#787060' }}>
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>Local zoning laws and STR ordinances</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>Permit and licensing requirements</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>HOA restrictions (if applicable)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>Occupancy limits and safety requirements</span>
+            </li>
+          </ul>
+          <a 
+            href="https://www.proper.insure/regulations/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+            style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+          >
+            📚 Research STR Regulations
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
         </div>
 
         {/* View Comparable Listings */}

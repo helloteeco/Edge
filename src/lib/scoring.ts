@@ -6,14 +6,16 @@
  * - Cash flow over appreciation plays
  * - Markets under $250K median home price
  * 
- * SCORING WEIGHTS (Total: 100 points)
+ * SCORING WEIGHTS (Total: 85 points)
  * =====================================
- * 1. Cash-on-Cash Return            - 35 points (heaviest weight)
+ * 1. Cash-on-Cash Return            - 40 points (heaviest weight)
  * 2. Affordability                  - 25 points
- * 3. STR Legality                   - 15 points
- * 4. Landlord Friendliness          - 10 points
- * 5. Market Headroom               - 10 points
- * 6. Appreciation Potential         - 5 points (lowest - we're not chasing appreciation)
+ * 3. Landlord Friendliness          - 10 points
+ * 4. Market Headroom               - 10 points
+ * 
+ * NOTE: STR Legality was removed from scoring because regulations
+ * vary too much at the local/municipal level to accurately score.
+ * Users should always verify local STR regulations before investing.
  * 
  * CASH-ON-CASH RETURN CALCULATION
  * ================================
@@ -35,13 +37,12 @@
  */
 
 export interface ScoringBreakdown {
-  cashOnCash: { score: number; maxScore: 35; value: number; rating: string };
+  cashOnCash: { score: number; maxScore: 40; value: number; rating: string };
   affordability: { score: number; maxScore: 25; value: number; rating: string };
-  legality: { score: number; maxScore: 15; status: string; rating: string };
   landlordFriendly: { score: number; maxScore: 10; rating: string };
   marketHeadroom: { score: number; maxScore: 10; value: number; rating: string };
-  appreciation: { score: number; maxScore: 5; value: number; rating: string };
   totalScore: number;
+  maxPossibleScore: 85;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
   verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
 }
@@ -87,25 +88,25 @@ export function calculateCashOnCash(monthlyRevenue: number, homePrice: number): 
 }
 
 /**
- * Calculate Cash-on-Cash score (35 points max)
+ * Calculate Cash-on-Cash score (40 points max)
  * 
  * Target: 20%+ for strong score
  * 
  * Scoring:
- * - CoC >= 20%: 35 points (Elite)
- * - CoC >= 15%: 30 points (Excellent)
- * - CoC >= 10%: 25 points (Good)
- * - CoC >= 5%: 18 points (Marginal)
- * - CoC >= 0%: 10 points (Break-even)
- * - CoC < 0%: 5 points (Negative Cash Flow)
+ * - CoC >= 20%: 40 points (Elite)
+ * - CoC >= 15%: 34 points (Excellent)
+ * - CoC >= 10%: 28 points (Good)
+ * - CoC >= 5%: 20 points (Marginal)
+ * - CoC >= 0%: 12 points (Break-even)
+ * - CoC < 0%: 6 points (Negative Cash Flow)
  */
 export function scoreCashOnCash(cashOnCashReturn: number): { score: number; rating: string } {
-  if (cashOnCashReturn >= 20) return { score: 35, rating: 'Elite (20%+)' };
-  if (cashOnCashReturn >= 15) return { score: 30, rating: 'Excellent (15%+)' };
-  if (cashOnCashReturn >= 10) return { score: 25, rating: 'Good (10%+)' };
-  if (cashOnCashReturn >= 5) return { score: 18, rating: 'Marginal (5%+)' };
-  if (cashOnCashReturn >= 0) return { score: 10, rating: 'Break-even' };
-  return { score: 5, rating: 'Negative Cash Flow' };
+  if (cashOnCashReturn >= 20) return { score: 40, rating: 'Elite (20%+)' };
+  if (cashOnCashReturn >= 15) return { score: 34, rating: 'Excellent (15%+)' };
+  if (cashOnCashReturn >= 10) return { score: 28, rating: 'Good (10%+)' };
+  if (cashOnCashReturn >= 5) return { score: 20, rating: 'Marginal (5%+)' };
+  if (cashOnCashReturn >= 0) return { score: 12, rating: 'Break-even' };
+  return { score: 6, rating: 'Negative Cash Flow' };
 }
 
 /**
@@ -129,23 +130,6 @@ export function scoreAffordability(medianHomePrice: number): { score: number; ra
   return { score: 2, rating: 'Very Expensive' };
 }
 
-/**
- * Calculate STR Legality score (15 points max)
- * 
- * Scoring:
- * - Legal (no restrictions): 15 points
- * - Legal (permit required): 12 points
- * - Varies by area: 8 points
- * - Restricted: 4 points
- * - Banned: 0 points
- */
-export function scoreLegality(status: string, permitRequired: boolean): { score: number; rating: string } {
-  if (status === 'banned') return { score: 0, rating: 'Banned' };
-  if (status === 'restricted') return { score: 4, rating: 'Restricted' };
-  if (status === 'varies') return { score: 8, rating: 'Varies by Area' };
-  if (status === 'legal' && permitRequired) return { score: 12, rating: 'Legal (Permit Required)' };
-  return { score: 15, rating: 'Fully Legal' };
-}
 
 /**
  * Calculate Landlord Friendliness score (10 points max)
@@ -219,43 +203,28 @@ export function scoreMarketHeadroom(listingsPerThousand: number, population?: nu
   return { score: 2, rating: 'Crowded Market' };
 }
 
-/**
- * Calculate Appreciation score (5 points max)
- * We assume ~3% annual appreciation as baseline
- * This is the LOWEST weighted factor - we're not chasing appreciation
- * 
- * Scoring:
- * - >= 4%: 5 points (Above Average)
- * - >= 2%: 4 points (Average)
- * - >= 0%: 2 points (Flat)
- * - < 0%: 1 point (Declining)
- */
-export function scoreAppreciation(oneYearAppreciation: number): { score: number; rating: string } {
-  if (oneYearAppreciation >= 4) return { score: 5, rating: 'Above Average' };
-  if (oneYearAppreciation >= 2) return { score: 4, rating: 'Average' };
-  if (oneYearAppreciation >= 0) return { score: 2, rating: 'Flat' };
-  return { score: 1, rating: 'Declining' };
-}
 
 /**
  * Convert total score to letter grade
+ * Now based on 85 max points
  * 
- * Grading Scale:
- * - A+ : 85-100 points
- * - A  : 75-84 points
- * - B+ : 65-74 points
- * - B  : 55-64 points
- * - C  : 45-54 points
- * - D  : 35-44 points
- * - F  : 0-34 points
+ * Grading Scale (percentage-based):
+ * - A+ : 90%+ (77-85 points)
+ * - A  : 80-89% (68-76 points)
+ * - B+ : 70-79% (60-67 points)
+ * - B  : 60-69% (51-59 points)
+ * - C  : 50-59% (43-50 points)
+ * - D  : 40-49% (34-42 points)
+ * - F  : <40% (0-33 points)
  */
 export function getGrade(totalScore: number): 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F' {
-  if (totalScore >= 85) return 'A+';
-  if (totalScore >= 75) return 'A';
-  if (totalScore >= 65) return 'B+';
-  if (totalScore >= 55) return 'B';
-  if (totalScore >= 45) return 'C';
-  if (totalScore >= 35) return 'D';
+  const percentage = (totalScore / 85) * 100;
+  if (percentage >= 90) return 'A+';
+  if (percentage >= 80) return 'A';
+  if (percentage >= 70) return 'B+';
+  if (percentage >= 60) return 'B';
+  if (percentage >= 50) return 'C';
+  if (percentage >= 40) return 'D';
   return 'F';
 }
 
@@ -280,11 +249,8 @@ export function getVerdict(grade: string): 'strong-buy' | 'buy' | 'hold' | 'caut
 export interface MarketData {
   monthlyRevenue: number;
   medianHomePrice: number;
-  strStatus: string;
-  permitRequired: boolean;
   stateCode: string;
   listingsPerThousand: number;
-  oneYearAppreciation: number;
   population?: number;
 }
 
@@ -294,30 +260,25 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   
   const cashOnCash = scoreCashOnCash(cashOnCashReturn);
   const affordability = scoreAffordability(data.medianHomePrice);
-  const legality = scoreLegality(data.strStatus, data.permitRequired);
   const landlordFriendly = scoreLandlordFriendly(data.stateCode);
   const marketHeadroom = scoreMarketHeadroom(data.listingsPerThousand, data.population);
-  const appreciation = scoreAppreciation(data.oneYearAppreciation);
   
   const totalScore = 
     cashOnCash.score + 
     affordability.score + 
-    legality.score + 
     landlordFriendly.score + 
-    marketHeadroom.score + 
-    appreciation.score;
+    marketHeadroom.score;
   
   const grade = getGrade(totalScore);
   const verdict = getVerdict(grade);
   
   return {
-    cashOnCash: { score: cashOnCash.score, maxScore: 35, value: cashOnCashReturn, rating: cashOnCash.rating },
+    cashOnCash: { score: cashOnCash.score, maxScore: 40, value: cashOnCashReturn, rating: cashOnCash.rating },
     affordability: { score: affordability.score, maxScore: 25, value: data.medianHomePrice, rating: affordability.rating },
-    legality: { score: legality.score, maxScore: 15, status: data.strStatus, rating: legality.rating },
     landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
     marketHeadroom: { score: marketHeadroom.score, maxScore: 10, value: data.listingsPerThousand, rating: marketHeadroom.rating },
-    appreciation: { score: appreciation.score, maxScore: 5, value: data.oneYearAppreciation, rating: appreciation.rating },
     totalScore,
+    maxPossibleScore: 85,
     grade,
     verdict,
   };
