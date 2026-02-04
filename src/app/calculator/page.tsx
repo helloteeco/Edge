@@ -133,6 +133,7 @@ export default function CalculatorPage() {
   const [includeFurnishings, setIncludeFurnishings] = useState(false);
   const [includeAmenities, setIncludeAmenities] = useState(false);
   const [amenitiesCost, setAmenitiesCost] = useState(11000);
+  const [furnishingsCost, setFurnishingsCost] = useState(26250); // Default: 1500 sqft * $17.50
   const [propertySqft, setPropertySqft] = useState(1500); // Default sqft for calculation
   const [studentDiscount, setStudentDiscount] = useState(false); // 20% discount toggle
   
@@ -277,6 +278,7 @@ export default function CalculatorPage() {
           }
           if (cachedSearch.cachedResult.sqft > 0) {
             setPropertySqft(cachedSearch.cachedResult.sqft);
+            setFurnishingsCost(Math.round(cachedSearch.cachedResult.sqft * 15));
           }
         }
       }
@@ -681,6 +683,7 @@ export default function CalculatorPage() {
     
     if (analysisResult.sqft > 0) {
       setPropertySqft(analysisResult.sqft);
+      setFurnishingsCost(Math.round(analysisResult.sqft * 15));
     }
     
     setUseCustomIncome(false);
@@ -1066,6 +1069,7 @@ export default function CalculatorPage() {
       // Auto-set sqft for design/setup cost calculations
       if (sqft > 0) {
         setPropertySqft(sqft);
+        setFurnishingsCost(Math.round(sqft * 15));
       }
       
       setUseCustomIncome(false);
@@ -1396,7 +1400,7 @@ export default function CalculatorPage() {
     <table class="table">
       ${includeDesignServices ? `<tr><td>Teeco Design Services</td><td class="right">${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
       ${includeSetupServices ? `<tr><td>Teeco Setup Services</td><td class="right">${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
-      ${includeFurnishings ? `<tr><td>Furnishings & Decor</td><td class="right">${formatCurrency(calculateFurnishingsCost())}</td></tr>` : ''}
+      ${includeFurnishings ? `<tr><td>Furnishings & Decor</td><td class="right">${formatCurrency(furnishingsCost)}</td></tr>` : ''}
       ${includeAmenities ? `<tr><td>Upgrades & Amenities</td><td class="right">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
       <tr class="total"><td><strong>Total Startup Investment</strong></td><td class="right"><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
     </table>
@@ -1524,9 +1528,9 @@ export default function CalculatorPage() {
     return studentDiscount ? Math.round(baseCost * 0.8) : baseCost;
   };
 
-  // Calculate furnishings cost (~$15-20/sqft average)
-  const calculateFurnishingsCost = () => {
-    return Math.round(propertySqft * 17.5);
+  // Calculate default furnishings cost ($15/sqft)
+  const getDefaultFurnishingsCost = () => {
+    return Math.round(propertySqft * 15);
   };
 
   // Calculate startup costs (one-time)
@@ -1534,7 +1538,7 @@ export default function CalculatorPage() {
     let total = 0;
     if (includeDesignServices) total += calculateDesignCost();
     if (includeSetupServices) total += calculateSetupCost();
-    if (includeFurnishings) total += calculateFurnishingsCost();
+    if (includeFurnishings) total += furnishingsCost;
     if (includeAmenities) total += amenitiesCost;
     return total;
   };
@@ -2663,12 +2667,21 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     />
                     <div>
                       <p className="font-medium" style={{ color: "#2b2823" }}>Furnishings</p>
-                      <p className="text-xs text-gray-500">~$17.50/sqft • Furniture, decor, linens</p>
+                      <p className="text-xs text-gray-500">~$15/sqft • Furniture, decor, linens</p>
                     </div>
                   </div>
-                  <p className="font-semibold" style={{ color: includeFurnishings ? "#22c55e" : "#787060" }}>
-                    {formatCurrency(calculateFurnishingsCost())}
-                  </p>
+                  <input
+                    type="number"
+                    value={furnishingsCost}
+                    onChange={(e) => setFurnishingsCost(parseInt(e.target.value) || 0)}
+                    className="w-28 px-3 py-2 rounded-lg text-right font-semibold"
+                    style={{ 
+                      backgroundColor: includeFurnishings ? "#dcfce7" : "#e5e3da",
+                      border: "2px solid",
+                      borderColor: includeFurnishings ? "#22c55e" : "#787060",
+                      color: includeFurnishings ? "#166534" : "#2b2823"
+                    }}
+                  />
                 </div>
                 
                 {/* Upgrades & Amenities */}
@@ -2689,10 +2702,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     type="number"
                     value={amenitiesCost}
                     onChange={(e) => setAmenitiesCost(parseInt(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-right"
-                    disabled={!includeAmenities}
+                    className="w-28 px-3 py-2 rounded-lg text-right font-semibold"
+                    style={{ 
+                      backgroundColor: includeAmenities ? "#dcfce7" : "#e5e3da",
+                      border: "2px solid",
+                      borderColor: includeAmenities ? "#22c55e" : "#787060",
+                      color: includeAmenities ? "#166534" : "#2b2823"
+                    }}
                   />
-                </div>
               </div>
               
               {/* Total Startup Costs */}
@@ -3553,6 +3570,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       // Auto-set sqft
                       if (search.cachedResult.sqft > 0) {
                         setPropertySqft(search.cachedResult.sqft);
+                        setFurnishingsCost(Math.round(search.cachedResult.sqft * 15));
                       }
                     } else {
                       // Fallback: re-analyze if no cached data (old searches)
