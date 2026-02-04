@@ -137,6 +137,7 @@ export default function CalculatorPage() {
   const [amenitiesCost, setAmenitiesCost] = useState(11000);
   const [propertySqft, setPropertySqft] = useState(1500); // Default sqft for calculation
   const [studentDiscount, setStudentDiscount] = useState(false); // 20% discount toggle
+  const [furnishingsPerSqft, setFurnishingsPerSqft] = useState(15); // $10-$20/sqft range, default $15
   
   // Monthly Expenses
   const [electricMonthly, setElectricMonthly] = useState(100);
@@ -1598,9 +1599,9 @@ export default function CalculatorPage() {
     return studentDiscount ? Math.round(baseCost * 0.8) : baseCost;
   };
 
-  // Calculate furnishings cost (~$15-20/sqft average)
+  // Calculate furnishings cost ($10-$20/sqft range)
   const calculateFurnishingsCost = () => {
-    return Math.round(propertySqft * 17.5);
+    return Math.round(propertySqft * furnishingsPerSqft);
   };
 
   // Calculate startup costs (one-time)
@@ -3068,7 +3069,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             )}
 
-            {/* Startup Costs - Teeco Services */}
+            {/* Startup Costs - Teeco Services (Only in Owning Mode) */}
+            {ownershipMode === 'owning' && (
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>Startup Costs</h3>
@@ -3142,22 +3144,44 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
                 
                 {/* Furnishings */}
-                <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: includeFurnishings ? "#f0fdf4" : "#f5f4f0" }}>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={includeFurnishings}
-                      onChange={(e) => setIncludeFurnishings(e.target.checked)}
-                      className="w-5 h-5 rounded"
-                    />
-                    <div>
-                      <p className="font-medium" style={{ color: "#2b2823" }}>Furnishings</p>
-                      <p className="text-xs text-gray-500">~$17.50/sqft • Furniture, decor, linens</p>
+                <div className="p-4 rounded-xl" style={{ backgroundColor: includeFurnishings ? "#f0fdf4" : "#f5f4f0" }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={includeFurnishings}
+                        onChange={(e) => setIncludeFurnishings(e.target.checked)}
+                        className="w-5 h-5 rounded"
+                      />
+                      <div>
+                        <p className="font-medium" style={{ color: "#2b2823" }}>Furnishings</p>
+                        <p className="text-xs text-gray-500">Furniture, decor, linens</p>
+                      </div>
                     </div>
+                    <p className="font-semibold" style={{ color: includeFurnishings ? "#22c55e" : "#787060" }}>
+                      {formatCurrency(calculateFurnishingsCost())}
+                    </p>
                   </div>
-                  <p className="font-semibold" style={{ color: includeFurnishings ? "#22c55e" : "#787060" }}>
-                    {formatCurrency(calculateFurnishingsCost())}
-                  </p>
+                  {includeFurnishings && (
+                    <div className="mt-3 ml-8 flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">$</span>
+                        <input
+                          type="number"
+                          min="10"
+                          max="20"
+                          value={furnishingsPerSqft}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 10;
+                            setFurnishingsPerSqft(Math.min(20, Math.max(10, val)));
+                          }}
+                          className="w-16 px-2 py-1 rounded-lg border-2 border-gray-300 text-center text-sm font-medium focus:border-green-500 focus:outline-none"
+                        />
+                        <span className="text-xs text-gray-500">/sqft</span>
+                      </div>
+                      <span className="text-xs text-gray-400">Range: $10-$20/sqft depending on manager</span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Upgrades & Amenities */}
@@ -3174,13 +3198,21 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       <p className="text-xs text-gray-500">Hot tub, fire pit, game room, etc.</p>
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    value={amenitiesCost}
-                    onChange={(e) => setAmenitiesCost(parseInt(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-right"
-                    disabled={!includeAmenities}
-                  />
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-gray-500">$</span>
+                    <input
+                      type="number"
+                      value={amenitiesCost}
+                      onChange={(e) => setAmenitiesCost(parseInt(e.target.value) || 0)}
+                      className={`w-28 px-3 py-2 rounded-lg text-right font-medium transition-all ${
+                        includeAmenities 
+                          ? 'border-2 border-green-400 bg-white shadow-sm focus:border-green-500 focus:outline-none' 
+                          : 'border-2 border-gray-200 bg-gray-100 text-gray-400'
+                      }`}
+                      disabled={!includeAmenities}
+                      placeholder="Enter cost"
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -3192,6 +3224,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               </div>
             </div>
+            )}
 
             {/* Monthly Operating Expenses - Collapsible */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
@@ -3586,12 +3619,86 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       )}
                     </div>
                     
+                    {/* Teeco Services (Optional Add-ons) */}
+                    <div className="mt-4 pt-3 border-t border-gray-300">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-sm font-medium" style={{ color: "#2b2823" }}>Teeco Services (Optional)</h5>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={studentDiscount}
+                            onChange={(e) => setStudentDiscount(e.target.checked)}
+                            className="w-4 h-4 rounded"
+                          />
+                          <span className="text-xs font-medium text-green-600">20% Student Discount</span>
+                        </label>
+                      </div>
+                      
+                      {/* Property Sqft for service calculations */}
+                      <div className="mb-3">
+                        <label className="text-xs block mb-1" style={{ color: "#787060" }}>Property Sqft (for service pricing)</label>
+                        <input
+                          type="number"
+                          value={propertySqft}
+                          onChange={(e) => setPropertySqft(parseInt(e.target.value) || 1500)}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                          placeholder="Enter sqft..."
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {/* Design Services */}
+                        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: includeDesignServices ? "#f0fdf4" : "#ffffff" }}>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={includeDesignServices}
+                              onChange={(e) => setIncludeDesignServices(e.target.checked)}
+                              className="w-4 h-4 rounded"
+                            />
+                            <div>
+                              <p className="text-sm font-medium" style={{ color: "#2b2823" }}>Teeco Design Services</p>
+                              <p className="text-xs text-gray-500">$7/sqft • Interior design & styling{studentDiscount && " (20% off)"}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold" style={{ color: includeDesignServices ? "#22c55e" : "#787060" }}>
+                            {formatCurrency(calculateDesignCost())}
+                          </p>
+                        </div>
+                        
+                        {/* Setup Services */}
+                        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: includeSetupServices ? "#f0fdf4" : "#ffffff" }}>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={includeSetupServices}
+                              onChange={(e) => setIncludeSetupServices(e.target.checked)}
+                              className="w-4 h-4 rounded"
+                            />
+                            <div>
+                              <p className="text-sm font-medium" style={{ color: "#2b2823" }}>Teeco Setup Services</p>
+                              <p className="text-xs text-gray-500">$13/sqft • Full property setup & staging{studentDiscount && " (20% off)"}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold" style={{ color: includeSetupServices ? "#22c55e" : "#787060" }}>
+                            {formatCurrency(calculateSetupCost())}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {/* Total Upfront */}
                     <div className="mt-4 pt-3 border-t border-gray-300">
                       <div className="flex justify-between font-medium">
                         <span>Total Upfront Investment</span>
                         <span style={{ color: '#2b2823' }}>
-                          {formatCurrency(securityDeposit + firstMonthRent + (propertyFurnished ? 0 : furnishingCost))}
+                          {formatCurrency(
+                            securityDeposit + 
+                            firstMonthRent + 
+                            (propertyFurnished ? 0 : furnishingCost) +
+                            (includeDesignServices ? calculateDesignCost() : 0) +
+                            (includeSetupServices ? calculateSetupCost() : 0)
+                          )}
                         </span>
                       </div>
                     </div>
