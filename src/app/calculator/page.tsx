@@ -161,6 +161,9 @@ export default function CalculatorPage() {
   } | null>(null);
   const [unsupportedAddresses, setUnsupportedAddresses] = useState<string[]>([]);
   
+  // Share link state
+  const [isCreatingShareLink, setIsCreatingShareLink] = useState(false);
+  
   // Limited data warning modal
   const [showLimitedDataWarning, setShowLimitedDataWarning] = useState(false);
   const [limitedDataInfo, setLimitedDataInfo] = useState<{
@@ -2126,36 +2129,80 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       <span className="hidden sm:inline">PDF</span>
                     </button>
                     
-                    {/* Share via Text Button */}
+                    {/* Share Link Button */}
                     <button
-                      onClick={() => {
-                        const displayRevenue = getDisplayRevenue();
-                        const shareText = 
-                          `Check out this STR investment I'm analyzing:\n\n` +
-                          `📍 ${result.address || result.neighborhood}, ${result.city}, ${result.state}\n` +
-                          `🛏️ ${result.bedrooms} bed / ${result.bathrooms} bath\n` +
-                          `💰 Projected: $${displayRevenue.toLocaleString()}/year\n` +
-                          `📊 ${result.occupancy}% occupancy | $${result.adr}/night\n` +
-                          (purchasePrice && !investment.needsPrice ? `📈 ${investment.cashOnCashReturn.toFixed(1)}% cash-on-cash return\n` : '') +
-                          `\nAnalyzed with Edge by Teeco: edge.teeco.co`;
+                      onClick={async () => {
+                        if (isCreatingShareLink) return;
+                        setIsCreatingShareLink(true);
                         
-                        // Use SMS link for mobile, fallback to clipboard for desktop
-                        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                          window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
-                        } else {
-                          navigator.clipboard.writeText(shareText).then(() => {
-                            alert('Report summary copied to clipboard! Paste it into your messaging app.');
+                        try {
+                          const displayRevenue = getDisplayRevenue();
+                          const response = await fetch('/api/share', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              address: result.address || result.neighborhood,
+                              city: result.city,
+                              state: result.state,
+                              bedrooms: result.bedrooms,
+                              bathrooms: result.bathrooms,
+                              guestCount: guestCount || result.bedrooms * 2,
+                              purchasePrice: purchasePrice ? parseFloat(purchasePrice.replace(/,/g, '')) : 0,
+                              annualRevenue: displayRevenue,
+                              occupancyRate: result.occupancy,
+                              adr: result.adr,
+                              cashFlow: investment.annualCashFlow,
+                              cashOnCash: investment.cashOnCashReturn,
+                              analysisData: {
+                                activeListings: result.nearbyListings,
+                                peakMonth: result.historical?.[0]?.month,
+                                peakMonthRevenue: result.historical?.[0]?.revenue,
+                                downPayment: investment.downPayment,
+                                downPaymentPercent: downPaymentPercent,
+                                loanAmount: investment.loanAmount,
+                                monthlyMortgage: investment.monthlyMortgage,
+                                percentiles: result.percentiles
+                              }
+                            })
                           });
+                          
+                          if (!response.ok) throw new Error('Failed to create share link');
+                          
+                          const { shareUrl } = await response.json();
+                          
+                          // Copy link and share
+                          if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                            await navigator.share({
+                              title: `STR Analysis: ${result.address || result.neighborhood}`,
+                              url: shareUrl
+                            });
+                          } else {
+                            await navigator.clipboard.writeText(shareUrl);
+                            alert('Share link copied! This link can only be viewed once and expires in 90 days.');
+                          }
+                        } catch (err) {
+                          console.error('Share error:', err);
+                          alert('Failed to create share link. Please try again.');
+                        } finally {
+                          setIsCreatingShareLink(false);
                         }
                       }}
                       className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
                       style={{ backgroundColor: "#22c55e", color: "#ffffff" }}
-                      title="Share via Text"
+                      title="Share Analysis Link"
+                      disabled={isCreatingShareLink}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span className="hidden sm:inline">Text</span>
+                      {isCreatingShareLink ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        </svg>
+                      )}
+                      <span className="hidden sm:inline">{isCreatingShareLink ? 'Creating...' : 'Share'}</span>
                     </button>
                   </div>
                 </div>
@@ -3240,22 +3287,77 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                           </p>
                           <div className="flex flex-wrap gap-2 justify-center mb-6">
                             <button
-                              onClick={() => {
-                                const text = `Edge AI Analysis for ${result?.address || result?.neighborhood}, ${result?.city}\n\n${aiAnalysis?.replace(/[#*]/g, '') || ''}`;
-                                if (navigator.share) {
-                                  navigator.share({ title: 'Edge AI Analysis', text });
-                                } else {
-                                  navigator.clipboard.writeText(text);
-                                  alert('Analysis copied to clipboard!');
+                              onClick={async () => {
+                                if (isCreatingShareLink || !result) return;
+                                setIsCreatingShareLink(true);
+                                
+                                try {
+                                  const displayRevenue = getDisplayRevenue();
+                                  const response = await fetch('/api/share', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      address: result.address || result.neighborhood,
+                                      city: result.city,
+                                      state: result.state,
+                                      bedrooms: result.bedrooms,
+                                      bathrooms: result.bathrooms,
+                                      guestCount: guestCount || result.bedrooms * 2,
+                                      purchasePrice: purchasePrice ? parseFloat(purchasePrice.replace(/,/g, '')) : 0,
+                                      annualRevenue: displayRevenue,
+                                      occupancyRate: result.occupancy,
+                                      adr: result.adr,
+                                      cashFlow: investment.annualCashFlow,
+                                      cashOnCash: investment.cashOnCashReturn,
+                                      analysisData: {
+                                        activeListings: result.nearbyListings,
+                                        peakMonth: result.historical?.[0]?.month,
+                                        peakMonthRevenue: result.historical?.[0]?.revenue,
+                                        downPayment: investment.downPayment,
+                                        downPaymentPercent: downPaymentPercent,
+                                        loanAmount: investment.loanAmount,
+                                        monthlyMortgage: investment.monthlyMortgage,
+                                        percentiles: result.percentiles,
+                                        aiAnalysis: aiAnalysis
+                                      }
+                                    })
+                                  });
+                                  
+                                  if (!response.ok) throw new Error('Failed to create share link');
+                                  
+                                  const { shareUrl } = await response.json();
+                                  
+                                  if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                                    await navigator.share({
+                                      title: `STR Analysis: ${result.address || result.neighborhood}`,
+                                      url: shareUrl
+                                    });
+                                  } else {
+                                    await navigator.clipboard.writeText(shareUrl);
+                                    alert('Share link copied! This link can only be viewed once and expires in 90 days.');
+                                  }
+                                } catch (err) {
+                                  console.error('Share error:', err);
+                                  alert('Failed to create share link. Please try again.');
+                                } finally {
+                                  setIsCreatingShareLink(false);
                                 }
                               }}
                               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
                               style={{ backgroundColor: "#22c55e", color: "#ffffff" }}
+                              disabled={isCreatingShareLink}
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                              </svg>
-                              Text
+                              {isCreatingShareLink ? (
+                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                </svg>
+                              )}
+                              {isCreatingShareLink ? 'Creating...' : 'Share Link'}
                             </button>
                             <button
                               onClick={() => {
