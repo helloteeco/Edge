@@ -164,7 +164,7 @@ export function ChatAssistant() {
               <div>
                 <h3 className="font-semibold" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Edge Assistant</h3>
                 <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-                  {mode === "menu" ? "How can I help you today?" : mode === "chat" ? "Powered by Jeff's STR expertise" : "Mentorship Survey"}
+                  {mode === "menu" ? "How can I help you today?" : mode === "chat" ? "Powered by Jeff's STR expertise" : "Coaching Survey"}
                 </p>
               </div>
             </div>
@@ -205,7 +205,7 @@ export function ChatAssistant() {
                       🎓
                     </div>
                     <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Mentorship Program</div>
+                      <div className="font-semibold" style={{ color: '#2b2823' }}>Coaching Program</div>
                       <div className="text-sm font-medium" style={{ color: '#2b2823' }}>Only ~3 hours/week once set up</div>
                       <div className="text-xs mt-1" style={{ color: '#787060' }}>9 guided calls: Deal → Setup & Design → Live STR. We can set up your Airbnb remotely while you keep your job.</div>
                     </div>
@@ -420,7 +420,7 @@ export function ChatAssistant() {
                           className="rounded-xl p-3 text-left"
                           style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
                         >
-                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ You qualify for our Mentorship Program!</p>
+                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ You qualify for our Coaching Program!</p>
                           <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
                             <li>• Full guided experience: 9 total calls</li>
                             <li>• Deal → Setup & Design → Live STR</li>

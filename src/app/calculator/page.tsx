@@ -3398,14 +3398,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               </div>
               
-              {/* Mentorship CTA */}
+              {/* Coaching CTA */}
               <div className="mt-5 p-4 rounded-xl" style={{ backgroundColor: "#fef3c7", border: "1px solid #fcd34d" }}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🎓</span>
                   <div className="flex-1">
                     <p className="font-semibold" style={{ color: "#92400e" }}>Need help with steps 2-5?</p>
                     <p className="text-sm mt-1" style={{ color: "#a16207" }}>
-                      Teeco&apos;s 1:1 mentorship walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
+                      Teeco&apos;s 1:1 coaching walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
                     </p>
                     <a 
                       href="https://teeco.co/fund-your-financial-freedom"
@@ -3414,7 +3414,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
                       style={{ backgroundColor: "#92400e", color: "#ffffff" }}
                     >
-                      Learn About Mentorship
+                      Learn About Coaching
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>

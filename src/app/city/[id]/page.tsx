@@ -625,7 +625,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             Ready to Invest?
           </h3>
           <p className="text-sm mb-4" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-            Get personalized guidance from our STR mentorship program.
+            Get personalized guidance from our STR coaching program.
           </p>
           <Link
             href="https://teeco.co/fund-your-financial-freedom"

@@ -159,7 +159,7 @@ export default function HomePage() {
         'Quick quiz to identify your 5 most likely funding options',
         'Links to Zillow for finding agents and lenders',
         'Edge AI Assistant can answer funding questions',
-        'Apply to our mentorship program for personalized guidance'
+        'Apply to our coaching program for personalized guidance'
       ]
     },
     'Setup': {
@@ -174,9 +174,9 @@ export default function HomePage() {
     },
     'Scale': {
       title: 'Scale Your Portfolio',
-      description: 'Grow with mentorship, community, and ongoing education.',
+      description: 'Grow with coaching, community, and ongoing education.',
       features: [
-        'Mentorship program application (for experienced STR investors)',
+        'Coaching program application (for experienced STR investors)',
         'Use Funding tab to explore scaling options',
         'Community support through Circle group',
         'Edge AI Assistant can help with your specific roadblocks'
@@ -772,7 +772,7 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <BookOpenIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Mentorship</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Coaching</p>
                 </Link>
               </div>
             </div>
