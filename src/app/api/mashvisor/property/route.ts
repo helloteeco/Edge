@@ -968,6 +968,12 @@ export async function POST(request: NextRequest) {
       // Recommended amenities to reach 90th percentile performance
       // Based on market type and top performer analysis
       recommendedAmenities: getRecommendedAmenities(latitude, longitude, airbticsData?.comps || []),
+      
+      // Estimated property value (for auto-populating purchase price)
+      // Priority: property list price > median price > calculated estimate
+      estimatedValue: property?.list_price || 
+                      neighborhoodData?.median_price || 
+                      Math.round((neighborhoodData?.price_per_sqft || 150) * (property?.sqft || 1500)),
     };
 
     return NextResponse.json(result);
