@@ -21,8 +21,14 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-export async function generateMetadata({ searchParams }: { searchParams: { d?: string } }): Promise<Metadata> {
-  const encoded = searchParams.d;
+type Props = {
+  params: Promise<{}>;
+  searchParams: Promise<{ d?: string }>;
+};
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const resolvedSearchParams = await searchParams;
+  const encoded = resolvedSearchParams.d;
   
   if (!encoded) {
     return {
