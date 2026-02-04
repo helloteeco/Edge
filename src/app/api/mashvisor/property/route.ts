@@ -591,12 +591,12 @@ export async function POST(request: NextRequest) {
 
           console.log("Bedroom-specific metrics:", { bedroomSpecificAdr, bedroomSpecificOccupancy, bedroomSpecificRevenue });
 
-          // Get top 5 comparable listings (prefer exact bedroom match)
+          // Get top 20 comparable listings (prefer exact bedroom match)
           const compsSource = exactMatchProps.length >= 3 ? exactMatchProps : filteredProps.length >= 3 ? filteredProps : allProps;
           comparableListings = compsSource
             .filter((p: any) => p.rental_income > 0)
             .sort((a: any, b: any) => b.rental_income - a.rental_income)
-            .slice(0, 5)
+            .slice(0, 20)
             .map((p: any) => ({
               id: p.id,
               name: p.name || `${p.num_of_rooms} BR in ${city}`,
@@ -803,8 +803,8 @@ export async function POST(request: NextRequest) {
           .filter((p: any) => p.distance <= 25)
           // Sort by similarity score (combines distance and guest count match)
           .sort((a: any, b: any) => a.similarityScore - b.similarityScore)
-          // Take top 5
-          .slice(0, 5);
+          // Take top 20 for better market analysis
+          .slice(0, 20);
         
         comparableListings = filteredComps;
         filteredListingsCount = airbticsComps.length;
