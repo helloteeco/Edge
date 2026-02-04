@@ -628,7 +628,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             Get personalized guidance from our STR coaching program.
           </p>
           <Link
-            href="https://teeco.co/fund-your-financial-freedom"
+            href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
@@ -638,7 +638,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
               boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
             }}
           >
-            Explore Funding Options
+            Apply Now
           </Link>
         </div>
       </div>
