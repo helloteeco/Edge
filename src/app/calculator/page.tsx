@@ -158,6 +158,17 @@ export default function CalculatorPage() {
   // Teeco Strategy toggle - allows users to see standard vs optimized revenue
   const [useTeecoStrategy, setUseTeecoStrategy] = useState(true);
   
+  // Ownership Mode: 'owning' vs 'arbitrage' (leasing)
+  const [ownershipMode, setOwnershipMode] = useState<'owning' | 'arbitrage'>('owning');
+  
+  // Arbitrage-specific fields
+  const [monthlyRent, setMonthlyRent] = useState(1500); // Rent paid to landlord
+  const [securityDeposit, setSecurityDeposit] = useState(3000); // Usually 1-2 months rent
+  const [firstMonthRent, setFirstMonthRent] = useState(1500); // First month upfront
+  const [propertyFurnished, setPropertyFurnished] = useState(false); // If true, skip furnishing costs
+  const [furnishingCost, setFurnishingCost] = useState(5000); // Cost to furnish if not furnished
+  const [rentersInsurance, setRentersInsurance] = useState(30); // Monthly renter's insurance
+  
   // Comps display state
   const [showExpandedComps, setShowExpandedComps] = useState(false);
 
@@ -1677,9 +1688,95 @@ export default function CalculatorPage() {
       return Math.round(total);
     })();
     
+    // ARBITRAGE MODE - Different calculation
+    if (ownershipMode === 'arbitrage') {
+      // Check if we have rent set
+      if (monthlyRent === 0) {
+        return {
+          needsPrice: false,
+          needsRent: true,
+          downPayment: 0,
+          loanAmount: 0,
+          monthlyMortgage: 0,
+          annualPropertyTax: 0,
+          annualInsurance: 0,
+          annualManagement: 0,
+          annualMaintenance: 0,
+          annualVacancy: 0,
+          monthlyOperating: 0,
+          totalAnnualExpenses: 0,
+          netOperatingIncome: 0,
+          cashFlow: 0,
+          cashOnCashReturn: 0,
+          monthlyCashFlow: 0,
+          startupCosts: 0,
+          totalCashNeeded: 0,
+          // Arbitrage specific
+          monthlyRentToLandlord: 0,
+          upfrontCosts: 0,
+        };
+      }
+      
+      // Upfront costs for arbitrage
+      const upfrontCosts = securityDeposit + firstMonthRent + (propertyFurnished ? 0 : furnishingCost);
+      
+      // Monthly costs for arbitrage
+      const grossRevenue = displayRevenue;
+      const annualManagement = grossRevenue * (managementFeePercent / 100);
+      const annualMaintenance = grossRevenue * (maintenancePercent / 100);
+      
+      // Calculate monthly operating expenses inline
+      const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
+      const maintenance = lawnCareMonthly + houseSuppliesMonthly + maintenanceRepairMonthly + pestControlMonthly + miscMonthly;
+      const software = rentalSoftwareMonthly;
+      const monthlyOperating = utilities + maintenance + software;
+      const annualOperating = monthlyOperating * 12;
+      
+      // Annual rent to landlord
+      const annualRentToLandlord = monthlyRent * 12;
+      // Annual renter's insurance
+      const annualRentersInsurance = rentersInsurance * 12;
+      
+      // Total expenses for arbitrage (no mortgage, property tax, or homeowner's insurance)
+      const totalAnnualExpenses = annualRentToLandlord + annualRentersInsurance + annualManagement + annualMaintenance + annualOperating;
+      const netOperatingIncome = grossRevenue - totalAnnualExpenses;
+      const cashFlow = grossRevenue - totalAnnualExpenses;
+      
+      // Total cash needed is just upfront costs (no down payment)
+      const totalCashNeeded = upfrontCosts;
+      const cashOnCashReturn = totalCashNeeded > 0 ? (cashFlow / totalCashNeeded) * 100 : 0;
+      
+      return {
+        needsPrice: false,
+        needsRent: false,
+        downPayment: 0,
+        loanAmount: 0,
+        monthlyMortgage: 0,
+        annualPropertyTax: 0,
+        annualInsurance: annualRentersInsurance,
+        annualManagement,
+        annualMaintenance,
+        annualVacancy: 0,
+        monthlyOperating,
+        totalAnnualExpenses,
+        netOperatingIncome,
+        cashFlow,
+        cashOnCashReturn,
+        monthlyCashFlow: cashFlow / 12,
+        startupCosts: 0,
+        totalCashNeeded,
+        // Arbitrage specific
+        monthlyRentToLandlord: monthlyRent,
+        upfrontCosts,
+        annualRentToLandlord,
+      };
+    }
+    
+    // OWNING MODE - Traditional calculation
     if (price === 0) {
       return {
         needsPrice: true,
+        needsRent: false,
         downPayment: 0,
         loanAmount: 0,
         monthlyMortgage: 0,
@@ -1732,6 +1829,7 @@ export default function CalculatorPage() {
 
     return {
       needsPrice: false,
+      needsRent: false,
       downPayment,
       loanAmount,
       monthlyMortgage,
@@ -1756,7 +1854,9 @@ export default function CalculatorPage() {
     houseSuppliesMonthly, maintenanceRepairMonthly, trashMonthly, rentalSoftwareMonthly,
     pestControlMonthly, miscMonthly,
     includeDesignServices, includeSetupServices, includeFurnishings, includeAmenities,
-    propertySqft, studentDiscount, amenitiesCost
+    propertySqft, studentDiscount, amenitiesCost,
+    ownershipMode, monthlyRent, securityDeposit, firstMonthRent, propertyFurnished,
+    furnishingCost, rentersInsurance
   ]);
 
   // Get AI Analysis of the deal
@@ -1992,6 +2092,44 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         {/* Search Box */}
         <div className="rounded-2xl p-4 sm:p-6 mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", overflow: "visible", position: "relative", zIndex: showSuggestions ? 100 : 1 }}>
           <h2 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Property Details</h2>
+          
+          {/* Ownership Mode Toggle */}
+          <div className="mb-5">
+            <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>
+              Are you buying or leasing this property?
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setOwnershipMode('owning')}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                  ownershipMode === 'owning'
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={ownershipMode === 'owning' ? { backgroundColor: '#2b2823' } : {}}
+              >
+                <span>🏠</span>
+                <span>Buying to Own</span>
+              </button>
+              <button
+                onClick={() => setOwnershipMode('arbitrage')}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                  ownershipMode === 'arbitrage'
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={ownershipMode === 'arbitrage' ? { backgroundColor: '#2b2823' } : {}}
+              >
+                <span>🔑</span>
+                <span>Airbnb Arbitrage</span>
+              </button>
+            </div>
+            {ownershipMode === 'arbitrage' && (
+              <p className="text-xs mt-2" style={{ color: '#666' }}>
+                💡 Arbitrage = Leasing a property and subletting on Airbnb. Different expenses apply.
+              </p>
+            )}
+          </div>
           
           {/* Bedroom/Bathroom Selector - REQUIRED */}
           <div className="flex flex-wrap gap-6 mb-4">
@@ -3222,145 +3360,281 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
             {/* Investment Calculator */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Investment Calculator</h3>
-              <p className="text-sm text-gray-500 mb-4">Calculate your potential returns</p>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>
+                {ownershipMode === 'owning' ? 'Investment Calculator' : 'Arbitrage Calculator'}
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {ownershipMode === 'owning' 
+                  ? 'Calculate your potential returns from owning this property'
+                  : 'Calculate your potential returns from leasing and subletting on Airbnb'
+                }
+              </p>
               
-              {/* Purchase Price - Required for investment analysis */}
-              <div className="mb-4">
-                <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>
-                  Purchase Price <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={purchasePrice}
-                  onChange={(e) => setPurchasePrice(e.target.value)}
-                  placeholder="Enter purchase price..."
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-lg transition-colors ${
-                    !purchasePrice ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
-                  }`}
-                />
-                {result?.estimatedValue && !purchasePrice && (
-                  <button
-                    onClick={() => setPurchasePrice(result.estimatedValue?.toString() || '')}
-                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                  >
-                    <span>💡</span> Use estimated value: {formatCurrency(result.estimatedValue)}
-                  </button>
-                )}
-                {!purchasePrice && (
-                  <p className="mt-2 text-xs text-amber-600">Required to calculate ROI and cash flow</p>
-                )}
-              </div>
-              
-              {/* Down Payment with warning */}
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span style={{ color: "#787060" }}>Down Payment <span className="text-red-500">*</span></span>
-                  <span className="font-medium">{downPaymentPercent}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={downPaymentPercent}
-                  onChange={(e) => setDownPaymentPercent(parseInt(e.target.value))}
-                  className="w-full"
-                />
-                {downPaymentPercent < 15 && (
-                  <p className="mt-1 text-xs text-amber-600">⚠️ Most lenders require 15-25% for investment properties</p>
-                )}
-                {purchasePrice && (
-                  <p className="mt-1 text-xs text-gray-500">Cash needed: {formatCurrency(parseFloat(purchasePrice) * (downPaymentPercent / 100))}</p>
-                )}
-              </div>
-              
-              {/* Sliders - Additional Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span style={{ color: "#787060" }}>Interest Rate</span>
-                    <span className="font-medium">{interestRate.toFixed(1)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="3"
-                    max="12"
-                    step="0.1"
-                    value={interestRate}
-                    onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                  {interestRate < 5 && (
-                    <p className="mt-1 text-xs text-amber-600">⚠️ Rate seems low for current market. Verify with lender.</p>
-                  )}
-                  {interestRate > 9 && (
-                    <p className="mt-1 text-xs text-amber-600">⚠️ High rate. Consider shopping for better rates.</p>
-                  )}
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span style={{ color: "#787060" }}>Loan Term</span>
-                    <span className="font-medium">{loanTerm} years</span>
-                  </div>
-                  <div className="flex gap-2">
-                    {[15, 20, 30].map((term) => (
+              {/* OWNING MODE - Traditional Investment Fields */}
+              {ownershipMode === 'owning' && (
+                <>
+                  {/* Purchase Price - Required for investment analysis */}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>
+                      Purchase Price <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={purchasePrice}
+                      onChange={(e) => setPurchasePrice(e.target.value)}
+                      placeholder="Enter purchase price..."
+                      className={`w-full px-4 py-3 rounded-xl border-2 text-lg transition-colors ${
+                        !purchasePrice ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
+                      }`}
+                    />
+                    {result?.estimatedValue && !purchasePrice && (
                       <button
-                        key={term}
-                        onClick={() => setLoanTerm(term)}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-                          loanTerm === term ? "text-white" : "bg-gray-100 text-gray-600"
-                        }`}
-                        style={loanTerm === term ? { backgroundColor: "#2b2823" } : {}}
+                        onClick={() => setPurchasePrice(result.estimatedValue?.toString() || '')}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                       >
-                        {term}yr
+                        <span>💡</span> Use estimated value: {formatCurrency(result.estimatedValue)}
                       </button>
-                    ))}
+                    )}
+                    {!purchasePrice && (
+                      <p className="mt-2 text-xs text-amber-600">Required to calculate ROI and cash flow</p>
+                    )}
                   </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span style={{ color: "#787060" }}>Property Tax Rate</span>
-                    <span className="font-medium">{propertyTaxRate.toFixed(1)}%</span>
+                  
+                  {/* Down Payment with warning */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span style={{ color: "#787060" }}>Down Payment <span className="text-red-500">*</span></span>
+                      <span className="font-medium">{downPaymentPercent}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={downPaymentPercent}
+                      onChange={(e) => setDownPaymentPercent(parseInt(e.target.value))}
+                      className="w-full"
+                    />
+                    {downPaymentPercent < 15 && (
+                      <p className="mt-1 text-xs text-amber-600">⚠️ Most lenders require 15-25% for investment properties</p>
+                    )}
+                    {purchasePrice && (
+                      <p className="mt-1 text-xs text-gray-500">Cash needed: {formatCurrency(parseFloat(purchasePrice) * (downPaymentPercent / 100))}</p>
+                    )}
                   </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="3"
-                    step="0.1"
-                    value={propertyTaxRate}
-                    onChange={(e) => setPropertyTaxRate(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span style={{ color: "#787060" }}>Management Fee</span>
-                    <span className="font-medium">{managementFeePercent}%</span>
+                  
+                  {/* Sliders - Additional Settings */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Interest Rate</span>
+                        <span className="font-medium">{interestRate.toFixed(1)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="3"
+                        max="12"
+                        step="0.1"
+                        value={interestRate}
+                        onChange={(e) => setInterestRate(parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                      {interestRate < 5 && (
+                        <p className="mt-1 text-xs text-amber-600">⚠️ Rate seems low for current market. Verify with lender.</p>
+                      )}
+                      {interestRate > 9 && (
+                        <p className="mt-1 text-xs text-amber-600">⚠️ High rate. Consider shopping for better rates.</p>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Loan Term</span>
+                        <span className="font-medium">{loanTerm} years</span>
+                      </div>
+                      <div className="flex gap-2">
+                        {[15, 20, 30].map((term) => (
+                          <button
+                            key={term}
+                            onClick={() => setLoanTerm(term)}
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                              loanTerm === term ? "text-white" : "bg-gray-100 text-gray-600"
+                            }`}
+                            style={loanTerm === term ? { backgroundColor: "#2b2823" } : {}}
+                          >
+                            {term}yr
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Property Tax Rate</span>
+                        <span className="font-medium">{propertyTaxRate.toFixed(1)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="3"
+                        step="0.1"
+                        value={propertyTaxRate}
+                        onChange={(e) => setPropertyTaxRate(parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Management Fee</span>
+                        <span className="font-medium">{managementFeePercent}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="35"
+                        value={managementFeePercent}
+                        onChange={(e) => setManagementFeePercent(parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm block mb-1" style={{ color: "#787060" }}>Annual Insurance</label>
+                      <input
+                        type="number"
+                        value={insuranceAnnual}
+                        onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="35"
-                    value={managementFeePercent}
-                    onChange={(e) => setManagementFeePercent(parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm block mb-1" style={{ color: "#787060" }}>Annual Insurance</label>
-                  <input
-                    type="number"
-                    value={insuranceAnnual}
-                    onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
-                  />
-                </div>
-              </div>
+                </>
+              )}
+              
+              {/* ARBITRAGE MODE - Leasing Fields */}
+              {ownershipMode === 'arbitrage' && (
+                <>
+                  {/* Monthly Rent to Landlord */}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>
+                      Monthly Rent to Landlord <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={monthlyRent}
+                      onChange={(e) => {
+                        const rent = parseInt(e.target.value) || 0;
+                        setMonthlyRent(rent);
+                        setFirstMonthRent(rent);
+                        setSecurityDeposit(rent * 2); // Auto-set security deposit to 2x rent
+                      }}
+                      placeholder="Enter monthly rent..."
+                      className="w-full px-4 py-3 rounded-xl border-2 text-lg border-gray-200"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">This is what you pay the landlord each month</p>
+                  </div>
+                  
+                  {/* Upfront Costs Section */}
+                  <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
+                    <h4 className="font-medium mb-3" style={{ color: "#2b2823" }}>Upfront Costs</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm block mb-1" style={{ color: "#787060" }}>Security Deposit</label>
+                        <input
+                          type="number"
+                          value={securityDeposit}
+                          onChange={(e) => setSecurityDeposit(parseInt(e.target.value) || 0)}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Usually 1-2 months rent</p>
+                      </div>
+                      <div>
+                        <label className="text-sm block mb-1" style={{ color: "#787060" }}>First Month&apos;s Rent</label>
+                        <input
+                          type="number"
+                          value={firstMonthRent}
+                          onChange={(e) => setFirstMonthRent(parseInt(e.target.value) || 0)}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Furnishing Toggle */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium" style={{ color: "#787060" }}>Property comes furnished?</label>
+                        <button
+                          onClick={() => setPropertyFurnished(!propertyFurnished)}
+                          className={`relative w-12 h-6 rounded-full transition-colors ${
+                            propertyFurnished ? 'bg-green-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                              propertyFurnished ? 'translate-x-7' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      {!propertyFurnished && (
+                        <div>
+                          <label className="text-sm block mb-1" style={{ color: "#787060" }}>Furnishing Cost</label>
+                          <input
+                            type="number"
+                            value={furnishingCost}
+                            onChange={(e) => setFurnishingCost(parseInt(e.target.value) || 0)}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Furniture, decor, linens, supplies, etc.</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Total Upfront */}
+                    <div className="mt-4 pt-3 border-t border-gray-300">
+                      <div className="flex justify-between font-medium">
+                        <span>Total Upfront Investment</span>
+                        <span style={{ color: '#2b2823' }}>
+                          {formatCurrency(securityDeposit + firstMonthRent + (propertyFurnished ? 0 : furnishingCost))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Monthly Costs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Management Fee</span>
+                        <span className="font-medium">{managementFeePercent}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="35"
+                        value={managementFeePercent}
+                        onChange={(e) => setManagementFeePercent(parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm block mb-1" style={{ color: "#787060" }}>Renter&apos;s Insurance (monthly)</label>
+                      <input
+                        type="number"
+                        value={rentersInsurance}
+                        onChange={(e) => setRentersInsurance(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
               
               {/* Investment Results */}
-              {investment.needsPrice ? (
+              {(ownershipMode === 'owning' && investment.needsPrice) || (ownershipMode === 'arbitrage' && investment.needsRent) ? (
                 <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                  <p className="text-amber-700 text-sm">👆 Enter a purchase price above to see ROI calculations</p>
+                  <p className="text-amber-700 text-sm">
+                    {ownershipMode === 'owning' 
+                      ? '👆 Enter a purchase price above to see ROI calculations'
+                      : '👆 Enter the monthly rent you\'ll pay the landlord to see ROI calculations'
+                    }
+                  </p>
                 </div>
               ) : (
                 <>
@@ -3379,29 +3653,46 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </p>
                     </div>
                     <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                      <p className="text-xs text-gray-500">Total Cash Needed</p>
+                      <p className="text-xs text-gray-500">{ownershipMode === 'owning' ? 'Total Cash Needed' : 'Upfront Investment'}</p>
                       <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
                         {formatCurrency(investment.totalCashNeeded)}
                       </p>
                     </div>
                   </div>
                   
-                  {/* Expense Breakdown */}
+                  {/* Expense Breakdown - Different for Owning vs Arbitrage */}
                   <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                     <h4 className="font-medium mb-3" style={{ color: "#2b2823" }}>Annual Expense Breakdown</h4>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Mortgage (P&I)</span>
-                        <span className="font-medium">{formatCurrency(investment.monthlyMortgage * 12)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Property Tax</span>
-                        <span className="font-medium">{formatCurrency(investment.annualPropertyTax)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Insurance</span>
-                        <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
-                      </div>
+                      {ownershipMode === 'owning' ? (
+                        // OWNING MODE expenses
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Mortgage (P&I)</span>
+                            <span className="font-medium">{formatCurrency(investment.monthlyMortgage * 12)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Property Tax</span>
+                            <span className="font-medium">{formatCurrency(investment.annualPropertyTax)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Insurance</span>
+                            <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        // ARBITRAGE MODE expenses
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Rent to Landlord</span>
+                            <span className="font-medium">{formatCurrency(monthlyRent * 12)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Renter&apos;s Insurance</span>
+                            <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Management ({managementFeePercent}%)</span>
                         <span className="font-medium">{formatCurrency(investment.annualManagement)}</span>
@@ -3431,54 +3722,55 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     </div>
                   </div>
                   
-                  {/* ROI Timeline Chart */}
-                  <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e5e3da" }}>
-                    <h4 className="font-medium mb-4" style={{ color: "#2b2823" }}>10-Year Investment Projection</h4>
-                    <div className="relative">
-                      {/* Chart Container */}
-                      <div className="flex items-end gap-1 h-40 mb-2">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
-                          const annualCashFlow = investment.cashFlow;
-                          const cumulativeCashFlow = annualCashFlow * year;
-                          const principalPaid = investment.monthlyMortgage * 12 * year * 0.3; // ~30% goes to principal avg
-                          const appreciation = (parseFloat(purchasePrice) || 0) * 0.03 * year; // 3% annual appreciation
-                          const totalEquity = investment.downPayment + principalPaid + appreciation;
-                          const totalReturn = cumulativeCashFlow + totalEquity - investment.totalCashNeeded;
-                          
-                          // Calculate bar heights (max at year 10)
-                          const maxReturn = (annualCashFlow * 10) + investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - investment.totalCashNeeded;
-                          const heightPercent = maxReturn > 0 ? Math.max(10, Math.min(100, (totalReturn / maxReturn) * 100)) : 50;
-                          const isPositive = totalReturn >= 0;
-                          
-                          return (
-                            <div key={year} className="flex-1 flex flex-col items-center justify-end h-full">
-                              <div 
-                                className="w-full rounded-t transition-all"
-                                style={{
-                                  height: `${heightPercent}%`,
-                                  backgroundColor: isPositive ? '#22c55e' : '#ef4444',
-                                  opacity: 0.7 + (year * 0.03),
-                                }}
-                                title={`Year ${year}: ${formatCurrency(totalReturn)} total return`}
-                              ></div>
+                  {/* ROI Timeline Chart - Only show for Owning mode (arbitrage doesn't build equity) */}
+                  {ownershipMode === 'owning' && (
+                    <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e5e3da" }}>
+                      <h4 className="font-medium mb-4" style={{ color: "#2b2823" }}>10-Year Investment Projection</h4>
+                      <div className="relative">
+                        {/* Chart Container */}
+                        <div className="flex items-end gap-1 h-40 mb-2">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
+                            const annualCashFlow = investment.cashFlow;
+                            const cumulativeCashFlow = annualCashFlow * year;
+                            const principalPaid = investment.monthlyMortgage * 12 * year * 0.3; // ~30% goes to principal avg
+                            const appreciation = (parseFloat(purchasePrice) || 0) * 0.03 * year; // 3% annual appreciation
+                            const totalEquity = investment.downPayment + principalPaid + appreciation;
+                            const totalReturn = cumulativeCashFlow + totalEquity - investment.totalCashNeeded;
+                            
+                            // Calculate bar heights (max at year 10)
+                            const maxReturn = (annualCashFlow * 10) + investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - investment.totalCashNeeded;
+                            const heightPercent = maxReturn > 0 ? Math.max(10, Math.min(100, (totalReturn / maxReturn) * 100)) : 50;
+                            const isPositive = totalReturn >= 0;
+                            
+                            return (
+                              <div key={year} className="flex-1 flex flex-col items-center justify-end h-full">
+                                <div 
+                                  className="w-full rounded-t transition-all"
+                                  style={{
+                                    height: `${heightPercent}%`,
+                                    backgroundColor: isPositive ? '#22c55e' : '#ef4444',
+                                    opacity: 0.7 + (year * 0.03),
+                                  }}
+                                  title={`Year ${year}: ${formatCurrency(totalReturn)} total return`}
+                                ></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* X-axis labels */}
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => (
+                            <div key={year} className="flex-1 text-center min-w-0">
+                              <span className="text-[10px] sm:text-xs whitespace-nowrap" style={{ color: "#787060" }}>{year}</span>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-center mt-1" style={{ color: "#a0a0a0" }}>Years</p>
                       </div>
-                      {/* X-axis labels */}
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => (
-                          <div key={year} className="flex-1 text-center min-w-0">
-                            <span className="text-[10px] sm:text-xs whitespace-nowrap" style={{ color: "#787060" }}>{year}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-center mt-1" style={{ color: "#a0a0a0" }}>Years</p>
-                    </div>
-                    
-                    {/* 10-Year Summary */}
-                    <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                      <div className="p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                      
+                      {/* 10-Year Summary */}
+                      <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                        <div className="p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
                         <p className="text-xs text-gray-500">10-Yr Cash Flow</p>
                         <p className={`font-bold ${investment.cashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {formatCurrency(investment.cashFlow * 10)}
@@ -3499,12 +3791,60 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     </div>
                     <p className="text-xs text-gray-400 mt-2 text-center">*Assumes 3% annual appreciation and average principal paydown</p>
                   </div>
+                  )}
+                  
+                  {/* Arbitrage Summary - Show for arbitrage mode instead of 10-year projection */}
+                  {ownershipMode === 'arbitrage' && (
+                    <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: "#ffffff", border: "1px solid #e5e3da" }}>
+                      <h4 className="font-medium mb-4" style={{ color: "#2b2823" }}>Arbitrage Investment Summary</h4>
+                      
+                      {/* Payback Period */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                          <p className="text-xs text-gray-500">Payback Period</p>
+                          <p className="font-bold text-lg" style={{ color: "#2b2823" }}>
+                            {investment.cashFlow > 0 
+                              ? `${Math.ceil(investment.totalCashNeeded / investment.cashFlow * 12)} months`
+                              : 'N/A'
+                            }
+                          </p>
+                          <p className="text-xs text-gray-400">Time to recoup your upfront costs</p>
+                        </div>
+                        <div className="p-3 rounded-lg" style={{ backgroundColor: "#ecfdf5" }}>
+                          <p className="text-xs text-gray-500">First Year Profit</p>
+                          <p className={`font-bold text-lg ${investment.cashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(investment.cashFlow)}
+                          </p>
+                          <p className="text-xs text-gray-400">After all expenses</p>
+                        </div>
+                      </div>
+                      
+                      {/* Arbitrage Advantages */}
+                      <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <p className="text-sm font-medium text-blue-800 mb-2">Why Arbitrage?</p>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                          <li>• Lower upfront cost ({formatCurrency(investment.totalCashNeeded)} vs buying)</li>
+                          <li>• No mortgage qualification needed</li>
+                          <li>• Easier to exit if market changes</li>
+                          <li>• Test a market before buying</li>
+                        </ul>
+                      </div>
+                      
+                      {/* Risk Warning */}
+                      <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                        <p className="text-xs text-amber-700">
+                          <strong>Note:</strong> Arbitrage requires landlord approval for subletting. 
+                          Always get written permission and check local regulations.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
             {/* Deal Score Badge */}
-            {!investment.needsPrice && (
+            {((ownershipMode === 'owning' && !investment.needsPrice) || (ownershipMode === 'arbitrage' && !investment.needsRent)) && (
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Deal Score</h3>
