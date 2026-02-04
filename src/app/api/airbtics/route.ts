@@ -183,9 +183,9 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Add comparable listings if available (full report only)
+    // Add comparable listings if available (full report only) - increased to 20 for better market analysis
     if (report.comps && report.comps.length > 0) {
-      response.comparables = report.comps.slice(0, 10).map((comp: any) => ({
+      response.comparables = report.comps.slice(0, 20).map((comp: any) => ({
         id: comp.listing_id,
         name: comp.title,
         url: comp.url,
