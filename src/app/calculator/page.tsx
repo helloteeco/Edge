@@ -1381,7 +1381,7 @@ export default function CalculatorPage() {
     <table class="table">
       <tr><td>Mortgage (P&I)</td><td class="right">${formatCurrency(pdfInvestment.monthlyMortgage * 12)}</td></tr>
       <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(pdfInvestment.annualPropertyTax)}</td></tr>
-      <tr><td>Insurance</td><td class="right">${formatCurrency(pdfInvestment.annualInsurance)}</td></tr>
+      <tr><td>Insurance</td><td class="right">${formatCurrency(pdfInvestment.insuranceAnnual)}</td></tr>
       <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(pdfInvestment.annualManagement)}</td></tr>
       <tr><td>Operating Expenses</td><td class="right">${formatCurrency(pdfInvestment.monthlyOperating * 12)}</td></tr>
       <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(pdfInvestment.totalAnnualExpenses)}</td></tr>
@@ -1736,7 +1736,7 @@ export default function CalculatorPage() {
           loanAmount: 0,
           monthlyMortgage: 0,
           annualPropertyTax: 0,
-          annualInsurance: 0,
+          insuranceAnnual: 0,
           annualManagement: 0,
           annualMaintenance: 0,
           annualVacancy: 0,
@@ -1790,7 +1790,7 @@ export default function CalculatorPage() {
         loanAmount: 0,
         monthlyMortgage: 0,
         annualPropertyTax: 0,
-        annualInsurance: annualRentersInsurance,
+        insuranceAnnual: annualRentersInsurance,
         annualManagement,
         annualMaintenance,
         annualVacancy: 0,
@@ -1818,7 +1818,7 @@ export default function CalculatorPage() {
         loanAmount: 0,
         monthlyMortgage: 0,
         annualPropertyTax: 0,
-        annualInsurance: 0,
+        insuranceAnnual: 0,
         annualManagement: 0,
         annualMaintenance: 0,
         annualVacancy: 0,
@@ -1841,7 +1841,7 @@ export default function CalculatorPage() {
     const monthlyMortgage = loanAmount > 0 ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1) : 0;
     
     const annualPropertyTax = price * (propertyTaxRate / 100);
-    const annualInsurance = insuranceAnnual;
+    const annualInsuranceCost = insuranceAnnual;
     const grossRevenue = displayRevenue;
     const annualManagement = grossRevenue * (managementFeePercent / 100);
     const annualMaintenance = grossRevenue * (maintenancePercent / 100);
@@ -1857,8 +1857,8 @@ export default function CalculatorPage() {
     const monthlyOperating = utilities + maintenance + software;
     const annualOperating = monthlyOperating * 12;
     
-    const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualMaintenance + annualVacancy + annualOperating;
-    const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsurance - annualManagement - annualMaintenance - annualVacancy - annualOperating;
+    const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsuranceCost + annualManagement + annualMaintenance + annualVacancy + annualOperating;
+    const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsuranceCost - annualManagement - annualMaintenance - annualVacancy - annualOperating;
     const cashFlow = grossRevenue - totalAnnualExpenses;
     
     const totalCashNeeded = downPayment + startupCosts;
@@ -1871,7 +1871,7 @@ export default function CalculatorPage() {
       loanAmount,
       monthlyMortgage,
       annualPropertyTax,
-      annualInsurance,
+      insuranceAnnual,
       annualManagement,
       annualMaintenance,
       annualVacancy,
@@ -1934,7 +1934,7 @@ ${result.percentiles ? `- **Market 75th Percentile Revenue:** $${result.percenti
 ## ANNUAL EXPENSES
 - **Mortgage (P&I):** $${(investment.monthlyMortgage * 12).toLocaleString()}
 - **Property Tax (${propertyTaxRate}%):** $${investment.annualPropertyTax.toLocaleString()}
-- **Insurance:** $${investment.annualInsurance.toLocaleString()}
+- **Insurance:** $${investment.insuranceAnnual.toLocaleString()}
 - **Management Fee (${managementFeePercent}%):** $${investment.annualManagement.toLocaleString()}
 - **Operating Expenses:** $${(investment.monthlyOperating * 12).toLocaleString()}
 - **Total Annual Expenses:** $${investment.totalAnnualExpenses.toLocaleString()}
@@ -3861,7 +3861,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Insurance</span>
-                            <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
+                            <span className="font-medium">{formatCurrency(investment.insuranceAnnual)}</span>
                           </div>
                         </>
                       ) : (
@@ -3873,7 +3873,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Renter&apos;s Insurance</span>
-                            <span className="font-medium">{formatCurrency(investment.annualInsurance)}</span>
+                            <span className="font-medium">{formatCurrency(investment.insuranceAnnual)}</span>
                           </div>
                         </>
                       )}
@@ -4137,6 +4137,159 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Reality Check - Risk Assessment */}
+            {((ownershipMode === 'owning' && !investment.needsPrice) || (ownershipMode === 'arbitrage' && !investment.needsRent)) && (
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: "#2b2823" }}>
+                  <span>🔍</span> Reality Check
+                </h3>
+                
+                {/* Break-Even Analysis */}
+                {(() => {
+                  const annualRevenue = getDisplayRevenue();
+                  const monthlyRevenue = annualRevenue / 12;
+                  
+                  // Calculate monthly expenses based on mode
+                  let monthlyExpenses = 0;
+                  let breakEvenOccupancy = 0;
+                  
+                  if (ownershipMode === 'owning') {
+                    const monthlyMortgage = investment.monthlyMortgage || 0;
+                    const monthlyPropertyTax = (Number(purchasePrice) * Number(propertyTaxRate) / 100) / 12;
+                    const monthlyInsurance = Number(insuranceAnnual) / 12;
+                    const monthlyManagement = monthlyRevenue * (managementFeePercent / 100);
+                    const monthlyOpex = investment.monthlyOperating || 0;
+                    monthlyExpenses = monthlyMortgage + monthlyPropertyTax + monthlyInsurance + monthlyManagement + monthlyOpex;
+                    
+                    // Break-even occupancy = expenses / (revenue at 100% occupancy)
+                    const revenueAt100Occ = result.occupancy > 0 ? annualRevenue / (result.occupancy / 100) : annualRevenue;
+                    breakEvenOccupancy = Math.round((monthlyExpenses * 12 / revenueAt100Occ) * 100);
+                  } else {
+                    // Arbitrage mode
+                    const arbMonthlyRent = monthlyRent || 0;
+                    const monthlyRenterInsurance = rentersInsurance || 30;
+                    const monthlyManagement = monthlyRevenue * (managementFeePercent / 100);
+                    const monthlyOpex = investment.monthlyOperating || 0;
+                    monthlyExpenses = arbMonthlyRent + monthlyRenterInsurance + monthlyManagement + monthlyOpex;
+                    
+                    const revenueAt100Occ = result.occupancy > 0 ? annualRevenue / (result.occupancy / 100) : annualRevenue;
+                    breakEvenOccupancy = Math.round((monthlyExpenses * 12 / revenueAt100Occ) * 100);
+                  }
+                  
+                  // Calculate cash flow at 40% occupancy (stress test)
+                  const revenueAt40Occ = (annualRevenue / (result.occupancy / 100)) * 0.4;
+                  const monthlyRevenueAt40 = revenueAt40Occ / 12;
+                  const managementAt40 = monthlyRevenueAt40 * (managementFeePercent / 100);
+                  let expensesAt40 = 0;
+                  
+                  if (ownershipMode === 'owning') {
+                    const monthlyMortgage = investment.monthlyMortgage || 0;
+                    const monthlyPropertyTax = (Number(purchasePrice) * Number(propertyTaxRate) / 100) / 12;
+                    const monthlyInsurance = Number(insuranceAnnual) / 12;
+                    const monthlyOpex = investment.monthlyOperating || 0;
+                    expensesAt40 = monthlyMortgage + monthlyPropertyTax + monthlyInsurance + managementAt40 + monthlyOpex;
+                  } else {
+                    const arbMonthlyRent = monthlyRent || 0;
+                    const monthlyRenterInsurance = rentersInsurance || 30;
+                    const monthlyOpex = investment.monthlyOperating || 0;
+                    expensesAt40 = arbMonthlyRent + monthlyRenterInsurance + managementAt40 + monthlyOpex;
+                  }
+                  
+                  const cashFlowAt40 = monthlyRevenueAt40 - expensesAt40;
+                  const canSurviveDownturn = cashFlowAt40 > 0;
+                  
+                  return (
+                    <div className="space-y-4">
+                      {/* Break-Even Occupancy */}
+                      <div className="p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium" style={{ color: "#2b2823" }}>Break-Even Occupancy</span>
+                          <span className="text-lg font-bold" style={{ color: breakEvenOccupancy <= 50 ? "#16a34a" : breakEvenOccupancy <= 65 ? "#f59e0b" : "#ef4444" }}>
+                            {breakEvenOccupancy}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                          <div 
+                            className="h-2 rounded-full transition-all" 
+                            style={{ 
+                              width: `${Math.min(100, breakEvenOccupancy)}%`,
+                              backgroundColor: breakEvenOccupancy <= 50 ? "#16a34a" : breakEvenOccupancy <= 65 ? "#f59e0b" : "#ef4444"
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {breakEvenOccupancy <= 50 
+                            ? "✅ Excellent - You only need " + breakEvenOccupancy + "% occupancy to cover costs"
+                            : breakEvenOccupancy <= 65 
+                              ? "⚠️ Moderate - Market average is 60-65%, leaving little margin"
+                              : "❌ High risk - You need above-average occupancy just to break even"
+                          }
+                        </p>
+                      </div>
+                      
+                      {/* Stress Test: 40% Occupancy */}
+                      <div className="p-4 rounded-xl" style={{ backgroundColor: canSurviveDownturn ? "#dcfce7" : "#fef2f2" }}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium" style={{ color: "#2b2823" }}>Stress Test: 40% Occupancy</span>
+                          <span className="text-lg font-bold" style={{ color: canSurviveDownturn ? "#16a34a" : "#ef4444" }}>
+                            {cashFlowAt40 >= 0 ? "+" : ""}{Math.round(cashFlowAt40).toLocaleString()}/mo
+                          </span>
+                        </div>
+                        <p className="text-xs" style={{ color: canSurviveDownturn ? "#166534" : "#991b1b" }}>
+                          {canSurviveDownturn 
+                            ? "✅ You can survive a bad season or market downturn"
+                            : "❌ You'd lose $" + Math.abs(Math.round(cashFlowAt40)).toLocaleString() + "/month during slow periods - have reserves ready"
+                          }
+                        </p>
+                      </div>
+                      
+                      {/* Due Diligence Checklist */}
+                      <div className="p-4 rounded-xl border border-gray-200" style={{ backgroundColor: "#fafaf9" }}>
+                        <p className="text-sm font-medium mb-3" style={{ color: "#2b2823" }}>📋 Before You Buy - Verify:</p>
+                        <ul className="space-y-2 text-xs text-gray-600">
+                          <li className="flex items-start gap-2">
+                            <span>☐</span>
+                            <span><strong>Local STR regulations</strong> - Are short-term rentals allowed here?</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span>☐</span>
+                            <span><strong>HOA restrictions</strong> - Does the HOA allow rentals under 30 days?</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span>☐</span>
+                            <span><strong>Property condition</strong> - What repairs/updates are needed?</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span>☐</span>
+                            <span><strong>Days on market</strong> - If it&apos;s been listed 90+ days, investigate why</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span>☐</span>
+                            <span><strong>Comparable verification</strong> - Check actual Airbnb listings in the area</span>
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      {/* High ROI Warning */}
+                      {investment.cashOnCashReturn > 30 && (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                          <p className="text-sm text-amber-800 flex items-start gap-2">
+                            <span className="text-lg">🤔</span>
+                            <span>
+                              <strong>Returns of {investment.cashOnCashReturn.toFixed(0)}% are exceptional.</strong> While possible, verify:
+                              <br/>• Is the purchase price accurate?
+                              <br/>• Are there hidden repair costs?
+                              <br/>• Why hasn&apos;t someone else bought this?
+                            </span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
