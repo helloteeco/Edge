@@ -86,6 +86,7 @@ interface AnalysisResult {
   occupancyChangePercent: number;
   historical: { year: number; month: number; occupancy: number; adr?: number; revenue?: number }[];
   recommendedAmenities?: { name: string; boost: number; priority: string; icon: string }[];
+  estimatedValue?: number; // Zillow/Redfin estimated property value
 }
 
 // ============================================================================
@@ -125,7 +126,8 @@ export default function CalculatorPage() {
   const [insuranceAnnual, setInsuranceAnnual] = useState(1800);
   const [managementFeePercent, setManagementFeePercent] = useState(20);
   const [maintenancePercent, setMaintenancePercent] = useState(5);
-  const [vacancyPercent, setVacancyPercent] = useState(10);
+  // Vacancy is now auto-calculated from occupancy data (removed manual field)
+  // vacancyPercent is computed as (100 - occupancy) in the investment calculation
   
   // Teeco Design/Setup Costs (sqft-based)
   const [includeDesignServices, setIncludeDesignServices] = useState(false);
@@ -147,6 +149,9 @@ export default function CalculatorPage() {
   const [rentalSoftwareMonthly, setRentalSoftwareMonthly] = useState(30);
   const [pestControlMonthly, setPestControlMonthly] = useState(25);
   const [miscMonthly, setMiscMonthly] = useState(0);
+  
+  // Operating Expenses UI state
+  const [showOpExDetails, setShowOpExDetails] = useState(false);
 
   // AI Analysis State
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -1640,7 +1645,10 @@ export default function CalculatorPage() {
     const grossRevenue = displayRevenue;
     const annualManagement = grossRevenue * (managementFeePercent / 100);
     const annualMaintenance = grossRevenue * (maintenancePercent / 100);
-    const annualVacancy = grossRevenue * (vacancyPercent / 100);
+    // Vacancy is auto-calculated from occupancy data - no double counting
+    // The revenue already accounts for occupancy, so we don't subtract vacancy again
+    // This fixes the bug where vacancy was counted twice (once in revenue, once as expense)
+    const annualVacancy = 0; // Revenue already reflects actual occupancy
     
     // Calculate monthly operating expenses inline
     const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
@@ -1677,7 +1685,7 @@ export default function CalculatorPage() {
     };
   }, [
     purchasePrice, downPaymentPercent, interestRate, loanTerm, propertyTaxRate,
-    insuranceAnnual, managementFeePercent, maintenancePercent, vacancyPercent,
+    insuranceAnnual, managementFeePercent, maintenancePercent,
     displayRevenue, electricMonthly, waterMonthly, internetMonthly, lawnCareMonthly,
     houseSuppliesMonthly, maintenanceRepairMonthly, trashMonthly, rentalSoftwareMonthly,
     pestControlMonthly, miscMonthly,
@@ -2912,12 +2920,40 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             </div>
 
-            {/* Monthly Operating Expenses */}
+            {/* Monthly Operating Expenses - Collapsible */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
-              <p className="text-sm text-gray-500 mb-4">Recurring costs to run your STR</p>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
+                  <p className="text-sm text-gray-500">Recurring costs to run your STR</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(calculateMonthlyExpenses())}</p>
+                  <p className="text-xs text-gray-500">/month</p>
+                </div>
+              </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Expand/Collapse Button */}
+              <button
+                onClick={() => setShowOpExDetails(!showOpExDetails)}
+                className="w-full py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors hover:bg-gray-100"
+                style={{ backgroundColor: "#f5f4f0", color: "#787060" }}
+              >
+                {showOpExDetails ? (
+                  <>
+                    <span>▲</span> Hide Details
+                  </>
+                ) : (
+                  <>
+                    <span>▼</span> Customize Expenses
+                  </>
+                )}
+              </button>
+              
+              {/* Collapsible Details */}
+              {showOpExDetails && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Electric</label>
                   <input
@@ -3009,44 +3045,39 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     placeholder="0"
                   />
                 </div>
-              </div>
-              
-              {/* Note about tenant-paid fees */}
-              <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: "#fef3c7", border: "1px solid #fcd34d" }}>
-                <p className="text-xs" style={{ color: "#92400e" }}>
-                  <strong>Note:</strong> Cleaning fees and pet fees are not included here as they are typically paid by guests.
-                </p>
-              </div>
-              
-              <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium" style={{ color: "#787060" }}>Est. Monthly Operating</span>
-                  <span className="text-lg font-bold" style={{ color: "#2b2823" }}>{formatCurrency(calculateMonthlyExpenses())}</span>
-                </div>
-              </div>
-              
-              {/* Monthly Costs Help */}
-              <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd" }}>
-                <div className="flex items-start gap-3">
-                  <span className="text-xl">💡</span>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm" style={{ color: "#0369a1" }}>Not sure about these costs?</p>
-                    <p className="text-xs mt-1" style={{ color: "#0284c7" }}>
-                      Ask our Edge assistant about typical costs in this area.
+                  </div>
+                  
+                  {/* Note about tenant-paid fees */}
+                  <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: "#fef3c7", border: "1px solid #fcd34d" }}>
+                    <p className="text-xs" style={{ color: "#92400e" }}>
+                      <strong>Note:</strong> Cleaning fees and pet fees are not included here as they are typically paid by guests.
                     </p>
-                    <button
-                      onClick={() => {
-                        const chatButton = document.querySelector('button[class*="fixed bottom-24 right-4"]') as HTMLButtonElement;
-                        if (chatButton) chatButton.click();
-                      }}
-                      className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 rounded-lg font-medium text-xs transition-all hover:scale-105"
-                      style={{ backgroundColor: "#0369a1", color: "#ffffff" }}
-                    >
-                      💬 Ask Edge Assistant
-                    </button>
+                  </div>
+                  
+                  {/* Monthly Costs Help */}
+                  <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd" }}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl">💡</span>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm" style={{ color: "#0369a1" }}>Not sure about these costs?</p>
+                        <p className="text-xs mt-1" style={{ color: "#0284c7" }}>
+                          Ask our Edge assistant about typical costs in this area.
+                        </p>
+                        <button
+                          onClick={() => {
+                            const chatButton = document.querySelector('button[class*="fixed bottom-24 right-4"]') as HTMLButtonElement;
+                            if (chatButton) chatButton.click();
+                          }}
+                          className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 rounded-lg font-medium text-xs transition-all hover:scale-105"
+                          style={{ backgroundColor: "#0369a1", color: "#ffffff" }}
+                        >
+                          💬 Ask Edge Assistant
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Investment Calculator */}
@@ -3054,34 +3085,57 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Investment Calculator</h3>
               <p className="text-sm text-gray-500 mb-4">Calculate your potential returns</p>
               
-              {/* Purchase Price */}
+              {/* Purchase Price - Required for investment analysis */}
               <div className="mb-4">
-                <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>Purchase Price</label>
+                <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>
+                  Purchase Price <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   value={purchasePrice}
                   onChange={(e) => setPurchasePrice(e.target.value)}
                   placeholder="Enter purchase price..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
+                  className={`w-full px-4 py-3 rounded-xl border-2 text-lg transition-colors ${
+                    !purchasePrice ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
+                  }`}
                 />
+                {result?.estimatedValue && !purchasePrice && (
+                  <button
+                    onClick={() => setPurchasePrice(result.estimatedValue?.toString() || '')}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <span>💡</span> Use estimated value: {formatCurrency(result.estimatedValue)}
+                  </button>
+                )}
+                {!purchasePrice && (
+                  <p className="mt-2 text-xs text-amber-600">Required to calculate ROI and cash flow</p>
+                )}
               </div>
               
-              {/* Sliders */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span style={{ color: "#787060" }}>Down Payment</span>
-                    <span className="font-medium">{downPaymentPercent}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={downPaymentPercent}
-                    onChange={(e) => setDownPaymentPercent(parseInt(e.target.value))}
-                    className="w-full"
-                  />
+              {/* Down Payment with warning */}
+              <div className="mb-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span style={{ color: "#787060" }}>Down Payment <span className="text-red-500">*</span></span>
+                  <span className="font-medium">{downPaymentPercent}%</span>
                 </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={downPaymentPercent}
+                  onChange={(e) => setDownPaymentPercent(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                {downPaymentPercent < 15 && (
+                  <p className="mt-1 text-xs text-amber-600">⚠️ Most lenders require 15-25% for investment properties</p>
+                )}
+                {purchasePrice && (
+                  <p className="mt-1 text-xs text-gray-500">Cash needed: {formatCurrency(parseFloat(purchasePrice) * (downPaymentPercent / 100))}</p>
+                )}
+              </div>
+              
+              {/* Sliders - Additional Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span style={{ color: "#787060" }}>Interest Rate</span>
@@ -3096,6 +3150,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     onChange={(e) => setInterestRate(parseFloat(e.target.value))}
                     className="w-full"
                   />
+                  {interestRate < 5 && (
+                    <p className="mt-1 text-xs text-amber-600">⚠️ Rate seems low for current market. Verify with lender.</p>
+                  )}
+                  {interestRate > 9 && (
+                    <p className="mt-1 text-xs text-amber-600">⚠️ High rate. Consider shopping for better rates.</p>
+                  )}
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
@@ -3376,6 +3436,42 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </>
                     );
                   })()}
+                </div>
+                
+                {/* Warning Alerts for Edge Cases */}
+                <div className="mt-4 space-y-2">
+                  {investment.cashOnCashReturn < 0 && (
+                    <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                      <p className="text-sm text-red-700 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span><strong>Negative cash flow</strong> - You&apos;ll pay ${Math.abs(Math.round(investment.monthlyCashFlow))}/month out of pocket.</span>
+                      </p>
+                    </div>
+                  )}
+                  {investment.cashOnCashReturn > 50 && (
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                      <p className="text-sm text-amber-700 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span><strong>Returns seem unusually high</strong> ({investment.cashOnCashReturn.toFixed(1)}% CoC). Verify all assumptions.</span>
+                      </p>
+                    </div>
+                  )}
+                  {result.occupancy < 50 && (
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                      <p className="text-sm text-amber-700 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span><strong>Low occupancy market</strong> ({result.occupancy}%). Target 60-65% for healthy STR markets.</span>
+                      </p>
+                    </div>
+                  )}
+                  {managementFeePercent === 0 && (
+                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                      <p className="text-sm text-blue-700 flex items-center gap-2">
+                        <span>💡</span>
+                        <span><strong>Self-managing?</strong> Plan for 10-20 hours/week. Consider 20% management fee for realistic comparison.</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
