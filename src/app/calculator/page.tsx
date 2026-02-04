@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
@@ -710,8 +710,8 @@ export default function CalculatorPage() {
       return;
     }
     
-    const investment = calculateInvestment();
-    const displayRevenue = getDisplayRevenue();
+    const currentInvestment = investment;
+    const currentDisplayRevenue = displayRevenue;
     
     const report = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -805,9 +805,9 @@ export default function CalculatorPage() {
       // Wait a moment for PDF to generate
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Generate email with summary
-      const investment = calculateInvestment();
-      const displayRevenue = getDisplayRevenue();
+      // Generate email with summary - use memoized values
+      const emailInvestment = investment;
+      const emailDisplayRevenue = displayRevenue;
       
       const subject = encodeURIComponent(`STR Investment Analysis - ${result.address}`);
       const body = encodeURIComponent(
@@ -818,12 +818,12 @@ export default function CalculatorPage() {
         `${bedrooms || result.bedrooms} BR / ${bathrooms || result.bathrooms} BA / Sleeps ${guestCount || (bedrooms || 3) * 2}\n` +
         `────────────────────────────────\n\n` +
         `PROJECTED REVENUE\n` +
-        `• Annual Revenue: $${displayRevenue.toLocaleString()}\n` +
-        `• Monthly Average: $${Math.round(displayRevenue / 12).toLocaleString()}\n\n` +
+        `• Annual Revenue: $${emailDisplayRevenue.toLocaleString()}\n` +
+        `• Monthly Average: $${Math.round(emailDisplayRevenue / 12).toLocaleString()}\n\n` +
         `INVESTMENT RETURNS\n` +
-        `• Cash-on-Cash Return: ${investment.cashOnCashReturn.toFixed(1)}%\n` +
-        `• Annual Cash Flow: $${investment.cashFlow.toLocaleString()}\n` +
-        `• Total Cash Required: $${investment.totalCashNeeded.toLocaleString()}\n\n` +
+        `• Cash-on-Cash Return: ${emailInvestment.cashOnCashReturn.toFixed(1)}%\n` +
+        `• Annual Cash Flow: $${emailInvestment.cashFlow.toLocaleString()}\n` +
+        `• Total Cash Required: $${emailInvestment.totalCashNeeded.toLocaleString()}\n\n` +
         `────────────────────────────────\n\n` +
         `📎 Please see the attached PDF for the full detailed analysis including:\n` +
         `• Monthly revenue forecast with seasonality\n` +
@@ -1117,15 +1117,16 @@ export default function CalculatorPage() {
   const downloadPDFReport = async () => {
     if (!result) return;
     
-    const investment = calculateInvestment();
-    const displayRevenue = getDisplayRevenue();
+    // Use memoized values directly
+    const pdfInvestment = investment;
+    const pdfDisplayRevenue = displayRevenue;
     const guestMultiplier = getGuestCountMultiplier();
     const guestBonus = Math.round((guestMultiplier - 1) * 100);
     const baselineGuests = (bedrooms || 3) * 2;
     
     // Get seasonal data from the same function used in UI
     const seasonalData = getSeasonalityData();
-    const baseMonthlyRev = displayRevenue / 12;
+    const baseMonthlyRev = pdfDisplayRevenue / 12;
     
     // Calculate monthly revenues with seasonal variation - SAME LOGIC AS UI
     const monthlyRevenues = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
@@ -1280,18 +1281,18 @@ export default function CalculatorPage() {
       <div class="summary-grid">
         <div class="summary-item">
           <p class="summary-label">Projected Annual Revenue</p>
-          <p class="summary-value">${formatCurrency(displayRevenue)}</p>
-          <p class="summary-subtext">${formatCurrency(Math.round(displayRevenue / 12))}/month avg</p>
+          <p class="summary-value">${formatCurrency(pdfDisplayRevenue)}</p>
+          <p class="summary-subtext">${formatCurrency(Math.round(pdfDisplayRevenue / 12))}/month avg</p>
         </div>
         <div class="summary-item">
           <p class="summary-label">Annual Cash Flow</p>
-          <p class="summary-value">${formatCurrency(investment.cashFlow)}</p>
-          <p class="summary-subtext">${formatCurrency(Math.round(investment.cashFlow / 12))}/month</p>
+          <p class="summary-value">${formatCurrency(pdfInvestment.cashFlow)}</p>
+          <p class="summary-subtext">${formatCurrency(Math.round(pdfInvestment.cashFlow / 12))}/month</p>
         </div>
         <div class="summary-item">
           <p class="summary-label">Cash-on-Cash Return</p>
-          <p class="summary-value">${investment.cashOnCashReturn.toFixed(1)}%</p>
-          <p class="summary-subtext">on ${formatCurrency(investment.totalCashNeeded)} invested</p>
+          <p class="summary-value">${pdfInvestment.cashOnCashReturn.toFixed(1)}%</p>
+          <p class="summary-subtext">on ${formatCurrency(pdfInvestment.totalCashNeeded)} invested</p>
         </div>
       </div>
     </div>
@@ -1321,22 +1322,22 @@ export default function CalculatorPage() {
     <h2>Investment Analysis</h2>
     <table class="table">
       <tr><td>Purchase Price</td><td class="right">${formatCurrency(parseFloat(purchasePrice))}</td></tr>
-      <tr><td>Down Payment (${downPaymentPercent}%)</td><td class="right">${formatCurrency(investment.downPayment)}</td></tr>
-      <tr><td>Loan Amount (${loanTerm}yr @ ${interestRate}%)</td><td class="right">${formatCurrency(investment.loanAmount)}</td></tr>
-      <tr><td>Monthly Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage)}</td></tr>
-      <tr class="total"><td>Total Cash Required</td><td class="right">${formatCurrency(investment.totalCashNeeded)}</td></tr>
+      <tr><td>Down Payment (${downPaymentPercent}%)</td><td class="right">${formatCurrency(pdfInvestment.downPayment)}</td></tr>
+      <tr><td>Loan Amount (${loanTerm}yr @ ${interestRate}%)</td><td class="right">${formatCurrency(pdfInvestment.loanAmount)}</td></tr>
+      <tr><td>Monthly Mortgage (P&I)</td><td class="right">${formatCurrency(pdfInvestment.monthlyMortgage)}</td></tr>
+      <tr class="total"><td>Total Cash Required</td><td class="right">${formatCurrency(pdfInvestment.totalCashNeeded)}</td></tr>
     </table>
     
     <h2>Annual Expense Breakdown</h2>
     <table class="table">
-      <tr><td>Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage * 12)}</td></tr>
-      <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(investment.annualPropertyTax)}</td></tr>
-      <tr><td>Insurance</td><td class="right">${formatCurrency(investment.annualInsurance)}</td></tr>
-      <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(investment.annualManagement)}</td></tr>
-      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(investment.monthlyOperating * 12)}</td></tr>
-      <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
-      <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(displayRevenue)}</td></tr>
-      <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${investment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(investment.cashFlow)}</strong></td></tr>
+      <tr><td>Mortgage (P&I)</td><td class="right">${formatCurrency(pdfInvestment.monthlyMortgage * 12)}</td></tr>
+      <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(pdfInvestment.annualPropertyTax)}</td></tr>
+      <tr><td>Insurance</td><td class="right">${formatCurrency(pdfInvestment.annualInsurance)}</td></tr>
+      <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(pdfInvestment.annualManagement)}</td></tr>
+      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(pdfInvestment.monthlyOperating * 12)}</td></tr>
+      <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(pdfInvestment.totalAnnualExpenses)}</td></tr>
+      <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(pdfDisplayRevenue)}</td></tr>
+      <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${pdfInvestment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(pdfInvestment.cashFlow)}</strong></td></tr>
     </table>
     ` : ''}
     
@@ -1388,14 +1389,14 @@ export default function CalculatorPage() {
     ` : ''}
     
     <!-- Startup Costs -->
-    ${investment.startupCosts > 0 ? `
+    ${pdfInvestment.startupCosts > 0 ? `
     <h2>Startup Investment</h2>
     <table class="table">
       ${includeDesignServices ? `<tr><td>Teeco Design Services</td><td class="right">${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
       ${includeSetupServices ? `<tr><td>Teeco Setup Services</td><td class="right">${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
       ${includeFurnishings ? `<tr><td>Furnishings & Decor</td><td class="right">${formatCurrency(calculateFurnishingsCost())}</td></tr>` : ''}
       ${includeAmenities ? `<tr><td>Upgrades & Amenities</td><td class="right">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
-      <tr class="total"><td><strong>Total Startup Investment</strong></td><td class="right"><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
+      <tr class="total"><td><strong>Total Startup Investment</strong></td><td class="right"><strong>${formatCurrency(pdfInvestment.startupCosts)}</strong></td></tr>
     </table>
     ` : ''}
     
@@ -1404,11 +1405,11 @@ export default function CalculatorPage() {
     <h2>10-Year Investment Projection</h2>
     <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px;">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
-        const annualCashFlow = investment.cashFlow;
+        const annualCashFlow = pdfInvestment.cashFlow;
         const cumulativeCashFlow = annualCashFlow * year;
-        const principalPaid = investment.monthlyMortgage * 12 * year * 0.3;
+        const principalPaid = pdfInvestment.monthlyMortgage * 12 * year * 0.3;
         const appreciation = (parseFloat(purchasePrice) || 0) * 0.03 * year;
-        const totalReturn = cumulativeCashFlow + investment.downPayment + principalPaid + appreciation - investment.totalCashNeeded;
+        const totalReturn = cumulativeCashFlow + pdfInvestment.downPayment + principalPaid + appreciation - pdfInvestment.totalCashNeeded;
         return `<div style="text-align: center; padding: 8px; background: ${totalReturn >= 0 ? '#ecfdf5' : '#fef2f2'}; border-radius: 4px;">
           <div style="font-size: 10px; color: #666;">Year ${year}</div>
           <div style="font-size: 11px; font-weight: bold; color: ${totalReturn >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(totalReturn)}</div>
@@ -1416,9 +1417,9 @@ export default function CalculatorPage() {
       }).join('')}
     </div>
     <table class="table">
-      <tr><td>10-Year Cumulative Cash Flow</td><td class="right" style="color: ${investment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(investment.cashFlow * 10)}</td></tr>
-      <tr><td>Estimated Equity Built (Principal + 3% Appreciation)</td><td class="right">${formatCurrency(investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3))}</td></tr>
-      <tr class="total"><td><strong>Total 10-Year Return</strong></td><td class="right" style="color: #22c55e;"><strong>${formatCurrency((investment.cashFlow * 10) + investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - investment.totalCashNeeded)}</strong></td></tr>
+      <tr><td>10-Year Cumulative Cash Flow</td><td class="right" style="color: ${pdfInvestment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(pdfInvestment.cashFlow * 10)}</td></tr>
+      <tr><td>Estimated Equity Built (Principal + 3% Appreciation)</td><td class="right">${formatCurrency(pdfInvestment.downPayment + (pdfInvestment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3))}</td></tr>
+      <tr class="total"><td><strong>Total 10-Year Return</strong></td><td class="right" style="color: #22c55e;"><strong>${formatCurrency((pdfInvestment.cashFlow * 10) + pdfInvestment.downPayment + (pdfInvestment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - pdfInvestment.totalCashNeeded)}</strong></td></tr>
     </table>
     <p style="font-size: 10px; color: #999; text-align: center; margin-top: 8px;">*Assumes 3% annual appreciation and average principal paydown rate</p>
     ` : ''}
@@ -1466,7 +1467,8 @@ export default function CalculatorPage() {
   };
 
   // Get display revenue based on percentile selection or custom income
-  const getDisplayRevenue = () => {
+  // Memoized for smooth reactive updates when percentile or inputs change
+  const displayRevenue = useMemo(() => {
     if (useCustomIncome && customAnnualIncome) {
       return parseFloat(customAnnualIncome) || 0;
     }
@@ -1506,7 +1508,10 @@ export default function CalculatorPage() {
     }
     // Apply guest count multiplier
     return Math.round(baseRevenue * guestMultiplier);
-  };
+  }, [result, revenuePercentile, useCustomIncome, customAnnualIncome, guestCount, bedrooms]);
+
+  // Wrapper function for backward compatibility
+  const getDisplayRevenue = useCallback(() => displayRevenue, [displayRevenue]);
 
   // Calculate design cost ($7/sqft with optional 20% student discount)
   const calculateDesignCost = () => {
@@ -1544,9 +1549,18 @@ export default function CalculatorPage() {
     return utilities + maintenance + cleaning;
   };
 
-  // Calculate investment returns
-  const calculateInvestment = () => {
+  // Calculate investment returns - memoized for smooth reactive updates
+  const investment = useMemo(() => {
     const price = parseFloat(purchasePrice) || 0;
+    const startupCosts = (() => {
+      let total = 0;
+      if (includeDesignServices) total += propertySqft * 7 * (studentDiscount ? 0.8 : 1);
+      if (includeSetupServices) total += propertySqft * 13 * (studentDiscount ? 0.8 : 1);
+      if (includeFurnishings) total += Math.round(propertySqft * 17.5);
+      if (includeAmenities) total += amenitiesCost;
+      return Math.round(total);
+    })();
+    
     if (price === 0) {
       return {
         needsPrice: true,
@@ -1564,7 +1578,7 @@ export default function CalculatorPage() {
         cashFlow: 0,
         cashOnCashReturn: 0,
         monthlyCashFlow: 0,
-        startupCosts: calculateStartupCosts(),
+        startupCosts,
         totalCashNeeded: 0,
       };
     }
@@ -1578,18 +1592,23 @@ export default function CalculatorPage() {
     
     const annualPropertyTax = price * (propertyTaxRate / 100);
     const annualInsurance = insuranceAnnual;
-    const grossRevenue = getDisplayRevenue();
+    const grossRevenue = displayRevenue;
     const annualManagement = grossRevenue * (managementFeePercent / 100);
     const annualMaintenance = grossRevenue * (maintenancePercent / 100);
     const annualVacancy = grossRevenue * (vacancyPercent / 100);
-    const monthlyOperating = calculateMonthlyExpenses();
+    
+    // Calculate monthly operating expenses inline
+    const utilities = electricMonthly + waterMonthly + internetMonthly;
+    const maintenance = lawnCareMonthly + suppliesMonthly + miscMonthly;
+    const estimatedTurnovers = result ? Math.round((result.occupancy / 100) * 30 / 3) : 8;
+    const cleaning = cleaningPerTurn * estimatedTurnovers;
+    const monthlyOperating = utilities + maintenance + cleaning;
     const annualOperating = monthlyOperating * 12;
     
     const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualMaintenance + annualVacancy + annualOperating;
     const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsurance - annualManagement - annualMaintenance - annualVacancy - annualOperating;
     const cashFlow = grossRevenue - totalAnnualExpenses;
     
-    const startupCosts = calculateStartupCosts();
     const totalCashNeeded = downPayment + startupCosts;
     const cashOnCashReturn = totalCashNeeded > 0 ? (cashFlow / totalCashNeeded) * 100 : 0;
 
@@ -1612,9 +1631,14 @@ export default function CalculatorPage() {
       startupCosts,
       totalCashNeeded,
     };
-  };
-
-  const investment = calculateInvestment();
+  }, [
+    purchasePrice, downPaymentPercent, interestRate, loanTerm, propertyTaxRate,
+    insuranceAnnual, managementFeePercent, maintenancePercent, vacancyPercent,
+    displayRevenue, electricMonthly, waterMonthly, internetMonthly, lawnCareMonthly,
+    cleaningPerTurn, suppliesMonthly, miscMonthly, result,
+    includeDesignServices, includeSetupServices, includeFurnishings, includeAmenities,
+    propertySqft, studentDiscount, amenitiesCost
+  ]);
 
   // Get AI Analysis of the deal
   const getAiAnalysis = async () => {
@@ -1624,13 +1648,8 @@ export default function CalculatorPage() {
     setShowAiAnalysis(true);
     setAiAnalysis(null);
     
-    const displayRevenue = useCustomIncome && customAnnualIncome 
-      ? parseFloat(customAnnualIncome) 
-      : revenuePercentile === "75th" && result.percentiles?.revenue?.p75
-        ? result.percentiles.revenue.p75
-        : revenuePercentile === "90th" && result.percentiles?.revenue?.p90
-          ? result.percentiles.revenue.p90
-          : result.annualRevenue;
+    // Use memoized displayRevenue for the analysis
+    const analysisDisplayRevenue = displayRevenue;
     
     const analysisPrompt = `I need a comprehensive $500-level consulting analysis of this STR investment deal. Please analyze every aspect and help me think like a sophisticated investor.
 
@@ -1642,10 +1661,10 @@ export default function CalculatorPage() {
 - **Nearby STR Listings:** ${result.nearbyListings || 'Unknown'}
 
 ## REVENUE PROJECTIONS
-- **Projected Annual Revenue:** $${displayRevenue.toLocaleString()}
+- **Projected Annual Revenue:** $${analysisDisplayRevenue.toLocaleString()}
 - **Average Daily Rate (ADR):** $${result.adr}
 - **Occupancy Rate:** ${result.occupancy}%
-- **Monthly Average:** $${Math.round(displayRevenue / 12).toLocaleString()}
+- **Monthly Average:** $${Math.round(analysisDisplayRevenue / 12).toLocaleString()}
 ${result.percentiles ? `- **Market 75th Percentile Revenue:** $${result.percentiles.revenue.p75.toLocaleString()}
 - **Market 90th Percentile Revenue:** $${result.percentiles.revenue.p90.toLocaleString()}` : ''}
 
@@ -2185,22 +2204,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               </div>
 
-              {/* Percentile Selector */}
+              {/* Percentile Selector - Smooth animated toggle */}
               <div className="flex gap-1.5 sm:gap-2 mb-4 overflow-x-auto">
                 {(["average", "75th", "90th"] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => setRevenuePercentile(p)}
-                    className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-w-0 ${
+                    className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-medium min-w-0 transform active:scale-95 ${
                       revenuePercentile === p
-                        ? "text-white"
+                        ? "text-white shadow-md"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
-                    style={revenuePercentile === p ? { backgroundColor: "#2b2823" } : {}}
+                    style={{
+                      backgroundColor: revenuePercentile === p ? "#2b2823" : undefined,
+                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                    }}
                   >
                     {p === "average" ? "Average" : p === "75th" ? "75th %" : "90th %"}
                     {result.percentiles?.revenue && (
-                      <span className="block text-xs opacity-75">
+                      <span className="block text-xs opacity-75" style={{ transition: "opacity 0.2s ease" }}>
                         {formatCurrency(
                           p === "average" 
                             ? result.percentiles.revenue.p50
@@ -2214,31 +2236,55 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 ))}
               </div>
 
-              {/* Revenue Display */}
-              <div className="text-center py-4 sm:py-6 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                <p className="text-xs sm:text-sm font-medium mb-1" style={{ color: "#787060" }}>
+              {/* Revenue Display - Smooth animated values */}
+              <div 
+                className="text-center py-4 sm:py-6 rounded-xl" 
+                style={{ 
+                  backgroundColor: "#f5f4f0",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                <p 
+                  className="text-xs sm:text-sm font-medium mb-1" 
+                  style={{ 
+                    color: "#787060",
+                    transition: "all 0.2s ease",
+                  }}
+                >
                   {revenuePercentile === "average" ? "Estimated Annual Revenue" : 
                    revenuePercentile === "75th" ? "75th Percentile Revenue" : "90th Percentile Revenue"}
                 </p>
-                <p className="text-3xl sm:text-4xl font-bold" style={{ color: "#22c55e" }}>
-                  {formatCurrency(getDisplayRevenue())}
+                <p 
+                  className="text-3xl sm:text-4xl font-bold" 
+                  style={{ 
+                    color: "#22c55e",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                >
+                  {formatCurrency(displayRevenue)}
                 </p>
                 {/* Confidence Range */}
-                <p className="text-sm mt-1" style={{ color: "#787060" }}>
-                  Range: {formatCurrency(Math.round(getDisplayRevenue() * 0.8))} – {formatCurrency(Math.round(getDisplayRevenue() * 1.2))}
+                <p className="text-sm mt-1" style={{ color: "#787060", transition: "all 0.2s ease" }}>
+                  Range: {formatCurrency(Math.round(displayRevenue * 0.8))} – {formatCurrency(Math.round(displayRevenue * 1.2))}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby listings
                 </p>
                 {revenuePercentile !== "average" && (
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p 
+                    className="text-xs text-gray-400 mt-2"
+                    style={{ 
+                      opacity: 1,
+                      transition: "opacity 0.3s ease",
+                    }}
+                  >
                     {revenuePercentile === "75th" 
                       ? "Top 25% performers with good amenities" 
                       : "Top 10% performers with upgrades & premium design"}
                   </p>
                 )}
                 {guestCount && guestCount > 6 && (
-                  <p className="text-xs text-green-600 mt-2">
+                  <p className="text-xs text-green-600 mt-2" style={{ transition: "all 0.2s ease" }}>
                     +{Math.round((getGuestCountMultiplier() - 1) * 100)}% capacity bonus (sleeps {guestCount} vs standard 6)
                   </p>
                 )}
@@ -2482,35 +2528,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 (b.annualRevenue || b.monthlyRevenue * 12) - (a.annualRevenue || a.monthlyRevenue * 12)
               );
               
-              // Filter based on percentile selection
+              // Filter based on percentile selection - now with more comps available
               let filteredComparables = sortedComparables;
               let percentileLabel = "Top Performing";
-              let percentileNote = "Showing all comparable listings sorted by revenue";
+              let percentileNote = `Showing all ${sortedComparables.length} comparable listings sorted by revenue`;
+              let displayLimit = 15; // Show more comps by default
               
               if (revenuePercentile === "90th") {
-                // Top 10% - show top 10% of listings
-                const top10Count = Math.max(1, Math.ceil(sortedComparables.length * 0.1));
+                // Top 10% - show top 10% of listings (at least 2, up to 5)
+                const top10Count = Math.max(2, Math.min(5, Math.ceil(sortedComparables.length * 0.1)));
                 filteredComparables = sortedComparables.slice(0, top10Count);
                 percentileLabel = "Top 10% Performers";
                 percentileNote = "These are the highest-earning listings in your market - typically have premium amenities, professional design, and excellent reviews";
+                displayLimit = top10Count;
               } else if (revenuePercentile === "75th") {
-                // Top 25% - show top 25% of listings
-                const top25Count = Math.max(1, Math.ceil(sortedComparables.length * 0.25));
+                // Top 25% - show top 25% of listings (at least 3, up to 8)
+                const top25Count = Math.max(3, Math.min(8, Math.ceil(sortedComparables.length * 0.25)));
                 filteredComparables = sortedComparables.slice(0, top25Count);
                 percentileLabel = "Top 25% Performers";
                 percentileNote = "These listings outperform most competitors with good amenities and solid reviews";
+                displayLimit = top25Count;
               }
               
               return (
-                <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", transition: "all 0.3s ease" }}>
                   <h3 className="text-lg font-semibold mb-1" style={{ color: "#2b2823" }}>
                     {percentileLabel} {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
                   </h3>
-                  <p className="text-xs text-gray-500 mb-4">
+                  <p className="text-xs text-gray-500 mb-4" style={{ transition: "all 0.2s ease" }}>
                     {percentileNote}
                   </p>
-                  <div className="space-y-3">
-                    {filteredComparables.slice(0, 10).map((listing, index) => (
+                  <div className="space-y-3" style={{ transition: "all 0.3s ease" }}>
+                    {filteredComparables.slice(0, displayLimit).map((listing, index) => (
                       <a
                         key={listing.id || index}
                         href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
@@ -2550,9 +2599,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </a>
                     ))}
                   </div>
-                  {revenuePercentile !== "average" && (
+                  {revenuePercentile !== "average" && result.comparables.length > 5 && (
+                    <p className="text-xs text-center text-gray-400 mt-4" style={{ transition: "opacity 0.3s ease" }}>
+                      Tap "Average" above to see all {result.comparables.length} comparable listings
+                    </p>
+                  )}
+                  {revenuePercentile === "average" && result.comparables.length > 15 && (
                     <p className="text-xs text-center text-gray-400 mt-4">
-                      Tap “Average” above to see all {result.comparables.length} comparable listings
+                      Showing top 15 of {result.comparables.length} comparable listings
                     </p>
                   )}
                 </div>
