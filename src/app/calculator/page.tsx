@@ -141,10 +141,13 @@ export default function CalculatorPage() {
   const [electricMonthly, setElectricMonthly] = useState(100);
   const [waterMonthly, setWaterMonthly] = useState(80);
   const [internetMonthly, setInternetMonthly] = useState(60);
+  const [trashMonthly, setTrashMonthly] = useState(30);
   const [lawnCareMonthly, setLawnCareMonthly] = useState(60);
-  const [cleaningPerTurn, setCleaningPerTurn] = useState(150);
-  const [suppliesMonthly, setSuppliesMonthly] = useState(50);
-  const [miscMonthly, setMiscMonthly] = useState(0);
+  const [pestControlMonthly, setPestControlMonthly] = useState(25);
+  const [cleaningMonthly, setCleaningMonthly] = useState(150);
+  const [houseSuppliesMonthly, setHouseSuppliesMonthly] = useState(50);
+  const [maintenanceMonthly, setMaintenanceMonthly] = useState(100);
+  const [rentalSoftwareMonthly, setRentalSoftwareMonthly] = useState(30);
 
   // AI Analysis State
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -1545,11 +1548,10 @@ export default function CalculatorPage() {
 
   // Calculate monthly operating expenses
   const calculateMonthlyExpenses = () => {
-    const utilities = electricMonthly + waterMonthly + internetMonthly;
-    const maintenance = lawnCareMonthly + suppliesMonthly + miscMonthly;
-    const estimatedTurnovers = result ? Math.round((result.occupancy / 100) * 30 / 3) : 8;
-    const cleaning = cleaningPerTurn * estimatedTurnovers;
-    return utilities + maintenance + cleaning;
+    const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
+    const propertyMaintenance = lawnCareMonthly + pestControlMonthly + maintenanceMonthly;
+    const operations = cleaningMonthly + houseSuppliesMonthly + rentalSoftwareMonthly;
+    return utilities + propertyMaintenance + operations;
   };
 
   // Calculate investment returns
@@ -2726,7 +2728,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
               <p className="text-sm text-gray-500 mb-4">Recurring costs to run your STR</p>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Row 1: Electric & Water */}
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Electric</label>
                   <input
@@ -2745,6 +2748,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
+                
+                {/* Row 2: Internet & Trash */}
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Internet</label>
                   <input
@@ -2755,6 +2760,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   />
                 </div>
                 <div>
+                  <label className="text-xs text-gray-500 block mb-1">Trash</label>
+                  <input
+                    type="number"
+                    value={trashMonthly}
+                    onChange={(e) => setTrashMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                
+                {/* Row 3: Lawn Care & Pest Control */}
+                <div>
                   <label className="text-xs text-gray-500 block mb-1">Lawn Care</label>
                   <input
                     type="number"
@@ -2764,31 +2780,52 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Cleaning/Turn</label>
+                  <label className="text-xs text-gray-500 block mb-1">Pest Control</label>
                   <input
                     type="number"
-                    value={cleaningPerTurn}
-                    onChange={(e) => setCleaningPerTurn(parseInt(e.target.value) || 0)}
+                    value={pestControlMonthly}
+                    onChange={(e) => setPestControlMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                
+                {/* Row 4: Cleaning & House Supplies */}
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Cleaning</label>
+                  <input
+                    type="number"
+                    value={cleaningMonthly}
+                    onChange={(e) => setCleaningMonthly(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Supplies</label>
+                  <label className="text-xs text-gray-500 block mb-1">House Supplies</label>
                   <input
                     type="number"
-                    value={suppliesMonthly}
-                    onChange={(e) => setSuppliesMonthly(parseInt(e.target.value) || 0)}
+                    value={houseSuppliesMonthly}
+                    onChange={(e) => setHouseSuppliesMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                
+                {/* Row 5: Maintenance & Rental Software */}
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Maintenance/Repair</label>
+                  <input
+                    type="number"
+                    value={maintenanceMonthly}
+                    onChange={(e) => setMaintenanceMonthly(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Misc</label>
+                  <label className="text-xs text-gray-500 block mb-1">Rental Software</label>
                   <input
                     type="number"
-                    value={miscMonthly}
-                    onChange={(e) => setMiscMonthly(parseInt(e.target.value) || 0)}
+                    value={rentalSoftwareMonthly}
+                    onChange={(e) => setRentalSoftwareMonthly(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
-                    placeholder="0"
                   />
                 </div>
               </div>
