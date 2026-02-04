@@ -141,8 +141,11 @@ export default function CalculatorPage() {
   const [waterMonthly, setWaterMonthly] = useState(80);
   const [internetMonthly, setInternetMonthly] = useState(60);
   const [lawnCareMonthly, setLawnCareMonthly] = useState(60);
-  const [cleaningPerTurn, setCleaningPerTurn] = useState(150);
-  const [suppliesMonthly, setSuppliesMonthly] = useState(50);
+  const [houseSuppliesMonthly, setHouseSuppliesMonthly] = useState(50);
+  const [maintenanceRepairMonthly, setMaintenanceRepairMonthly] = useState(100);
+  const [trashMonthly, setTrashMonthly] = useState(40);
+  const [rentalSoftwareMonthly, setRentalSoftwareMonthly] = useState(30);
+  const [pestControlMonthly, setPestControlMonthly] = useState(25);
   const [miscMonthly, setMiscMonthly] = useState(0);
 
   // AI Analysis State
@@ -1542,11 +1545,10 @@ export default function CalculatorPage() {
 
   // Calculate monthly operating expenses
   const calculateMonthlyExpenses = () => {
-    const utilities = electricMonthly + waterMonthly + internetMonthly;
-    const maintenance = lawnCareMonthly + suppliesMonthly + miscMonthly;
-    const estimatedTurnovers = result ? Math.round((result.occupancy / 100) * 30 / 3) : 8;
-    const cleaning = cleaningPerTurn * estimatedTurnovers;
-    return utilities + maintenance + cleaning;
+    const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
+    const maintenance = lawnCareMonthly + houseSuppliesMonthly + maintenanceRepairMonthly + pestControlMonthly + miscMonthly;
+    const software = rentalSoftwareMonthly;
+    return utilities + maintenance + software;
   };
 
   // Calculate investment returns - memoized for smooth reactive updates
@@ -1598,11 +1600,10 @@ export default function CalculatorPage() {
     const annualVacancy = grossRevenue * (vacancyPercent / 100);
     
     // Calculate monthly operating expenses inline
-    const utilities = electricMonthly + waterMonthly + internetMonthly;
-    const maintenance = lawnCareMonthly + suppliesMonthly + miscMonthly;
-    const estimatedTurnovers = result ? Math.round((result.occupancy / 100) * 30 / 3) : 8;
-    const cleaning = cleaningPerTurn * estimatedTurnovers;
-    const monthlyOperating = utilities + maintenance + cleaning;
+    const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
+    const maintenance = lawnCareMonthly + houseSuppliesMonthly + maintenanceRepairMonthly + pestControlMonthly + miscMonthly;
+    const software = rentalSoftwareMonthly;
+    const monthlyOperating = utilities + maintenance + software;
     const annualOperating = monthlyOperating * 12;
     
     const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualMaintenance + annualVacancy + annualOperating;
@@ -1635,7 +1636,8 @@ export default function CalculatorPage() {
     purchasePrice, downPaymentPercent, interestRate, loanTerm, propertyTaxRate,
     insuranceAnnual, managementFeePercent, maintenancePercent, vacancyPercent,
     displayRevenue, electricMonthly, waterMonthly, internetMonthly, lawnCareMonthly,
-    cleaningPerTurn, suppliesMonthly, miscMonthly, result,
+    houseSuppliesMonthly, maintenanceRepairMonthly, trashMonthly, rentalSoftwareMonthly,
+    pestControlMonthly, miscMonthly,
     includeDesignServices, includeSetupServices, includeFurnishings, includeAmenities,
     propertySqft, studentDiscount, amenitiesCost
   ]);
@@ -2523,28 +2525,39 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
             {/* Comparable Listings - Filtered by Percentile */}
             {result.comparables && result.comparables.length > 0 && (() => {
-              // Sort comparables by annual revenue
-              const sortedComparables = [...result.comparables].sort((a, b) => 
-                (b.annualRevenue || b.monthlyRevenue * 12) - (a.annualRevenue || a.monthlyRevenue * 12)
-              );
+              // Get projected annual revenue for comparison
+              const projectedAnnualRevenue = displayRevenue;
               
-              // Filter based on percentile selection - now with more comps available
-              let filteredComparables = sortedComparables;
-              let percentileLabel = "Top Performing";
-              let percentileNote = `Showing all ${sortedComparables.length} comparable listings sorted by revenue`;
-              let displayLimit = 15; // Show more comps by default
+              // Sort comparables by how close they are to the projected annual revenue
+              const comparablesWithDistance = result.comparables.map(comp => ({
+                ...comp,
+                annualRev: comp.annualRevenue || comp.monthlyRevenue * 12,
+                distance: Math.abs((comp.annualRevenue || comp.monthlyRevenue * 12) - projectedAnnualRevenue)
+              }));
+              
+              // Sort by distance to projected revenue (closest first)
+              const sortedByProximity = [...comparablesWithDistance].sort((a, b) => a.distance - b.distance);
+              
+              // Also keep sorted by revenue for percentile views
+              const sortedByRevenue = [...comparablesWithDistance].sort((a, b) => b.annualRev - a.annualRev);
+              
+              // Filter based on percentile selection
+              let filteredComparables = sortedByProximity.slice(0, 5); // Default: 5 closest to projection
+              let percentileLabel = "Similar Revenue";
+              let percentileNote = `Showing 5 listings closest to your ${formatCurrency(projectedAnnualRevenue)}/yr projection`;
+              let displayLimit = 5;
               
               if (revenuePercentile === "90th") {
-                // Top 10% - show top 10% of listings (at least 2, up to 5)
-                const top10Count = Math.max(2, Math.min(5, Math.ceil(sortedComparables.length * 0.1)));
-                filteredComparables = sortedComparables.slice(0, top10Count);
+                // Top 10% - show top performers
+                const top10Count = Math.max(3, Math.min(5, Math.ceil(sortedByRevenue.length * 0.1)));
+                filteredComparables = sortedByRevenue.slice(0, top10Count);
                 percentileLabel = "Top 10% Performers";
                 percentileNote = "These are the highest-earning listings in your market - typically have premium amenities, professional design, and excellent reviews";
                 displayLimit = top10Count;
               } else if (revenuePercentile === "75th") {
-                // Top 25% - show top 25% of listings (at least 3, up to 8)
-                const top25Count = Math.max(3, Math.min(8, Math.ceil(sortedComparables.length * 0.25)));
-                filteredComparables = sortedComparables.slice(0, top25Count);
+                // Top 25% - show top 25% of listings
+                const top25Count = Math.max(3, Math.min(5, Math.ceil(sortedByRevenue.length * 0.25)));
+                filteredComparables = sortedByRevenue.slice(0, top25Count);
                 percentileLabel = "Top 25% Performers";
                 percentileNote = "These listings outperform most competitors with good amenities and solid reviews";
                 displayLimit = top25Count;
@@ -2599,14 +2612,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </a>
                     ))}
                   </div>
-                  {revenuePercentile !== "average" && result.comparables.length > 5 && (
+                  {result.comparables.length > 5 && (
                     <p className="text-xs text-center text-gray-400 mt-4" style={{ transition: "opacity 0.3s ease" }}>
-                      Tap &quot;Average&quot; above to see all {result.comparables.length} comparable listings
-                    </p>
-                  )}
-                  {revenuePercentile === "average" && result.comparables.length > 15 && (
-                    <p className="text-xs text-center text-gray-400 mt-4">
-                      Showing top 15 of {result.comparables.length} comparable listings
+                      Showing {displayLimit} of {result.comparables.length} comparable listings
                     </p>
                   )}
                 </div>
@@ -2811,6 +2819,15 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   />
                 </div>
                 <div>
+                  <label className="text-xs text-gray-500 block mb-1">Trash</label>
+                  <input
+                    type="number"
+                    value={trashMonthly}
+                    onChange={(e) => setTrashMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                <div>
                   <label className="text-xs text-gray-500 block mb-1">Lawn Care</label>
                   <input
                     type="number"
@@ -2820,20 +2837,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Cleaning/Turn</label>
+                  <label className="text-xs text-gray-500 block mb-1">House Supplies</label>
                   <input
                     type="number"
-                    value={cleaningPerTurn}
-                    onChange={(e) => setCleaningPerTurn(parseInt(e.target.value) || 0)}
+                    value={houseSuppliesMonthly}
+                    onChange={(e) => setHouseSuppliesMonthly(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Supplies</label>
+                  <label className="text-xs text-gray-500 block mb-1">Maintenance/Repair</label>
                   <input
                     type="number"
-                    value={suppliesMonthly}
-                    onChange={(e) => setSuppliesMonthly(parseInt(e.target.value) || 0)}
+                    value={maintenanceRepairMonthly}
+                    onChange={(e) => setMaintenanceRepairMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Rental Software</label>
+                  <input
+                    type="number"
+                    value={rentalSoftwareMonthly}
+                    onChange={(e) => setRentalSoftwareMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Pest Control</label>
+                  <input
+                    type="number"
+                    value={pestControlMonthly}
+                    onChange={(e) => setPestControlMonthly(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
@@ -2847,6 +2882,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     placeholder="0"
                   />
                 </div>
+              </div>
+              
+              {/* Note about tenant-paid fees */}
+              <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: "#fef3c7", border: "1px solid #fcd34d" }}>
+                <p className="text-xs" style={{ color: "#92400e" }}>
+                  <strong>Note:</strong> Cleaning fees and pet fees are not included here as they are typically paid by guests.
+                </p>
               </div>
               
               <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
