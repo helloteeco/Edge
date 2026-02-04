@@ -1281,7 +1281,7 @@ export default function CalculatorPage() {
         <div class="summary-item">
           <p class="summary-label">Projected Annual Revenue</p>
           <p class="summary-value">${formatCurrency(displayRevenue)}</p>
-          <p class="summary-subtext">${formatCurrency(Math.round(displayRevenue / 12))}/month avg${guestBonus > 0 ? ` · +${guestBonus}% capacity bonus` : ''}</p>
+          <p class="summary-subtext">${formatCurrency(Math.round(displayRevenue / 12))}/month avg</p>
         </div>
         <div class="summary-item">
           <p class="summary-label">Annual Cash Flow</p>
@@ -1449,20 +1449,19 @@ export default function CalculatorPage() {
     }
   };
 
-  // Calculate guest count multiplier based on industry data
-  // Research shows ~5-8% revenue increase per additional guest capacity above baseline
-  // Baseline: bedrooms * 2 guests (standard assumption)
+  // Guest capacity bonus: 2% per guest above 6, capped at 20%
+  // Based on real-world data: larger capacity properties perform significantly better
+  // Example: 3/2 sleeping 12 vs 6 guests shows ~12% revenue increase from capacity alone
   const getGuestCountMultiplier = () => {
-    if (!bedrooms || !guestCount) return 1.0;
+    if (!guestCount) return 1.0;
     
-    const baselineGuests = bedrooms * 2; // Standard: 2 guests per bedroom
+    const baselineGuests = 6; // Standard baseline for STR properties
     const extraGuests = guestCount - baselineGuests;
     
     if (extraGuests <= 0) return 1.0; // No bonus if at or below baseline
     
-    // Each extra guest above baseline adds ~6% revenue (industry average)
-    // Capped at 50% bonus to prevent unrealistic estimates
-    const bonus = Math.min(extraGuests * 0.06, 0.50);
+    // 2% per additional guest above 6, capped at 20% max
+    const bonus = Math.min(extraGuests * 0.02, 0.20);
     return 1.0 + bonus;
   };
 
@@ -2218,11 +2217,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       : "Top 10% performers with upgrades & premium design"}
                   </p>
                 )}
-                {guestCount && bedrooms && guestCount > bedrooms * 2 && (
+                {guestCount && guestCount > 6 && (
                   <p className="text-xs text-green-600 mt-2">
-                    +{Math.round((getGuestCountMultiplier() - 1) * 100)}% guest capacity bonus (sleeps {guestCount} vs standard {bedrooms * 2})
+                    +{Math.round((getGuestCountMultiplier() - 1) * 100)}% capacity bonus (sleeps {guestCount} vs standard 6)
                   </p>
                 )}
+
               </div>
 
               {/* Google Maps Location */}
@@ -2455,48 +2455,89 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             </div>
 
-            {/* Comparable Listings */}
-            {result.comparables && result.comparables.length > 0 && (
-              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-                <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>
-                  Top Performing {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
-                </h3>
-                <div className="space-y-3">
-                  {result.comparables.slice(0, 10).map((listing, index) => (
-                    <a
-                      key={listing.id || index}
-                      href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base" style={{ maxWidth: 'calc(100vw - 120px)' }}>{listing.name}</p>
-                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
+            {/* Comparable Listings - Filtered by Percentile */}
+            {result.comparables && result.comparables.length > 0 && (() => {
+              // Sort comparables by annual revenue
+              const sortedComparables = [...result.comparables].sort((a, b) => 
+                (b.annualRevenue || b.monthlyRevenue * 12) - (a.annualRevenue || a.monthlyRevenue * 12)
+              );
+              
+              // Filter based on percentile selection
+              let filteredComparables = sortedComparables;
+              let percentileLabel = "Top Performing";
+              let percentileNote = "Showing all comparable listings sorted by revenue";
+              
+              if (revenuePercentile === "90th") {
+                // Top 10% - show top 10% of listings
+                const top10Count = Math.max(1, Math.ceil(sortedComparables.length * 0.1));
+                filteredComparables = sortedComparables.slice(0, top10Count);
+                percentileLabel = "Top 10% Performers";
+                percentileNote = "These are the highest-earning listings in your market - typically have premium amenities, professional design, and excellent reviews";
+              } else if (revenuePercentile === "75th") {
+                // Top 25% - show top 25% of listings
+                const top25Count = Math.max(1, Math.ceil(sortedComparables.length * 0.25));
+                filteredComparables = sortedComparables.slice(0, top25Count);
+                percentileLabel = "Top 25% Performers";
+                percentileNote = "These listings outperform most competitors with good amenities and solid reviews";
+              }
+              
+              return (
+                <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                  <h3 className="text-lg font-semibold mb-1" style={{ color: "#2b2823" }}>
+                    {percentileLabel} {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-4">
+                    {percentileNote}
+                  </p>
+                  <div className="space-y-3">
+                    {filteredComparables.slice(0, 10).map((listing, index) => (
+                      <a
+                        key={listing.id || index}
+                        href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border group ${
+                          revenuePercentile === "90th" && index === 0 ? "border-green-300 bg-green-50" :
+                          revenuePercentile === "75th" && index < 2 ? "border-yellow-200 bg-yellow-50" :
+                          "border-gray-100"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {revenuePercentile === "90th" && index === 0 && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-600 text-white">Top Earner</span>
+                              )}
+                              <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base" style={{ maxWidth: 'calc(100vw - 120px)' }}>{listing.name}</p>
+                              <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-500">
+                              {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.propertyType}
+                            </p>
                           </div>
-                          <p className="text-xs sm:text-sm text-gray-500">
-                            {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.propertyType}
+                          <div className="text-left sm:text-right flex-shrink-0">
+                            <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
+                            <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {listing.occupancy}% occ</p>
+                          </div>
+                        </div>
+                        {listing.rating > 0 && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            ⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount} reviews)
                           </p>
-                        </div>
-                        <div className="text-left sm:text-right flex-shrink-0">
-                          <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
-                          <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {listing.occupancy}% occ</p>
-                        </div>
-                      </div>
-                      {listing.rating > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          ⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount} reviews)
-                        </p>
-                      )}
-                    </a>
-                  ))}
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                  {revenuePercentile !== "average" && (
+                    <p className="text-xs text-center text-gray-400 mt-4">
+                      Tap “Average” above to see all {result.comparables.length} comparable listings
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Recommended Amenities for 90th Percentile */}
             {result.recommendedAmenities && result.recommendedAmenities.length > 0 && (
