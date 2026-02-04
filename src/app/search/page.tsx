@@ -169,10 +169,10 @@ export default function SearchPage() {
     : results.cities.length + results.states.length;
 
   const getVerdictStyle = (score: number) => {
-    if (score >= 80) return { text: "STRONG BUY", bg: '#2b2823', color: '#ffffff' };
-    if (score >= 70) return { text: "BUY", bg: '#3d3a34', color: '#ffffff' };
-    if (score >= 60) return { text: "HOLD", bg: '#787060', color: '#ffffff' };
-    return { text: "AVOID", bg: '#e5e3da', color: '#787060' };
+    if (score >= 80) return { text: "PASSES ALL FILTERS", bg: '#2b2823', color: '#ffffff' };
+    if (score >= 70) return { text: "WORTH A LOOK", bg: '#3d3a34', color: '#ffffff' };
+    if (score >= 60) return { text: "NEEDS MORE RESEARCH", bg: '#787060', color: '#ffffff' };
+    return { text: "NOT RECOMMENDED", bg: '#e5e3da', color: '#787060' };
   };
 
   const getScoreStyle = (score: number) => {

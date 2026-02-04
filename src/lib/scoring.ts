@@ -1,145 +1,110 @@
 /**
  * Edge by Teeco - STR Scoring Model
  * 
- * A transparent, defensible scoring system biased toward:
- * - Rural, affordable, self-managed STRs
- * - Cash flow over appreciation plays
- * - Markets under $250K median home price
+ * A simple scoring system that helps you filter good STR markets.
+ * Think of it like a report card for rental markets!
  * 
  * SCORING WEIGHTS (Total: 100 points)
  * =====================================
- * 1. Cash-on-Cash Return            - 45 points (heaviest weight)
- * 2. Affordability                  - 30 points
- * 3. Landlord Friendliness          - 10 points
- * 4. Market Headroom               - 15 points
+ * 1. Cash-on-Cash Return     - 35 points (How much money you make back)
+ * 2. Affordability           - 25 points (Can you afford to buy here?)
+ * 3. Year-Round Income       - 15 points (Do people visit all year?)
+ * 4. Landlord Friendly       - 10 points (Are the laws on your side?)
+ * 5. Room to Grow            - 15 points (Is there space for more rentals?)
  * 
- * NOTE: STR Legality was removed from scoring because regulations
- * vary too much at the local/municipal level to accurately score.
- * Users should always verify local STR regulations before investing.
- * 
- * CASH-ON-CASH RETURN CALCULATION
- * ================================
- * Cash-on-Cash = (Annual Net Operating Income) / (Total Cash Invested)
- * 
- * Where:
- * - Annual Net Operating Income = (Monthly Revenue × 12) - Annual Operating Expenses
- * - Annual Operating Expenses = ~35% of gross revenue (cleaning, utilities, PM, insurance, repairs)
- * - Total Cash Invested = Down Payment (20%) + Closing Costs (3%)
- * 
- * Example: $200K home, $3,000/month revenue
- * - Annual Gross Revenue: $36,000
- * - Annual Operating Expenses (35%): $12,600
- * - Annual NOI: $23,400
- * - Mortgage Payment (80% @ 7%, 30yr): $1,064/month = $12,768/year
- * - Annual Cash Flow: $23,400 - $12,768 = $10,632
- * - Total Cash Invested: $40,000 (20%) + $6,000 (3%) = $46,000
- * - Cash-on-Cash Return: $10,632 / $46,000 = 23.1%
+ * DISCLAIMER: This score helps you filter markets — it doesn't replace 
+ * checking the actual deal. Always do your own research!
  */
 
 export interface ScoringBreakdown {
-  cashOnCash: { score: number; maxScore: 45; value: number; rating: string };
-  affordability: { score: number; maxScore: 30; value: number; rating: string };
-  landlordFriendly: { score: number; maxScore: 10; rating: string };
-  marketHeadroom: { score: number; maxScore: 15; value: number; rating: string };
+  cashOnCash: { score: number; maxScore: 35; value: number; rating: string; tooltip: string };
+  affordability: { score: number; maxScore: 25; value: number; rating: string; tooltip: string };
+  yearRoundIncome: { score: number; maxScore: 15; value: number; rating: string; tooltip: string };
+  landlordFriendly: { score: number; maxScore: 10; rating: string; tooltip: string };
+  roomToGrow: { score: number; maxScore: 15; value: number; rating: string; tooltip: string };
   totalScore: number;
   maxPossibleScore: 100;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
-  verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
+  verdict: 'passes-all-filters' | 'buy' | 'hold' | 'caution' | 'avoid';
 }
 
 /**
  * Calculate Cash-on-Cash Return from monthly revenue and home price
  * 
- * Assumptions:
- * - 20% down payment
- * - 3% closing costs
- * - 7% interest rate, 30-year mortgage
- * - 35% operating expense ratio
+ * Simple explanation: If you put $50,000 into a rental and make $10,000 
+ * profit in a year, your Cash-on-Cash is 20% ($10,000 ÷ $50,000 = 20%)
  */
 export function calculateCashOnCash(monthlyRevenue: number, homePrice: number): number {
   if (homePrice <= 0 || monthlyRevenue <= 0) return 0;
   
-  // Annual gross revenue
   const annualGrossRevenue = monthlyRevenue * 12;
-  
-  // Operating expenses (35% of gross)
   const annualOperatingExpenses = annualGrossRevenue * 0.35;
-  
-  // Net Operating Income
   const annualNOI = annualGrossRevenue - annualOperatingExpenses;
   
-  // Mortgage calculation (80% LTV, 7% rate, 30 years)
   const loanAmount = homePrice * 0.80;
   const monthlyRate = 0.07 / 12;
   const numPayments = 30 * 12;
   const monthlyMortgage = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
   const annualMortgage = monthlyMortgage * 12;
   
-  // Annual Cash Flow
   const annualCashFlow = annualNOI - annualMortgage;
-  
-  // Total Cash Invested (20% down + 3% closing costs)
   const totalCashInvested = (homePrice * 0.20) + (homePrice * 0.03);
-  
-  // Cash-on-Cash Return
   const cashOnCash = (annualCashFlow / totalCashInvested) * 100;
   
-  return Math.round(cashOnCash * 10) / 10; // Round to 1 decimal
+  return Math.round(cashOnCash * 10) / 10;
 }
 
 /**
- * Calculate Cash-on-Cash score (45 points max)
- * 
- * Target: 20%+ for strong score
- * 
- * Scoring:
- * - CoC >= 20%: 45 points (Elite)
- * - CoC >= 15%: 40 points (Excellent)
- * - CoC >= 10%: 30 points (Good)
- * - CoC >= 5%: 20 points (Marginal)
- * - CoC >= 0%: 10 points (Break-even)
- * - CoC < 0%: 5 points (Negative Cash Flow)
+ * Cash-on-Cash score (35 points max)
+ * How much money you make back each year compared to what you put in
  */
 export function scoreCashOnCash(cashOnCashReturn: number): { score: number; rating: string } {
-  if (cashOnCashReturn >= 20) return { score: 45, rating: 'Elite (20%+)' };
-  if (cashOnCashReturn >= 15) return { score: 40, rating: 'Excellent (15%+)' };
-  if (cashOnCashReturn >= 10) return { score: 30, rating: 'Good (10%+)' };
-  if (cashOnCashReturn >= 5) return { score: 20, rating: 'Marginal (5%+)' };
+  if (cashOnCashReturn >= 20) return { score: 35, rating: 'Elite (20%+)' };
+  if (cashOnCashReturn >= 15) return { score: 30, rating: 'Excellent (15%+)' };
+  if (cashOnCashReturn >= 10) return { score: 25, rating: 'Good (10%+)' };
+  if (cashOnCashReturn >= 5) return { score: 15, rating: 'Okay (5%+)' };
   if (cashOnCashReturn >= 0) return { score: 10, rating: 'Break-even' };
-  return { score: 5, rating: 'Negative Cash Flow' };
+  return { score: 5, rating: 'Losing Money' };
 }
 
 /**
- * Calculate Affordability score (30 points max)
- * Target: $250K or less median home price
- * 
- * Scoring:
- * - <= $150K: 30 points (Highly Affordable)
- * - <= $200K: 25 points (Very Affordable)
- * - <= $250K: 20 points (Affordable - Target)
- * - <= $300K: 15 points (Moderate)
- * - <= $400K: 10 points (Expensive)
- * - > $400K: 5 points (Very Expensive)
+ * Affordability score (25 points max)
+ * Can you afford to buy a home here?
  */
 export function scoreAffordability(medianHomePrice: number): { score: number; rating: string } {
-  if (medianHomePrice <= 150000) return { score: 30, rating: 'Highly Affordable' };
-  if (medianHomePrice <= 200000) return { score: 25, rating: 'Very Affordable' };
-  if (medianHomePrice <= 250000) return { score: 20, rating: 'Affordable' };
-  if (medianHomePrice <= 300000) return { score: 15, rating: 'Moderate' };
-  if (medianHomePrice <= 400000) return { score: 10, rating: 'Expensive' };
-  return { score: 5, rating: 'Very Expensive' };
+  if (medianHomePrice <= 150000) return { score: 25, rating: 'Very Cheap' };
+  if (medianHomePrice <= 200000) return { score: 20, rating: 'Affordable' };
+  if (medianHomePrice <= 250000) return { score: 15, rating: 'Average' };
+  if (medianHomePrice <= 300000) return { score: 10, rating: 'Pricey' };
+  if (medianHomePrice <= 400000) return { score: 5, rating: 'Expensive' };
+  return { score: 0, rating: 'Very Expensive' };
 }
 
+/**
+ * Year-Round Income score (15 points max) - NEW!
+ * Can you still make money even in the slow months?
+ * 
+ * Based on seasonality score from market data:
+ * - High seasonality score = consistent year-round demand
+ * - Low seasonality score = very seasonal (risky slow months)
+ */
+export function scoreYearRoundIncome(seasonalityScore: number, occupancyRate: number): { score: number; rating: string; value: number } {
+  // Combine seasonality score with occupancy to estimate year-round strength
+  // Seasonality score: higher = more consistent (less seasonal variance)
+  // Occupancy: higher = more bookings overall
+  
+  // Calculate a durability index (0-100)
+  const durabilityIndex = Math.round((seasonalityScore * 0.6) + (occupancyRate * 0.4));
+  
+  if (durabilityIndex >= 65) return { score: 15, rating: 'Strong All Year', value: durabilityIndex };
+  if (durabilityIndex >= 55) return { score: 10, rating: 'Good Most Months', value: durabilityIndex };
+  if (durabilityIndex >= 45) return { score: 5, rating: 'Some Slow Months', value: durabilityIndex };
+  return { score: 0, rating: 'Very Seasonal', value: durabilityIndex };
+}
 
 /**
- * Calculate Landlord Friendliness score (10 points max)
- * Based on state-level tenant/landlord laws
- * 
- * States are categorized as:
- * - Very Landlord Friendly: 10 points
- * - Landlord Friendly: 8 points (rounded to nearest 5 would be 10, but keeping 8 for differentiation)
- * - Neutral: 5 points
- * - Tenant Friendly: 2 points (rounded to nearest 5 would be 0, but keeping 2 for minimum)
+ * Landlord Friendly score (10 points max)
+ * Are the laws on your side if there's a problem?
  */
 const landlordFriendlyStates: Record<string, number> = {
   // Very Landlord Friendly (10 points)
@@ -156,66 +121,36 @@ const landlordFriendlyStates: Record<string, number> = {
 
 export function scoreLandlordFriendly(stateCode: string): { score: number; rating: string } {
   const score = landlordFriendlyStates[stateCode.toUpperCase()] || 5;
-  if (score >= 10) return { score, rating: 'Very Landlord Friendly' };
-  if (score >= 8) return { score, rating: 'Landlord Friendly' };
+  if (score >= 10) return { score, rating: 'Very Friendly' };
+  if (score >= 8) return { score, rating: 'Friendly' };
   if (score >= 5) return { score, rating: 'Neutral' };
-  return { score, rating: 'Tenant Friendly' };
+  return { score, rating: 'Tough Laws' };
 }
 
 /**
- * Calculate Market Headroom score (15 points max)
- * Based on STR listings per 1,000 residents
- * Higher score = more room for new STRs (less competition)
+ * Room to Grow score (15 points max)
+ * Is there space for more rentals, or is this market already crowded?
  * 
- * IMPORTANT: Small tourism towns (population < 5,000) use adjusted thresholds
- * because their visitor-to-resident ratio is naturally high. A town of 500 people
- * with 10 STRs (20 per 1,000) might still have excellent headroom if it hosts
- * 50,000 visitors annually.
- * 
- * Standard Scoring (population >= 5,000):
- * - < 3 listings/1000: 15 points (Excellent Headroom)
- * - < 6 listings/1000: 10 points (Good Headroom)
- * - < 10 listings/1000: 5 points (Limited Headroom)
- * - >= 10 listings/1000: 0 points (Crowded Market)
- * 
- * Tourism Town Scoring (population < 5,000):
- * - < 15 listings/1000: 15 points (Excellent Headroom)
- * - < 30 listings/1000: 10 points (Good Headroom)
- * - < 50 listings/1000: 5 points (Limited Headroom)
- * - >= 50 listings/1000: 0 points (Crowded Market)
+ * We look at: how many rentals exist vs. how many people live there
  */
-export function scoreMarketHeadroom(listingsPerThousand: number, population?: number): { score: number; rating: string } {
-  // Use tourism-adjusted thresholds for small towns (likely tourism destinations)
+export function scoreRoomToGrow(listingsPerThousand: number, population?: number): { score: number; rating: string } {
   const isTourismTown = population !== undefined && population < 5000;
   
   if (isTourismTown) {
-    // Tourism town thresholds (more lenient due to high visitor-to-resident ratio)
-    if (listingsPerThousand < 15) return { score: 15, rating: 'Excellent Headroom' };
-    if (listingsPerThousand < 30) return { score: 10, rating: 'Good Headroom' };
-    if (listingsPerThousand < 50) return { score: 5, rating: 'Limited Headroom' };
-    return { score: 0, rating: 'Crowded Market' };
+    if (listingsPerThousand < 15) return { score: 15, rating: 'Lots of Room' };
+    if (listingsPerThousand < 30) return { score: 10, rating: 'Some Room' };
+    if (listingsPerThousand < 50) return { score: 5, rating: 'Getting Crowded' };
+    return { score: 0, rating: 'Very Crowded' };
   }
   
-  // Standard thresholds for larger cities
-  if (listingsPerThousand < 3) return { score: 15, rating: 'Excellent Headroom' };
-  if (listingsPerThousand < 6) return { score: 10, rating: 'Good Headroom' };
-  if (listingsPerThousand < 10) return { score: 5, rating: 'Limited Headroom' };
-  return { score: 0, rating: 'Crowded Market' };
+  if (listingsPerThousand < 3) return { score: 15, rating: 'Lots of Room' };
+  if (listingsPerThousand < 6) return { score: 10, rating: 'Some Room' };
+  if (listingsPerThousand < 10) return { score: 5, rating: 'Getting Crowded' };
+  return { score: 0, rating: 'Very Crowded' };
 }
-
 
 /**
  * Convert total score to letter grade
- * Based on 100 max points
- * 
- * Grading Scale (percentage-based):
- * - A+ : 90%+ (90-100 points)
- * - A  : 80-89% (80-89 points)
- * - B+ : 70-79% (70-79 points)
- * - B  : 60-69% (60-69 points)
- * - C  : 50-59% (50-59 points)
- * - D  : 40-49% (40-49 points)
- * - F  : <40% (0-39 points)
  */
 export function getGrade(totalScore: number): 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F' {
   if (totalScore >= 90) return 'A+';
@@ -229,10 +164,11 @@ export function getGrade(totalScore: number): 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D
 
 /**
  * Convert grade to verdict
+ * A+ = "Passes All Filters" (not "Strong Buy" - we're not giving financial advice!)
  */
-export function getVerdict(grade: string): 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid' {
+export function getVerdict(grade: string): 'passes-all-filters' | 'buy' | 'hold' | 'caution' | 'avoid' {
   switch (grade) {
-    case 'A+': return 'strong-buy';
+    case 'A+': return 'passes-all-filters';
     case 'A': return 'buy';
     case 'B+': return 'buy';
     case 'B': return 'hold';
@@ -251,31 +187,67 @@ export interface MarketData {
   stateCode: string;
   listingsPerThousand: number;
   population?: number;
+  seasonalityScore?: number; // 0-100, higher = more consistent year-round
+  occupancyRate?: number; // 0-100 percentage
 }
 
 export function calculateScore(data: MarketData): ScoringBreakdown {
-  // Calculate Cash-on-Cash return from revenue and price
   const cashOnCashReturn = calculateCashOnCash(data.monthlyRevenue, data.medianHomePrice);
   
   const cashOnCash = scoreCashOnCash(cashOnCashReturn);
   const affordability = scoreAffordability(data.medianHomePrice);
+  const yearRoundIncome = scoreYearRoundIncome(
+    data.seasonalityScore || 60, // Default to 60 if not provided
+    data.occupancyRate || 55 // Default to 55% if not provided
+  );
   const landlordFriendly = scoreLandlordFriendly(data.stateCode);
-  const marketHeadroom = scoreMarketHeadroom(data.listingsPerThousand, data.population);
+  const roomToGrow = scoreRoomToGrow(data.listingsPerThousand, data.population);
   
   const totalScore = 
     cashOnCash.score + 
     affordability.score + 
+    yearRoundIncome.score +
     landlordFriendly.score + 
-    marketHeadroom.score;
+    roomToGrow.score;
   
   const grade = getGrade(totalScore);
   const verdict = getVerdict(grade);
   
   return {
-    cashOnCash: { score: cashOnCash.score, maxScore: 45, value: cashOnCashReturn, rating: cashOnCash.rating },
-    affordability: { score: affordability.score, maxScore: 30, value: data.medianHomePrice, rating: affordability.rating },
-    landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
-    marketHeadroom: { score: marketHeadroom.score, maxScore: 15, value: data.listingsPerThousand, rating: marketHeadroom.rating },
+    cashOnCash: { 
+      score: cashOnCash.score, 
+      maxScore: 35, 
+      value: cashOnCashReturn, 
+      rating: cashOnCash.rating,
+      tooltip: 'How much money you make back each year compared to what you put in'
+    },
+    affordability: { 
+      score: affordability.score, 
+      maxScore: 25, 
+      value: data.medianHomePrice, 
+      rating: affordability.rating,
+      tooltip: 'Can you afford to buy a home here?'
+    },
+    yearRoundIncome: { 
+      score: yearRoundIncome.score, 
+      maxScore: 15, 
+      value: yearRoundIncome.value, 
+      rating: yearRoundIncome.rating,
+      tooltip: 'Can you still make money even in the slow months?'
+    },
+    landlordFriendly: { 
+      score: landlordFriendly.score, 
+      maxScore: 10, 
+      rating: landlordFriendly.rating,
+      tooltip: 'Are the laws on your side if there\'s a problem?'
+    },
+    roomToGrow: { 
+      score: roomToGrow.score, 
+      maxScore: 15, 
+      value: data.listingsPerThousand, 
+      rating: roomToGrow.rating,
+      tooltip: 'Is there space for more rentals, or is this market already crowded?'
+    },
     totalScore,
     maxPossibleScore: 100,
     grade,
@@ -285,16 +257,24 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
 
 /**
  * Calculate state-level score as weighted average of city scores
- * State score = Average of top 50% performing cities in that state
- * This prevents a few bad markets from tanking an otherwise good state
  */
 export function calculateStateScore(cityScores: number[]): number {
   if (cityScores.length === 0) return 0;
   
-  // Sort descending and take top 50%
   const sorted = [...cityScores].sort((a, b) => b - a);
   const topHalf = sorted.slice(0, Math.max(1, Math.ceil(sorted.length / 2)));
   
-  // Return average of top half
   return Math.round(topHalf.reduce((sum, s) => sum + s, 0) / topHalf.length);
 }
+
+// Simple tooltip text for each category (3rd grade reading level)
+export const SCORE_TOOLTIPS = {
+  cashOnCash: 'How much money you make back each year compared to what you put in',
+  affordability: 'Can you afford to buy a home here?',
+  yearRoundIncome: 'Can you still make money even in the slow months?',
+  landlordFriendly: 'Are the laws on your side if there\'s a problem?',
+  roomToGrow: 'Is there space for more rentals, or is this market already crowded?',
+};
+
+// Disclaimer text
+export const SCORE_DISCLAIMER = 'This score helps you filter markets — it doesn\'t replace checking the actual deal.';

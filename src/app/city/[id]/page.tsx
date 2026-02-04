@@ -149,11 +149,12 @@ export default function CityPage({ params }: { params: { id: string } }) {
 
   const getVerdictText = (verdict: string) => {
     switch (verdict) {
-      case 'strong-buy': return { text: 'STRONG BUY', emoji: '🚀' };
-      case 'buy': return { text: 'BUY', emoji: '✅' };
-      case 'hold': return { text: 'HOLD', emoji: '⚠️' };
-      case 'caution': return { text: 'CAUTION', emoji: '⚠️' };
-      default: return { text: 'AVOID', emoji: '❌' };
+      case 'passes-all-filters': return { text: 'PASSES ALL FILTERS', emoji: '✅' };
+      case 'strong-buy': return { text: 'PASSES ALL FILTERS', emoji: '✅' }; // Legacy support
+      case 'buy': return { text: 'WORTH A LOOK', emoji: '👍' };
+      case 'hold': return { text: 'NEEDS MORE RESEARCH', emoji: '🔍' };
+      case 'caution': return { text: 'BE CAREFUL', emoji: '⚠️' };
+      default: return { text: 'NOT RECOMMENDED', emoji: '❌' };
     }
   };
 
@@ -298,14 +299,18 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>Score Breakdown</div>
               
               {[
-                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 45 },
-                { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 30 },
-                { icon: '🤝', label: 'Landlord Friendly', score: city.scoring.landlordFriendly.score, max: 10 },
-                { icon: '📊', label: 'Market Headroom', score: city.scoring.marketHeadroom.score, max: 15 },
+                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 35, tooltip: 'How much money you make back each year' },
+                { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 25, tooltip: 'Can you afford to buy here?' },
+                { icon: '📅', label: 'Year-Round Income', score: city.scoring.yearRoundIncome?.score || 10, max: 15, tooltip: 'Can you make money in slow months?' },
+                { icon: '🤝', label: 'Landlord Friendly', score: city.scoring.landlordFriendly.score, max: 10, tooltip: 'Are the laws on your side?' },
+                { icon: '📈', label: 'Room to Grow', score: city.scoring.roomToGrow?.score || 10, max: 15, tooltip: 'Is there space for more rentals?' },
               ].map((item) => (
-                <div key={item.label} className="flex items-center gap-3">
+                <div key={item.label} className="flex items-center gap-3 group relative">
                   <span className="text-sm">{item.icon}</span>
-                  <span className="text-sm w-32" style={{ color: '#787060' }}>{item.label}</span>
+                  <span className="text-sm w-36" style={{ color: '#787060' }}>
+                    {item.label}
+                    <span className="ml-1 text-xs cursor-help" title={item.tooltip}>ⓘ</span>
+                  </span>
                   <div 
                     className="flex-1 h-2.5 rounded-full overflow-hidden"
                     style={{ backgroundColor: '#e5e3da' }}
@@ -342,10 +347,18 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.affordability.rating}</div>
             </div>
             <div className="rounded-lg p-3" style={{ backgroundColor: '#e5e3da' }}>
-              <div style={{ color: '#787060' }}>Headroom</div>
-              <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.marketHeadroom.score}/15</div>
-              <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.marketHeadroom.rating}</div>
+              <div style={{ color: '#787060' }}>Room to Grow</div>
+              <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.roomToGrow?.score || 0}/15</div>
+              <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.roomToGrow?.rating || 'N/A'}</div>
             </div>
+          </div>
+          
+          {/* Disclaimer */}
+          <div 
+            className="mt-4 pt-3 text-center text-xs"
+            style={{ borderTop: '1px solid #e5e3da', color: '#9a9488' }}
+          >
+            This score helps you filter markets - it does not replace checking the actual deal.
           </div>
         </div>
 

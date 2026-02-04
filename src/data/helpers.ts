@@ -33,7 +33,7 @@ export interface FlatCity {
   // New transparent scoring
   scoring: ScoringBreakdown;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
-  verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
+  verdict: 'passes-all-filters' | 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
 }
 
 export interface FlatState {
@@ -54,7 +54,7 @@ export interface FlatState {
   };
   // New transparent scoring
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
-  verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
+  verdict: 'passes-all-filters' | 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
   cityGrades: { grade: string; count: number }[];
 }
 
@@ -72,6 +72,8 @@ function calculateCityScore(city: CityData, stateCode: string): ScoringBreakdown
     stateCode: stateCode,
     listingsPerThousand: city.saturationRisk.listingsPerThousand,
     population: city.population,
+    seasonalityScore: city.marketScore.seasonality, // For Year-Round Income
+    occupancyRate: city.rental.occupancyRate, // For Year-Round Income
   });
 }
 
@@ -100,14 +102,14 @@ export function getAllCities(): FlatCity[] {
         strMonthlyRevenue: city.rental.monthlyRevenue,
         medianHomeValue: city.rental.medianHomePrice,
         regulation: city.strStatus === "legal" ? "Legal" : "Restricted",
-        marketHeadroom: scoring.marketHeadroom.score, // Use new scoring (10 = excellent, 2 = crowded)
+        marketHeadroom: scoring.roomToGrow.score, // Use new scoring (15 = lots of room, 0 = crowded)
         listingsPerThousand: city.saturationRisk.listingsPerThousand,
         scores: {
           demand: city.marketScore.demand,
           affordability: city.marketScore.affordability,
           regulation: city.marketScore.regulation,
           seasonality: city.marketScore.seasonality,
-          marketHeadroom: scoring.marketHeadroom.score,
+          marketHeadroom: scoring.roomToGrow.score,
         },
         incomeBySize: {
           "1BR": city.incomeBySize.oneBR,

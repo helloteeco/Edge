@@ -4051,7 +4051,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     let explanation = "This deal may work but requires careful consideration.";
                     
                     if (totalScore >= 75) {
-                      verdict = "STRONG BUY";
+                      verdict = "PASSES ALL FILTERS";
                       verdictColor = "#16a34a";
                       verdictBg = "#dcfce7";
                       explanation = "This looks like a great deal! The numbers are really good.";

@@ -224,11 +224,12 @@ export function USMap() {
 
   const getVerdictText = (verdict: string) => {
     switch (verdict) {
-      case 'strong-buy': return { text: 'STRONG BUY' };
-      case 'buy': return { text: 'BUY' };
-      case 'hold': return { text: 'HOLD' };
-      case 'caution': return { text: 'CAUTION' };
-      default: return { text: 'AVOID' };
+      case 'passes-all-filters': return { text: 'PASSES ALL FILTERS' };
+      case 'strong-buy': return { text: 'PASSES ALL FILTERS' }; // Legacy support
+      case 'buy': return { text: 'WORTH A LOOK' };
+      case 'hold': return { text: 'NEEDS MORE RESEARCH' };
+      case 'caution': return { text: 'BE CAREFUL' };
+      default: return { text: 'NOT RECOMMENDED' };
     }
   };
 

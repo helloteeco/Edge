@@ -153,22 +153,35 @@ export function TopMarkets() {
         >
           How We Score Markets
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style={{ color: '#787060' }}>
-          <div className="flex items-center gap-1.5">
-            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>45pts</strong></span>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs" style={{ color: '#787060' }}>
+          <div className="flex flex-col">
+            <span>💰 Cash-on-Cash</span>
+            <strong style={{ color: '#2b2823' }}>35 pts</strong>
+            <span className="text-[10px]">Money you make back</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Affordability: <strong style={{ color: '#2b2823' }}>30pts</strong></span>
+          <div className="flex flex-col">
+            <span>🏠 Affordability</span>
+            <strong style={{ color: '#2b2823' }}>25 pts</strong>
+            <span className="text-[10px]">Can you afford it?</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Landlord Friendly: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
+          <div className="flex flex-col">
+            <span>📅 Year-Round Income</span>
+            <strong style={{ color: '#2b2823' }}>15 pts</strong>
+            <span className="text-[10px]">Money in slow months?</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Market Headroom: <strong style={{ color: '#2b2823' }}>15pts</strong></span>
+          <div className="flex flex-col">
+            <span>🤝 Landlord Friendly</span>
+            <strong style={{ color: '#2b2823' }}>10 pts</strong>
+            <span className="text-[10px]">Laws on your side?</span>
+          </div>
+          <div className="flex flex-col">
+            <span>📈 Room to Grow</span>
+            <strong style={{ color: '#2b2823' }}>15 pts</strong>
+            <span className="text-[10px]">Space for more rentals?</span>
           </div>
         </div>
-        <p className="text-xs mt-2" style={{ color: '#9a9080' }}>
-          Note: Always verify local STR regulations before investing. Rules vary by municipality.
+        <p className="text-xs mt-3 pt-3" style={{ color: '#9a9080', borderTop: '1px solid #e5e3da' }}>
+          This score helps you filter markets - it does not replace checking the actual deal.
         </p>
       </div>
     </div>

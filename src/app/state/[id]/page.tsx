@@ -227,11 +227,12 @@ export default function StatePage({ params }: { params: { id: string } }) {
 
   const getVerdictText = (verdict: string) => {
     switch (verdict) {
-      case 'strong-buy': return 'STRONG BUY';
-      case 'buy': return 'BUY';
-      case 'hold': return 'HOLD';
-      case 'caution': return 'CAUTION';
-      default: return 'AVOID';
+      case 'passes-all-filters': return 'PASSES ALL FILTERS';
+      case 'strong-buy': return 'PASSES ALL FILTERS'; // Legacy support
+      case 'buy': return 'WORTH A LOOK';
+      case 'hold': return 'NEEDS MORE RESEARCH';
+      case 'caution': return 'BE CAREFUL';
+      default: return 'NOT RECOMMENDED';
     }
   };
 
