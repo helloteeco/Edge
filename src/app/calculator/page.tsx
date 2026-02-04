@@ -1130,6 +1130,11 @@ export default function CalculatorPage() {
       } catch (cacheError) {
         console.error("[Cache] Failed to cache:", cacheError);
       }
+      
+      // Show save reminder toast after successful analysis
+      setToastType('info');
+      setToastMessage('Analysis saved! Access it anytime from Recent Searches below.');
+      setTimeout(() => setToastMessage(null), 5000);
     } catch (err) {
       console.error("Analysis error:", err);
       setError("Failed to analyze address. Please try again.");
@@ -4625,7 +4630,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         {/* Recent Searches */}
         {!result && recentSearches.length > 0 && (
           <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Recent Searches</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>Recent Searches</h3>
+              <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#e8f5e9', color: '#2e7d32' }}>No credits needed</span>
+            </div>
+            <p className="text-sm mb-4" style={{ color: '#787060' }}>Your analyses are saved here. Click any to view instantly.</p>
             <div className="space-y-2">
               {recentSearches.map((search, index) => (
                 <button
