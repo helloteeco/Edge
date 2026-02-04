@@ -274,6 +274,33 @@ export default function SavedPage() {
   const isMarketsEmpty = savedCityData.length === 0 && savedStateData.length === 0;
   const isReportsEmpty = savedReports.length === 0;
 
+  // Helper to check if a saved report has a corresponding history entry
+  const hasHistoryEntry = (address: string): boolean => {
+    return analysisHistory.some(h => h.address === address);
+  };
+
+  // Helper to find the corresponding saved report for a history item
+  const hasSavedReport = (address: string): boolean => {
+    return savedReports.some(r => r.address === address);
+  };
+
+  // Navigate to history tab and highlight the matching entry
+  const goToHistoryForReport = (address: string) => {
+    setActiveTab('history');
+    // Scroll to top after tab switch
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Navigate to reports tab from history
+  const goToReportFromHistory = (address: string) => {
+    setActiveTab('reports');
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
@@ -480,8 +507,23 @@ export default function SavedPage() {
                           </span>
                           <span style={{ color: '#787060' }}>{formatCurrency(report.purchasePrice)} purchase</span>
                         </div>
-                        <div className="text-xs mt-1" style={{ color: '#9a9488' }}>
-                          Saved {formatDate(report.savedAt)}
+                        <div className="flex items-center gap-2 text-xs mt-1" style={{ color: '#9a9488' }}>
+                          <span>Saved {formatDate(report.savedAt)}</span>
+                          {hasHistoryEntry(report.address) && (
+                            <>
+                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: '#d8d6cd' }}></span>
+                              <button
+                                onClick={() => goToHistoryForReport(report.address)}
+                                className="inline-flex items-center gap-1 hover:underline transition-all"
+                                style={{ color: '#6366f1' }}
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                View in History
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       
@@ -846,8 +888,23 @@ export default function SavedPage() {
                           <span className="w-1 h-1 rounded-full" style={{ backgroundColor: '#d8d6cd' }}></span>
                           <span>{(item.occupancy * 100)?.toFixed(0) || '—'}% Occ</span>
                         </div>
-                        <div className="text-xs mt-2" style={{ color: '#9a9488' }}>
-                          Analyzed {formatDate(item.timestamp)}
+                        <div className="flex items-center gap-2 text-xs mt-2" style={{ color: '#9a9488' }}>
+                          <span>Analyzed {formatDate(item.timestamp)}</span>
+                          {hasSavedReport(item.address) && (
+                            <>
+                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: '#d8d6cd' }}></span>
+                              <button
+                                onClick={() => goToReportFromHistory(item.address)}
+                                className="inline-flex items-center gap-1 hover:underline transition-all"
+                                style={{ color: '#16a34a' }}
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                Saved
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
