@@ -103,6 +103,10 @@ export default function CalculatorPage() {
   const [bathrooms, setBathrooms] = useState<number | null>(null);
   const [guestCount, setGuestCount] = useState<number | null>(null);
   
+  // Toast notification state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'info'>('success');
+  
   // Address autocomplete
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -1155,28 +1159,23 @@ export default function CalculatorPage() {
     const guestBonus = Math.round((guestMultiplier - 1) * 100);
     const baselineGuests = (bedrooms || 3) * 2;
     
+    // Arbitrage variables for PDF (use current state values)
+    const pdfMonthlyRentToLandlord = monthlyRent || 1500;
+    const pdfSecurityDeposit = securityDeposit || pdfMonthlyRentToLandlord * 2;
+    const pdfFurnishingCost = furnishingCost || 5000;
+    const pdfPropertyFurnished = propertyFurnished;
+    const pdfRentersInsurance = rentersInsurance;
+    
     // Get seasonal data from the same function used in UI
     const seasonalData = getSeasonalityData();
     const baseMonthlyRev = pdfDisplayRevenue / 12;
     
-    // Calculate monthly revenues with seasonal variation - SAME LOGIC AS UI
+    // Calculate monthly revenues - distribute displayRevenue by seasonal weights (SAME AS UI)
+    const totalSeasonalWeight = seasonalData.reduce((sum, m) => sum + (m?.revenue || 1), 0);
     const monthlyRevenues = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
       const monthData = seasonalData[index];
-      let monthlyRev = 0;
-      
-      if (monthData?.revenue && monthData.revenue > 0) {
-        // Use actual historical revenue with guest multiplier
-        monthlyRev = Math.round(monthData.revenue * guestMultiplier);
-      } else if (monthData?.occupancy) {
-        // Calculate from occupancy variation
-        const baseOccupancy = result.occupancy || 55;
-        const seasonalMultiplier = baseOccupancy > 0 ? (monthData.occupancy / baseOccupancy) : 1;
-        monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
-      } else {
-        // Fallback to base monthly
-        monthlyRev = Math.round(baseMonthlyRev);
-      }
-      
+      const weight = monthData?.revenue || 1;
+      const monthlyRev = Math.round((pdfDisplayRevenue * weight) / totalSeasonalWeight);
       return { month, revenue: monthlyRev || Math.round(baseMonthlyRev) };
     });
     
@@ -1349,7 +1348,26 @@ export default function CalculatorPage() {
     </div>
     
     <!-- Investment Analysis -->
-    ${purchasePrice ? `
+    ${ownershipMode === 'arbitrage' ? `
+    <h2>Arbitrage Investment Analysis</h2>
+    <table class="table">
+      <tr><td>Security Deposit</td><td class="right">${formatCurrency(pdfSecurityDeposit)}</td></tr>
+      <tr><td>First Month's Rent</td><td class="right">${formatCurrency(pdfMonthlyRentToLandlord)}</td></tr>
+      ${!pdfPropertyFurnished ? `<tr><td>Furnishing Cost</td><td class="right">${formatCurrency(pdfFurnishingCost)}</td></tr>` : ''}
+      <tr class="total"><td>Total Upfront Investment</td><td class="right">${formatCurrency(pdfInvestment.totalCashNeeded)}</td></tr>
+    </table>
+    
+    <h2>Annual Expense Breakdown</h2>
+    <table class="table">
+      <tr><td>Rent to Landlord</td><td class="right">${formatCurrency(pdfMonthlyRentToLandlord * 12)}</td></tr>
+      <tr><td>Renter's Insurance</td><td class="right">${formatCurrency(pdfRentersInsurance * 12)}</td></tr>
+      <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(pdfInvestment.annualManagement)}</td></tr>
+      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(pdfInvestment.monthlyOperating * 12)}</td></tr>
+      <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(pdfInvestment.totalAnnualExpenses)}</td></tr>
+      <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(pdfDisplayRevenue)}</td></tr>
+      <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${pdfInvestment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(pdfInvestment.cashFlow)}</strong></td></tr>
+    </table>
+    ` : purchasePrice ? `
     <h2>Investment Analysis</h2>
     <table class="table">
       <tr><td>Purchase Price</td><td class="right">${formatCurrency(parseFloat(purchasePrice))}</td></tr>
@@ -1431,8 +1449,29 @@ export default function CalculatorPage() {
     </table>
     ` : ''}
     
-    <!-- 10-Year Investment Projection -->
-    ${purchasePrice ? `
+    <!-- Investment Projection -->
+    ${ownershipMode === 'arbitrage' ? `
+    <h2>3-Year Arbitrage Projection</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+      ${[1, 2, 3].map((year) => {
+        const annualCashFlow = pdfInvestment.cashFlow;
+        const cumulativeCashFlow = annualCashFlow * year;
+        const totalProfit = cumulativeCashFlow;
+        return `<div style="text-align: center; padding: 16px; background: ${totalProfit >= 0 ? '#ecfdf5' : '#fef2f2'}; border-radius: 8px;">
+          <div style="font-size: 12px; color: #666; font-weight: 500;">Year ${year}</div>
+          <div style="font-size: 18px; font-weight: bold; color: ${totalProfit >= 0 ? '#22c55e' : '#ef4444'}; margin-top: 4px;">${formatCurrency(totalProfit)}</div>
+          <div style="font-size: 10px; color: #999; margin-top: 2px;">Cumulative Profit</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <table class="table">
+      <tr><td>Monthly Cash Flow</td><td class="right" style="color: ${pdfInvestment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(Math.round(pdfInvestment.cashFlow / 12))}</td></tr>
+      <tr><td>Payback Period</td><td class="right">${pdfInvestment.cashFlow > 0 ? Math.ceil(pdfInvestment.totalCashNeeded / (pdfInvestment.cashFlow / 12)) + ' months' : 'N/A'}</td></tr>
+      <tr><td>Return on Investment</td><td class="right" style="color: ${pdfInvestment.cashOnCashReturn >= 0 ? '#22c55e' : '#ef4444'};">${pdfInvestment.cashOnCashReturn.toFixed(1)}%</td></tr>
+      <tr class="total"><td><strong>3-Year Total Profit</strong></td><td class="right" style="color: ${pdfInvestment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};"><strong>${formatCurrency(pdfInvestment.cashFlow * 3)}</strong></td></tr>
+    </table>
+    <p style="font-size: 10px; color: #999; text-align: center; margin-top: 8px;">*Arbitrage projections assume stable rent and market conditions. No equity is built as you don't own the property.</p>
+    ` : purchasePrice ? `
     <h2>10-Year Investment Projection</h2>
     <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px;">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
@@ -1968,6 +2007,30 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f5f4f0" }}>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div 
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] animate-fade-in-down"
+          style={{ animation: 'fadeInDown 0.3s ease-out' }}
+        >
+          <div 
+            className={`px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 ${toastType === 'success' ? 'bg-green-600' : 'bg-gray-800'} text-white`}
+            onClick={() => setToastMessage(null)}
+          >
+            {toastType === 'success' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -2322,7 +2385,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
         {/* Loading Overlay - Show while analyzing */}
         {isLoading && (
-          <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+          <div className="rounded-2xl p-8 text-center mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
             <div className="flex flex-col items-center gap-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "#f0fdf4" }}>
                 <svg className="animate-spin w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none">
@@ -2467,9 +2530,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                         // Use SMS link for mobile, fallback to clipboard for desktop
                         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                           window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
+                          setToastType('success');
+                          setToastMessage('Opening messages...');
+                          setTimeout(() => setToastMessage(null), 2000);
                         } else {
                           navigator.clipboard.writeText(shareText).then(() => {
-                            alert('Share link copied to clipboard! Paste it into your messaging app.');
+                            setToastType('success');
+                            setToastMessage('Share link copied to clipboard!');
+                            setTimeout(() => setToastMessage(null), 3000);
                           });
                         }
                       }}
@@ -2490,13 +2558,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <div className="mb-2 flex items-center gap-2">
                 <p className="text-xs text-gray-500">Revenue Projection Level</p>
                 <div className="group relative">
-                  <span className="text-gray-400 cursor-help">ℹ️</span>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <p className="font-semibold mb-1">Pick your goal:</p>
-                    <p><strong>Average:</strong> What most rentals make in this area</p>
-                    <p className="mt-1"><strong>75th %:</strong> What the better rentals make (top 25%)</p>
-                    <p className="mt-1"><strong>90th %:</strong> What the best rentals make (top 10%)</p>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-8 border-transparent border-t-gray-900"></div>
+                  <span className="text-gray-400 cursor-help text-sm">ℹ️</span>
+                  <div className="absolute top-full left-0 sm:left-1/2 sm:-translate-x-1/2 mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] shadow-xl">
+                    <p className="font-semibold mb-2 text-green-400">Pick your goal:</p>
+                    <p className="leading-relaxed"><strong className="text-white">Average:</strong> What most rentals make in this area</p>
+                    <p className="mt-2 leading-relaxed"><strong className="text-white">75th %:</strong> What the better rentals make (top 25%)</p>
+                    <p className="mt-2 leading-relaxed"><strong className="text-white">90th %:</strong> What the best rentals make (top 10%)</p>
+                    <div className="absolute top-0 left-4 sm:left-1/2 sm:-translate-x-1/2 -translate-y-full border-8 border-transparent border-b-gray-900"></div>
                   </div>
                 </div>
               </div>
