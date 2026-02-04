@@ -1449,9 +1449,9 @@ export default function CalculatorPage() {
     }
   };
 
-  // Guest capacity bonus: 2% per guest above 6, capped at 20%
-  // Based on real-world data: larger capacity properties perform significantly better
-  // Example: 3/2 sleeping 12 vs 6 guests shows ~12% revenue increase from capacity alone
+  // Guest capacity bonus: 1% per guest above 6, capped at 10%
+  // Based on real-world data: larger capacity properties perform better
+  // Conservative estimate to avoid overprojecting revenue
   const getGuestCountMultiplier = () => {
     if (!guestCount) return 1.0;
     
@@ -1460,8 +1460,8 @@ export default function CalculatorPage() {
     
     if (extraGuests <= 0) return 1.0; // No bonus if at or below baseline
     
-    // 2% per additional guest above 6, capped at 20% max
-    const bonus = Math.min(extraGuests * 0.02, 0.20);
+    // 1% per additional guest above 6, capped at 10% max
+    const bonus = Math.min(extraGuests * 0.01, 0.10);
     return 1.0 + bonus;
   };
 

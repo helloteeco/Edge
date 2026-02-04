@@ -88,9 +88,10 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
 
       // Check if already saved
       if (isSaved) {
-        // Already saved - just show heart animation
+        // Already saved - double tap to unsave
         setAnimationType('pop');
         setShowHeart(true);
+        onToggleSave(); // Unsave the item
         setTimeout(() => setShowHeart(false), 1000);
       } else {
         // Not saved - check limit
