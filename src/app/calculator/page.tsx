@@ -152,6 +152,11 @@ export default function CalculatorPage() {
   
   // Operating Expenses UI state
   const [showOpExDetails, setShowOpExDetails] = useState(false);
+  const [expensesAutoPopulated, setExpensesAutoPopulated] = useState(false);
+  const [expenseLocation, setExpenseLocation] = useState<string | null>(null);
+  
+  // Teeco Strategy toggle - allows users to see standard vs optimized revenue
+  const [useTeecoStrategy, setUseTeecoStrategy] = useState(true);
   
   // Comps display state
   const [showExpandedComps, setShowExpandedComps] = useState(false);
@@ -690,6 +695,9 @@ export default function CalculatorPage() {
     if (analysisResult.sqft > 0) {
       setPropertySqft(analysisResult.sqft);
     }
+    
+    // Auto-populate operating expenses based on location
+    autoPopulateExpenses(analysisResult.city, analysisResult.state);
     
     setUseCustomIncome(false);
     setCustomAnnualIncome("");
@@ -1517,8 +1525,8 @@ export default function CalculatorPage() {
     }
   }, [result, revenuePercentile]);
 
-  // Check if Teeco Strategy boost is active (guest count > 6)
-  const teecoStrategyActive = guestCount && guestCount > 6;
+  // Check if Teeco Strategy boost is active (guest count > 6 AND toggle is on)
+  const teecoStrategyActive = guestCount && guestCount > 6 && useTeecoStrategy;
 
   // Get display revenue based on percentile selection or custom income
   // Memoized for smooth reactive updates when percentile or inputs change
@@ -1529,8 +1537,8 @@ export default function CalculatorPage() {
     
     if (!result) return 0;
     
-    // Get guest count multiplier
-    const guestMultiplier = getGuestCountMultiplier();
+    // Get guest count multiplier - only apply if Teeco Strategy is enabled
+    const guestMultiplier = useTeecoStrategy ? getGuestCountMultiplier() : 1.0;
     
     // Use real percentile data if available
     // NOTE: percentiles.revenue values are ALREADY ANNUAL (not monthly)
@@ -1562,7 +1570,7 @@ export default function CalculatorPage() {
     }
     // Apply guest count multiplier
     return Math.round(baseRevenue * guestMultiplier);
-  }, [result, revenuePercentile, useCustomIncome, customAnnualIncome, getGuestCountMultiplier]);
+  }, [result, revenuePercentile, useCustomIncome, customAnnualIncome, getGuestCountMultiplier, useTeecoStrategy]);
 
   // Wrapper function for backward compatibility
   const getDisplayRevenue = useCallback(() => displayRevenue, [displayRevenue]);
@@ -1592,6 +1600,61 @@ export default function CalculatorPage() {
     if (includeFurnishings) total += calculateFurnishingsCost();
     if (includeAmenities) total += amenitiesCost;
     return total;
+  };
+
+  // Auto-populate operating expenses based on location
+  // Uses regional cost-of-living data and STR industry averages
+  const autoPopulateExpenses = (city: string, state: string) => {
+    // Regional cost multipliers based on cost of living index
+    // Base is US average = 1.0
+    const getRegionalMultiplier = (state: string): number => {
+      const highCostStates: Record<string, number> = {
+        'CA': 1.4, 'NY': 1.35, 'MA': 1.3, 'HI': 1.5, 'DC': 1.35,
+        'WA': 1.2, 'CO': 1.15, 'NJ': 1.25, 'CT': 1.2, 'MD': 1.15,
+        'AK': 1.25, 'OR': 1.1, 'NH': 1.1, 'VT': 1.1, 'RI': 1.1
+      };
+      const lowCostStates: Record<string, number> = {
+        'MS': 0.8, 'AR': 0.82, 'OK': 0.85, 'KS': 0.87, 'AL': 0.85,
+        'WV': 0.83, 'KY': 0.87, 'MO': 0.88, 'TN': 0.9, 'IN': 0.9,
+        'OH': 0.9, 'IA': 0.9, 'NE': 0.9, 'SC': 0.92, 'NC': 0.95,
+        'GA': 0.95, 'TX': 0.92, 'LA': 0.9, 'NM': 0.9, 'AZ': 0.95
+      };
+      const stateUpper = state.toUpperCase();
+      return highCostStates[stateUpper] || lowCostStates[stateUpper] || 1.0;
+    };
+    
+    const multiplier = getRegionalMultiplier(state);
+    
+    // Base expenses (US average for 3BR STR property)
+    // Sources: Hostaway, Lodgify, AirDNA operating expense benchmarks
+    const baseExpenses = {
+      electric: 100,      // $100/mo average
+      water: 70,          // $70/mo average
+      internet: 60,       // $60/mo (high-speed required for STR)
+      trash: 35,          // $35/mo average
+      lawnCare: 60,       // $60/mo average
+      houseSupplies: 50,  // $50/mo (toiletries, cleaning supplies)
+      maintenanceRepair: 100, // $100/mo reserve
+      rentalSoftware: 30, // $30/mo (PMS like Hospitable, Guesty)
+      pestControl: 25,    // $25/mo average
+    };
+    
+    // Apply regional multiplier and round to nearest $5
+    const roundToFive = (n: number) => Math.round(n / 5) * 5;
+    
+    setElectricMonthly(roundToFive(baseExpenses.electric * multiplier));
+    setWaterMonthly(roundToFive(baseExpenses.water * multiplier));
+    setInternetMonthly(baseExpenses.internet); // Internet is fairly consistent
+    setTrashMonthly(roundToFive(baseExpenses.trash * multiplier));
+    setLawnCareMonthly(roundToFive(baseExpenses.lawnCare * multiplier));
+    setHouseSuppliesMonthly(roundToFive(baseExpenses.houseSupplies * multiplier));
+    setMaintenanceRepairMonthly(roundToFive(baseExpenses.maintenanceRepair * multiplier));
+    setRentalSoftwareMonthly(baseExpenses.rentalSoftware); // Software is consistent
+    setPestControlMonthly(roundToFive(baseExpenses.pestControl * multiplier));
+    
+    // Mark as auto-populated and store location
+    setExpensesAutoPopulated(true);
+    setExpenseLocation(`${city}, ${state}`);
   };
 
   // Calculate monthly operating expenses
@@ -2368,43 +2431,87 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
               </div>
 
-              {/* Teeco Strategy Comparison - Show when guest count > 6 */}
-              {teecoStrategyActive && (
+              {/* Teeco Strategy Section - Show when guest count > 6 */}
+              {guestCount && guestCount > 6 && (
                 <div 
                   className="mt-4 p-4 rounded-xl border-2"
                   style={{ 
-                    backgroundColor: '#f0fdf4', 
-                    borderColor: '#22c55e',
+                    backgroundColor: useTeecoStrategy ? '#f0fdf4' : '#f5f5f5', 
+                    borderColor: useTeecoStrategy ? '#22c55e' : '#d1d5db',
                     transition: 'all 0.3s ease'
                   }}
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🚀</span>
-                    <h4 className="font-semibold" style={{ color: '#16a34a' }}>Teeco Strategy Active</h4>
+                  {/* Toggle Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{useTeecoStrategy ? '🚀' : '📊'}</span>
+                      <h4 className="font-semibold" style={{ color: useTeecoStrategy ? '#16a34a' : '#6b7280' }}>
+                        {useTeecoStrategy ? 'Teeco Strategy Active' : 'Standard Revenue'}
+                      </h4>
+                    </div>
+                    {/* Toggle Switch */}
+                    <button
+                      onClick={() => setUseTeecoStrategy(!useTeecoStrategy)}
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                      style={{ backgroundColor: useTeecoStrategy ? '#22c55e' : '#d1d5db' }}
+                    >
+                      <span
+                        className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                        style={{ transform: useTeecoStrategy ? 'translateX(1.25rem)' : 'translateX(0.25rem)' }}
+                      />
+                    </button>
                   </div>
+                  
                   <p className="text-xs text-gray-600 mb-3">
-                    By maximizing guest capacity ({guestCount} guests vs standard 6), you unlock higher revenue potential. 
-                    This is based on real Teeco portfolio data where 3BR properties sleeping 12-14 guests earn 60-100% more than standard listings.
+                    {useTeecoStrategy 
+                      ? `By maximizing guest capacity (${guestCount} guests vs standard 6), you unlock higher revenue potential. This is based on real Teeco portfolio data.`
+                      : `Showing standard market revenue without Teeco optimization. Toggle on to see potential with ${guestCount} guest capacity.`
+                    }
                   </p>
+                  
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-white">
+                    <div 
+                      className="p-3 rounded-lg cursor-pointer transition-all"
+                      style={{ 
+                        backgroundColor: !useTeecoStrategy ? '#fff' : '#f9fafb',
+                        border: !useTeecoStrategy ? '2px solid #6b7280' : '1px solid #e5e7eb'
+                      }}
+                      onClick={() => setUseTeecoStrategy(false)}
+                    >
                       <p className="text-xs text-gray-500 mb-1">Standard Listing</p>
-                      <p className="text-lg font-bold text-gray-600">{formatCurrency(getBaselineRevenue())}/yr</p>
+                      <p className={`text-lg font-bold ${!useTeecoStrategy ? 'text-gray-800' : 'text-gray-500'}`}>
+                        {formatCurrency(getBaselineRevenue())}/yr
+                      </p>
                       <p className="text-xs text-gray-400">Sleeps 6 guests</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-white border-2 border-green-400">
+                    <div 
+                      className="p-3 rounded-lg cursor-pointer transition-all"
+                      style={{ 
+                        backgroundColor: useTeecoStrategy ? '#fff' : '#f9fafb',
+                        border: useTeecoStrategy ? '2px solid #22c55e' : '1px solid #e5e7eb'
+                      }}
+                      onClick={() => setUseTeecoStrategy(true)}
+                    >
                       <p className="text-xs text-green-600 mb-1">With Teeco Strategy</p>
-                      <p className="text-lg font-bold text-green-600">{formatCurrency(displayRevenue)}/yr</p>
+                      <p className={`text-lg font-bold ${useTeecoStrategy ? 'text-green-600' : 'text-gray-500'}`}>
+                        {formatCurrency(Math.round(getBaselineRevenue() * getGuestCountMultiplier()))}/yr
+                      </p>
                       <p className="text-xs text-green-500">Sleeps {guestCount} guests</p>
                     </div>
                   </div>
+                  
                   <div className="mt-3 text-center">
-                    <p className="text-sm font-semibold text-green-600">
-                      +{formatCurrency(displayRevenue - getBaselineRevenue())}/yr (+{Math.round((getGuestCountMultiplier() - 1) * 100)}% boost)
+                    <p className={`text-sm font-semibold ${useTeecoStrategy ? 'text-green-600' : 'text-gray-500'}`}>
+                      {useTeecoStrategy 
+                        ? `+${formatCurrency(Math.round(getBaselineRevenue() * getGuestCountMultiplier()) - getBaselineRevenue())}/yr (+${Math.round((getGuestCountMultiplier() - 1) * 100)}% boost)`
+                        : 'Toggle Teeco Strategy to see potential revenue boost'
+                      }
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Teeco helps you maximize capacity through smart design, bunk rooms, and sleeper sofas
-                    </p>
+                    {useTeecoStrategy && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Teeco helps you maximize capacity through smart design, bunk rooms, and sleeper sofas
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2954,6 +3061,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 <div>
                   <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
                   <p className="text-sm text-gray-500">Recurring costs to run your STR</p>
+                  {expensesAutoPopulated && expenseLocation && (
+                    <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                      <span>📊</span> Auto-estimated for {expenseLocation} (adjust as needed)
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-bold" style={{ color: "#2b2823" }}>{formatCurrency(calculateMonthlyExpenses())}</p>
