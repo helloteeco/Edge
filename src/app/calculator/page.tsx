@@ -2135,7 +2135,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       onClick={() => {
                         const displayRevenue = getDisplayRevenue();
                         
-                        // Create shareable data object
+                        // Calculate grade from CoC return
+                        const coc = investment.cashOnCashReturn || 0;
+                        const grade = coc >= 25 ? 'A+' : coc >= 20 ? 'A' : coc >= 15 ? 'B+' : coc >= 10 ? 'B' : coc >= 5 ? 'C' : 'D';
+                        
+                        // Create shareable data object with grade and extra data
                         const shareData = {
                           type: "deal",
                           address: result.address || result.neighborhood,
@@ -2146,8 +2150,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                           revenue: displayRevenue,
                           occupancy: result.occupancy,
                           adr: result.adr,
-                          coc: investment.cashOnCashReturn || 0,
+                          coc: coc,
                           purchasePrice: purchasePrice || undefined,
+                          grade: grade,
+                          comparablesCount: result.comparables?.length || 0,
                         };
                         
                         // Encode data for URL
