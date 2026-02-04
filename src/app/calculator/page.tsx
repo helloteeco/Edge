@@ -4520,6 +4520,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
           </div>
         )}
         
+        {/* Founder Note - Subtle Trust Builder */}
+        <div className="mt-16 mb-8">
+          <div className="flex items-center gap-4 max-w-md mx-auto">
+            <img 
+              src="/jeff-founder.jpg" 
+              alt="Jeff, founder of Teeco" 
+              className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+              style={{ border: '2px solid #e5e3da' }}
+            />
+            <div>
+              <p className="text-sm" style={{ color: '#787060', lineHeight: '1.5' }}>
+                <span className="font-medium" style={{ color: '#2b2823' }}>Hey, I am Jeff.</span>{' '}
+                I built Edge because I wanted a faster way to find good rental investments for myself. I still use it every day. If it helps you too, I am glad you are here.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Cross-Reference Tools - Minimal Footer Style */}
         <div className="mt-12 pt-8" style={{ borderTop: '1px solid #e5e3da' }}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
