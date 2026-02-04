@@ -1453,7 +1453,7 @@ export default function CalculatorPage() {
   // Guest capacity bonus: 1% per guest above 6, capped at 10%
   // Based on real-world data: larger capacity properties perform better
   // Conservative estimate to avoid overprojecting revenue
-  const getGuestCountMultiplier = () => {
+  const getGuestCountMultiplier = useCallback(() => {
     if (!guestCount) return 1.0;
     
     const baselineGuests = 6; // Standard baseline for STR properties
@@ -1464,7 +1464,7 @@ export default function CalculatorPage() {
     // 1% per additional guest above 6, capped at 10% max
     const bonus = Math.min(extraGuests * 0.01, 0.10);
     return 1.0 + bonus;
-  };
+  }, [guestCount]);
 
   // Get display revenue based on percentile selection or custom income
   // Memoized for smooth reactive updates when percentile or inputs change
@@ -1508,7 +1508,7 @@ export default function CalculatorPage() {
     }
     // Apply guest count multiplier
     return Math.round(baseRevenue * guestMultiplier);
-  }, [result, revenuePercentile, useCustomIncome, customAnnualIncome, guestCount, bedrooms]);
+  }, [result, revenuePercentile, useCustomIncome, customAnnualIncome, getGuestCountMultiplier]);
 
   // Wrapper function for backward compatibility
   const getDisplayRevenue = useCallback(() => displayRevenue, [displayRevenue]);
@@ -2601,7 +2601,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   </div>
                   {revenuePercentile !== "average" && result.comparables.length > 5 && (
                     <p className="text-xs text-center text-gray-400 mt-4" style={{ transition: "opacity 0.3s ease" }}>
-                      Tap "Average" above to see all {result.comparables.length} comparable listings
+                      Tap &quot;Average&quot; above to see all {result.comparables.length} comparable listings
                     </p>
                   )}
                   {revenuePercentile === "average" && result.comparables.length > 15 && (
