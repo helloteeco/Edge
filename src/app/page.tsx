@@ -464,6 +464,14 @@ export default function HomePage() {
             boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
           }}
         >
+          {/* Section Header */}
+          <h2 
+            className="text-xl font-bold text-center mb-6"
+            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            Teeco Design Services
+          </h2>
+          
           {/* Trust Badges Row */}
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mb-6 pb-6" style={{ borderBottom: '1px solid #e5e3da' }}>
             {/* Airbnb Superhost Badge */}
@@ -698,7 +706,7 @@ export default function HomePage() {
               </Link>
               
               {/* Resource Links Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Link 
                   href="https://www.zillow.com/professionals/real-estate-agent-reviews/"
                   target="_blank"
@@ -709,7 +717,7 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <HomeEquityIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Find a Great Agent</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Find an Agent</p>
                 </Link>
                 
                 <Link 
@@ -733,37 +741,11 @@ export default function HomePage() {
                   <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <PaletteIcon className="w-5 h-5" color="#ffffff" />
                   </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Design Services</p>
+                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Design & Setup</p>
                 </Link>
                 
                 <Link 
                   href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
-                >
-                  <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
-                    <SofaIcon className="w-5 h-5" color="#ffffff" />
-                  </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Property Setup</p>
-                </Link>
-                
-                <Link 
-                  href="https://teeco.co/packages"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
-                >
-                  <div className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
-                    <PartnershipIcon className="w-5 h-5" color="#ffffff" />
-                  </div>
-                  <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Co-Hosting</p>
-                </Link>
-                
-                <Link 
-                  href="https://teeco.co/fund-your-financial-freedom"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
