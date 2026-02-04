@@ -22,13 +22,17 @@ function formatCurrency(value: number): string {
 }
 
 type Props = {
-  params: Promise<{}>;
-  searchParams: Promise<{ d?: string }>;
+  children: React.ReactNode;
+  params: { [key: string]: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 };
 
-export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const resolvedSearchParams = await searchParams;
-  const encoded = resolvedSearchParams.d;
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}): Promise<Metadata> {
+  const encoded = typeof searchParams.d === 'string' ? searchParams.d : undefined;
   
   if (!encoded) {
     return {
