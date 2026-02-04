@@ -1178,8 +1178,7 @@ export default function CalculatorPage() {
     .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; text-align: center; }
     .summary-item { }
     .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.6); margin-bottom: 8px; font-weight: 500; }
-    .summary-value { font-size: 36px; font-weight: 700; color: #22c55e; }
-    .summary-value.primary { font-size: 48px; }
+    .summary-value { font-size: 32px; font-weight: 700; color: #22c55e; }
     .summary-subtext { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 6px; }
     
     /* Section Headers */
@@ -1250,6 +1249,10 @@ export default function CalculatorPage() {
     .disclaimer { font-size: 10px; color: #a0a0a0; margin-top: 20px; max-width: 550px; margin-left: auto; margin-right: auto; line-height: 1.5; }
     
     /* Print styles */
+    @page {
+      margin: 0.5in;
+      size: letter;
+    }
     @media print {
       body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .page { padding: 24px; }
@@ -1277,7 +1280,7 @@ export default function CalculatorPage() {
       <div class="summary-grid">
         <div class="summary-item">
           <p class="summary-label">Projected Annual Revenue</p>
-          <p class="summary-value primary">${formatCurrency(displayRevenue)}</p>
+          <p class="summary-value">${formatCurrency(displayRevenue)}</p>
           <p class="summary-subtext">${formatCurrency(Math.round(displayRevenue / 12))}/month avg${guestBonus > 0 ? ` · +${guestBonus}% capacity bonus` : ''}</p>
         </div>
         <div class="summary-item">
