@@ -3277,20 +3277,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                               Email
                             </button>
                             <button
-                              onClick={async () => {
-                                // Trigger PDF generation with AI analysis included
+                              onClick={() => {
+                                // Store AI analysis in session for PDF generation
                                 const analysisText = aiAnalysis?.replace(/[#*]/g, '') || '';
-                                // Store analysis in session for PDF
                                 sessionStorage.setItem('aiAnalysisForPdf', analysisText);
-                                // Find and click the PDF button
-                                const pdfButton = document.querySelector('[data-pdf-button]') as HTMLButtonElement;
-                                if (pdfButton) {
-                                  pdfButton.click();
-                                } else {
-                                  // Fallback - copy to clipboard
-                                  navigator.clipboard.writeText(analysisText);
-                                  alert('Analysis copied! Use the PDF button in the results to generate a full report.');
-                                }
+                                // Directly call PDF download
+                                downloadPDFReport();
                               }}
                               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
                               style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
@@ -3412,16 +3404,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   <div className="flex-1">
                     <p className="font-semibold" style={{ color: "#92400e" }}>Need help with steps 2-5?</p>
                     <p className="text-sm mt-1" style={{ color: "#a16207" }}>
-                      Teeco&apos;s 1:1 coaching walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
+                      Teeco&apos;s 1:1 coaching walks you through everything. Find STR-friendly lenders, connect with STR-knowledgeable agents, and hire vetted contractors and cleaners from our network. Students receive 20% off design and setup services. Work only ~3 hrs/wk once set up.
                     </p>
                     <a 
-                      href="https://teeco.co/fund-your-financial-freedom"
+                      href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:scale-105"
                       style={{ backgroundColor: "#92400e", color: "#ffffff" }}
                     >
-                      Learn About Coaching
+                      Apply Now
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>

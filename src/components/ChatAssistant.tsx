@@ -206,7 +206,7 @@ export function ChatAssistant() {
                     </div>
                     <div>
                       <div className="font-semibold" style={{ color: '#2b2823' }}>Coaching Program</div>
-                      <div className="text-sm font-medium" style={{ color: '#2b2823' }}>Only ~3 hours/week once set up</div>
+                      <div className="text-sm font-medium" style={{ color: '#2b2823' }}>Work only ~3 hrs/wk once set up</div>
                       <div className="text-xs mt-1" style={{ color: '#787060' }}>9 guided calls: Deal → Setup & Design → Live STR. We can set up your Airbnb remotely while you keep your job.</div>
                     </div>
                   </div>
@@ -429,14 +429,16 @@ export function ChatAssistant() {
                           </ul>
                         </div>
                         <p className="text-sm" style={{ color: '#787060' }}>
-                          Reach out to get started:
+                          Schedule your coaching interview:
                         </p>
                         <a
-                          href="mailto:hello@teeco.co"
-                          className="block w-full py-3 rounded-xl font-semibold transition-colors"
+                          href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full py-3 rounded-xl font-semibold transition-colors text-center"
                           style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                         >
-                          Email hello@teeco.co
+                          Apply Now →
                         </a>
                       </div>
                     ) : (
