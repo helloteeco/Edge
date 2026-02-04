@@ -152,6 +152,9 @@ export default function CalculatorPage() {
   
   // Operating Expenses UI state
   const [showOpExDetails, setShowOpExDetails] = useState(false);
+  
+  // Comps display state
+  const [showExpandedComps, setShowExpandedComps] = useState(false);
 
   // AI Analysis State
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -1913,6 +1916,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
             Analyze any rental property<br />in the United States
           </h1>
           <p className="text-gray-600">Get accurate revenue estimates based on real Airbnb data</p>
+          
+          {/* Helpful note about Edge Assistant */}
+          <div className="mt-4 p-3 rounded-xl flex items-center gap-3" style={{ backgroundColor: '#f0f9f0', border: '1px solid #c8e6c9' }}>
+            <span className="text-2xl">💬</span>
+            <p className="text-sm" style={{ color: '#2e7d32' }}>
+              <span className="font-medium">Real estate has its own language!</span> Tap the chat button in the corner anytime — our Edge Assistant explains everything in simple terms.
+            </p>
+          </div>
         </div>
 
         {/* Search Box */}
@@ -2263,10 +2274,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 <div className="group relative">
                   <span className="text-gray-400 cursor-help">ℹ️</span>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <p className="font-semibold mb-1">What do these mean?</p>
-                    <p><strong>Average:</strong> Typical revenue for this market (50th percentile)</p>
-                    <p className="mt-1"><strong>75th %:</strong> Top 25% performers - achievable with good amenities and marketing</p>
-                    <p className="mt-1"><strong>90th %:</strong> Top 10% - requires premium design, upgrades, and excellent reviews</p>
+                    <p className="font-semibold mb-1">Pick your goal:</p>
+                    <p><strong>Average:</strong> What most rentals make in this area</p>
+                    <p className="mt-1"><strong>75th %:</strong> What the better rentals make (top 25%)</p>
+                    <p className="mt-1"><strong>90th %:</strong> What the best rentals make (top 10%)</p>
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-8 border-transparent border-t-gray-900"></div>
                   </div>
                 </div>
@@ -2317,8 +2328,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     transition: "all 0.2s ease",
                   }}
                 >
-                  {revenuePercentile === "average" ? "Estimated Annual Revenue" : 
-                   revenuePercentile === "75th" ? "75th Percentile Revenue" : "90th Percentile Revenue"}
+                  {revenuePercentile === "average" ? "What You Could Make Per Year" : 
+                   revenuePercentile === "75th" ? "Top 25% Earners Make" : "Top 10% Earners Make"}
                 </p>
                 <p 
                   className="text-3xl sm:text-4xl font-bold" 
@@ -2345,8 +2356,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     }}
                   >
                     {revenuePercentile === "75th" 
-                      ? "Top 25% performers with good amenities" 
-                      : "Top 10% performers with upgrades & premium design"}
+                      ? "With nice upgrades and good reviews" 
+                      : "With the best setup and amazing reviews"}
                   </p>
                 )}
                 {guestCount && guestCount > 6 && (
@@ -2661,25 +2672,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               const sortedByRevenue = [...comparablesWithDistance].sort((a, b) => b.annualRev - a.annualRev);
               
               // Filter based on percentile selection
-              let filteredComparables = sortedByProximity.slice(0, 5); // Default: 5 closest to projection
+              // Default: 8 closest to projection (expandable to all)
+              const defaultDisplayCount = 8;
+              let filteredComparables = sortedByProximity;
               let percentileLabel = "Similar Revenue";
-              let percentileNote = `Showing 5 listings closest to your ${formatCurrency(projectedAnnualRevenue)}/yr projection`;
-              let displayLimit = 5;
+              let percentileNote = `Showing listings closest to your ${formatCurrency(projectedAnnualRevenue)}/yr projection`;
+              let displayLimit = showExpandedComps ? filteredComparables.length : defaultDisplayCount;
               
               if (revenuePercentile === "90th") {
                 // Top 10% - show top performers
-                const top10Count = Math.max(3, Math.min(5, Math.ceil(sortedByRevenue.length * 0.1)));
-                filteredComparables = sortedByRevenue.slice(0, top10Count);
-                percentileLabel = "Top 10% Performers";
-                percentileNote = "These are the highest-earning listings in your market - typically have premium amenities, professional design, and excellent reviews";
-                displayLimit = top10Count;
+                filteredComparables = sortedByRevenue;
+                percentileLabel = "Top Performers";
+                percentileNote = "These are the highest-earning listings - they have great amenities and reviews";
+                displayLimit = showExpandedComps ? filteredComparables.length : defaultDisplayCount;
               } else if (revenuePercentile === "75th") {
                 // Top 25% - show top 25% of listings
-                const top25Count = Math.max(3, Math.min(5, Math.ceil(sortedByRevenue.length * 0.25)));
-                filteredComparables = sortedByRevenue.slice(0, top25Count);
-                percentileLabel = "Top 25% Performers";
-                percentileNote = "These listings outperform most competitors with good amenities and solid reviews";
-                displayLimit = top25Count;
+                filteredComparables = sortedByRevenue;
+                percentileLabel = "Above Average Performers";
+                percentileNote = "These listings do better than most - good amenities and solid reviews";
+                displayLimit = showExpandedComps ? filteredComparables.length : defaultDisplayCount;
               }
               
               return (
@@ -2742,9 +2753,26 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </a>
                     ))}
                   </div>
-                  {bedroomFilteredComps.length > 5 && (
-                    <p className="text-xs text-center text-gray-400 mt-4" style={{ transition: "opacity 0.3s ease" }}>
-                      Showing {displayLimit} of {bedroomFilteredComps.length} {selectedBedrooms}BR comparable listings
+                  {bedroomFilteredComps.length > 8 && (
+                    <div className="mt-4 text-center">
+                      <button
+                        onClick={() => setShowExpandedComps(!showExpandedComps)}
+                        className="text-sm font-medium px-4 py-2 rounded-lg transition-all"
+                        style={{ backgroundColor: "#f5f4f0", color: "#787060" }}
+                      >
+                        {showExpandedComps 
+                          ? `Show Less` 
+                          : `View All ${bedroomFilteredComps.length} Listings`
+                        }
+                      </button>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Showing {Math.min(displayLimit, bedroomFilteredComps.length)} of {bedroomFilteredComps.length} {selectedBedrooms}BR listings
+                      </p>
+                    </div>
+                  )}
+                  {bedroomFilteredComps.length <= 8 && bedroomFilteredComps.length > 0 && (
+                    <p className="text-xs text-center text-gray-400 mt-4">
+                      Showing all {bedroomFilteredComps.length} {selectedBedrooms}BR comparable listings
                     </p>
                   )}
                   {bedroomFilteredComps.length < result.comparables.length && (
@@ -3233,7 +3261,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </p>
                     </div>
                     <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
-                      <p className="text-xs text-gray-500">Cash-on-Cash</p>
+                      <p className="text-xs text-gray-500">Return on Your Money</p>
                       <p className="text-xl font-bold" style={{ color: "#2b2823" }}>
                         {investment.cashOnCashReturn.toFixed(1)}%
                       </p>
@@ -3385,22 +3413,22 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       verdict = "STRONG BUY";
                       verdictColor = "#16a34a";
                       verdictBg = "#dcfce7";
-                      explanation = "Excellent returns with strong market fundamentals.";
+                      explanation = "This looks like a great deal! The numbers are really good.";
                     } else if (totalScore >= 60) {
                       verdict = "GOOD DEAL";
                       verdictColor = "#22c55e";
                       verdictBg = "#ecfdf5";
-                      explanation = "Solid investment with good cash flow potential.";
+                      explanation = "This is a good deal. You should make money here.";
                     } else if (totalScore >= 45) {
                       verdict = "CONSIDER";
                       verdictColor = "#eab308";
                       verdictBg = "#fefce8";
-                      explanation = "Moderate returns - may need value-add strategy.";
+                      explanation = "This could work, but you might need to add upgrades to make more money.";
                     } else {
                       verdict = "CAUTION";
                       verdictColor = "#ef4444";
                       verdictBg = "#fef2f2";
-                      explanation = "Low returns at current price - negotiate or pass.";
+                      explanation = "The price is too high. Try to pay less or look at other properties.";
                     }
                     
                     return (
@@ -3417,19 +3445,19 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                         {/* Score Breakdown */}
                         <div className="grid grid-cols-4 gap-2 text-xs">
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
-                            <p className="text-gray-500">Cash-on-Cash</p>
+                            <p className="text-gray-500">Returns</p>
                             <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(cocScore)}/40</p>
                           </div>
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
-                            <p className="text-gray-500">Cash Flow</p>
+                            <p className="text-gray-500">Profit</p>
                             <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(cashFlowScore)}/30</p>
                           </div>
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
-                            <p className="text-gray-500">Occupancy</p>
+                            <p className="text-gray-500">Bookings</p>
                             <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(occupancyScore)}/20</p>
                           </div>
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
-                            <p className="text-gray-500">Data Quality</p>
+                            <p className="text-gray-500">Data</p>
                             <p className="font-bold" style={{ color: "#2b2823" }}>{dataScore}/10</p>
                           </div>
                         </div>
