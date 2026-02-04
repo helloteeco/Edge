@@ -84,14 +84,23 @@ export default function CityPage({ params }: { params: { id: string } }) {
     }
   };
 
-  const handleShare = () => {
-    const text = `${city?.name}, ${city?.stateCode} - STR Investment Analysis\n\n📊 Grade: ${city?.grade}\n📈 Score: ${city?.marketScore}/100\n💰 Monthly Revenue: $${city?.strMonthlyRevenue.toLocaleString()}\n🏠 Median Price: $${city?.medianHomeValue.toLocaleString()}\n\n${window.location.href}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
+  const handleShare = async () => {
+    // Share just the URL - the Open Graph meta tags will create the preview card
+    const shareUrl = window.location.href;
     
-    if (navigator.share) {
-      navigator.share({ title: `${city?.name} STR Analysis`, text, url: window.location.href });
+    if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: `${city?.name} STR Analysis`,
+          url: shareUrl
+        });
+      } catch (err) {
+        // User cancelled or share failed
+        console.log('Share cancelled');
+      }
     } else {
-      navigator.clipboard.writeText(text);
-      alert("Analysis copied to clipboard!");
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Link copied to clipboard!");
     }
   };
 

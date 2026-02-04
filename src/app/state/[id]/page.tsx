@@ -105,17 +105,24 @@ export default function StatePage({ params }: { params: { id: string } }) {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!state) return;
-    const cityCount = cities.length;
-    const topCity = cities.sort((a, b) => b.marketScore - a.marketScore)[0];
-    const text = `${state.name} - STR Investment Analysis\n\n📊 Grade: ${state.grade}\n📈 Score: ${state.marketScore}/100\n🏘️ ${cityCount} markets analyzed\n⭐ Top market: ${topCity?.name || 'N/A'}\n\n${window.location.href}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
+    // Share just the URL - the Open Graph meta tags will create the preview card
+    const shareUrl = window.location.href;
     
-    if (navigator.share) {
-      navigator.share({ title: `${state.name} STR Analysis`, text, url: window.location.href });
+    if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: `${state.name} STR Analysis`,
+          url: shareUrl
+        });
+      } catch (err) {
+        // User cancelled or share failed
+        console.log('Share cancelled');
+      }
     } else {
-      navigator.clipboard.writeText(text);
-      alert("Analysis copied to clipboard!");
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Link copied to clipboard!");
     }
   };
 
@@ -587,14 +594,21 @@ export default function StatePage({ params }: { params: { id: string } }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      const shareText = `${city.name}, ${state.abbreviation} - STR Grade: ${city.grade}\n\n💰 Monthly Revenue: $${city.strMonthlyRevenue.toLocaleString()}\n📊 Score: ${city.marketScore}/100\n🏠 Median Price: $${city.medianHomeValue.toLocaleString()}\n\nCheck it out on Edge ↓\n${window.location.origin}/city/${city.id}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
-                      if (navigator.share) {
-                        navigator.share({ text: shareText });
+                      const shareUrl = `${window.location.origin}/city/${city.id}`;
+                      if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                        try {
+                          await navigator.share({
+                            title: `${city.name}, ${state.abbreviation} - STR Analysis`,
+                            url: shareUrl
+                          });
+                        } catch (err) {
+                          console.log('Share cancelled');
+                        }
                       } else {
-                        navigator.clipboard.writeText(shareText);
+                        await navigator.clipboard.writeText(shareUrl);
                         alert('Link copied to clipboard!');
                       }
                     }}
