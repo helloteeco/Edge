@@ -166,22 +166,20 @@ export default function HomePage() {
       title: 'Setup & Design',
       description: 'Professional in-house services to launch your STR.',
       features: [
-        'In-house professional design services for Teeco students',
+        'In-house professional design services (20% discount for Teeco students)',
         'Property setup and furnishing services',
         'Co-hosting services to manage your listing',
-        'Link to design & setup services in Edge Assistant',
-        '1-hour free video training to get started'
+        'Link to design & setup services in Edge Assistant'
       ]
     },
     'Scale': {
       title: 'Scale Your Portfolio',
       description: 'Grow with mentorship, community, and ongoing education.',
       features: [
-        'Mentorship coaching program application',
-        'Access to "The Book on Rural Airbnb Investing"',
-        'Free video training library',
-        'Edge AI Assistant trained on STR investing knowledge',
-        'Community resources and ongoing support'
+        'Mentorship program application (for experienced STR investors)',
+        'Use Funding tab to explore scaling options',
+        'Community support through Circle group',
+        'Edge AI Assistant can help with your specific roadblocks'
       ]
     }
   };
