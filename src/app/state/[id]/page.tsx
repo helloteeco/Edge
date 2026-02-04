@@ -357,7 +357,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
                   className="text-2xl font-bold"
                   style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
-                  {state.marketScore}/85
+                  {state.marketScore}/100
                 </div>
                 <div className="text-sm" style={{ color: '#787060' }}>{getVerdictText(state.verdict)}</div>
               </div>
@@ -606,7 +606,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      const shareText = `${city.name}, ${state.abbreviation} - STR Grade: ${city.grade}\n\n💰 Monthly Revenue: $${city.strMonthlyRevenue.toLocaleString()}\n📊 Score: ${city.marketScore}/85\n🏠 Median Price: $${city.medianHomeValue.toLocaleString()}\n\nCheck it out on Edge ↓\n${window.location.origin}/city/${city.id}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
+                      const shareText = `${city.name}, ${state.abbreviation} - STR Grade: ${city.grade}\n\n💰 Monthly Revenue: $${city.strMonthlyRevenue.toLocaleString()}\n📊 Score: ${city.marketScore}/100\n🏠 Median Price: $${city.medianHomeValue.toLocaleString()}\n\nCheck it out on Edge ↓\n${window.location.origin}/city/${city.id}\n\n—\nEdge by Teeco\nedge.teeco.co\nYour unfair advantage in STR investing`;
                       if (navigator.share) {
                         navigator.share({ text: shareText });
                       } else {

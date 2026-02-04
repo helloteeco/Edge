@@ -287,7 +287,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
                   className="text-2xl font-bold"
                   style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
-                  {city.marketScore}/85
+                  {city.marketScore}/100
                 </div>
                 <div className="text-sm" style={{ color: '#787060' }}>{verdictInfo.emoji} {verdictInfo.text}</div>
               </div>
@@ -298,10 +298,10 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>Score Breakdown</div>
               
               {[
-                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 40 },
-                { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 25 },
+                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 45 },
+                { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 30 },
                 { icon: '🤝', label: 'Landlord Friendly', score: city.scoring.landlordFriendly.score, max: 10 },
-                { icon: '📊', label: 'Market Headroom', score: city.scoring.marketHeadroom.score, max: 10 },
+                { icon: '📊', label: 'Market Headroom', score: city.scoring.marketHeadroom.score, max: 15 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
                   <span className="text-sm">{item.icon}</span>
@@ -343,7 +343,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </div>
             <div className="rounded-lg p-3" style={{ backgroundColor: '#e5e3da' }}>
               <div style={{ color: '#787060' }}>Headroom</div>
-              <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.marketHeadroom.score}/10</div>
+              <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.marketHeadroom.score}/15</div>
               <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.marketHeadroom.rating}</div>
             </div>
           </div>

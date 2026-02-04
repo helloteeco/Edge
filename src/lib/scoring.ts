@@ -6,12 +6,12 @@
  * - Cash flow over appreciation plays
  * - Markets under $250K median home price
  * 
- * SCORING WEIGHTS (Total: 85 points)
+ * SCORING WEIGHTS (Total: 100 points)
  * =====================================
- * 1. Cash-on-Cash Return            - 40 points (heaviest weight)
- * 2. Affordability                  - 25 points
+ * 1. Cash-on-Cash Return            - 45 points (heaviest weight)
+ * 2. Affordability                  - 30 points
  * 3. Landlord Friendliness          - 10 points
- * 4. Market Headroom               - 10 points
+ * 4. Market Headroom               - 15 points
  * 
  * NOTE: STR Legality was removed from scoring because regulations
  * vary too much at the local/municipal level to accurately score.
@@ -37,12 +37,12 @@
  */
 
 export interface ScoringBreakdown {
-  cashOnCash: { score: number; maxScore: 40; value: number; rating: string };
-  affordability: { score: number; maxScore: 25; value: number; rating: string };
+  cashOnCash: { score: number; maxScore: 45; value: number; rating: string };
+  affordability: { score: number; maxScore: 30; value: number; rating: string };
   landlordFriendly: { score: number; maxScore: 10; rating: string };
-  marketHeadroom: { score: number; maxScore: 10; value: number; rating: string };
+  marketHeadroom: { score: number; maxScore: 15; value: number; rating: string };
   totalScore: number;
-  maxPossibleScore: 85;
+  maxPossibleScore: 100;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
   verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
 }
@@ -88,46 +88,46 @@ export function calculateCashOnCash(monthlyRevenue: number, homePrice: number): 
 }
 
 /**
- * Calculate Cash-on-Cash score (40 points max)
+ * Calculate Cash-on-Cash score (45 points max)
  * 
  * Target: 20%+ for strong score
  * 
  * Scoring:
- * - CoC >= 20%: 40 points (Elite)
- * - CoC >= 15%: 34 points (Excellent)
- * - CoC >= 10%: 28 points (Good)
+ * - CoC >= 20%: 45 points (Elite)
+ * - CoC >= 15%: 40 points (Excellent)
+ * - CoC >= 10%: 30 points (Good)
  * - CoC >= 5%: 20 points (Marginal)
- * - CoC >= 0%: 12 points (Break-even)
- * - CoC < 0%: 6 points (Negative Cash Flow)
+ * - CoC >= 0%: 10 points (Break-even)
+ * - CoC < 0%: 5 points (Negative Cash Flow)
  */
 export function scoreCashOnCash(cashOnCashReturn: number): { score: number; rating: string } {
-  if (cashOnCashReturn >= 20) return { score: 40, rating: 'Elite (20%+)' };
-  if (cashOnCashReturn >= 15) return { score: 34, rating: 'Excellent (15%+)' };
-  if (cashOnCashReturn >= 10) return { score: 28, rating: 'Good (10%+)' };
+  if (cashOnCashReturn >= 20) return { score: 45, rating: 'Elite (20%+)' };
+  if (cashOnCashReturn >= 15) return { score: 40, rating: 'Excellent (15%+)' };
+  if (cashOnCashReturn >= 10) return { score: 30, rating: 'Good (10%+)' };
   if (cashOnCashReturn >= 5) return { score: 20, rating: 'Marginal (5%+)' };
-  if (cashOnCashReturn >= 0) return { score: 12, rating: 'Break-even' };
-  return { score: 6, rating: 'Negative Cash Flow' };
+  if (cashOnCashReturn >= 0) return { score: 10, rating: 'Break-even' };
+  return { score: 5, rating: 'Negative Cash Flow' };
 }
 
 /**
- * Calculate Affordability score (25 points max)
+ * Calculate Affordability score (30 points max)
  * Target: $250K or less median home price
  * 
  * Scoring:
- * - <= $150K: 25 points (Highly Affordable)
- * - <= $200K: 22 points (Very Affordable)
- * - <= $250K: 18 points (Affordable - Target)
- * - <= $300K: 12 points (Moderate)
- * - <= $400K: 6 points (Expensive)
- * - > $400K: 2 points (Very Expensive)
+ * - <= $150K: 30 points (Highly Affordable)
+ * - <= $200K: 25 points (Very Affordable)
+ * - <= $250K: 20 points (Affordable - Target)
+ * - <= $300K: 15 points (Moderate)
+ * - <= $400K: 10 points (Expensive)
+ * - > $400K: 5 points (Very Expensive)
  */
 export function scoreAffordability(medianHomePrice: number): { score: number; rating: string } {
-  if (medianHomePrice <= 150000) return { score: 25, rating: 'Highly Affordable' };
-  if (medianHomePrice <= 200000) return { score: 22, rating: 'Very Affordable' };
-  if (medianHomePrice <= 250000) return { score: 18, rating: 'Affordable' };
-  if (medianHomePrice <= 300000) return { score: 12, rating: 'Moderate' };
-  if (medianHomePrice <= 400000) return { score: 6, rating: 'Expensive' };
-  return { score: 2, rating: 'Very Expensive' };
+  if (medianHomePrice <= 150000) return { score: 30, rating: 'Highly Affordable' };
+  if (medianHomePrice <= 200000) return { score: 25, rating: 'Very Affordable' };
+  if (medianHomePrice <= 250000) return { score: 20, rating: 'Affordable' };
+  if (medianHomePrice <= 300000) return { score: 15, rating: 'Moderate' };
+  if (medianHomePrice <= 400000) return { score: 10, rating: 'Expensive' };
+  return { score: 5, rating: 'Very Expensive' };
 }
 
 
@@ -137,9 +137,9 @@ export function scoreAffordability(medianHomePrice: number): { score: number; ra
  * 
  * States are categorized as:
  * - Very Landlord Friendly: 10 points
- * - Landlord Friendly: 8 points
+ * - Landlord Friendly: 8 points (rounded to nearest 5 would be 10, but keeping 8 for differentiation)
  * - Neutral: 5 points
- * - Tenant Friendly: 2 points
+ * - Tenant Friendly: 2 points (rounded to nearest 5 would be 0, but keeping 2 for minimum)
  */
 const landlordFriendlyStates: Record<string, number> = {
   // Very Landlord Friendly (10 points)
@@ -163,7 +163,7 @@ export function scoreLandlordFriendly(stateCode: string): { score: number; ratin
 }
 
 /**
- * Calculate Market Headroom score (10 points max)
+ * Calculate Market Headroom score (15 points max)
  * Based on STR listings per 1,000 residents
  * Higher score = more room for new STRs (less competition)
  * 
@@ -173,16 +173,16 @@ export function scoreLandlordFriendly(stateCode: string): { score: number; ratin
  * 50,000 visitors annually.
  * 
  * Standard Scoring (population >= 5,000):
- * - < 3 listings/1000: 10 points (Excellent Headroom)
- * - < 6 listings/1000: 8 points (Good Headroom)
+ * - < 3 listings/1000: 15 points (Excellent Headroom)
+ * - < 6 listings/1000: 10 points (Good Headroom)
  * - < 10 listings/1000: 5 points (Limited Headroom)
- * - >= 10 listings/1000: 2 points (Crowded Market)
+ * - >= 10 listings/1000: 0 points (Crowded Market)
  * 
  * Tourism Town Scoring (population < 5,000):
- * - < 15 listings/1000: 10 points (Excellent Headroom)
- * - < 30 listings/1000: 8 points (Good Headroom)
+ * - < 15 listings/1000: 15 points (Excellent Headroom)
+ * - < 30 listings/1000: 10 points (Good Headroom)
  * - < 50 listings/1000: 5 points (Limited Headroom)
- * - >= 50 listings/1000: 2 points (Crowded Market)
+ * - >= 50 listings/1000: 0 points (Crowded Market)
  */
 export function scoreMarketHeadroom(listingsPerThousand: number, population?: number): { score: number; rating: string } {
   // Use tourism-adjusted thresholds for small towns (likely tourism destinations)
@@ -190,41 +190,40 @@ export function scoreMarketHeadroom(listingsPerThousand: number, population?: nu
   
   if (isTourismTown) {
     // Tourism town thresholds (more lenient due to high visitor-to-resident ratio)
-    if (listingsPerThousand < 15) return { score: 10, rating: 'Excellent Headroom' };
-    if (listingsPerThousand < 30) return { score: 8, rating: 'Good Headroom' };
+    if (listingsPerThousand < 15) return { score: 15, rating: 'Excellent Headroom' };
+    if (listingsPerThousand < 30) return { score: 10, rating: 'Good Headroom' };
     if (listingsPerThousand < 50) return { score: 5, rating: 'Limited Headroom' };
-    return { score: 2, rating: 'Crowded Market' };
+    return { score: 0, rating: 'Crowded Market' };
   }
   
   // Standard thresholds for larger cities
-  if (listingsPerThousand < 3) return { score: 10, rating: 'Excellent Headroom' };
-  if (listingsPerThousand < 6) return { score: 8, rating: 'Good Headroom' };
+  if (listingsPerThousand < 3) return { score: 15, rating: 'Excellent Headroom' };
+  if (listingsPerThousand < 6) return { score: 10, rating: 'Good Headroom' };
   if (listingsPerThousand < 10) return { score: 5, rating: 'Limited Headroom' };
-  return { score: 2, rating: 'Crowded Market' };
+  return { score: 0, rating: 'Crowded Market' };
 }
 
 
 /**
  * Convert total score to letter grade
- * Now based on 85 max points
+ * Based on 100 max points
  * 
  * Grading Scale (percentage-based):
- * - A+ : 90%+ (77-85 points)
- * - A  : 80-89% (68-76 points)
- * - B+ : 70-79% (60-67 points)
- * - B  : 60-69% (51-59 points)
- * - C  : 50-59% (43-50 points)
- * - D  : 40-49% (34-42 points)
- * - F  : <40% (0-33 points)
+ * - A+ : 90%+ (90-100 points)
+ * - A  : 80-89% (80-89 points)
+ * - B+ : 70-79% (70-79 points)
+ * - B  : 60-69% (60-69 points)
+ * - C  : 50-59% (50-59 points)
+ * - D  : 40-49% (40-49 points)
+ * - F  : <40% (0-39 points)
  */
 export function getGrade(totalScore: number): 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F' {
-  const percentage = (totalScore / 85) * 100;
-  if (percentage >= 90) return 'A+';
-  if (percentage >= 80) return 'A';
-  if (percentage >= 70) return 'B+';
-  if (percentage >= 60) return 'B';
-  if (percentage >= 50) return 'C';
-  if (percentage >= 40) return 'D';
+  if (totalScore >= 90) return 'A+';
+  if (totalScore >= 80) return 'A';
+  if (totalScore >= 70) return 'B+';
+  if (totalScore >= 60) return 'B';
+  if (totalScore >= 50) return 'C';
+  if (totalScore >= 40) return 'D';
   return 'F';
 }
 
@@ -273,12 +272,12 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   const verdict = getVerdict(grade);
   
   return {
-    cashOnCash: { score: cashOnCash.score, maxScore: 40, value: cashOnCashReturn, rating: cashOnCash.rating },
-    affordability: { score: affordability.score, maxScore: 25, value: data.medianHomePrice, rating: affordability.rating },
+    cashOnCash: { score: cashOnCash.score, maxScore: 45, value: cashOnCashReturn, rating: cashOnCash.rating },
+    affordability: { score: affordability.score, maxScore: 30, value: data.medianHomePrice, rating: affordability.rating },
     landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
-    marketHeadroom: { score: marketHeadroom.score, maxScore: 10, value: data.listingsPerThousand, rating: marketHeadroom.rating },
+    marketHeadroom: { score: marketHeadroom.score, maxScore: 15, value: data.listingsPerThousand, rating: marketHeadroom.rating },
     totalScore,
-    maxPossibleScore: 85,
+    maxPossibleScore: 100,
     grade,
     verdict,
   };

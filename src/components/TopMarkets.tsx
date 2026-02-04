@@ -155,16 +155,16 @@ export function TopMarkets() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style={{ color: '#787060' }}>
           <div className="flex items-center gap-1.5">
-            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>40pts</strong></span>
+            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>45pts</strong></span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span>Affordability: <strong style={{ color: '#2b2823' }}>25pts</strong></span>
+            <span>Affordability: <strong style={{ color: '#2b2823' }}>30pts</strong></span>
           </div>
           <div className="flex items-center gap-1.5">
             <span>Landlord Friendly: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span>Market Headroom: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
+            <span>Market Headroom: <strong style={{ color: '#2b2823' }}>15pts</strong></span>
           </div>
         </div>
         <p className="text-xs mt-2" style={{ color: '#9a9080' }}>
