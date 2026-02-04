@@ -192,7 +192,7 @@ export default function HomePage() {
           <div className="flex items-center justify-center gap-2">
             
             <p className="text-xs sm:text-sm" style={{ color: '#2b2823' }}>
-              Most successful students start with around <span className="font-semibold">$65K</span> for the smoothest journey to their first STR.
+              Most students successfully launch their first STR with just <span className="font-semibold">$65K</span>.
             </p>
           </div>
         </div>

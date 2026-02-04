@@ -1671,11 +1671,16 @@ ${result.percentiles ? `- **Market 75th Percentile Revenue:** $${result.percenti
 - **Cash-on-Cash Return:** ${investment.cashOnCashReturn.toFixed(1)}%
 - **10-Year Projected Cash Flow:** $${(investment.cashFlow * 10).toLocaleString()}
 
+## BENCHMARK TARGETS (use these for comparison)
+- **Cash-on-Cash Return Target:** 20%+ is considered a strong return for rural STRs
+- **Occupancy Target:** 60-65% is considered good occupancy
+- **ADR Target:** $175-$250 for rural markets
+
 Please provide:
-1. **Deal Quality Assessment** - Is this a good deal? Rate it and explain why.
+1. **Deal Quality Assessment** - Is this a good deal? Rate it and explain why (compare to 20% CoC target).
 2. **What These Numbers Really Mean** - Translate the metrics into plain English impact on their life.
 3. **Hidden Considerations** - What are they NOT thinking about that could make or break this deal?
-4. **Comparison to Benchmarks** - How does this compare to what successful STR investors target?
+4. **Comparison to Benchmarks** - How does this compare to the 20% CoC and 60-65% occupancy targets?
 5. **Red Flags & Green Lights** - Specific concerns or exciting opportunities in this deal.
 6. **Questions to Ask** - 3-5 specific questions they should investigate before buying.
 7. **The Wealth-Building Perspective** - Help them see how this fits into building long-term wealth.
