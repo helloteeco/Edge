@@ -2770,17 +2770,15 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               {(() => {
                 const annualRev = getDisplayRevenue() || 0;
                 const baseMonthlyRev = annualRev / 12;
-                const guestMultiplier = getGuestCountMultiplier();
+                const seasonalData = getSeasonalityData();
                 
-                // Calculate all monthly revenues first
-                const monthlyRevenues = getSeasonalityData().map(month => {
-                  if (month.revenue && month.revenue > 0) {
-                    return Math.round(month.revenue * guestMultiplier);
-                  } else {
-                    const baseOccupancy = result.occupancy || 55;
-                    const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
-                    return Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
-                  }
+                // Calculate seasonal weights from occupancy data
+                const totalOccupancy = seasonalData.reduce((sum, m) => sum + (m.occupancy || 55), 0);
+                
+                // Distribute annual revenue across months based on seasonal occupancy weights
+                const monthlyRevenues = seasonalData.map(month => {
+                  const monthWeight = (month.occupancy || 55) / totalOccupancy;
+                  return Math.round(annualRev * monthWeight);
                 });
                 
                 const maxRev = Math.max(...monthlyRevenues, 1);
@@ -2867,22 +2865,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               <p className="text-sm text-gray-500 mb-4">Estimated revenue based on seasonal occupancy</p>
               
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                {getSeasonalityData().map((month, index) => {
+                {(() => {
                   const annualRev = getDisplayRevenue() || 0;
-                  const baseMonthlyRev = annualRev / 12;
-                  const guestMultiplier = getGuestCountMultiplier();
-                  // Use actual revenue from historical data if available
-                  let monthlyRev = 0;
-                  if (month.revenue && month.revenue > 0) {
-                    // Apply guest multiplier to historical revenue
-                    monthlyRev = Math.round(month.revenue * guestMultiplier);
-                  } else {
-                    const baseOccupancy = result.occupancy || 55;
-                    const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
-                    monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
-                  }
-                  monthlyRev = monthlyRev || Math.round(baseMonthlyRev);
-                  return (
+                  const seasonalData = getSeasonalityData();
+                  const totalOccupancy = seasonalData.reduce((sum, m) => sum + (m.occupancy || 55), 0);
+                  
+                  return seasonalData.map((month, index) => {
+                    // Distribute annual revenue based on seasonal occupancy weights
+                    const monthWeight = (month.occupancy || 55) / totalOccupancy;
+                    const monthlyRev = Math.round(annualRev * monthWeight);
+                    return (
                     <div key={index} className="p-3 rounded-lg text-center" style={{ backgroundColor: "#f5f4f0" }}>
                       <p className="text-xs font-medium" style={{ color: "#787060" }}>{monthNames[month.month - 1]}</p>
                       <p className="text-sm font-bold" style={{ color: "#2b2823" }}>
@@ -2890,7 +2882,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </p>
                     </div>
                   );
-                })}
+                  });
+                })()}
               </div>
               
               <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "#ecfdf5" }}>
