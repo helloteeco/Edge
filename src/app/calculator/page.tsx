@@ -1453,9 +1453,10 @@ export default function CalculatorPage() {
     }
   };
 
-  // Guest capacity bonus: 1% per guest above 6, capped at 10%
-  // Based on real-world data: larger capacity properties perform better
-  // Conservative estimate to avoid overprojecting revenue
+  // Teeco Strategy: Guest capacity is a major revenue driver
+  // Real-world data: 3BR sleeping 12-14 guests earns $70-80k vs $30-40k baseline (2x multiplier)
+  // This is because groups are willing to pay premium for larger capacity
+  // Formula: 8% per guest above baseline (6), with exponential scaling for 10+ guests
   const getGuestCountMultiplier = useCallback(() => {
     if (!guestCount) return 1.0;
     
@@ -1464,10 +1465,52 @@ export default function CalculatorPage() {
     
     if (extraGuests <= 0) return 1.0; // No bonus if at or below baseline
     
-    // 1% per additional guest above 6, capped at 10% max
-    const bonus = Math.min(extraGuests * 0.01, 0.10);
-    return 1.0 + bonus;
+    // Teeco Strategy: 8% per additional guest above 6
+    // For 12 guests: (12-6) * 0.08 = 48% boost
+    // For 14 guests: (14-6) * 0.08 = 64% boost
+    // Plus exponential bonus for 10+ guests (group travel premium)
+    let bonus = extraGuests * 0.08;
+    
+    // Additional premium for large groups (10+ guests)
+    if (guestCount >= 10) {
+      const largeGroupBonus = (guestCount - 10) * 0.05; // Extra 5% per guest above 10
+      bonus += largeGroupBonus;
+    }
+    
+    // Cap at 100% max (2x multiplier) to stay realistic
+    return 1.0 + Math.min(bonus, 1.0);
   }, [guestCount]);
+
+  // Calculate baseline revenue (without Teeco Strategy optimization)
+  const getBaselineRevenue = useCallback(() => {
+    if (!result) return 0;
+    
+    // Use real percentile data if available
+    if (result.percentiles?.revenue) {
+      switch (revenuePercentile) {
+        case "75th":
+          return result.percentiles.revenue.p75;
+        case "90th":
+          return result.percentiles.revenue.p90;
+        default:
+          return result.percentiles.revenue.p50;
+      }
+    }
+    
+    // Fallback to calculated revenue
+    let baseRevenue = result.annualRevenue;
+    switch (revenuePercentile) {
+      case "75th":
+        return Math.round(baseRevenue * 1.25);
+      case "90th":
+        return Math.round(baseRevenue * 1.45);
+      default:
+        return baseRevenue;
+    }
+  }, [result, revenuePercentile]);
+
+  // Check if Teeco Strategy boost is active (guest count > 6)
+  const teecoStrategyActive = guestCount && guestCount > 6;
 
   // Get display revenue based on percentile selection or custom income
   // Memoized for smooth reactive updates when percentile or inputs change
@@ -2207,6 +2250,19 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
 
               {/* Percentile Selector - Smooth animated toggle */}
+              <div className="mb-2 flex items-center gap-2">
+                <p className="text-xs text-gray-500">Revenue Projection Level</p>
+                <div className="group relative">
+                  <span className="text-gray-400 cursor-help">ℹ️</span>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <p className="font-semibold mb-1">What do these mean?</p>
+                    <p><strong>Average:</strong> Typical revenue for this market (50th percentile)</p>
+                    <p className="mt-1"><strong>75th %:</strong> Top 25% performers - achievable with good amenities and marketing</p>
+                    <p className="mt-1"><strong>90th %:</strong> Top 10% - requires premium design, upgrades, and excellent reviews</p>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-8 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-1.5 sm:gap-2 mb-4 overflow-x-auto">
                 {(["average", "75th", "90th"] as const).map((p) => (
                   <button
@@ -2292,6 +2348,47 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 )}
 
               </div>
+
+              {/* Teeco Strategy Comparison - Show when guest count > 6 */}
+              {teecoStrategyActive && (
+                <div 
+                  className="mt-4 p-4 rounded-xl border-2"
+                  style={{ 
+                    backgroundColor: '#f0fdf4', 
+                    borderColor: '#22c55e',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🚀</span>
+                    <h4 className="font-semibold" style={{ color: '#16a34a' }}>Teeco Strategy Active</h4>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    By maximizing guest capacity ({guestCount} guests vs standard 6), you unlock higher revenue potential. 
+                    This is based on real Teeco portfolio data where 3BR properties sleeping 12-14 guests earn 60-100% more than standard listings.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-white">
+                      <p className="text-xs text-gray-500 mb-1">Standard Listing</p>
+                      <p className="text-lg font-bold text-gray-600">{formatCurrency(getBaselineRevenue())}/yr</p>
+                      <p className="text-xs text-gray-400">Sleeps 6 guests</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white border-2 border-green-400">
+                      <p className="text-xs text-green-600 mb-1">With Teeco Strategy</p>
+                      <p className="text-lg font-bold text-green-600">{formatCurrency(displayRevenue)}/yr</p>
+                      <p className="text-xs text-green-500">Sleeps {guestCount} guests</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center">
+                    <p className="text-sm font-semibold text-green-600">
+                      +{formatCurrency(displayRevenue - getBaselineRevenue())}/yr (+{Math.round((getGuestCountMultiplier() - 1) * 100)}% boost)
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Teeco helps you maximize capacity through smart design, bunk rooms, and sleeper sofas
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Google Maps Location */}
               <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
@@ -2523,13 +2620,27 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             </div>
 
-            {/* Comparable Listings - Filtered by Percentile */}
+            {/* Comparable Listings - Filtered by Bedroom Count and Percentile */}
             {result.comparables && result.comparables.length > 0 && (() => {
               // Get projected annual revenue for comparison
               const projectedAnnualRevenue = displayRevenue;
+              const selectedBedrooms = bedrooms || result.bedrooms;
+              
+              // FIRST: Filter by bedroom count (strict match or +/- 1 if not enough matches)
+              let bedroomFilteredComps = result.comparables.filter(comp => comp.bedrooms === selectedBedrooms);
+              
+              // If not enough exact matches, include +/- 1 bedroom
+              if (bedroomFilteredComps.length < 3) {
+                bedroomFilteredComps = result.comparables.filter(comp => 
+                  Math.abs(comp.bedrooms - selectedBedrooms) <= 1
+                );
+              }
+              
+              // Track if we had to expand the filter
+              const exactBedroomMatch = result.comparables.filter(comp => comp.bedrooms === selectedBedrooms).length >= 3;
               
               // Sort comparables by how close they are to the projected annual revenue
-              const comparablesWithDistance = result.comparables.map(comp => ({
+              const comparablesWithDistance = bedroomFilteredComps.map(comp => ({
                 ...comp,
                 annualRev: comp.annualRevenue || comp.monthlyRevenue * 12,
                 distance: Math.abs((comp.annualRevenue || comp.monthlyRevenue * 12) - projectedAnnualRevenue)
@@ -2566,11 +2677,22 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               return (
                 <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", transition: "all 0.3s ease" }}>
                   <h3 className="text-lg font-semibold mb-1" style={{ color: "#2b2823" }}>
-                    {percentileLabel} {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
+                    {percentileLabel} {selectedBedrooms === 6 ? "6+" : selectedBedrooms}BR Listings in Area
                   </h3>
-                  <p className="text-xs text-gray-500 mb-4" style={{ transition: "all 0.2s ease" }}>
+                  <p className="text-xs text-gray-500 mb-2" style={{ transition: "all 0.2s ease" }}>
                     {percentileNote}
                   </p>
+                  {!exactBedroomMatch && bedroomFilteredComps.length > 0 && (
+                    <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">
+                      <span>⚠️</span>
+                      Limited {selectedBedrooms}BR data - showing similar bedroom counts for comparison
+                    </p>
+                  )}
+                  {bedroomFilteredComps.length === 0 && (
+                    <p className="text-xs text-red-500 mb-3">
+                      No comparable {selectedBedrooms}BR listings found in this area
+                    </p>
+                  )}
                   <div className="space-y-3" style={{ transition: "all 0.3s ease" }}>
                     {filteredComparables.slice(0, displayLimit).map((listing, index) => (
                       <a
@@ -2612,9 +2734,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </a>
                     ))}
                   </div>
-                  {result.comparables.length > 5 && (
+                  {bedroomFilteredComps.length > 5 && (
                     <p className="text-xs text-center text-gray-400 mt-4" style={{ transition: "opacity 0.3s ease" }}>
-                      Showing {displayLimit} of {result.comparables.length} comparable listings
+                      Showing {displayLimit} of {bedroomFilteredComps.length} {selectedBedrooms}BR comparable listings
+                    </p>
+                  )}
+                  {bedroomFilteredComps.length < result.comparables.length && (
+                    <p className="text-xs text-center text-gray-400 mt-2">
+                      Filtered from {result.comparables.length} total listings to match {selectedBedrooms}BR
                     </p>
                   )}
                 </div>
