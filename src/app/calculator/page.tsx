@@ -4838,7 +4838,35 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     if (search.cachedResult) {
                       setSkipNextAutocomplete(true);
                       setAddress(search.address);
-                      setResult(search.cachedResult);
+                      
+                      // If cached result is missing coordinates, geocode the address
+                      if (!search.cachedResult.latitude || !search.cachedResult.longitude) {
+                        // Geocode the address to get coordinates for the map
+                        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(search.address)}&limit=1`)
+                          .then(res => res.json())
+                          .then(data => {
+                            if (data && data[0]) {
+                              const updatedResult = {
+                                ...search.cachedResult!,
+                                latitude: parseFloat(data[0].lat),
+                                longitude: parseFloat(data[0].lon),
+                              };
+                              setResult(updatedResult);
+                              // Update the cache with coordinates
+                              const searches = JSON.parse(localStorage.getItem('edge_recent_searches') || '[]');
+                              const updatedSearches = searches.map((s: RecentSearch) => 
+                                s.address === search.address ? { ...s, cachedResult: updatedResult } : s
+                              );
+                              localStorage.setItem('edge_recent_searches', JSON.stringify(updatedSearches));
+                            } else {
+                              setResult(search.cachedResult!);
+                            }
+                          })
+                          .catch(() => setResult(search.cachedResult!));
+                      } else {
+                        setResult(search.cachedResult);
+                      }
+                      
                       if (search.cachedBedrooms) setBedrooms(search.cachedBedrooms);
                       if (search.cachedBathrooms) setBathrooms(search.cachedBathrooms);
                       if (search.cachedGuestCount) setGuestCount(search.cachedGuestCount);
