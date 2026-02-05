@@ -822,6 +822,9 @@ export async function POST(request: NextRequest) {
               bedroomDiff: bedroomDiff,
               similarityScore: Math.round(similarityScore * 100) / 100,
               matchQuality: matchQuality,
+              // Coordinates for map display
+              latitude: compLat,
+              longitude: compLon,
             };
           })
           // Filter to within 25 miles
@@ -962,6 +965,12 @@ export async function POST(request: NextRequest) {
       ruralCorrectionApplied: ruralCorrectionApplied,
       isRuralMarket: isRuralMarket,
       
+      // Searched property coordinates (for map display)
+      searchedPropertyCoords: {
+        latitude: latitude,
+        longitude: longitude,
+      },
+      
       property: property ? {
         address: property.address || street,
         city: property.city || city,
@@ -975,12 +984,16 @@ export async function POST(request: NextRequest) {
         listPrice: property.list_price,
         lastSalePrice: property.last_sale_price,
         lastSaleDate: property.last_sale_date,
+        latitude: latitude,
+        longitude: longitude,
       } : {
         address: street,
         city: city,
         state: state,
         zipCode: zip,
         sqft: 0,
+        latitude: latitude,
+        longitude: longitude,
       },
       
       neighborhood: {

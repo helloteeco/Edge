@@ -3,7 +3,21 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import AuthHeader from "@/components/AuthHeader";
+
+// Dynamically import CompMap to avoid SSR issues with Leaflet
+const CompMap = dynamic(() => import("@/components/CompMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[300px] rounded-xl bg-gray-100 flex items-center justify-center">
+      <div className="flex items-center gap-2 text-gray-500">
+        <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+        <span className="text-sm">Loading map...</span>
+      </div>
+    </div>
+  ),
+});
 
 // ============================================================================
 // TYPES
@@ -60,6 +74,8 @@ interface ComparableListing {
   similarityScore?: number; // Numeric similarity score (lower = more similar)
   bedroomDiff?: number; // Difference in bedroom count
   guestDiff?: number; // Difference in guest capacity
+  latitude?: number; // Coordinates for map display
+  longitude?: number;
 }
 
 interface CompSetStrength {
@@ -92,6 +108,8 @@ interface AnalysisResult {
   propertyType: string;
   listPrice: number;
   nearbyListings: number;
+  latitude?: number; // Coordinates for map display
+  longitude?: number;
   percentiles: {
     revenue: PercentileData;
     adr: PercentileData;
@@ -676,6 +694,7 @@ export default function CalculatorPage() {
       compSetStrength?: CompSetStrength;
       historical?: unknown[];
       recommendedAmenities?: unknown[];
+      searchedPropertyCoords?: { latitude?: number; longitude?: number };
     };
     
     const parseNum = (val: unknown): number => {
@@ -722,6 +741,8 @@ export default function CalculatorPage() {
       propertyType: (property?.propertyType as string) || "house",
       listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
       nearbyListings: parseNum(neighborhood?.listingsCount),
+      latitude: parseNum(property?.latitude) || parseNum(data.searchedPropertyCoords?.latitude),
+      longitude: parseNum(property?.longitude) || parseNum(data.searchedPropertyCoords?.longitude),
       percentiles: percentiles || null,
       comparables: (data.comparables as ComparableListing[]) || [],
       compSetStrength: data.compSetStrength as CompSetStrength || undefined,
@@ -1001,7 +1022,7 @@ export default function CalculatorPage() {
         return;
       }
 
-      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities } = data;
+      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, searchedPropertyCoords } = data;
 
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
@@ -1058,6 +1079,8 @@ export default function CalculatorPage() {
         propertyType: property?.propertyType || "house",
         listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
         nearbyListings: parseNum(neighborhood?.listingsCount),
+        latitude: parseNum(property?.latitude) || parseNum(searchedPropertyCoords?.latitude),
+        longitude: parseNum(property?.longitude) || parseNum(searchedPropertyCoords?.longitude),
         percentiles: percentiles || null,
         comparables: comparables || [],
         compSetStrength: data.compSetStrength as CompSetStrength || undefined,
@@ -2855,28 +2878,57 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               )}
 
-              {/* Google Maps Location */}
-              <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
-                <div className="p-3 flex items-center justify-between" style={{ backgroundColor: '#f5f4f0' }}>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Property Location</span>
+              {/* Interactive Comp Map - Shows property and all comparable listings */}
+              {result.comparables && result.comparables.length > 0 && result.latitude && result.longitude && (
+                <div className="mt-4 rounded-xl overflow-hidden p-4" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Comparable Properties Map</span>
+                    </div>
+                    <span className="text-xs" style={{ color: '#787060' }}>Click markers for details</span>
                   </div>
-                  <span className="text-xs" style={{ color: '#787060' }}>Scroll to explore area</span>
+                  <CompMap
+                    searchedProperty={{
+                      address: result.address || `${result.neighborhood}, ${result.city}, ${result.state}`,
+                      latitude: result.latitude,
+                      longitude: result.longitude,
+                      bedrooms: bedrooms || result.bedrooms,
+                      bathrooms: bathrooms || result.bathrooms,
+                    }}
+                    comparables={result.comparables}
+                    projectedRevenue={displayRevenue}
+                  />
                 </div>
-                <iframe
-                  width="100%"
-                  height="250"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(result.address || `${result.neighborhood}, ${result.city}, ${result.state}`)}&zoom=15`}
-                />
-              </div>
+              )}
+              
+              {/* Fallback: Google Maps if no comp coordinates available */}
+              {(!result.comparables || result.comparables.length === 0 || !result.latitude || !result.longitude) && (
+                <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
+                  <div className="p-3 flex items-center justify-between" style={{ backgroundColor: '#f5f4f0' }}>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Property Location</span>
+                    </div>
+                    <span className="text-xs" style={{ color: '#787060' }}>Scroll to explore area</span>
+                  </div>
+                  <iframe
+                    width="100%"
+                    height="250"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(result.address || `${result.neighborhood}, ${result.city}, ${result.state}`)}&zoom=15`}
+                  />
+                </div>
+              )}
 
               {/* Custom Income Override */}
               <div className="mt-4 p-4 rounded-xl border-2 border-dashed border-gray-200">
