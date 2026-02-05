@@ -597,22 +597,40 @@ export async function POST(request: NextRequest) {
             .filter((p: any) => p.rental_income > 0)
             .sort((a: any, b: any) => b.rental_income - a.rental_income)
             .slice(0, 30)
-            .map((p: any) => ({
-              id: p.id,
-              name: p.name || `${p.num_of_rooms} BR in ${city}`,
-              url: p.url || `https://www.airbnb.com/rooms/${p.id}`,
-              image: p.image,
-              bedrooms: p.num_of_rooms,
-              bathrooms: p.num_of_baths,
-              sqft: p.sqft || 0,
-              nightPrice: p.night_price,
-              occupancy: p.occupancy,
-              monthlyRevenue: p.rental_income,
-              annualRevenue: p.rental_income * 12,
-              rating: p.star_rating,
-              reviewsCount: p.reviews_count,
-              propertyType: p.property_type,
-            }));
+            .map((p: any) => {
+              // Calculate bedroom and bathroom differences for match quality
+              const bedroomDiff = Math.abs((p.num_of_rooms || 0) - bedrooms);
+              const bathroomDiff = Math.abs((p.num_of_baths || 0) - bathrooms);
+              
+              // Determine match quality based on bedroom/bathroom similarity
+              let matchQuality: 'excellent' | 'good' | 'fair' | 'weak' = 'weak';
+              if (bedroomDiff === 0 && bathroomDiff <= 1) matchQuality = 'excellent';
+              else if (bedroomDiff <= 1 && bathroomDiff <= 1) matchQuality = 'good';
+              else if (bedroomDiff <= 2) matchQuality = 'fair';
+              
+              return {
+                id: p.id,
+                name: p.name || `${p.num_of_rooms} BR in ${city}`,
+                url: p.url || `https://www.airbnb.com/rooms/${p.id}`,
+                image: p.image,
+                bedrooms: p.num_of_rooms,
+                bathrooms: p.num_of_baths,
+                sqft: p.sqft || 0,
+                nightPrice: p.night_price,
+                occupancy: p.occupancy,
+                monthlyRevenue: p.rental_income,
+                annualRevenue: p.rental_income * 12,
+                rating: p.star_rating,
+                reviewsCount: p.reviews_count,
+                propertyType: p.property_type,
+                // Add coordinates for map display
+                latitude: p.latitude || p.lat || null,
+                longitude: p.longitude || p.lng || p.lon || null,
+                // Add match quality for confidence ranking
+                matchQuality: matchQuality,
+                bedroomDiff: bedroomDiff,
+              };
+            });
         } else {
           console.log("No listings found for this area");
         }
@@ -759,7 +777,7 @@ export async function POST(request: NextRequest) {
         
         // Filter and sort comps - IMPROVED: Prioritize guest capacity matching like AirDNA
         // Show all comps with bedroom labels, use weighted similarity scoring
-        const filteredComps = airbticsComps
+        const allCompsWithScores = airbticsComps
           .filter((p: any) => {
             // Must have revenue data
             if (!(p.annual_revenue_ltm > 0 || p.revenue_potential > 0)) return false;
@@ -827,17 +845,47 @@ export async function POST(request: NextRequest) {
               longitude: compLon,
             };
           })
-          // Filter to within 25 miles
-          .filter((p: any) => p.distance <= 25)
-          // Sort by similarity score (weighted: guest capacity > bedrooms > distance > bathrooms)
-          .sort((a: any, b: any) => a.similarityScore - b.similarityScore)
-          // Take top 30 for better market analysis and statistical accuracy
-          .slice(0, 30);
+          // Sort by similarity score first (for consistent ordering)
+          .sort((a: any, b: any) => a.similarityScore - b.similarityScore);
+        
+        // Keep reference to all comps for expanding radius search
+        const allCompsForRadius = allCompsWithScores;
+        
+        // =====================================================================
+        // EXPANDING RADIUS SEARCH: Keep widening until we have enough comps
+        // Minimum threshold: 5 comps for reliable data
+        // Start at 5 miles, expand to 10, 15, 25, 50, then all
+        // =====================================================================
+        const MIN_COMPS_THRESHOLD = 5;
+        const radiusLevels = [5, 10, 15, 25, 50, 100]; // Miles
+        let finalRadius = 25; // Default
+        let filteredByRadius = allCompsForRadius.filter((p: any) => p.distance <= 25);
+        
+        // If we don't have enough comps, expand the radius
+        if (filteredByRadius.length < MIN_COMPS_THRESHOLD) {
+          for (const radius of radiusLevels) {
+            filteredByRadius = allCompsForRadius.filter((p: any) => p.distance <= radius);
+            finalRadius = radius;
+            if (filteredByRadius.length >= MIN_COMPS_THRESHOLD) {
+              console.log(`Expanded radius to ${radius}mi to get ${filteredByRadius.length} comps`);
+              break;
+            }
+          }
+          // If still not enough, use all available comps
+          if (filteredByRadius.length < MIN_COMPS_THRESHOLD) {
+            filteredByRadius = allCompsForRadius;
+            finalRadius = 999;
+            console.log(`Using all ${filteredByRadius.length} comps (no radius limit)`);
+          }
+        }
+        
+        // Take top 30 for analysis
+        const filteredComps = filteredByRadius.slice(0, 30);
         
         comparableListings = filteredComps;
         filteredListingsCount = airbticsComps.length;
         totalListingsInArea = airbticsComps.length;
-        console.log(`Airbtics: ${airbticsComps.length} total comps, filtered to ${comparableListings.length} (similar size, within 25mi)`);
+        console.log(`Airbtics: ${airbticsComps.length} total comps, filtered to ${comparableListings.length} (within ${finalRadius}mi)`);
         
         // =====================================================================
         // CALCULATE WEIGHTED REVENUE FROM COMPS (like AirDNA)
