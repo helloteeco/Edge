@@ -755,16 +755,12 @@ export async function POST(request: NextRequest) {
           return R * c;
         };
         
-        // Filter and sort comps
+        // Filter and sort comps - IMPROVED: Prioritize guest capacity matching like AirDNA
+        // Show all comps with bedroom labels, use weighted similarity scoring
         const filteredComps = airbticsComps
           .filter((p: any) => {
             // Must have revenue data
             if (!(p.annual_revenue_ltm > 0 || p.revenue_potential > 0)) return false;
-            
-            // Filter by similar bedroom count (within +/- 1 bedroom)
-            const compBedrooms = parseInt(p.bedrooms) || 0;
-            if (Math.abs(compBedrooms - bedrooms) > 1) return false;
-            
             return true;
           })
           .map((p: any, index: number) => {
@@ -773,17 +769,43 @@ export async function POST(request: NextRequest) {
             const compLon = parseFloat(p.longitude) || 0;
             const distance = calcDistance(latitude, longitude, compLat, compLon);
             
-            // Calculate guest count similarity score (lower is better)
+            // Calculate guest count similarity (most important factor)
             const compAccommodates = parseInt(p.accommodates) || (parseInt(p.bedrooms) || bedrooms) * 2;
             const guestDiff = Math.abs(compAccommodates - accommodates);
             
+            // Calculate bedroom similarity
+            const compBedrooms = parseInt(p.bedrooms) || 0;
+            const bedroomDiff = Math.abs(compBedrooms - bedrooms);
+            
+            // Calculate bathroom similarity
+            const compBathrooms = parseFloat(p.bathrooms) || Math.ceil(compBedrooms / 2);
+            const bathroomDiff = Math.abs(compBathrooms - bathrooms);
+            
+            // WEIGHTED SIMILARITY SCORE (like AirDNA's Match Score)
+            // Lower score = more similar
+            // Guest capacity: 40% weight (most important for revenue)
+            // Bedroom count: 30% weight
+            // Distance: 20% weight
+            // Bathroom count: 10% weight
+            const guestScore = guestDiff * 2.0;      // 40% weight (0-2 diff = 0-4 points)
+            const bedroomScore = bedroomDiff * 1.5;  // 30% weight (0-2 diff = 0-3 points)
+            const distanceScore = Math.min(distance, 10) * 0.2; // 20% weight (0-10mi = 0-2 points)
+            const bathroomScore = bathroomDiff * 0.5; // 10% weight (0-2 diff = 0-1 points)
+            const similarityScore = guestScore + bedroomScore + distanceScore + bathroomScore;
+            
+            // Match quality label (like AirDNA)
+            let matchQuality: 'excellent' | 'good' | 'fair' | 'weak' = 'weak';
+            if (guestDiff <= 2 && bedroomDiff === 0 && distance <= 5) matchQuality = 'excellent';
+            else if (guestDiff <= 4 && bedroomDiff <= 1 && distance <= 10) matchQuality = 'good';
+            else if (guestDiff <= 6 && bedroomDiff <= 2 && distance <= 15) matchQuality = 'fair';
+            
             return {
               id: p.listingID || p.id || index,
-              name: p.name || `${p.bedrooms || bedrooms} BR Listing`,
+              name: p.name || `${compBedrooms} BR Listing`,
               url: p.listing_url || `https://www.airbnb.com/rooms/${p.listingID}`,
               image: p.thumbnail_url || p.thumbnail_url_extended || null,
-              bedrooms: parseInt(p.bedrooms) || bedrooms,
-              bathrooms: p.bathrooms || bathrooms,
+              bedrooms: compBedrooms,
+              bathrooms: compBathrooms,
               accommodates: compAccommodates,
               sqft: 0,
               nightPrice: p.avg_booked_daily_rate_ltm || adjustedAdr,
@@ -793,15 +815,16 @@ export async function POST(request: NextRequest) {
               rating: p.reveiw_scores_rating || 0,  // Note: Airbtics has typo in field name
               reviewsCount: p.visible_review_count || 0,
               propertyType: p.room_type || "Entire home",
-              distance: distance,
+              distance: Math.round(distance * 10) / 10, // Round to 1 decimal
               guestDiff: guestDiff,
-              // Combined score: distance (miles) + guest difference * 0.5 (weight guest count)
-              similarityScore: distance + (guestDiff * 0.5),
+              bedroomDiff: bedroomDiff,
+              similarityScore: Math.round(similarityScore * 100) / 100,
+              matchQuality: matchQuality,
             };
           })
           // Filter to within 25 miles
           .filter((p: any) => p.distance <= 25)
-          // Sort by similarity score (combines distance and guest count match)
+          // Sort by similarity score (weighted: guest capacity > bedrooms > distance > bathrooms)
           .sort((a: any, b: any) => a.similarityScore - b.similarityScore)
           // Take top 30 for better market analysis and statistical accuracy
           .slice(0, 30);
@@ -959,8 +982,64 @@ export async function POST(request: NextRequest) {
         totalListingsInArea: totalListingsInArea,
       },
       
-      // Comparable listings (filtered by bedroom count)
+      // Comparable listings with match quality scores
       comparables: comparableListings,
+      
+      // CONFIDENCE INDICATOR (like AirDNA's Comp Set Strength)
+      // Based on: number of comps, match quality distribution, and revenue variance
+      compSetStrength: (() => {
+        const comps = comparableListings;
+        if (comps.length === 0) return { level: 'none', score: 0, message: 'No comparable listings found' };
+        
+        // Count comps by match quality
+        const excellentCount = comps.filter((c: any) => c.matchQuality === 'excellent').length;
+        const goodCount = comps.filter((c: any) => c.matchQuality === 'good').length;
+        const fairCount = comps.filter((c: any) => c.matchQuality === 'fair').length;
+        const exactBedroomMatch = comps.filter((c: any) => c.bedroomDiff === 0).length;
+        
+        // Calculate revenue variance (lower is better)
+        const revenues = comps.map((c: any) => c.annualRevenue).filter((r: number) => r > 0);
+        const avgRevenue = revenues.reduce((a: number, b: number) => a + b, 0) / revenues.length;
+        const variance = revenues.reduce((sum: number, r: number) => sum + Math.pow(r - avgRevenue, 2), 0) / revenues.length;
+        const stdDev = Math.sqrt(variance);
+        const coefficientOfVariation = avgRevenue > 0 ? (stdDev / avgRevenue) * 100 : 100;
+        
+        // Calculate confidence score (0-100)
+        let score = 0;
+        score += Math.min(comps.length * 3, 30); // Up to 30 points for quantity (10+ comps = max)
+        score += excellentCount * 5 + goodCount * 3 + fairCount * 1; // Up to ~30 points for quality
+        score += exactBedroomMatch >= 5 ? 20 : exactBedroomMatch * 4; // Up to 20 points for exact matches
+        score += coefficientOfVariation < 30 ? 20 : coefficientOfVariation < 50 ? 10 : 0; // Up to 20 points for consistency
+        score = Math.min(score, 100);
+        
+        // Determine level and message
+        let level: 'high' | 'medium' | 'low' = 'low';
+        let message = '';
+        if (score >= 70) {
+          level = 'high';
+          message = `Strong data: ${comps.length} comps with ${exactBedroomMatch} exact bedroom matches`;
+        } else if (score >= 40) {
+          level = 'medium';
+          message = `Moderate data: ${comps.length} comps, ${exactBedroomMatch} exact matches. Verify with local research.`;
+        } else {
+          level = 'low';
+          message = `Limited data: Only ${comps.length} comps found. Use estimates with caution.`;
+        }
+        
+        return {
+          level,
+          score: Math.round(score),
+          message,
+          details: {
+            totalComps: comps.length,
+            excellentMatches: excellentCount,
+            goodMatches: goodCount,
+            fairMatches: fairCount,
+            exactBedroomMatches: exactBedroomMatch,
+            revenueVariation: Math.round(coefficientOfVariation),
+          }
+        };
+      })(),
       
       // Historical data for seasonality chart
       historical: historicalData,

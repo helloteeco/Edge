@@ -46,6 +46,7 @@ interface ComparableListing {
   image: string | null;
   bedrooms: number;
   bathrooms: number;
+  accommodates?: number; // Guest capacity
   sqft: number;
   nightPrice: number;
   occupancy: number;
@@ -54,6 +55,25 @@ interface ComparableListing {
   rating: number;
   reviewsCount: number;
   propertyType: string;
+  distance?: number; // Distance in miles from target property
+  matchQuality?: 'excellent' | 'good' | 'fair' | 'weak'; // Similarity score label
+  similarityScore?: number; // Numeric similarity score (lower = more similar)
+  bedroomDiff?: number; // Difference in bedroom count
+  guestDiff?: number; // Difference in guest capacity
+}
+
+interface CompSetStrength {
+  level: 'high' | 'medium' | 'low' | 'none';
+  score: number;
+  message: string;
+  details?: {
+    totalComps: number;
+    excellentMatches: number;
+    goodMatches: number;
+    fairMatches: number;
+    exactBedroomMatches: number;
+    revenueVariation: number;
+  };
 }
 
 interface AnalysisResult {
@@ -80,6 +100,7 @@ interface AnalysisResult {
     totalListingsInArea: number;
   } | null;
   comparables: ComparableListing[];
+  compSetStrength?: CompSetStrength; // Confidence indicator for comp data quality
   revenueChange: string;
   revenueChangePercent: number;
   occupancyChange: string;
@@ -646,6 +667,7 @@ export default function CalculatorPage() {
       neighborhood?: Record<string, unknown>;
       percentiles?: Record<string, unknown>;
       comparables?: unknown[];
+      compSetStrength?: CompSetStrength;
       historical?: unknown[];
       recommendedAmenities?: unknown[];
     };
@@ -696,6 +718,7 @@ export default function CalculatorPage() {
       nearbyListings: parseNum(neighborhood?.listingsCount),
       percentiles: percentiles || null,
       comparables: (data.comparables as ComparableListing[]) || [],
+      compSetStrength: data.compSetStrength as CompSetStrength || undefined,
       revenueChange: (neighborhood?.revenueChange as string) || "stable",
       revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
       occupancyChange: (neighborhood?.occupancyChange as string) || "stable",
@@ -1021,6 +1044,7 @@ export default function CalculatorPage() {
         nearbyListings: parseNum(neighborhood?.listingsCount),
         percentiles: percentiles || null,
         comparables: comparables || [],
+        compSetStrength: data.compSetStrength as CompSetStrength || undefined,
         revenueChange: neighborhood?.revenueChange || "stable",
         revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
         occupancyChange: neighborhood?.occupancyChange || "stable",
@@ -1136,7 +1160,7 @@ export default function CalculatorPage() {
       
       // Show save reminder toast after successful analysis
       setToastType('info');
-      setToastMessage('Analysis saved! Access it anytime from Recent Searches below.');
+      setToastMessage('Analysis saved! Find it in the Saved tab (90 days) or Recent Searches below.');
       setTimeout(() => setToastMessage(null), 5000);
     } catch (err) {
       console.error("Analysis error:", err);
@@ -2443,31 +2467,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             )}
             
-            {/* Revenue Estimate Card */}
-            <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold" style={{ color: "#2b2823" }}>{result.address || result.neighborhood}</h3>
-                  <p className="text-xs sm:text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
-                  {result.percentiles && (
-                    <p className="text-xs text-gray-400 mt-1 sm:hidden">
-                      Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {result.percentiles && (
-                    <div className="text-right text-xs text-gray-500 hidden sm:block">
-                      Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
-                    </div>
-                  )}
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            {/* Revenue Estimate Card - Premium Design */}
+            <div 
+              className="rounded-3xl overflow-hidden" 
+              style={{ 
+                backgroundColor: "#ffffff", 
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
+              }}
+            >
+              {/* Property Header with Gradient Background */}
+              <div 
+                className="px-4 sm:px-6 py-4 sm:py-5"
+                style={{ 
+                  background: "linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)",
+                }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-white">{result.address || result.neighborhood}</h3>
+                    <p className="text-sm text-gray-300 mt-1">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
+                    {result.percentiles && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
+                      </p>
+                    )}
+                  </div>
+                  {/* Action Buttons - Sleek Design */}
+                  <div className="flex items-center gap-2">
                     {/* Save Report Button */}
                     <button
                       onClick={saveReport}
-                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
+                      className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:scale-105 active:scale-95"
+                      style={{ backgroundColor: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)" }}
                       title="Save Report"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3068,14 +3099,62 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 displayLimit = showExpandedComps ? filteredComparables.length : defaultDisplayCount;
               }
               
+              // Get confidence indicator
+              const compStrength = result.compSetStrength;
+              
               return (
                 <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", transition: "all 0.3s ease" }}>
-                  <h3 className="text-lg font-semibold mb-1" style={{ color: "#2b2823" }}>
-                    {percentileLabel} {selectedBedrooms === 6 ? "6+" : selectedBedrooms}BR Listings in Area
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-2" style={{ transition: "all 0.2s ease" }}>
-                    {percentileNote}
-                  </p>
+                  {/* Header with Confidence Indicator */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
+                        {percentileLabel} {selectedBedrooms === 6 ? "6+" : selectedBedrooms}BR Listings in Area
+                      </h3>
+                      <p className="text-xs text-gray-500" style={{ transition: "all 0.2s ease" }}>
+                        {percentileNote}
+                      </p>
+                    </div>
+                    {/* Confidence Badge - like AirDNA's Comp Set Strength */}
+                    {compStrength && (
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                        compStrength.level === 'high' ? 'bg-green-100 text-green-700' :
+                        compStrength.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full ${
+                          compStrength.level === 'high' ? 'bg-green-500' :
+                          compStrength.level === 'medium' ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}></span>
+                        {compStrength.level === 'high' ? 'Strong Data' :
+                         compStrength.level === 'medium' ? 'Moderate Data' :
+                         'Limited Data'}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Confidence Details */}
+                  {compStrength && compStrength.details && (
+                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#f9f8f6' }}>
+                      <p className="text-xs text-gray-600 mb-2">{compStrength.message}</p>
+                      <div className="flex flex-wrap gap-3 text-xs">
+                        <span className="text-gray-500">
+                          <strong>{compStrength.details.totalComps}</strong> total comps
+                        </span>
+                        {compStrength.details.exactBedroomMatches > 0 && (
+                          <span className="text-green-600">
+                            <strong>{compStrength.details.exactBedroomMatches}</strong> exact {selectedBedrooms}BR matches
+                          </span>
+                        )}
+                        {compStrength.details.excellentMatches > 0 && (
+                          <span className="text-blue-600">
+                            <strong>{compStrength.details.excellentMatches}</strong> excellent matches
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
                   {!exactBedroomMatch && bedroomFilteredComps.length > 0 && (
                     <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">
                       <span>⚠️</span>
@@ -3097,27 +3176,36 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                         className={`block p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border group ${
                           revenuePercentile === "90th" && index === 0 ? "border-green-300 bg-green-50" :
                           revenuePercentile === "75th" && index < 2 ? "border-yellow-200 bg-yellow-50" :
+                          listing.matchQuality === 'excellent' ? "border-blue-200" :
                           "border-gray-100"
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {revenuePercentile === "90th" && index === 0 && (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-green-600 text-white">Top Earner</span>
                               )}
-                              <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base" style={{ maxWidth: 'calc(100vw - 120px)' }}>{listing.name}</p>
+                              {/* Match Quality Badge */}
+                              {listing.matchQuality === 'excellent' && revenuePercentile !== "90th" && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Best Match</span>
+                              )}
+                              <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base" style={{ maxWidth: 'calc(100vw - 160px)' }}>{listing.name}</p>
                               <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                             </div>
                             <p className="text-xs sm:text-sm text-gray-500">
-                              {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.propertyType}
+                              {listing.bedrooms} bed • {listing.bathrooms} bath • 
+                              {listing.accommodates ? `Sleeps ${listing.accommodates}` : listing.propertyType}
+                              {listing.distance !== undefined && listing.distance > 0 && (
+                                <span className="text-gray-400"> • {listing.distance}mi away</span>
+                              )}
                             </p>
                           </div>
                           <div className="text-left sm:text-right flex-shrink-0">
                             <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
-                            <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {listing.occupancy}% occ</p>
+                            <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {Math.round(listing.occupancy)}% occ</p>
                           </div>
                         </div>
                         {listing.rating > 0 && (
