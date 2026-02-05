@@ -435,6 +435,9 @@ export default function CalculatorPage() {
         
         if (pendingAddress) {
           console.log("[Auth] Restoring pending analysis state:", { pendingAddress, pendingBedrooms, pendingBathrooms, pendingGuests });
+          // Clear any existing suggestions
+          setSuggestions([]);
+          setShowSuggestions(false);
           setSkipNextAutocomplete(true);
           setAddress(pendingAddress);
           if (pendingBedrooms) setBedrooms(parseInt(pendingBedrooms, 10));
@@ -732,6 +735,10 @@ export default function CalculatorPage() {
     
     setResult(analysisResult);
     setAddress(pendingAnalysis || address);
+    
+    // Clear suggestions when showing results
+    setSuggestions([]);
+    setShowSuggestions(false);
     
     if (analysisResult.listPrice > 0 && !purchasePrice) {
       setPurchasePrice(analysisResult.listPrice.toString());
@@ -4802,6 +4809,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 <button
                   key={index}
                   onClick={() => {
+                    // Clear any existing suggestions immediately
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                    
                     // If we have cached result, load it instantly without API call
                     if (search.cachedResult) {
                       setSkipNextAutocomplete(true);
