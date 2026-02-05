@@ -814,3 +814,40 @@ main {
   font-size: 10px;
   background: rgba(255, 255, 255, 0.8) !important;
 }
+
+
+/* =============================================
+   LEAFLET MAP FIXES
+   Ensure map tiles render correctly
+   ============================================= */
+.leaflet-map-container {
+  height: 200px !important;
+  min-height: 200px !important;
+  width: 100% !important;
+  position: relative !important;
+  z-index: 1;
+}
+
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  background: #f3f4f6 !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 2;
+}
+
+.leaflet-tile {
+  visibility: visible !important;
+}
+
+.leaflet-control-container {
+  z-index: 10;
+}
+
+/* Fix for marker icons */
+.custom-div-icon {
+  background: transparent !important;
+  border: none !important;
+}

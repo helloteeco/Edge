@@ -328,7 +328,8 @@ export default function CompMap({ searchedProperty, comparables, projectedRevenu
         ) : (
           <div 
             ref={mapContainerRef}
-            style={{ height: `${MAP_HEIGHT}px`, width: '100%' }}
+            className="leaflet-map-container"
+            style={{ height: `${MAP_HEIGHT}px`, minHeight: `${MAP_HEIGHT}px`, width: '100%', position: 'relative' }}
           />
         )}
       </div>
