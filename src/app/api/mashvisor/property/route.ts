@@ -761,7 +761,14 @@ export async function POST(request: NextRequest) {
       // Extract comparable listings from Airbtics (report/all returns 30+ comps)
       // Filter to top 5, similar bed/bath, sorted by distance (closest first)
       const airbticsComps = airbticsData.comps || [];
+      
+      // Debug: Log searched property coords and first few comp coords
+      console.log(`Searched property coords: ${latitude}, ${longitude}`);
       if (airbticsComps.length > 0) {
+        console.log(`First 3 comp coords:`);
+        airbticsComps.slice(0, 3).forEach((c: any, i: number) => {
+          console.log(`  Comp ${i + 1}: ${c.latitude}, ${c.longitude} - ${c.name || c.listingID}`);
+        });
         // Calculate distance using Haversine formula
         const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
           if (!lat2 || !lon2) return 999; // Unknown location = far away
@@ -781,6 +788,25 @@ export async function POST(request: NextRequest) {
           .filter((p: any) => {
             // Must have revenue data
             if (!(p.annual_revenue_ltm > 0 || p.revenue_potential > 0)) return false;
+            
+            // CRITICAL: Filter out comps with invalid/missing coordinates
+            // or comps that are impossibly far away (data quality issue)
+            const compLat = parseFloat(p.latitude) || 0;
+            const compLon = parseFloat(p.longitude) || 0;
+            if (compLat === 0 || compLon === 0) {
+              console.log(`Skipping comp with missing coords: ${p.name || p.listingID}`);
+              return false;
+            }
+            
+            // Quick distance check - if lat/lon diff is huge, skip
+            // 1 degree latitude ≈ 69 miles, so 2 degree diff = ~138 miles max
+            const latDiff = Math.abs(compLat - latitude);
+            const lonDiff = Math.abs(compLon - longitude);
+            if (latDiff > 2 || lonDiff > 2) {
+              console.log(`Skipping far comp (${latDiff.toFixed(1)}° lat, ${lonDiff.toFixed(1)}° lon): ${p.name || p.listingID}`);
+              return false;
+            }
+            
             return true;
           })
           .map((p: any, index: number) => {
