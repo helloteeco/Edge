@@ -592,21 +592,59 @@ export async function POST(request: NextRequest) {
           console.log("Bedroom-specific metrics:", { bedroomSpecificAdr, bedroomSpecificOccupancy, bedroomSpecificRevenue });
 
           // Get top 20 comparable listings (prefer exact bedroom match)
+          // CRITICAL: Filter out comps that are too far away (bad data from API)
           const compsSource = exactMatchProps.length >= 3 ? exactMatchProps : filteredProps.length >= 3 ? filteredProps : allProps;
+          
+          // Haversine distance calculation for Mashvisor comps
+          const calcDistanceMashvisor = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+            const R = 3959; // Earth's radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+          };
+          
           comparableListings = compsSource
-            .filter((p: any) => p.rental_income > 0)
+            .filter((p: any) => {
+              if (!(p.rental_income > 0)) return false;
+              
+              // CRITICAL: Filter out comps with invalid/missing coordinates
+              const compLat = parseFloat(p.latitude || p.lat) || 0;
+              const compLon = parseFloat(p.longitude || p.lng || p.lon) || 0;
+              if (compLat === 0 || compLon === 0) {
+                console.log(`[Mashvisor] Skipping comp with missing coords: ${p.name || p.id}`);
+                return false;
+              }
+              
+              // Quick distance check - if lat/lon diff is huge, skip
+              // 1 degree latitude ≈ 69 miles, so 2 degree diff = ~138 miles max
+              const latDiff = Math.abs(compLat - latitude);
+              const lonDiff = Math.abs(compLon - longitude);
+              if (latDiff > 2 || lonDiff > 2) {
+                console.log(`[Mashvisor] Skipping far comp (${latDiff.toFixed(1)}° lat, ${lonDiff.toFixed(1)}° lon): ${p.name || p.id}`);
+                return false;
+              }
+              
+              return true;
+            })
             .sort((a: any, b: any) => b.rental_income - a.rental_income)
             .slice(0, 30)
             .map((p: any) => {
               // Calculate bedroom and bathroom differences for match quality
               const bedroomDiff = Math.abs((p.num_of_rooms || 0) - bedrooms);
               const bathroomDiff = Math.abs((p.num_of_baths || 0) - bathrooms);
+              const compLat = parseFloat(p.latitude || p.lat) || 0;
+              const compLon = parseFloat(p.longitude || p.lng || p.lon) || 0;
+              const distance = calcDistanceMashvisor(latitude, longitude, compLat, compLon);
               
-              // Determine match quality based on bedroom/bathroom similarity
+              // Determine match quality based on bedroom/bathroom similarity AND distance
               let matchQuality: 'excellent' | 'good' | 'fair' | 'weak' = 'weak';
-              if (bedroomDiff === 0 && bathroomDiff <= 1) matchQuality = 'excellent';
-              else if (bedroomDiff <= 1 && bathroomDiff <= 1) matchQuality = 'good';
-              else if (bedroomDiff <= 2) matchQuality = 'fair';
+              if (bedroomDiff === 0 && bathroomDiff <= 1 && distance <= 10) matchQuality = 'excellent';
+              else if (bedroomDiff <= 1 && bathroomDiff <= 1 && distance <= 25) matchQuality = 'good';
+              else if (bedroomDiff <= 2 && distance <= 50) matchQuality = 'fair';
               
               return {
                 id: p.id,
@@ -624,13 +662,17 @@ export async function POST(request: NextRequest) {
                 reviewsCount: p.reviews_count,
                 propertyType: p.property_type,
                 // Add coordinates for map display
-                latitude: p.latitude || p.lat || null,
-                longitude: p.longitude || p.lng || p.lon || null,
+                latitude: compLat,
+                longitude: compLon,
+                // Add distance for display
+                distance: Math.round(distance * 10) / 10,
                 // Add match quality for confidence ranking
                 matchQuality: matchQuality,
                 bedroomDiff: bedroomDiff,
               };
             });
+          
+          console.log(`[Mashvisor] Filtered to ${comparableListings.length} comps within 138mi`);
         } else {
           console.log("No listings found for this area");
         }
