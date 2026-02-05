@@ -743,3 +743,74 @@ main {
 .animate-slide-down {
   animation: slide-down 2.5s ease-out forwards;
 }
+
+
+/* =============================================
+   LEAFLET MAP FIXES
+   ============================================= */
+
+/* Fix for Leaflet map tiles not rendering properly */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
+}
+
+/* Ensure tiles render correctly */
+.leaflet-tile-pane {
+  z-index: 2;
+}
+
+.leaflet-tile {
+  visibility: visible !important;
+}
+
+/* Fix for map container sizing */
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Custom marker styling */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Popup styling to match Teeco brand */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: 'Raleway', sans-serif;
+}
+
+.leaflet-popup-tip {
+  background: white;
+}
+
+/* Zoom controls styling */
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: white !important;
+  color: var(--teeco-gray) !important;
+  border: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--teeco-cream) !important;
+}
+
+/* Attribution styling */
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.8) !important;
+}

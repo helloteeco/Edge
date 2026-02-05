@@ -170,15 +170,30 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
 
   const { MapContainer, TileLayer, Marker, Popup, useMap } = ReactLeaflet;
 
-  // Component to fit bounds after map loads
+  // Component to fit bounds and fix map size after load
   const FitBounds = () => {
     const map = useMap();
     
     useEffect(() => {
-      const bounds = getBounds();
-      if (bounds) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-      }
+      // Invalidate size to fix tile rendering issues
+      // This is needed when the map container size changes or CSS loads late
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        
+        const bounds = getBounds();
+        if (bounds) {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+        }
+      }, 100);
+      
+      // Also invalidate on window resize
+      const handleResize = () => map.invalidateSize();
+      window.addEventListener('resize', handleResize);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', handleResize);
+      };
     }, [map]);
     
     return null;
