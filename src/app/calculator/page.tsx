@@ -985,6 +985,8 @@ export default function CalculatorPage() {
 
   // Handle suggestion selection
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    // Skip autocomplete so selecting a suggestion doesn't trigger another search
+    setSkipNextAutocomplete(true);
     setAddress(suggestion.display);
     setShowSuggestions(false);
     setSuggestions([]);
