@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 // Types for comparable listings
 interface ComparableListing {
@@ -56,82 +55,72 @@ const matchQualityColors: Record<string, string> = {
   weak: '#9ca3af',      // gray
 };
 
-// The actual map component (loaded dynamically to avoid SSR issues)
-function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompClick, selectedCompId }: CompMapProps) {
-  const [L, setL] = useState<any>(null);
-  const [ReactLeaflet, setReactLeaflet] = useState<any>(null);
-  const mapRef = useRef<any>(null);
+// Map height constant
+const MAP_HEIGHT = 200;
 
-  // Dynamically import Leaflet on client side
-  useEffect(() => {
-    const loadLeaflet = async () => {
-      // Import Leaflet CSS - add to document head
-      if (typeof document !== 'undefined' && !document.getElementById('leaflet-css')) {
-        const link = document.createElement('link');
-        link.id = 'leaflet-css';
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-        link.crossOrigin = '';
-        document.head.appendChild(link);
-      }
-      
-      const leaflet = await import("leaflet");
-      const reactLeaflet = await import("react-leaflet");
-      
-      // Fix default marker icon issue with webpack
-      delete (leaflet.Icon.Default.prototype as any)._getIconUrl;
-      leaflet.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-      });
-      
-      setL(leaflet);
-      setReactLeaflet(reactLeaflet);
-    };
-    
-    loadLeaflet();
-  }, []);
+export default function CompMap({ searchedProperty, comparables, projectedRevenue, onCompClick, selectedCompId }: CompMapProps) {
+  const [isReady, setIsReady] = useState(false);
+  const [leaflet, setLeaflet] = useState<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
 
   // Filter comps with valid coordinates
   const compsWithCoords = comparables.filter(
     (comp) => comp.latitude && comp.longitude && comp.latitude !== 0 && comp.longitude !== 0
   );
 
-  // Calculate map bounds to fit all markers
-  const getBounds = () => {
-    if (!L) return null;
-    
-    const points: [number, number][] = [];
-    
-    // Add searched property
-    if (searchedProperty.latitude && searchedProperty.longitude) {
-      points.push([searchedProperty.latitude, searchedProperty.longitude]);
-    }
-    
-    // Add comps
-    compsWithCoords.forEach((comp) => {
-      if (comp.latitude && comp.longitude) {
-        points.push([comp.latitude, comp.longitude]);
-      }
-    });
-    
-    if (points.length === 0) return null;
-    if (points.length === 1) return null; // Will use center + zoom instead
-    
-    return L.latLngBounds(points);
-  };
+  // Initialize Leaflet
+  useEffect(() => {
+    let mounted = true;
 
-  // Create custom marker icons
-  const createIcon = (color: string, isSearched: boolean = false) => {
-    if (!L) return null;
-    
-    const size = isSearched ? 40 : 28;
-    const borderWidth = isSearched ? 4 : 2;
+    const initLeaflet = async () => {
+      // Load Leaflet CSS first
+      if (typeof document !== 'undefined' && !document.getElementById('leaflet-css-main')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css-main';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+        
+        // Wait for CSS to load
+        await new Promise(resolve => {
+          link.onload = resolve;
+          setTimeout(resolve, 500); // Fallback timeout
+        });
+      }
+
+      // Import Leaflet
+      const L = await import('leaflet');
+      
+      // Fix default marker icons
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+
+      if (mounted) {
+        setLeaflet(L);
+        setIsReady(true);
+      }
+    };
+
+    initLeaflet();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Create custom marker icon
+  const createIcon = useCallback((L: any, color: string, isSearched: boolean = false) => {
+    const size = isSearched ? 32 : 24;
+    const borderWidth = isSearched ? 3 : 2;
     
     return L.divIcon({
-      className: 'custom-marker',
+      className: 'custom-div-icon',
       html: `
         <div style="
           width: ${size}px;
@@ -139,14 +128,12 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
           border-radius: 50%;
           background-color: ${color};
           border: ${borderWidth}px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: ${isSearched ? '16px' : '10px'};
-          font-weight: bold;
+          font-size: ${isSearched ? '14px' : '10px'};
           color: white;
-          ${isSearched ? 'z-index: 1000;' : ''}
         ">
           ${isSearched ? '★' : ''}
         </div>
@@ -155,56 +142,145 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
       iconAnchor: [size / 2, size / 2],
       popupAnchor: [0, -size / 2],
     });
-  };
+  }, []);
 
-  if (!L || !ReactLeaflet) {
-    return (
-      <div className="w-full rounded-xl bg-gray-100 flex items-center justify-center" style={{ height: '200px' }}>
-        <div className="flex items-center gap-2 text-gray-500">
-          <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-          <span className="text-sm">Loading map...</span>
+  // Initialize map when Leaflet is ready
+  useEffect(() => {
+    if (!isReady || !leaflet || !mapContainerRef.current) return;
+    if (mapInstanceRef.current) return; // Already initialized
+
+    const L = leaflet;
+    const container = mapContainerRef.current;
+
+    // Clear any existing map
+    if ((container as any)._leaflet_id) {
+      return;
+    }
+
+    // Default center
+    const defaultCenter: [number, number] = searchedProperty.latitude && searchedProperty.longitude
+      ? [searchedProperty.latitude, searchedProperty.longitude]
+      : [39.8283, -98.5795];
+
+    // Create map
+    const map = L.map(container, {
+      center: defaultCenter,
+      zoom: 13,
+      zoomControl: true,
+      scrollWheelZoom: true,
+    });
+
+    mapInstanceRef.current = map;
+
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Force size recalculation after a short delay
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    // Cleanup
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [isReady, leaflet, searchedProperty.latitude, searchedProperty.longitude]);
+
+  // Add/update markers and fit bounds
+  useEffect(() => {
+    if (!mapInstanceRef.current || !leaflet) return;
+
+    const L = leaflet;
+    const map = mapInstanceRef.current;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    const bounds: [number, number][] = [];
+
+    // Add searched property marker
+    if (searchedProperty.latitude && searchedProperty.longitude) {
+      const marker = L.marker(
+        [searchedProperty.latitude, searchedProperty.longitude],
+        { icon: createIcon(L, '#2b2823', true), zIndexOffset: 1000 }
+      ).addTo(map);
+
+      marker.bindPopup(`
+        <div style="min-width: 180px; font-family: sans-serif;">
+          <div style="font-weight: bold; margin-bottom: 4px;">Your Property</div>
+          <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${searchedProperty.address}</div>
+          <div style="font-size: 12px; color: #888;">${searchedProperty.bedrooms} bed • ${searchedProperty.bathrooms} bath</div>
+          ${projectedRevenue ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;"><span style="color: #22c55e; font-weight: bold;">${formatCurrency(projectedRevenue)}/yr</span> <span style="font-size: 11px; color: #999;">projected</span></div>` : ''}
         </div>
-      </div>
-    );
-  }
+      `);
 
-  const { MapContainer, TileLayer, Marker, Popup, useMap } = ReactLeaflet;
+      markersRef.current.push(marker);
+      bounds.push([searchedProperty.latitude, searchedProperty.longitude]);
+    }
 
-  // Component to fit bounds and fix map size after load
-  const FitBounds = () => {
-    const map = useMap();
-    
-    useEffect(() => {
-      // Invalidate size to fix tile rendering issues
-      // This is needed when the map container size changes or CSS loads late
-      const timer = setTimeout(() => {
+    // Add comp markers
+    compsWithCoords.forEach((comp) => {
+      if (!comp.latitude || !comp.longitude) return;
+
+      const color = matchQualityColors[comp.matchQuality || 'weak'];
+      const marker = L.marker(
+        [comp.latitude, comp.longitude],
+        { icon: createIcon(L, color, false) }
+      ).addTo(map);
+
+      marker.bindPopup(`
+        <div style="min-width: 200px; font-family: sans-serif;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+            <div style="font-weight: 500; font-size: 13px; flex: 1;">${comp.name}</div>
+            ${comp.matchQuality ? `<span style="font-size: 10px; padding: 2px 6px; border-radius: 10px; background: ${color}; color: white; margin-left: 4px;">${comp.matchQuality}</span>` : ''}
+          </div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 6px;">
+            ${comp.bedrooms} bed • ${comp.bathrooms} bath${comp.accommodates ? ` • Sleeps ${comp.accommodates}` : ''}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid #eee;">
+            <div>
+              <span style="color: #22c55e; font-weight: bold;">${formatCurrency(comp.annualRevenue)}/yr</span>
+              <div style="font-size: 11px; color: #999;">${formatCurrency(comp.nightPrice)}/night • ${Math.round(comp.occupancy)}% occ</div>
+            </div>
+            ${comp.distance ? `<span style="font-size: 11px; color: #999;">${comp.distance.toFixed(1)}mi</span>` : ''}
+          </div>
+          ${comp.rating ? `<div style="font-size: 11px; color: #999; margin-top: 4px;">⭐ ${comp.rating.toFixed(1)} (${comp.reviewsCount || 0} reviews)</div>` : ''}
+          ${comp.url ? `<a href="${comp.url}" target="_blank" style="display: block; margin-top: 8px; font-size: 12px; color: #3b82f6; text-decoration: none;">View on Airbnb →</a>` : ''}
+        </div>
+      `);
+
+      if (onCompClick) {
+        marker.on('click', () => onCompClick(comp));
+      }
+
+      markersRef.current.push(marker);
+      bounds.push([comp.latitude, comp.longitude]);
+    });
+
+    // Fit bounds to show all markers
+    if (bounds.length > 0) {
+      setTimeout(() => {
         map.invalidateSize();
         
-        const bounds = getBounds();
-        if (bounds) {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+        if (bounds.length === 1) {
+          map.setView(bounds[0], 14);
+        } else {
+          const leafletBounds = L.latLngBounds(bounds);
+          map.fitBounds(leafletBounds, { 
+            padding: [30, 30],
+            maxZoom: 14 
+          });
         }
-      }, 100);
-      
-      // Also invalidate on window resize
-      const handleResize = () => map.invalidateSize();
-      window.addEventListener('resize', handleResize);
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('resize', handleResize);
-      };
-    }, [map]);
-    
-    return null;
-  };
-
-  // Default center (searched property or first comp)
-  const defaultCenter: [number, number] = searchedProperty.latitude && searchedProperty.longitude
-    ? [searchedProperty.latitude, searchedProperty.longitude]
-    : compsWithCoords.length > 0
-    ? [compsWithCoords[0].latitude!, compsWithCoords[0].longitude!]
-    : [39.8283, -98.5795]; // Center of US
+      }, 150);
+    }
+  }, [leaflet, searchedProperty, compsWithCoords, projectedRevenue, onCompClick, createIcon]);
 
   return (
     <div className="w-full">
@@ -234,120 +310,27 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
         </div>
       </div>
 
-      {/* Map Container - fixed height for mobile compatibility */}
-      <div className="rounded-xl overflow-hidden border" style={{ borderColor: '#e5e3da', height: '200px' }}>
-        <MapContainer
-          ref={mapRef}
-          center={defaultCenter}
-          zoom={12}
-          style={{ height: '200px', width: '100%' }}
-          scrollWheelZoom={true}
-          zoomControl={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      {/* Map Container */}
+      <div 
+        className="rounded-xl overflow-hidden border" 
+        style={{ borderColor: '#e5e3da' }}
+      >
+        {!isReady ? (
+          <div 
+            className="w-full bg-gray-100 flex items-center justify-center"
+            style={{ height: `${MAP_HEIGHT}px` }}
+          >
+            <div className="flex items-center gap-2 text-gray-500">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+              <span className="text-sm">Loading map...</span>
+            </div>
+          </div>
+        ) : (
+          <div 
+            ref={mapContainerRef}
+            style={{ height: `${MAP_HEIGHT}px`, width: '100%' }}
           />
-          
-          <FitBounds />
-          
-          {/* Searched Property Marker */}
-          {searchedProperty.latitude && searchedProperty.longitude && (
-            <Marker
-              position={[searchedProperty.latitude, searchedProperty.longitude]}
-              icon={createIcon('#2b2823', true)}
-              zIndexOffset={1000}
-            >
-              <Popup>
-                <div className="text-sm min-w-[200px]">
-                  <div className="font-bold text-gray-900 mb-1">Your Property</div>
-                  <div className="text-gray-600 text-xs mb-2">{searchedProperty.address}</div>
-                  <div className="flex gap-3 text-xs text-gray-500">
-                    <span>{searchedProperty.bedrooms} bed</span>
-                    <span>{searchedProperty.bathrooms} bath</span>
-                  </div>
-                  {projectedRevenue && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <span className="text-green-600 font-semibold">{formatCurrency(projectedRevenue)}/yr</span>
-                      <span className="text-gray-400 text-xs ml-1">projected</span>
-                    </div>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          )}
-          
-          {/* Comparable Property Markers */}
-          {compsWithCoords.map((comp, index) => {
-            const color = matchQualityColors[comp.matchQuality || 'weak'];
-            const isSelected = selectedCompId === comp.id;
-            
-            return (
-              <Marker
-                key={comp.id || index}
-                position={[comp.latitude!, comp.longitude!]}
-                icon={createIcon(color, false)}
-                zIndexOffset={isSelected ? 500 : 0}
-                eventHandlers={{
-                  click: () => {
-                    if (onCompClick) onCompClick(comp);
-                  },
-                }}
-              >
-                <Popup>
-                  <div className="text-sm min-w-[220px]">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="font-medium text-gray-900 line-clamp-2 flex-1">{comp.name}</div>
-                      {comp.matchQuality && (
-                        <span 
-                          className="text-[10px] px-1.5 py-0.5 rounded-full text-white whitespace-nowrap"
-                          style={{ backgroundColor: color }}
-                        >
-                          {comp.matchQuality}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2 text-xs text-gray-500 mb-2">
-                      <span>{comp.bedrooms} bed</span>
-                      <span>{comp.bathrooms} bath</span>
-                      {comp.accommodates && <span>Sleeps {comp.accommodates}</span>}
-                    </div>
-                    
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <div>
-                        <span className="text-green-600 font-bold">{formatCurrency(comp.annualRevenue)}/yr</span>
-                        <div className="text-[10px] text-gray-400">
-                          {formatCurrency(comp.nightPrice)}/night • {Math.round(comp.occupancy)}% occ
-                        </div>
-                      </div>
-                      {comp.distance !== undefined && comp.distance > 0 && (
-                        <span className="text-xs text-gray-400">{comp.distance}mi</span>
-                      )}
-                    </div>
-                    
-                    {comp.rating && comp.rating > 0 && (
-                      <div className="text-[10px] text-gray-400 mt-1">
-                        ⭐ {comp.rating.toFixed(1)} ({comp.reviewsCount || 0} reviews)
-                      </div>
-                    )}
-                    
-                    {comp.url && (
-                      <a
-                        href={comp.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block mt-2 text-xs text-blue-600 hover:underline"
-                      >
-                        View on Airbnb →
-                      </a>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
+        )}
       </div>
       
       {/* Comp count info */}
@@ -362,26 +345,4 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
       </div>
     </div>
   );
-}
-
-// Export with dynamic loading to prevent SSR issues
-export default function CompMap(props: CompMapProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return (
-      <div className="w-full rounded-xl bg-gray-100 flex items-center justify-center" style={{ height: '200px' }}>
-        <div className="flex items-center gap-2 text-gray-500">
-          <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-          <span className="text-sm">Loading map...</span>
-        </div>
-      </div>
-    );
-  }
-
-  return <CompMapInner {...props} />;
 }
