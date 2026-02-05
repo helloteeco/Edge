@@ -159,7 +159,7 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
 
   if (!L || !ReactLeaflet) {
     return (
-      <div className="w-full h-[300px] rounded-xl bg-gray-100 flex items-center justify-center">
+      <div className="w-full rounded-xl bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '3/2' }}>
         <div className="flex items-center gap-2 text-gray-500">
           <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
           <span className="text-sm">Loading map...</span>
@@ -234,13 +234,13 @@ function CompMapInner({ searchedProperty, comparables, projectedRevenue, onCompC
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className="rounded-xl overflow-hidden border" style={{ borderColor: '#e5e3da' }}>
+      {/* Map Container - 3:2 aspect ratio */}
+      <div className="rounded-xl overflow-hidden border relative" style={{ borderColor: '#e5e3da', aspectRatio: '3/2' }}>
         <MapContainer
           ref={mapRef}
           center={defaultCenter}
           zoom={12}
-          style={{ height: '300px', width: '100%' }}
+          style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}
           scrollWheelZoom={true}
           zoomControl={true}
         >
@@ -374,7 +374,7 @@ export default function CompMap(props: CompMapProps) {
 
   if (!isMounted) {
     return (
-      <div className="w-full h-[300px] rounded-xl bg-gray-100 flex items-center justify-center">
+      <div className="w-full rounded-xl bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '3/2' }}>
         <div className="flex items-center gap-2 text-gray-500">
           <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
           <span className="text-sm">Loading map...</span>
