@@ -134,6 +134,7 @@ export default function CalculatorPage() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [skipNextAutocomplete, setSkipNextAutocomplete] = useState(false);
   
   // Manual income override
   const [useCustomIncome, setUseCustomIncome] = useState(false);
@@ -309,6 +310,7 @@ export default function CalculatorPage() {
     const forceParam = urlParams.get("force");
     
     if (addressParam) {
+      setSkipNextAutocomplete(true);
       setAddress(addressParam);
       if (bedroomsParam) setBedrooms(parseInt(bedroomsParam, 10));
       if (bathroomsParam) setBathrooms(parseInt(bathroomsParam, 10));
@@ -433,6 +435,7 @@ export default function CalculatorPage() {
         
         if (pendingAddress) {
           console.log("[Auth] Restoring pending analysis state:", { pendingAddress, pendingBedrooms, pendingBathrooms, pendingGuests });
+          setSkipNextAutocomplete(true);
           setAddress(pendingAddress);
           if (pendingBedrooms) setBedrooms(parseInt(pendingBedrooms, 10));
           if (pendingBathrooms) setBathrooms(parseInt(pendingBathrooms, 10));
@@ -910,6 +913,12 @@ export default function CalculatorPage() {
 
   // Address autocomplete with debounce
   useEffect(() => {
+    // Skip autocomplete if address was set programmatically (from cache/URL)
+    if (skipNextAutocomplete) {
+      setSkipNextAutocomplete(false);
+      return;
+    }
+    
     const debounceTimer = setTimeout(async () => {
       if (address.length >= 3) {
         setIsLoadingSuggestions(true);
@@ -932,7 +941,7 @@ export default function CalculatorPage() {
     }, 200);
 
     return () => clearTimeout(debounceTimer);
-  }, [address]);
+  }, [address, skipNextAutocomplete]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -2653,9 +2662,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
 
               {/* Revenue Display - Smooth animated values with Trust Signals */}
               <div 
-                className="text-center py-4 sm:py-6 rounded-xl relative" 
+                className="text-center py-5 sm:py-6 px-4 rounded-xl relative mb-4" 
                 style={{ 
-                  backgroundColor: "#f5f4f0",
+                  backgroundColor: "#f8f7f4",
+                  border: "1px solid #e8e6e0",
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
               >
@@ -2753,10 +2763,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               {/* Teeco Strategy Section - Show when guest count > 6 for both owning and arbitrage modes */}
               {guestCount && guestCount > 6 && (
                 <div 
-                  className="mt-4 p-4 rounded-xl border-2"
+                  className="mt-6 p-5 rounded-xl border-2"
                   style={{ 
-                    backgroundColor: useTeecoStrategy ? '#f0fdf4' : '#f5f5f5', 
-                    borderColor: useTeecoStrategy ? '#22c55e' : '#d1d5db',
+                    backgroundColor: useTeecoStrategy ? '#f0fdf4' : '#f9f9f9', 
+                    borderColor: useTeecoStrategy ? '#22c55e' : '#e5e5e5',
                     transition: 'all 0.3s ease'
                   }}
                 >
@@ -4790,6 +4800,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   onClick={() => {
                     // If we have cached result, load it instantly without API call
                     if (search.cachedResult) {
+                      setSkipNextAutocomplete(true);
                       setAddress(search.address);
                       setResult(search.cachedResult);
                       if (search.cachedBedrooms) setBedrooms(search.cachedBedrooms);
@@ -4805,6 +4816,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       }
                     } else {
                       // Fallback: re-analyze if no cached data (old searches)
+                      setSkipNextAutocomplete(true);
                       setAddress(search.address);
                       if (bedrooms && bathrooms) {
                         handleAnalyze(search.address);

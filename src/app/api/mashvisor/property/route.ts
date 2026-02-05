@@ -712,29 +712,31 @@ export async function POST(request: NextRequest) {
     // USE AIRBTICS DATA IF AVAILABLE (more accurate than Mashvisor)
     // =========================================================================
     let annualRevenue: number;
+    let revenueSource: 'comps_weighted' | 'airbtics_aggregate' | 'mashvisor' = 'mashvisor';
     
     if (airbticsData && airbticsData.revenue > 0) {
-      // Airbtics provides accurate annual revenue directly
-      annualRevenue = airbticsData.revenue;
+      // Start with Airbtics aggregate revenue as baseline
+      let baseRevenue = airbticsData.revenue;
       adjustedAdr = airbticsData.nightly_rate || adjustedAdr;
       adjustedOccupancy = airbticsData.occupancy_rate || adjustedOccupancy;
-      adjustedMonthlyRevenue = Math.round(annualRevenue / 12);
+      revenueSource = 'airbtics_aggregate';
       
       // Use Airbtics percentile data if available (from report/all)
+      // Note: percentiles will be recalculated after comp-weighted revenue is determined
       if (airbticsData.percentiles) {
         percentileData.revenue = {
-          p25: airbticsData.percentiles.revenue?.p25 || Math.round(annualRevenue * 0.7),
-          p50: airbticsData.percentiles.revenue?.p50 || annualRevenue,
-          p75: airbticsData.percentiles.revenue?.p75 || Math.round(annualRevenue * 1.28),
-          p90: airbticsData.percentiles.revenue?.p90 || Math.round(annualRevenue * 1.45),
+          p25: airbticsData.percentiles.revenue?.p25 || Math.round(baseRevenue * 0.7),
+          p50: airbticsData.percentiles.revenue?.p50 || baseRevenue,
+          p75: airbticsData.percentiles.revenue?.p75 || Math.round(baseRevenue * 1.28),
+          p90: airbticsData.percentiles.revenue?.p90 || Math.round(baseRevenue * 1.45),
         };
       } else {
         // Estimate percentiles from their data
         percentileData.revenue = {
-          p25: Math.round(annualRevenue * 0.7),
-          p50: Math.round(annualRevenue),
-          p75: Math.round(annualRevenue * 1.28),
-          p90: Math.round(annualRevenue * 1.45),
+          p25: Math.round(baseRevenue * 0.7),
+          p50: Math.round(baseRevenue),
+          p75: Math.round(baseRevenue * 1.28),
+          p90: Math.round(baseRevenue * 1.45),
         };
       }
       
@@ -833,7 +835,55 @@ export async function POST(request: NextRequest) {
         filteredListingsCount = airbticsComps.length;
         totalListingsInArea = airbticsComps.length;
         console.log(`Airbtics: ${airbticsComps.length} total comps, filtered to ${comparableListings.length} (similar size, within 25mi)`);
+        
+        // =====================================================================
+        // CALCULATE WEIGHTED REVENUE FROM COMPS (like AirDNA)
+        // Better comps (lower similarity score) get higher weight
+        // This makes the estimate more accurate for the specific property
+        // =====================================================================
+        if (filteredComps.length >= 3) {
+          // Only use comps with valid revenue data
+          const compsWithRevenue = filteredComps.filter((c: any) => c.annualRevenue > 0);
+          
+          if (compsWithRevenue.length >= 3) {
+            // Calculate weights inversely proportional to similarity score
+            // Lower similarity score = more similar = higher weight
+            const maxScore = Math.max(...compsWithRevenue.map((c: any) => c.similarityScore));
+            const weights = compsWithRevenue.map((c: any) => {
+              // Invert the score: lower score gets higher weight
+              // Add 1 to avoid division by zero
+              const invertedScore = maxScore - c.similarityScore + 1;
+              // Excellent matches get 3x weight, good get 2x, fair get 1.5x
+              const qualityMultiplier = c.matchQuality === 'excellent' ? 3 : 
+                                        c.matchQuality === 'good' ? 2 : 
+                                        c.matchQuality === 'fair' ? 1.5 : 1;
+              return invertedScore * qualityMultiplier;
+            });
+            
+            const totalWeight = weights.reduce((a: number, b: number) => a + b, 0);
+            
+            // Calculate weighted average revenue
+            let weightedRevenue = 0;
+            for (let i = 0; i < compsWithRevenue.length; i++) {
+              weightedRevenue += compsWithRevenue[i].annualRevenue * (weights[i] / totalWeight);
+            }
+            
+            // Use weighted revenue if it's reasonable (within 50% of Airbtics aggregate)
+            const revenueRatio = weightedRevenue / baseRevenue;
+            if (revenueRatio >= 0.5 && revenueRatio <= 2.0) {
+              baseRevenue = Math.round(weightedRevenue);
+              revenueSource = 'comps_weighted';
+              console.log(`Using WEIGHTED COMP REVENUE: $${baseRevenue}/yr (from ${compsWithRevenue.length} comps, ratio: ${revenueRatio.toFixed(2)})`);
+            } else {
+              console.log(`Weighted revenue ($${Math.round(weightedRevenue)}) too different from Airbtics ($${airbticsData.revenue}), using Airbtics`);
+            }
+          }
+        }
       }
+      
+      // Set final annual revenue
+      annualRevenue = baseRevenue;
+      adjustedMonthlyRevenue = Math.round(annualRevenue / 12);
       
       // Use Airbtics monthly data for seasonality if available
       // Prefer monthly_revenue directly if available, otherwise calculate from occupancy/ADR
@@ -905,6 +955,7 @@ export async function POST(request: NextRequest) {
     const result = {
       success: true,
       dataSource: dataSource,
+      revenueSource: revenueSource, // 'comps_weighted' | 'airbtics_aggregate' | 'mashvisor'
       bedroomsUsed: bedrooms,
       bathroomsUsed: bathrooms,
       bedroomMultiplier: bedroomMultiplier,
