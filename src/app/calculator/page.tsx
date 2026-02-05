@@ -2359,18 +2359,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               )}
               
-              {/* Suggestions dropdown - using fixed position to escape all containers */}
-              {showSuggestions && suggestions.length > 0 && inputRef.current && !result && (
+              {/* Suggestions dropdown - positioned below input */}
+              {showSuggestions && suggestions.length > 0 && !result && (
                 <div 
                   ref={suggestionsRef}
-                  className="fixed bg-white rounded-xl border border-gray-200 overflow-y-auto"
+                  className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 overflow-y-auto z-50"
                   style={{ 
-                    top: inputRef.current.getBoundingClientRect().bottom + 4,
-                    left: inputRef.current.getBoundingClientRect().left,
-                    width: inputRef.current.getBoundingClientRect().width,
-                    zIndex: 99999,
-                    maxHeight: "min(280px, 40vh)",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15)"
+                    maxHeight: "280px",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1)"
                   }}
                 >
                   {suggestions.map((suggestion, index) => (
