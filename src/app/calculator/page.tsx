@@ -1161,7 +1161,7 @@ export default function CalculatorPage() {
       // Show save reminder toast after successful analysis
       setToastType('info');
       setToastMessage('Analysis saved! Find it in the Saved tab (90 days) or Recent Searches below.');
-      setTimeout(() => setToastMessage(null), 5000);
+      setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
       console.error("Analysis error:", err);
       setError("Failed to analyze address. Please try again.");
@@ -2040,25 +2040,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f5f4f0" }}>
       {/* Toast Notification */}
+      {/* Centered Toast Notification with Dismiss Button */}
       {toastMessage && (
         <div 
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] animate-fade-in-down"
-          style={{ animation: 'fadeInDown 0.3s ease-out' }}
+          className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"
+          style={{ paddingBottom: '20vh' }}
         >
           <div 
-            className={`px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 ${toastType === 'success' ? 'bg-green-600' : 'bg-gray-800'} text-white`}
-            onClick={() => setToastMessage(null)}
+            className={`pointer-events-auto px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 max-w-sm mx-4 ${toastType === 'success' ? 'bg-green-600' : 'bg-gray-900'} text-white`}
+            style={{ 
+              animation: 'fadeInScale 0.25s ease-out',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+            }}
           >
             {toastType === 'success' ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}
-            <span className="font-medium">{toastMessage}</span>
+            <span className="font-medium text-sm leading-snug">{toastMessage}</span>
+            <button 
+              onClick={() => setToastMessage(null)}
+              className="ml-2 p-1 rounded-full hover:bg-white/20 transition-colors flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
