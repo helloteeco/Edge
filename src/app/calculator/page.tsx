@@ -2879,7 +2879,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               )}
 
               {/* Interactive Comp Map - Shows property and all comparable listings */}
-              {result.comparables && result.comparables.length > 0 && result.latitude && result.longitude && (
+              {/* Always show when we have coordinates - comps will be shown if available */}
+              {result.latitude && result.longitude && (
                 <div className="mt-4 rounded-xl overflow-hidden p-4" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -2887,9 +2888,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Comparable Properties Map</span>
+                      <span className="text-sm font-medium" style={{ color: '#2b2823' }}>
+                        {result.comparables && result.comparables.length > 0 ? 'Comparable Properties Map' : 'Property Location'}
+                      </span>
                     </div>
-                    <span className="text-xs" style={{ color: '#787060' }}>Click markers for details</span>
+                    <span className="text-xs" style={{ color: '#787060' }}>
+                      {result.comparables && result.comparables.length > 0 ? 'Click markers for details' : 'Scroll to explore area'}
+                    </span>
                   </div>
                   <CompMap
                     searchedProperty={{
@@ -2899,33 +2904,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       bedrooms: bedrooms || result.bedrooms,
                       bathrooms: bathrooms || result.bathrooms,
                     }}
-                    comparables={result.comparables}
+                    comparables={result.comparables || []}
                     projectedRevenue={displayRevenue}
-                  />
-                </div>
-              )}
-              
-              {/* Fallback: Google Maps if no comp coordinates available */}
-              {(!result.comparables || result.comparables.length === 0 || !result.latitude || !result.longitude) && (
-                <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
-                  <div className="p-3 flex items-center justify-between" style={{ backgroundColor: '#f5f4f0' }}>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Property Location</span>
-                    </div>
-                    <span className="text-xs" style={{ color: '#787060' }}>Scroll to explore area</span>
-                  </div>
-                  <iframe
-                    width="100%"
-                    height="250"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(result.address || `${result.neighborhood}, ${result.city}, ${result.state}`)}&zoom=15`}
                   />
                 </div>
               )}
@@ -3137,15 +3117,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               const projectedAnnualRevenue = displayRevenue;
               const selectedBedrooms = bedrooms || result.bedrooms;
               
-              // FIRST: Filter by bedroom count (strict match or +/- 1 if not enough matches)
-              let bedroomFilteredComps = result.comparables.filter(comp => comp.bedrooms === selectedBedrooms);
+              // Show ALL comps that were used for revenue estimation
+              // These are already filtered by the API based on similarity scoring
+              // Sort by match quality first, then by revenue proximity
+              let bedroomFilteredComps = result.comparables;
               
-              // If not enough exact matches, include +/- 1 bedroom
-              if (bedroomFilteredComps.length < 3) {
-                bedroomFilteredComps = result.comparables.filter(comp => 
-                  Math.abs(comp.bedrooms - selectedBedrooms) <= 1
-                );
-              }
+              // Count exact bedroom matches for display purposes
+              const exactBedroomCount = result.comparables.filter(comp => comp.bedrooms === selectedBedrooms).length;
               
               // Track if we had to expand the filter
               const exactBedroomMatch = result.comparables.filter(comp => comp.bedrooms === selectedBedrooms).length >= 3;
@@ -3194,7 +3172,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                     <div>
                       <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
-                        {percentileLabel} {selectedBedrooms === 6 ? "6+" : selectedBedrooms}BR Listings in Area
+                        {percentileLabel} Listings in Area
                       </h3>
                       <p className="text-xs text-gray-500" style={{ transition: "all 0.2s ease" }}>
                         {percentileNote}
@@ -3241,15 +3219,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     </div>
                   )}
                   
-                  {!exactBedroomMatch && bedroomFilteredComps.length > 0 && (
-                    <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">
-                      <span>⚠️</span>
-                      Limited {selectedBedrooms}BR data - showing similar bedroom counts for comparison
-                    </p>
-                  )}
                   {bedroomFilteredComps.length === 0 && (
                     <p className="text-xs text-red-500 mb-3">
-                      No comparable {selectedBedrooms}BR listings found in this area
+                      No comparable listings found in this area
                     </p>
                   )}
                   <div className="space-y-3" style={{ transition: "all 0.3s ease" }}>
@@ -3311,22 +3283,19 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       >
                         {showExpandedComps 
                           ? `Show Less` 
-                          : `View All ${bedroomFilteredComps.length} Listings`
+                          : `View All ${bedroomFilteredComps.length} Comps`
                         }
                       </button>
                       <p className="text-xs text-gray-400 mt-2">
-                        Showing {Math.min(displayLimit, bedroomFilteredComps.length)} of {bedroomFilteredComps.length} {selectedBedrooms}BR listings
+                        Showing {Math.min(displayLimit, bedroomFilteredComps.length)} of {bedroomFilteredComps.length} comparable listings
+                        {exactBedroomCount > 0 && ` (${exactBedroomCount} exact ${selectedBedrooms}BR matches)`}
                       </p>
                     </div>
                   )}
                   {bedroomFilteredComps.length <= 8 && bedroomFilteredComps.length > 0 && (
                     <p className="text-xs text-center text-gray-400 mt-4">
-                      Showing all {bedroomFilteredComps.length} {selectedBedrooms}BR comparable listings
-                    </p>
-                  )}
-                  {bedroomFilteredComps.length < result.comparables.length && (
-                    <p className="text-xs text-center text-gray-400 mt-2">
-                      Filtered from {result.comparables.length} total listings to match {selectedBedrooms}BR
+                      Showing all {bedroomFilteredComps.length} comparable listings used for revenue estimation
+                      {exactBedroomCount > 0 && ` (${exactBedroomCount} exact ${selectedBedrooms}BR matches)`}
                     </p>
                   )}
                 </div>
