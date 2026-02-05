@@ -2360,7 +2360,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               )}
               
               {/* Suggestions dropdown - using fixed position to escape all containers */}
-              {showSuggestions && suggestions.length > 0 && inputRef.current && (
+              {showSuggestions && suggestions.length > 0 && inputRef.current && !result && (
                 <div 
                   ref={suggestionsRef}
                   className="fixed bg-white rounded-xl border border-gray-200 overflow-y-auto"
