@@ -2615,6 +2615,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               </div>
 
+              {/* Content Area with Padding */}
+              <div className="px-4 sm:px-6 py-4">
+              
               {/* Percentile Selector - Smooth animated toggle */}
               <div className="mb-2 flex items-center gap-2">
                 <p className="text-xs text-gray-500">Revenue Projection Level</p>
@@ -2933,6 +2936,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   <p className="text-lg font-bold" style={{ color: "#2b2823" }}>{result.nearbyListings}</p>
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Seasonality Revenue Chart */}
