@@ -44,13 +44,13 @@ export async function GET(request: NextRequest) {
       // Shared analyses
       supabase.from("shared_analyses").select("*").order("created_at", { ascending: false }),
       
-      // Aggregates from analysis_log
-      supabase.rpc("get_top_states_from_log").catch(() => ({ data: null })),
-      supabase.rpc("get_top_cities_from_log").catch(() => ({ data: null })),
-      supabase.rpc("get_revenue_stats_from_log").catch(() => ({ data: null })),
-      supabase.rpc("get_daily_analyses_from_log").catch(() => ({ data: null })),
-      supabase.rpc("get_bedroom_dist_from_log").catch(() => ({ data: null })),
-      supabase.rpc("get_data_provider_dist_from_log").catch(() => ({ data: null })),
+      // Aggregates from analysis_log (wrapped in Promise.resolve to allow .catch)
+      Promise.resolve(supabase.rpc("get_top_states_from_log")).catch(() => ({ data: null })),
+      Promise.resolve(supabase.rpc("get_top_cities_from_log")).catch(() => ({ data: null })),
+      Promise.resolve(supabase.rpc("get_revenue_stats_from_log")).catch(() => ({ data: null })),
+      Promise.resolve(supabase.rpc("get_daily_analyses_from_log")).catch(() => ({ data: null })),
+      Promise.resolve(supabase.rpc("get_bedroom_dist_from_log")).catch(() => ({ data: null })),
+      Promise.resolve(supabase.rpc("get_data_provider_dist_from_log")).catch(() => ({ data: null })),
     ]);
 
     const users = usersResult.data || [];
