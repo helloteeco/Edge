@@ -941,7 +941,7 @@ export default function CalculatorPage() {
 
   // Address autocomplete with debounce
   useEffect(() => {
-    // Skip autocomplete if address was set programmatically (from cache/URL)
+    // Skip autocomplete if address was set programmatically (from cache/URL/selection)
     if (skipNextAutocomplete) {
       setSkipNextAutocomplete(false);
       return;
@@ -953,8 +953,9 @@ export default function CalculatorPage() {
         try {
           const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`);
           const data = await response.json();
-          if (data.suggestions) {
-            setSuggestions(data.suggestions);
+          // Only show suggestions if we haven't selected one in the meantime
+          if (data.suggestions && !skipNextAutocomplete) {
+            setSuggestions(data.suggestions.slice(0, 4));
             setShowSuggestions(true);
           }
         } catch (e) {
@@ -966,7 +967,7 @@ export default function CalculatorPage() {
         setSuggestions([]);
         setShowSuggestions(false);
       }
-    }, 200);
+    }, 300);
 
     return () => clearTimeout(debounceTimer);
   }, [address, skipNextAutocomplete]);
@@ -985,11 +986,16 @@ export default function CalculatorPage() {
 
   // Handle suggestion selection
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    // Close dropdown and clear suggestions FIRST to prevent any re-render flicker
+    setShowSuggestions(false);
+    setSuggestions([]);
     // Skip autocomplete so selecting a suggestion doesn't trigger another search
     setSkipNextAutocomplete(true);
     setAddress(suggestion.display);
-    setShowSuggestions(false);
-    setSuggestions([]);
+    // Blur the input to dismiss the mobile keyboard and prevent re-focus showing dropdown
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
   };
 
   // Check if form is valid for analysis
@@ -2367,7 +2373,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onFocus={() => { if (suggestions.length > 0 && !skipNextAutocomplete) setShowSuggestions(true); }}
                 placeholder="Enter property address..."
                 className="w-full pl-12 pr-4 py-4 rounded-xl border-2 text-base transition-colors"
                 style={{ 
@@ -2384,21 +2390,18 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </div>
               )}
               
-              {/* Suggestions dropdown - using fixed position to escape all containers */}
-              {showSuggestions && suggestions.length > 0 && inputRef.current && !result && (
+              {/* Suggestions dropdown - positioned below input using absolute positioning */}
+              {showSuggestions && suggestions.length > 0 && !result && (
                 <div 
                   ref={suggestionsRef}
-                  className="fixed bg-white rounded-xl border border-gray-200 overflow-y-auto"
+                  className="absolute left-0 right-0 bg-white rounded-xl border border-gray-200 overflow-hidden"
                   style={{ 
-                    top: inputRef.current.getBoundingClientRect().bottom + 4,
-                    left: inputRef.current.getBoundingClientRect().left,
-                    width: inputRef.current.getBoundingClientRect().width,
+                    top: "calc(100% + 4px)",
                     zIndex: 99999,
-                    maxHeight: "min(280px, 40vh)",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15)"
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)"
                   }}
                 >
-                  {suggestions.map((suggestion, index) => (
+                  {suggestions.slice(0, 4).map((suggestion, index) => (
                     <button
                       key={index}
                       onClick={() => handleSelectSuggestion(suggestion)}
