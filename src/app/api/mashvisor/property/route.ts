@@ -12,7 +12,11 @@ if (!MASHVISOR_API_KEY) {
 }
 const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 
-// Airbtics API configuration (primary data source for accurate STR data)
+// AirROI API configuration (primary data source for accurate STR data)
+const AIRROI_API_KEY = process.env.AIRROI_API_KEY || "";
+const AIRROI_BASE_URL = "https://api.airroi.com";
+
+// Airbtics API configuration (fallback data source)
 const AIRBTICS_API_KEY = process.env.AIRBTICS_API_KEY || "";
 const AIRBTICS_BASE_URL = "https://crap0y5bx5.execute-api.us-east-2.amazonaws.com/prod";
 
@@ -111,9 +115,135 @@ function getRecommendedAmenities(lat: number, lng: number, comps: any[]): any[] 
   ].slice(0, 7); // Return top 7 amenities
 }
 
-// Cache for Airbtics reports (60 minutes per TOS)
+// Cache for API reports (60 minutes)
+const airroiCache = new Map<string, { data: any; timestamp: number }>();
 const airbticsCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 60 minutes
+
+// =========================================================================
+// AirROI API: Fetch revenue estimate + comparable listings
+// Primary data source - better coverage in small markets
+// =========================================================================
+async function fetchAirROIData(lat: number, lng: number, bedrooms: number, bathrooms: number, guests: number = 6): Promise<any | null> {
+  if (!AIRROI_API_KEY) {
+    console.log("AirROI API key not configured, skipping...");
+    return null;
+  }
+
+  const cacheKey = `airroi_${lat.toFixed(3)}_${lng.toFixed(3)}_${bedrooms}`;
+  const cached = airroiCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log("AirROI cache hit for:", cacheKey);
+    return cached.data;
+  }
+
+  try {
+    console.log("Calling AirROI API for:", { lat, lng, bedrooms, bathrooms, guests });
+
+    // Call both endpoints in parallel for efficiency
+    const [estimateResponse, compsResponse] = await Promise.all([
+      fetch(`${AIRROI_BASE_URL}/calculator/estimate?lat=${lat}&lng=${lng}&bedrooms=${bedrooms}&baths=${bathrooms}&guests=${guests}`, {
+        method: "GET",
+        headers: { "x-api-key": AIRROI_API_KEY },
+      }),
+      fetch(`${AIRROI_BASE_URL}/listings/comparables?latitude=${lat}&longitude=${lng}&bedrooms=${bedrooms}&baths=${bathrooms}&guests=${guests}`, {
+        method: "GET",
+        headers: { "x-api-key": AIRROI_API_KEY },
+      }),
+    ]);
+
+    if (!estimateResponse.ok) {
+      console.error("AirROI estimate error:", estimateResponse.status, await estimateResponse.text());
+      return null;
+    }
+
+    const estimateData = await estimateResponse.json();
+    
+    // Parse comparables from the separate endpoint (returns more comps)
+    let comparableListings: any[] = [];
+    if (compsResponse.ok) {
+      const compsData = await compsResponse.json();
+      comparableListings = compsData.listings || [];
+      console.log(`AirROI comparables endpoint returned ${comparableListings.length} listings`);
+    } else {
+      console.log("AirROI comparables endpoint failed, using estimate comps");
+    }
+
+    // Also get comps from the estimate endpoint (usually fewer but included)
+    const estimateComps = estimateData.comparable_listings || [];
+    console.log(`AirROI estimate endpoint returned ${estimateComps.length} inline comps`);
+
+    // Merge comps: prefer the comparables endpoint (more results), deduplicate by listing_id
+    const seenIds = new Set<number>();
+    const allComps: any[] = [];
+    
+    // Add comparables endpoint results first (more comprehensive)
+    for (const comp of comparableListings) {
+      const id = comp.listing_info?.listing_id;
+      if (id && !seenIds.has(id)) {
+        seenIds.add(id);
+        allComps.push(comp);
+      }
+    }
+    // Add estimate endpoint comps that aren't already included
+    for (const comp of estimateComps) {
+      const id = comp.listing_info?.listing_id;
+      if (id && !seenIds.has(id)) {
+        seenIds.add(id);
+        allComps.push(comp);
+      }
+    }
+
+    console.log(`AirROI merged: ${allComps.length} unique comps`);
+
+    // Build normalized data structure
+    const result = {
+      source: 'airroi',
+      revenue: estimateData.revenue || 0,
+      adr: estimateData.average_daily_rate || 0,
+      occupancy: (estimateData.occupancy || 0) * 100, // Convert decimal to percentage
+      percentiles: {
+        revenue: {
+          p25: Math.round(estimateData.percentiles?.revenue?.p25 || 0),
+          p50: Math.round(estimateData.percentiles?.revenue?.p50 || 0),
+          p75: Math.round(estimateData.percentiles?.revenue?.p75 || 0),
+          p90: Math.round(estimateData.percentiles?.revenue?.p90 || 0),
+        },
+        adr: {
+          p25: Math.round(estimateData.percentiles?.average_daily_rate?.p25 || 0),
+          p50: Math.round(estimateData.percentiles?.average_daily_rate?.p50 || 0),
+          p75: Math.round(estimateData.percentiles?.average_daily_rate?.p75 || 0),
+          p90: Math.round(estimateData.percentiles?.average_daily_rate?.p90 || 0),
+        },
+        occupancy: {
+          p25: Math.round((estimateData.percentiles?.occupancy?.p25 || 0) * 100),
+          p50: Math.round((estimateData.percentiles?.occupancy?.p50 || 0) * 100),
+          p75: Math.round((estimateData.percentiles?.occupancy?.p75 || 0) * 100),
+          p90: Math.round((estimateData.percentiles?.occupancy?.p90 || 0) * 100),
+        },
+      },
+      // Monthly revenue distributions (fractions of annual revenue)
+      monthlyDistributions: estimateData.monthly_revenue_distributions || [],
+      // Raw comparable listings from AirROI
+      comps: allComps,
+    };
+
+    console.log("AirROI data received:", {
+      revenue: result.revenue,
+      adr: result.adr,
+      occupancy: result.occupancy,
+      compsCount: result.comps.length,
+      percentiles: result.percentiles.revenue,
+    });
+
+    // Cache the result
+    airroiCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    return result;
+  } catch (error) {
+    console.error("AirROI API error:", error);
+    return null;
+  }
+}
 
 // Geocode address to get lat/lng for Airbtics
 // Falls back to city-level geocoding if full address fails
@@ -388,8 +518,9 @@ export async function POST(request: NextRequest) {
     console.log("Parsed address:", { street, city, state, zip, bedrooms, bathrooms });
 
     // =========================================================================
-    // STEP 0: Try Airbtics first for accurate STR data (primary source)
+    // STEP 0: Try AirROI first (primary), then Airbtics (fallback)
     // =========================================================================
+    let airroiData = null;
     let airbticsData = null;
     const coords = await geocodeAddress(address);
     
@@ -401,13 +532,23 @@ export async function POST(request: NextRequest) {
       console.log("Geocoded coordinates:", coords);
       latitude = coords.lat;
       longitude = coords.lng;
-      airbticsData = await fetchAirbticsData(coords.lat, coords.lng, bedrooms, bathrooms, accommodates);
+      
+      // Try AirROI first (primary - better coverage in small markets)
+      airroiData = await fetchAirROIData(coords.lat, coords.lng, bedrooms, bathrooms, accommodates);
+      
+      // If AirROI failed or has no data, fall back to Airbtics
+      if (!airroiData || airroiData.revenue <= 0) {
+        console.log("AirROI returned no data, falling back to Airbtics...");
+        airbticsData = await fetchAirbticsData(coords.lat, coords.lng, bedrooms, bathrooms, accommodates);
+      } else {
+        console.log(`AirROI returned revenue: $${airroiData.revenue}, comps: ${airroiData.comps?.length || 0}`);
+      }
     }
 
     let property = null;
     let neighborhoodId = null;
     let neighborhoodData = null;
-    let dataSource = airbticsData ? "airbtics" : "neighborhood";
+    let dataSource = airroiData ? "airroi" : airbticsData ? "airbtics" : "neighborhood";
 
     // =========================================================================
     // STEP 1: Try to get property info (may fail for many addresses)
@@ -769,12 +910,236 @@ export async function POST(request: NextRequest) {
     }
 
     // =========================================================================
-    // USE AIRBTICS DATA IF AVAILABLE (more accurate than Mashvisor)
+    // USE AIRROI DATA IF AVAILABLE (primary - best coverage)
     // =========================================================================
     let annualRevenue: number;
-    let revenueSource: 'comps_weighted' | 'airbtics_aggregate' | 'mashvisor' = 'mashvisor';
+    let revenueSource: 'comps_weighted' | 'airroi' | 'airbtics_aggregate' | 'mashvisor' = 'mashvisor';
     
-    if (airbticsData && airbticsData.revenue > 0) {
+    if (airroiData && airroiData.revenue > 0) {
+      // Use AirROI as primary data source
+      let baseRevenue = Math.round(airroiData.revenue);
+      adjustedAdr = Math.round(airroiData.adr) || adjustedAdr;
+      adjustedOccupancy = Math.round(airroiData.occupancy) || adjustedOccupancy;
+      revenueSource = 'airroi';
+      
+      // Use AirROI percentile data
+      if (airroiData.percentiles) {
+        percentileData.revenue = {
+          p25: airroiData.percentiles.revenue?.p25 || Math.round(baseRevenue * 0.7),
+          p50: airroiData.percentiles.revenue?.p50 || baseRevenue,
+          p75: airroiData.percentiles.revenue?.p75 || Math.round(baseRevenue * 1.28),
+          p90: airroiData.percentiles.revenue?.p90 || Math.round(baseRevenue * 1.45),
+        };
+        percentileData.adr = {
+          p25: airroiData.percentiles.adr?.p25 || Math.round(adjustedAdr * 0.7),
+          p50: airroiData.percentiles.adr?.p50 || adjustedAdr,
+          p75: airroiData.percentiles.adr?.p75 || Math.round(adjustedAdr * 1.3),
+          p90: airroiData.percentiles.adr?.p90 || Math.round(adjustedAdr * 1.6),
+        };
+        percentileData.occupancy = {
+          p25: airroiData.percentiles.occupancy?.p25 || Math.round(adjustedOccupancy * 0.7),
+          p50: airroiData.percentiles.occupancy?.p50 || adjustedOccupancy,
+          p75: airroiData.percentiles.occupancy?.p75 || Math.min(Math.round(adjustedOccupancy * 1.3), 100),
+          p90: airroiData.percentiles.occupancy?.p90 || Math.min(Math.round(adjustedOccupancy * 1.5), 100),
+        };
+      } else {
+        percentileData.revenue = {
+          p25: Math.round(baseRevenue * 0.7),
+          p50: Math.round(baseRevenue),
+          p75: Math.round(baseRevenue * 1.28),
+          p90: Math.round(baseRevenue * 1.45),
+        };
+      }
+      
+      // Process AirROI comparable listings
+      const airroiComps = airroiData.comps || [];
+      console.log(`Processing ${airroiComps.length} AirROI comps`);
+      
+      if (airroiComps.length > 0) {
+        // Haversine distance calculation
+        const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+          if (!lat2 || !lon2) return 999;
+          const R = 3959; // Earth radius in miles
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLon = (lon2 - lon1) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c;
+        };
+        
+        // Map AirROI comp structure to our normalized format
+        const processedComps = airroiComps
+          .filter((comp: any) => {
+            const li = comp.listing_info || {};
+            const loc = comp.location_info || {};
+            const perf = comp.performance_metrics || {};
+            
+            // Must have revenue data
+            if (!(perf.ttm_revenue > 0)) return false;
+            
+            // Must have valid coordinates
+            const compLat = parseFloat(loc.latitude) || 0;
+            const compLon = parseFloat(loc.longitude) || 0;
+            if (compLat === 0 || compLon === 0) return false;
+            
+            // Distance check - 2 degrees ≈ 138 miles max
+            const latDiff = Math.abs(compLat - latitude);
+            const lonDiff = Math.abs(compLon - longitude);
+            if (latDiff > 2 || lonDiff > 2) {
+              console.log(`[AirROI] Skipping far comp: ${li.listing_name || li.listing_id}`);
+              return false;
+            }
+            
+            return true;
+          })
+          .map((comp: any) => {
+            const li = comp.listing_info || {};
+            const loc = comp.location_info || {};
+            const pd = comp.property_details || {};
+            const perf = comp.performance_metrics || {};
+            const ratings = comp.ratings || {};
+            
+            const compLat = parseFloat(loc.latitude) || 0;
+            const compLon = parseFloat(loc.longitude) || 0;
+            const distance = calcDistance(latitude, longitude, compLat, compLon);
+            
+            const compBedrooms = parseInt(pd.bedrooms) || 0;
+            const compBathrooms = parseFloat(pd.baths) || 0;
+            const compAccommodates = parseInt(pd.guests) || compBedrooms * 2;
+            const bedroomDiff = Math.abs(compBedrooms - bedrooms);
+            const bathroomDiff = Math.abs(compBathrooms - bathrooms);
+            const guestDiff = Math.abs(compAccommodates - accommodates);
+            
+            // Match quality scoring
+            let matchQuality: 'excellent' | 'good' | 'fair' | 'weak' = 'weak';
+            if (guestDiff <= 2 && bedroomDiff === 0 && distance <= 5) matchQuality = 'excellent';
+            else if (guestDiff <= 4 && bedroomDiff <= 1 && distance <= 10) matchQuality = 'good';
+            else if (guestDiff <= 6 && bedroomDiff <= 2 && distance <= 15) matchQuality = 'fair';
+            
+            const guestScore = guestDiff * 2.0;
+            const bedroomScore = bedroomDiff * 1.5;
+            const distanceScore = Math.min(distance, 10) * 0.2;
+            const bathroomScore = bathroomDiff * 0.5;
+            const similarityScore = guestScore + bedroomScore + distanceScore + bathroomScore;
+            
+            return {
+              id: li.listing_id || 0,
+              name: li.listing_name || `${compBedrooms} BR Listing`,
+              url: `https://www.airbnb.com/rooms/${li.listing_id}`,
+              image: li.cover_photo_url || null,
+              bedrooms: compBedrooms,
+              bathrooms: compBathrooms,
+              accommodates: compAccommodates,
+              sqft: 0,
+              nightPrice: Math.round(perf.ttm_avg_rate || adjustedAdr),
+              occupancy: Math.round((perf.ttm_occupancy || 0) * 100),
+              monthlyRevenue: Math.round((perf.ttm_revenue || 0) / 12),
+              annualRevenue: Math.round(perf.ttm_revenue || 0),
+              rating: ratings.rating_overall || 0,
+              reviewsCount: ratings.num_reviews || 0,
+              propertyType: li.listing_type || li.room_type || "Entire home",
+              distance: Math.round(distance * 10) / 10,
+              guestDiff: guestDiff,
+              bedroomDiff: bedroomDiff,
+              similarityScore: Math.round(similarityScore * 100) / 100,
+              matchQuality: matchQuality,
+              latitude: compLat,
+              longitude: compLon,
+            };
+          })
+          .sort((a: any, b: any) => a.similarityScore - b.similarityScore);
+        
+        // Expanding radius search
+        const MIN_COMPS_THRESHOLD = 5;
+        const radiusLevels = [5, 10, 15, 25, 50, 100];
+        let finalRadius = 25;
+        let filteredByRadius = processedComps.filter((p: any) => p.distance <= 25);
+        
+        if (filteredByRadius.length < MIN_COMPS_THRESHOLD) {
+          for (const radius of radiusLevels) {
+            filteredByRadius = processedComps.filter((p: any) => p.distance <= radius);
+            finalRadius = radius;
+            if (filteredByRadius.length >= MIN_COMPS_THRESHOLD) {
+              console.log(`[AirROI] Expanded radius to ${radius}mi to get ${filteredByRadius.length} comps`);
+              break;
+            }
+          }
+          if (filteredByRadius.length < MIN_COMPS_THRESHOLD) {
+            filteredByRadius = processedComps;
+            finalRadius = 999;
+            console.log(`[AirROI] Using all ${filteredByRadius.length} comps (no radius limit)`);
+          }
+        }
+        
+        const filteredComps = filteredByRadius.slice(0, 30);
+        comparableListings = filteredComps;
+        filteredListingsCount = airroiComps.length;
+        totalListingsInArea = airroiComps.length;
+        console.log(`[AirROI] ${airroiComps.length} total comps, filtered to ${comparableListings.length} (within ${finalRadius}mi)`);
+        
+        // Calculate weighted revenue from comps
+        if (filteredComps.length >= 3) {
+          const compsWithRevenue = filteredComps.filter((c: any) => c.annualRevenue > 0);
+          
+          if (compsWithRevenue.length >= 3) {
+            const maxScore = Math.max(...compsWithRevenue.map((c: any) => c.similarityScore));
+            const weights = compsWithRevenue.map((c: any) => {
+              const invertedScore = maxScore - c.similarityScore + 1;
+              const qualityMultiplier = c.matchQuality === 'excellent' ? 3 : 
+                                        c.matchQuality === 'good' ? 2 : 
+                                        c.matchQuality === 'fair' ? 1.5 : 1;
+              return invertedScore * qualityMultiplier;
+            });
+            
+            const totalWeight = weights.reduce((a: number, b: number) => a + b, 0);
+            let weightedRevenue = 0;
+            for (let i = 0; i < compsWithRevenue.length; i++) {
+              weightedRevenue += compsWithRevenue[i].annualRevenue * (weights[i] / totalWeight);
+            }
+            
+            const revenueRatio = weightedRevenue / baseRevenue;
+            if (revenueRatio >= 0.5 && revenueRatio <= 2.0) {
+              baseRevenue = Math.round(weightedRevenue);
+              revenueSource = 'comps_weighted';
+              console.log(`[AirROI] Using WEIGHTED COMP REVENUE: $${baseRevenue}/yr (from ${compsWithRevenue.length} comps, ratio: ${revenueRatio.toFixed(2)})`);
+            } else {
+              console.log(`[AirROI] Weighted revenue ($${Math.round(weightedRevenue)}) too different from AirROI ($${airroiData.revenue}), using AirROI estimate`);
+            }
+          }
+        }
+      }
+      
+      // Set final annual revenue
+      annualRevenue = baseRevenue;
+      adjustedMonthlyRevenue = Math.round(annualRevenue / 12);
+      
+      // Use AirROI monthly distributions for seasonality
+      const monthlyDist = airroiData.monthlyDistributions || [];
+      if (monthlyDist.length === 12) {
+        const currentYear = new Date().getFullYear();
+        historicalData = monthlyDist.map((fraction: number, index: number) => {
+          const monthRevenue = Math.round(annualRevenue * fraction);
+          // Estimate monthly occupancy/ADR from the distribution
+          const monthOcc = adjustedOccupancy * (fraction / (1/12)); // Scale relative to even distribution
+          const monthAdr = monthRevenue / (30 * (Math.min(monthOcc, 100) / 100)) || adjustedAdr;
+          return {
+            year: currentYear,
+            month: index + 1,
+            occupancy: Math.min(Math.round(monthOcc), 100),
+            adr: Math.round(monthAdr),
+            revenue: monthRevenue,
+          };
+        });
+        console.log("[AirROI] Using monthly distributions for seasonality:", historicalData.length, "months");
+      }
+      
+      console.log("Using AirROI data:", { annualRevenue, adr: adjustedAdr, occupancy: adjustedOccupancy, comps: comparableListings.length, historicalMonths: historicalData.length });
+    } else if (airbticsData && airbticsData.revenue > 0) {
+    // =========================================================================
+    // FALLBACK: USE AIRBTICS DATA IF AIRROI NOT AVAILABLE
+    // =========================================================================
       // Start with Airbtics aggregate revenue as baseline
       let baseRevenue = airbticsData.revenue;
       adjustedAdr = airbticsData.nightly_rate || adjustedAdr;
