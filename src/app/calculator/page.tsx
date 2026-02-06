@@ -954,7 +954,7 @@ export default function CalculatorPage() {
           const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`);
           const data = await response.json();
           // Only show suggestions if we haven't selected one in the meantime
-          if (data.suggestions && !skipNextAutocomplete) {
+          if (data.suggestions && !skipNextAutocomplete && !justSelectedRef.current) {
             setSuggestions(data.suggestions.slice(0, 4));
             setShowSuggestions(true);
           }
@@ -985,7 +985,12 @@ export default function CalculatorPage() {
   }, []);
 
   // Handle suggestion selection
+  // Ref to track if we just selected a suggestion (survives React batching)
+  const justSelectedRef = useRef(false);
+
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    // Mark that we just selected — this ref survives React state batching
+    justSelectedRef.current = true;
     // Close dropdown and clear suggestions FIRST to prevent any re-render flicker
     setShowSuggestions(false);
     setSuggestions([]);
@@ -996,6 +1001,10 @@ export default function CalculatorPage() {
     if (inputRef.current) {
       inputRef.current.blur();
     }
+    // Reset the ref after a delay longer than the debounce timer (300ms)
+    setTimeout(() => {
+      justSelectedRef.current = false;
+    }, 500);
   };
 
   // Check if form is valid for analysis
@@ -2371,10 +2380,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 ref={inputRef}
                 type="text"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  // If user is actively typing (editing), clear result so suggestions can show
+                  if (result && e.target.value !== address) {
+                    setResult(null);
+                  }
+                }}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
-                onFocus={() => { if (suggestions.length > 0 && !skipNextAutocomplete) setShowSuggestions(true); }}
+                onFocus={() => { if (suggestions.length > 0 && !skipNextAutocomplete && !justSelectedRef.current) setShowSuggestions(true); }}
                 placeholder="Enter property address..."
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                name="edge-address-input"
+                id="edge-address-input"
+                data-lpignore="true"
+                data-form-type="other"
                 className="w-full pl-12 pr-4 py-4 rounded-xl border-2 text-base transition-colors"
                 style={{ 
                   borderColor: showSuggestions ? "#2b2823" : "#e5e5e5",
