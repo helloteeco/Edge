@@ -17,7 +17,7 @@ interface DealShareData {
   adr: number;
   coc: number;
   purchasePrice?: number;
-  grade?: string; // STR Grade
+  grade?: string;
   comparablesCount?: number;
   marketAvgRevenue?: number;
 }
@@ -48,7 +48,6 @@ interface StateShareData {
 
 type ShareData = DealShareData | CityShareData | StateShareData;
 
-// Decode share data from URL
 function decodeShareData(encoded: string): ShareData | null {
   try {
     const decoded = atob(encoded);
@@ -59,18 +58,16 @@ function decodeShareData(encoded: string): ShareData | null {
   }
 }
 
-// Format currency
 function formatCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
   return `$${value.toFixed(0)}`;
 }
 
-// Get grade style
+function formatCurrencyFull(value: number): string {
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}
+
 function getGradeStyle(grade: string) {
   switch (grade) {
     case 'A+': return { backgroundColor: '#000000', color: '#ffffff' };
@@ -83,7 +80,6 @@ function getGradeStyle(grade: string) {
   }
 }
 
-// Calculate STR grade from CoC return
 function calculateDealGrade(coc: number): string {
   if (coc >= 25) return 'A+';
   if (coc >= 20) return 'A';
@@ -93,34 +89,16 @@ function calculateDealGrade(coc: number): string {
   return 'D';
 }
 
-// Close button component
-function CloseButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-105"
-      style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
-      aria-label="Close"
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b2823" strokeWidth="2.5" strokeLinecap="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
-  );
-}
-
-// Grade badge component
+// Grade badge — large and prominent
 function GradeBadge({ grade, size = "normal" }: { grade: string; size?: "small" | "normal" | "large" }) {
   const sizeClasses = {
-    small: "text-sm px-2 py-1",
-    normal: "text-lg px-4 py-2",
-    large: "text-2xl px-5 py-3",
+    small: "text-base px-3 py-1.5",
+    normal: "text-xl px-5 py-2.5",
+    large: "text-3xl px-6 py-3",
   };
-  
   return (
-    <div 
-      className={`rounded-xl font-bold ${sizeClasses[size]}`}
+    <div
+      className={`rounded-2xl font-extrabold tracking-tight ${sizeClasses[size]}`}
       style={{ ...getGradeStyle(grade), fontFamily: "Source Serif Pro, Georgia, serif" }}
     >
       {grade}
@@ -128,16 +106,17 @@ function GradeBadge({ grade, size = "normal" }: { grade: string; size?: "small" 
   );
 }
 
-// Insight pill component
-function InsightPill({ icon, label, value, positive }: { icon: string; label: string; value: string; positive?: boolean }) {
+// Metric row for clean stat display
+function MetricRow({ label, value, valueColor, bold }: { label: string; value: string; valueColor?: string; bold?: boolean }) {
   return (
-    <div 
-      className="flex items-center gap-2 px-3 py-2 rounded-full text-sm"
-      style={{ backgroundColor: positive ? "#f0fdf4" : "#f5f5f4" }}
-    >
-      <span>{icon}</span>
-      <span style={{ color: "#787060" }}>{label}</span>
-      <span className="font-semibold" style={{ color: positive ? "#16a34a" : "#2b2823" }}>{value}</span>
+    <div className="flex justify-between items-center py-4" style={{ borderBottom: "1px solid #eae8e3" }}>
+      <span className="text-base" style={{ color: "#787060" }}>{label}</span>
+      <span
+        className={`text-base ${bold ? "font-bold" : "font-semibold"}`}
+        style={{ color: valueColor || "#2b2823" }}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -158,334 +137,399 @@ function ShareContent() {
   }, [searchParams]);
 
   const handleClose = () => {
-    router.push("/");
+    router.push("/calculator");
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#e5e3da" }}>
-        <div className="animate-pulse text-lg" style={{ color: "#787060" }}>Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f5f4f0" }}>
+        <div className="animate-pulse text-lg" style={{ color: "#787060" }}>Loading analysis...</div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 relative" style={{ backgroundColor: "#e5e3da" }}>
-        <CloseButton onClick={handleClose} />
-        <h1 className="text-2xl font-bold mb-4" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>Invalid Share Link</h1>
-        <p className="mb-6" style={{ color: "#787060" }}>This share link is invalid or has expired.</p>
-        <Link 
-          href="/"
-          className="px-6 py-3 rounded-xl font-medium text-white"
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 relative" style={{ backgroundColor: "#f5f4f0" }}>
+        <h1 className="text-2xl font-bold mb-4" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+          Link Expired
+        </h1>
+        <p className="mb-8 text-center text-base" style={{ color: "#787060", maxWidth: "320px", lineHeight: "1.6" }}>
+          This analysis link is no longer available. Run a free analysis on any US address in seconds.
+        </p>
+        <Link
+          href="/calculator"
+          className="px-8 py-4 rounded-2xl font-semibold text-white text-lg transition-all hover:opacity-90"
           style={{ backgroundColor: "#2b2823" }}
         >
-          Go to Edge
+          Run Free Analysis
         </Link>
       </div>
     );
   }
 
-  // Render Deal Share
+  // ==========================================================================
+  // DEAL SHARE — Premium property analysis landing page
+  // ==========================================================================
   if (data.type === "deal") {
     const grade = data.grade || calculateDealGrade(data.coc);
     const cocColor = data.coc >= 20 ? "#16a34a" : data.coc >= 10 ? "#ca8a04" : "#dc2626";
-    const cocBg = data.coc >= 20 ? "#f0fdf4" : data.coc >= 10 ? "#fefce8" : "#fef2f2";
-    
-    // Calculate some derived insights
-    const monthlyRevenue = data.revenue / 12;
-    const revenuePerBedroom = data.revenue / data.bedrooms;
-    const isHighPerformer = data.coc >= 15;
-    
+    const monthlyRevenue = Math.round(data.revenue / 12);
+    const dailyRevenue = Math.round(data.revenue / 365);
+    const compsCount = data.comparablesCount || 0;
+
     return (
-      <div className="min-h-screen relative" style={{ backgroundColor: "#e5e3da" }}>
-        <CloseButton onClick={handleClose} />
-        
-        <div className="max-w-lg mx-auto px-5 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-3">
-              <span className="text-2xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>Edge</span>
-              <span className="text-sm px-2 py-0.5 rounded" style={{ backgroundColor: "#2b2823", color: "#ffffff" }}>by Teeco</span>
+      <div className="min-h-screen" style={{ backgroundColor: "#f5f4f0" }}>
+        <div className="max-w-lg mx-auto px-5 py-10">
+
+          {/* Brand Header */}
+          <div className="flex items-center justify-between mb-10">
+            <Link href="/" className="flex items-center gap-3">
+              <span className="text-2xl font-extrabold tracking-tight" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                Edge
+              </span>
+              <span
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+                style={{ backgroundColor: "#2b2823", color: "#d8d6cd" }}
+              >
+                by Teeco
+              </span>
             </Link>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: "#ffffff" }}>
-              <span className="text-sm font-medium" style={{ color: "#2b2823" }}>STR Investment Analysis</span>
-            </div>
+            <button
+              onClick={handleClose}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: "#ffffff", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
+              aria-label="Close"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#787060" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
 
-          {/* Property Card */}
-          <div className="rounded-2xl p-6 mb-5" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-            {/* Header with Grade */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1 pr-4">
-                <h1 className="text-xl font-bold mb-1" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+          {/* Property Header Card */}
+          <div
+            className="rounded-3xl p-7 mb-6"
+            style={{ backgroundColor: "#ffffff", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
+          >
+            {/* Address + Grade */}
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div className="flex-1 min-w-0">
+                <h1
+                  className="text-2xl font-extrabold leading-tight mb-2 tracking-tight"
+                  style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
                   {data.address}
                 </h1>
-                <p style={{ color: "#787060" }}>
-                  {data.city}, {data.state} • {data.bedrooms} BR / {data.bathrooms} BA
+                <p className="text-base" style={{ color: "#787060" }}>
+                  {data.city}, {data.state} &middot; {data.bedrooms} Bed / {data.bathrooms} Bath
                 </p>
               </div>
-              <GradeBadge grade={grade} />
+              <GradeBadge grade={grade} size="normal" />
             </div>
 
-            {/* Key Metrics - Larger and more prominent */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="p-4 rounded-xl" style={{ backgroundColor: "#f0fdf4" }}>
-                <div className="text-3xl font-bold" style={{ color: "#16a34a", fontFamily: "Source Serif Pro, Georgia, serif" }}>
-                  {formatCurrency(data.revenue)}/yr
-                </div>
-                <div className="text-sm mt-1" style={{ color: "#787060" }}>Projected Revenue</div>
-              </div>
-              <div className="p-4 rounded-xl" style={{ backgroundColor: cocBg }}>
-                <div className="text-3xl font-bold" style={{ color: cocColor, fontFamily: "Source Serif Pro, Georgia, serif" }}>
+            {/* Revenue Hero */}
+            <div
+              className="rounded-2xl p-6 mb-6 text-center"
+              style={{ backgroundColor: "#f0fdf4" }}
+            >
+              <p className="text-sm font-medium mb-1" style={{ color: "#16a34a" }}>
+                Projected Annual Revenue
+              </p>
+              <p
+                className="text-5xl font-extrabold tracking-tight"
+                style={{ color: "#16a34a", fontFamily: "Source Serif Pro, Georgia, serif", lineHeight: 1.1 }}
+              >
+                {formatCurrencyFull(data.revenue)}
+                <span className="text-xl font-semibold">/yr</span>
+              </p>
+            </div>
+
+            {/* Key Metrics Grid — 3 columns, bold numbers */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                <p className="text-2xl font-extrabold tracking-tight" style={{ color: cocColor, fontFamily: "Source Serif Pro, Georgia, serif" }}>
                   {data.coc.toFixed(1)}%
-                </div>
-                <div className="text-sm mt-1" style={{ color: "#787060" }}>Cash-on-Cash</div>
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#787060" }}>Cash-on-Cash</p>
+              </div>
+              <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                <p className="text-2xl font-extrabold tracking-tight" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                  {data.occupancy}%
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#787060" }}>Occupancy</p>
+              </div>
+              <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                <p className="text-2xl font-extrabold tracking-tight" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                  ${data.adr}
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#787060" }}>Avg/Night</p>
               </div>
             </div>
 
-            {/* Insights Pills */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {isHighPerformer && (
-                <InsightPill icon="⭐" label="" value="High Performer" positive />
+            {/* Detailed Breakdown */}
+            <div>
+              <MetricRow label="Monthly Revenue" value={formatCurrencyFull(monthlyRevenue)} valueColor="#16a34a" bold />
+              <MetricRow label="Daily Earning Potential" value={`${formatCurrencyFull(dailyRevenue)}/day`} />
+              {data.purchasePrice && data.purchasePrice > 0 && (
+                <MetricRow label="Purchase Price" value={formatCurrencyFull(data.purchasePrice)} />
               )}
-              <InsightPill icon="📊" label="" value={`${formatCurrency(revenuePerBedroom)}/BR`} />
-              <InsightPill icon="💰" label="" value={`${formatCurrency(monthlyRevenue)}/mo`} />
-            </div>
-
-            {/* Additional Stats */}
-            <div className="space-y-0">
-              <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                <span style={{ color: "#787060" }}>Occupancy Rate</span>
-                <span className="font-semibold" style={{ color: "#2b2823" }}>{data.occupancy}%</span>
-              </div>
-              <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                <span style={{ color: "#787060" }}>Avg Nightly Rate</span>
-                <span className="font-semibold" style={{ color: "#2b2823" }}>${data.adr}/night</span>
-              </div>
-              {data.purchasePrice && (
-                <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                  <span style={{ color: "#787060" }}>Purchase Price</span>
-                  <span className="font-semibold" style={{ color: "#2b2823" }}>{formatCurrency(data.purchasePrice)}</span>
-                </div>
-              )}
-              {data.comparablesCount && (
-                <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                  <span style={{ color: "#787060" }}>Comparables Analyzed</span>
-                  <span className="font-semibold" style={{ color: "#2b2823" }}>{data.comparablesCount} properties</span>
-                </div>
+              {compsCount > 0 && (
+                <MetricRow label="Comparable Listings" value={`${compsCount} analyzed`} valueColor="#16a34a" />
               )}
             </div>
           </div>
 
-          {/* Value Proposition */}
-          <div className="rounded-xl p-4 mb-5" style={{ backgroundColor: "rgba(255,255,255,0.6)" }}>
-            <p className="text-center text-sm" style={{ color: "#787060" }}>
-              📈 Analysis powered by data from <span className="font-semibold" style={{ color: "#2b2823" }}>1,000+ nearby STR listings</span>
-            </p>
-          </div>
+          {/* Data Confidence Banner */}
+          {compsCount > 0 && (
+            <div
+              className="rounded-2xl p-5 mb-6 flex items-start gap-3"
+              style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+            >
+              <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: "#16a34a" }} />
+              <p className="text-sm leading-relaxed" style={{ color: "#787060" }}>
+                Revenue estimate based on <span className="font-semibold" style={{ color: "#2b2823" }}>{compsCount} comparable short-term rentals</span> within the area, including occupancy rates, nightly rates, and seasonal demand patterns.
+              </p>
+            </div>
+          )}
 
-          {/* CTA Section */}
-          <div className="space-y-3">
-            <Link 
+          {/* CTA Section — generous spacing */}
+          <div className="space-y-4 mb-8">
+            <Link
               href="/calculator"
-              className="block w-full px-6 py-4 rounded-xl font-semibold text-white text-center transition-all hover:opacity-90"
+              className="block w-full px-6 py-5 rounded-2xl font-bold text-white text-center text-lg transition-all hover:opacity-90"
               style={{ backgroundColor: "#2b2823" }}
             >
-              Analyze Your Own Property
+              Analyze Any US Address — Free
             </Link>
-            <Link 
+            <Link
               href="/"
-              className="block w-full px-6 py-3 rounded-xl font-medium text-center transition-all hover:opacity-80"
-              style={{ backgroundColor: "#ffffff", color: "#2b2823", border: "1px solid #e8e5df" }}
+              className="block w-full px-6 py-4 rounded-2xl font-semibold text-center text-base transition-all hover:opacity-80"
+              style={{ backgroundColor: "#ffffff", color: "#2b2823", border: "1.5px solid #e8e5df" }}
             >
-              Find My First STR Market
+              Explore Top STR Markets
             </Link>
           </div>
 
           {/* Footer */}
-          <p className="text-center text-sm mt-6" style={{ color: "#787060" }}>
-            Your unfair advantage in STR investing
+          <p className="text-center text-sm" style={{ color: "#a09890" }}>
+            edge.teeco.co &middot; Your unfair advantage in STR investing
           </p>
         </div>
       </div>
     );
   }
 
-  // Render City Share
+  // ==========================================================================
+  // CITY SHARE — Premium market analysis landing page
+  // ==========================================================================
   if (data.type === "city") {
     return (
-      <div className="min-h-screen relative" style={{ backgroundColor: "#e5e3da" }}>
-        <CloseButton onClick={handleClose} />
-        
-        <div className="max-w-lg mx-auto px-5 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-3">
-              <span className="text-2xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>Edge</span>
-              <span className="text-sm px-2 py-0.5 rounded" style={{ backgroundColor: "#2b2823", color: "#ffffff" }}>by Teeco</span>
+      <div className="min-h-screen" style={{ backgroundColor: "#f5f4f0" }}>
+        <div className="max-w-lg mx-auto px-5 py-10">
+
+          {/* Brand Header */}
+          <div className="flex items-center justify-between mb-10">
+            <Link href="/" className="flex items-center gap-3">
+              <span className="text-2xl font-extrabold tracking-tight" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                Edge
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ backgroundColor: "#2b2823", color: "#d8d6cd" }}>
+                by Teeco
+              </span>
             </Link>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: "#ffffff" }}>
-              <span className="text-sm font-medium" style={{ color: "#2b2823" }}>STR Market Analysis</span>
-            </div>
+            <button
+              onClick={handleClose}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: "#ffffff", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
+              aria-label="Close"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#787060" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
 
           {/* Market Card */}
-          <div className="rounded-2xl p-6 mb-5" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-            <div className="flex items-start justify-between mb-4">
+          <div
+            className="rounded-3xl p-7 mb-6"
+            style={{ backgroundColor: "#ffffff", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
+          >
+            <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                <h1
+                  className="text-3xl font-extrabold leading-tight tracking-tight"
+                  style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
                   {data.name}
                 </h1>
-                <p className="text-lg" style={{ color: "#787060" }}>{data.state}</p>
+                <p className="text-lg mt-1" style={{ color: "#787060" }}>{data.state}</p>
               </div>
-              <GradeBadge grade={data.grade} />
+              <GradeBadge grade={data.grade} size="normal" />
             </div>
 
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="p-4 rounded-xl" style={{ backgroundColor: "#e5e3da" }}>
-                <div className="text-3xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
-                  {data.score}/100
-                </div>
-                <div className="text-sm mt-1" style={{ color: "#787060" }}>Market Score</div>
+            {/* Score + Revenue Hero */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                <p
+                  className="text-4xl font-extrabold tracking-tight"
+                  style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
+                  {data.score}<span className="text-lg font-semibold" style={{ color: "#787060" }}>/100</span>
+                </p>
+                <p className="text-sm mt-1" style={{ color: "#787060" }}>Market Score</p>
               </div>
-              <div className="p-4 rounded-xl" style={{ backgroundColor: "#f0fdf4" }}>
-                <div className="text-3xl font-bold" style={{ color: "#16a34a", fontFamily: "Source Serif Pro, Georgia, serif" }}>
-                  {formatCurrency(data.revenue * 12)}/yr
-                </div>
-                <div className="text-sm mt-1" style={{ color: "#787060" }}>Avg Revenue</div>
+              <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: "#f0fdf4" }}>
+                <p
+                  className="text-4xl font-extrabold tracking-tight"
+                  style={{ color: "#16a34a", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
+                  {formatCurrency(data.revenue * 12)}
+                </p>
+                <p className="text-sm mt-1" style={{ color: "#787060" }}>Avg Revenue/yr</p>
               </div>
-            </div>
-
-            {/* Insights */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {data.score >= 70 && <InsightPill icon="🔥" label="" value="Hot Market" positive />}
-              {data.appreciation && <InsightPill icon="📈" label="" value={`+${data.appreciation}% YoY`} positive />}
             </div>
 
             {/* Stats */}
-            <div className="space-y-0">
-              <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                <span style={{ color: "#787060" }}>Median Home Price</span>
-                <span className="font-semibold" style={{ color: "#2b2823" }}>{formatCurrency(data.price)}</span>
-              </div>
+            <div>
+              <MetricRow label="Median Home Price" value={formatCurrencyFull(data.price)} bold />
+              {data.appreciation && (
+                <MetricRow label="Year-over-Year Growth" value={`+${data.appreciation}%`} valueColor="#16a34a" />
+              )}
               {data.listingsCount && (
-                <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                  <span style={{ color: "#787060" }}>Active STR Listings</span>
-                  <span className="font-semibold" style={{ color: "#2b2823" }}>{data.listingsCount.toLocaleString()}</span>
-                </div>
+                <MetricRow label="Active STR Listings" value={data.listingsCount.toLocaleString()} />
               )}
             </div>
           </div>
 
-          {/* CTA Section */}
-          <div className="space-y-3">
-            <Link 
+          {/* CTA */}
+          <div className="space-y-4 mb-8">
+            <Link
               href={`/city/${data.id}`}
-              className="block w-full px-6 py-4 rounded-xl font-semibold text-white text-center transition-all hover:opacity-90"
+              className="block w-full px-6 py-5 rounded-2xl font-bold text-white text-center text-lg transition-all hover:opacity-90"
               style={{ backgroundColor: "#2b2823" }}
             >
               View Full Market Details
             </Link>
-            <Link 
-              href="/"
-              className="block w-full px-6 py-3 rounded-xl font-medium text-center transition-all hover:opacity-80"
-              style={{ backgroundColor: "#ffffff", color: "#2b2823", border: "1px solid #e8e5df" }}
+            <Link
+              href="/calculator"
+              className="block w-full px-6 py-4 rounded-2xl font-semibold text-center text-base transition-all hover:opacity-80"
+              style={{ backgroundColor: "#ffffff", color: "#2b2823", border: "1.5px solid #e8e5df" }}
             >
-              Explore All Markets
+              Analyze Your Own Property — Free
             </Link>
           </div>
 
-          <p className="text-center text-sm mt-6" style={{ color: "#787060" }}>
-            Your unfair advantage in STR investing
+          <p className="text-center text-sm" style={{ color: "#a09890" }}>
+            edge.teeco.co &middot; Your unfair advantage in STR investing
           </p>
         </div>
       </div>
     );
   }
 
-  // Render State Share
+  // ==========================================================================
+  // STATE SHARE — Premium state analysis landing page
+  // ==========================================================================
   if (data.type === "state") {
     return (
-      <div className="min-h-screen relative" style={{ backgroundColor: "#e5e3da" }}>
-        <CloseButton onClick={handleClose} />
-        
-        <div className="max-w-lg mx-auto px-5 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-3">
-              <span className="text-2xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>Edge</span>
-              <span className="text-sm px-2 py-0.5 rounded" style={{ backgroundColor: "#2b2823", color: "#ffffff" }}>by Teeco</span>
+      <div className="min-h-screen" style={{ backgroundColor: "#f5f4f0" }}>
+        <div className="max-w-lg mx-auto px-5 py-10">
+
+          {/* Brand Header */}
+          <div className="flex items-center justify-between mb-10">
+            <Link href="/" className="flex items-center gap-3">
+              <span className="text-2xl font-extrabold tracking-tight" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                Edge
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ backgroundColor: "#2b2823", color: "#d8d6cd" }}>
+                by Teeco
+              </span>
             </Link>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: "#ffffff" }}>
-              <span className="text-sm font-medium" style={{ color: "#2b2823" }}>STR State Analysis</span>
-            </div>
+            <button
+              onClick={handleClose}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: "#ffffff", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
+              aria-label="Close"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#787060" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
 
           {/* State Card */}
-          <div className="rounded-2xl p-6 mb-5" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-            <div className="flex items-start justify-between mb-4">
+          <div
+            className="rounded-3xl p-7 mb-6"
+            style={{ backgroundColor: "#ffffff", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
+          >
+            <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+                <h1
+                  className="text-3xl font-extrabold leading-tight tracking-tight"
+                  style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
                   {data.name}
                 </h1>
-                <p className="text-lg" style={{ color: "#787060" }}>{data.id}</p>
+                <p className="text-base mt-1" style={{ color: "#787060" }}>{data.cityCount} markets analyzed</p>
               </div>
-              <GradeBadge grade={data.grade} />
+              <GradeBadge grade={data.grade} size="normal" />
             </div>
 
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="p-4 rounded-xl" style={{ backgroundColor: "#e5e3da" }}>
-                <div className="text-3xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
-                  {data.score}/100
-                </div>
-                <div className="text-sm mt-1" style={{ color: "#787060" }}>Market Score</div>
+            {/* Score Hero */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                <p
+                  className="text-4xl font-extrabold tracking-tight"
+                  style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
+                  {data.score}<span className="text-lg font-semibold" style={{ color: "#787060" }}>/100</span>
+                </p>
+                <p className="text-sm mt-1" style={{ color: "#787060" }}>State Score</p>
               </div>
-              <div className="p-4 rounded-xl" style={{ backgroundColor: "#e5e3da" }}>
-                <div className="text-3xl font-bold" style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}>
+              <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: "#f5f4f0" }}>
+                <p
+                  className="text-4xl font-extrabold tracking-tight"
+                  style={{ color: "#2b2823", fontFamily: "Source Serif Pro, Georgia, serif" }}
+                >
                   {data.cityCount}
-                </div>
-                <div className="text-sm mt-1" style={{ color: "#787060" }}>Markets Analyzed</div>
+                </p>
+                <p className="text-sm mt-1" style={{ color: "#787060" }}>Markets</p>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="space-y-0">
-              <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                <span style={{ color: "#787060" }}>Top Market</span>
-                <span className="font-semibold" style={{ color: "#2b2823" }}>{data.topCity}</span>
-              </div>
+            <div>
+              <MetricRow label="Top Market" value={data.topCity} bold />
               {data.avgRevenue && (
-                <div className="flex justify-between py-3 border-t" style={{ borderColor: "#e8e5df" }}>
-                  <span style={{ color: "#787060" }}>Avg State Revenue</span>
-                  <span className="font-semibold" style={{ color: "#16a34a" }}>{formatCurrency(data.avgRevenue)}/yr</span>
-                </div>
+                <MetricRow label="Avg Annual Revenue" value={formatCurrencyFull(data.avgRevenue)} valueColor="#16a34a" />
               )}
             </div>
           </div>
 
-          {/* CTA Section */}
-          <div className="space-y-3">
-            <Link 
+          {/* CTA */}
+          <div className="space-y-4 mb-8">
+            <Link
               href={`/state/${data.id.toLowerCase()}`}
-              className="block w-full px-6 py-4 rounded-xl font-semibold text-white text-center transition-all hover:opacity-90"
+              className="block w-full px-6 py-5 rounded-2xl font-bold text-white text-center text-lg transition-all hover:opacity-90"
               style={{ backgroundColor: "#2b2823" }}
             >
               Explore {data.name} Markets
             </Link>
-            <Link 
-              href="/"
-              className="block w-full px-6 py-3 rounded-xl font-medium text-center transition-all hover:opacity-80"
-              style={{ backgroundColor: "#ffffff", color: "#2b2823", border: "1px solid #e8e5df" }}
+            <Link
+              href="/calculator"
+              className="block w-full px-6 py-4 rounded-2xl font-semibold text-center text-base transition-all hover:opacity-80"
+              style={{ backgroundColor: "#ffffff", color: "#2b2823", border: "1.5px solid #e8e5df" }}
             >
-              View All States
+              Analyze Any US Address — Free
             </Link>
           </div>
 
-          <p className="text-center text-sm mt-6" style={{ color: "#787060" }}>
-            Your unfair advantage in STR investing
+          <p className="text-center text-sm" style={{ color: "#a09890" }}>
+            edge.teeco.co &middot; Your unfair advantage in STR investing
           </p>
         </div>
       </div>
@@ -498,8 +542,8 @@ function ShareContent() {
 export default function ShareClient() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#e5e3da" }}>
-        <div className="animate-pulse text-lg" style={{ color: "#787060" }}>Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f5f4f0" }}>
+        <div className="animate-pulse text-lg" style={{ color: "#787060" }}>Loading analysis...</div>
       </div>
     }>
       <ShareContent />

@@ -61,11 +61,15 @@ export async function GET(request: NextRequest) {
     return new Response("Invalid data", { status: 400 });
   }
 
-  // Deal OG Image - Clean, Premium Design
+  // =========================================================================
+  // DEAL OG IMAGE — Premium, bold, legible on mobile preview cards
+  // =========================================================================
   if (data.type === "deal") {
     const grade = data.grade || calculateDealGrade(data.coc);
     const gradeColors = getGradeColors(grade);
     const cocColor = data.coc >= 20 ? "#16a34a" : data.coc >= 10 ? "#ca8a04" : "#dc2626";
+    const monthlyRevenue = Math.round(data.revenue / 12);
+    const compsCount = data.comparablesCount || 0;
     
     return new ImageResponse(
       (
@@ -75,179 +79,226 @@ export async function GET(request: NextRequest) {
             height: "630px",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#e5e3da",
-            fontFamily: "system-ui, sans-serif",
+            backgroundColor: "#f5f4f0",
+            fontFamily: "system-ui, -apple-system, sans-serif",
             position: "relative",
+            overflow: "hidden",
           }}
         >
-          {/* Header Bar */}
+          {/* Top accent bar */}
+          <div style={{ width: "100%", height: "6px", backgroundColor: "#2b2823", display: "flex" }} />
+          
+          {/* Header */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "24px 40px",
-              backgroundColor: "#2b2823",
+              padding: "28px 48px 20px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ color: "white", fontSize: "24px", fontWeight: "700" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span style={{ fontSize: "32px", fontWeight: "800", color: "#2b2823", letterSpacing: "-0.5px" }}>
                 Edge
               </span>
-              <span style={{ color: "#787060", fontSize: "18px" }}>by Teeco</span>
-            </div>
-            <div
-              style={{
-                backgroundColor: "#16a34a",
-                color: "white",
-                padding: "8px 20px",
-                borderRadius: "20px",
-                fontSize: "16px",
-                fontWeight: "600",
-              }}
-            >
-              STR Investment Analysis
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              padding: "40px",
-              gap: "40px",
-            }}
-          >
-            {/* Left Side - Property Info */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              {/* Address */}
-              <h1
-                style={{
-                  fontSize: "44px",
-                  fontWeight: "700",
-                  color: "#2b2823",
-                  margin: "0 0 8px 0",
-                  lineHeight: 1.1,
-                }}
-              >
-                {data.address}
-              </h1>
-              <p
-                style={{
-                  fontSize: "22px",
-                  color: "#787060",
-                  margin: "0 0 32px 0",
-                }}
-              >
-                {data.city}, {data.state} • {data.bedrooms} BR / {data.bathrooms} BA
-              </p>
-
-              {/* Stats Row */}
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "16px",
-                    padding: "16px 24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>Occupancy</span>
-                  <span style={{ fontSize: "28px", fontWeight: "700", color: "#2b2823" }}>
-                    {data.occupancy}%
-                  </span>
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "16px",
-                    padding: "16px 24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>Avg Nightly Rate</span>
-                  <span style={{ fontSize: "28px", fontWeight: "700", color: "#2b2823" }}>
-                    ${data.adr}
-                  </span>
-                </div>
+              <div style={{ display: "flex", backgroundColor: "#2b2823", borderRadius: "8px", padding: "6px 14px" }}>
+                <span style={{ color: "#d8d6cd", fontSize: "16px", fontWeight: "600" }}>by Teeco</span>
               </div>
             </div>
-
-            {/* Right Side - Revenue Card with Grade */}
+            {/* Grade Badge — large and prominent */}
             <div
               style={{
-                width: "320px",
-                backgroundColor: "white",
-                borderRadius: "24px",
-                padding: "28px",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                position: "relative",
+                gap: "12px",
               }}
             >
-              {/* Grade Badge */}
+              <span style={{ fontSize: "18px", color: "#787060", fontWeight: "500" }}>STR Grade</span>
               <div
                 style={{
-                  position: "absolute",
-                  top: "-16px",
-                  right: "24px",
                   backgroundColor: gradeColors.bg,
                   color: gradeColors.text,
-                  padding: "8px 20px",
-                  borderRadius: "12px",
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  padding: "10px 24px",
+                  borderRadius: "14px",
+                  fontSize: "32px",
+                  fontWeight: "800",
+                  letterSpacing: "-0.5px",
+                  display: "flex",
                 }}
               >
                 {grade}
               </div>
+            </div>
+          </div>
 
-              <span style={{ fontSize: "16px", color: "#787060", marginBottom: "4px", marginTop: "8px" }}>
-                Projected Revenue
-              </span>
-              <span
-                style={{
-                  fontSize: "52px",
-                  fontWeight: "700",
-                  color: "#16a34a",
-                  lineHeight: 1,
-                }}
-              >
-                {formatCurrency(data.revenue)}
-              </span>
-              <span style={{ fontSize: "20px", color: "#16a34a" }}>/year</span>
+          {/* Main Content Area */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              padding: "8px 48px 36px",
+              gap: "48px",
+            }}
+          >
+            {/* Left Column — Property + Revenue Hero */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              {/* Address Block */}
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <h1
+                  style={{
+                    fontSize: "42px",
+                    fontWeight: "800",
+                    color: "#2b2823",
+                    margin: "0",
+                    lineHeight: 1.15,
+                    letterSpacing: "-0.5px",
+                  }}
+                >
+                  {data.address}
+                </h1>
+                <p
+                  style={{
+                    fontSize: "22px",
+                    color: "#787060",
+                    margin: "8px 0 0 0",
+                    fontWeight: "500",
+                  }}
+                >
+                  {data.city}, {data.state} &bull; {data.bedrooms} Bed / {data.bathrooms} Bath
+                </p>
+              </div>
 
+              {/* Revenue Hero — the main number people see */}
+              <div style={{ display: "flex", flexDirection: "column", marginTop: "24px" }}>
+                <span style={{ fontSize: "18px", color: "#787060", fontWeight: "500", marginBottom: "4px" }}>
+                  Projected Annual Revenue
+                </span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "72px",
+                      fontWeight: "800",
+                      color: "#16a34a",
+                      lineHeight: 1,
+                      letterSpacing: "-2px",
+                    }}
+                  >
+                    {formatCurrency(data.revenue)}
+                  </span>
+                  <span style={{ fontSize: "28px", color: "#16a34a", fontWeight: "600" }}>/yr</span>
+                </div>
+                <span style={{ fontSize: "20px", color: "#787060", marginTop: "4px" }}>
+                  {formatCurrency(monthlyRevenue)}/mo estimated
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column — Key Metrics Cards */}
+            <div
+              style={{
+                width: "380px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                justifyContent: "center",
+              }}
+            >
+              {/* Cash-on-Cash Return Card */}
               <div
                 style={{
-                  width: "100%",
-                  height: "1px",
-                  backgroundColor: "#e8e5df",
-                  margin: "20px 0",
-                }}
-              />
-
-              <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>
-                Cash-on-Cash Return
-              </span>
-              <span
-                style={{
-                  fontSize: "36px",
-                  fontWeight: "700",
-                  color: cocColor,
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                 }}
               >
-                {data.coc.toFixed(1)}%
-              </span>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Cash-on-Cash Return</span>
+                </div>
+                <span style={{ fontSize: "40px", fontWeight: "800", color: cocColor, letterSpacing: "-1px" }}>
+                  {data.coc.toFixed(1)}%
+                </span>
+              </div>
+
+              {/* Occupancy Card */}
+              <div
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Occupancy Rate</span>
+                </div>
+                <span style={{ fontSize: "40px", fontWeight: "800", color: "#2b2823", letterSpacing: "-1px" }}>
+                  {data.occupancy}%
+                </span>
+              </div>
+
+              {/* ADR Card */}
+              <div
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Avg Nightly Rate</span>
+                </div>
+                <span style={{ fontSize: "40px", fontWeight: "800", color: "#2b2823", letterSpacing: "-1px" }}>
+                  ${data.adr}
+                </span>
+              </div>
+
+              {/* Data Confidence Footer */}
+              {compsCount > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    padding: "12px 0 0",
+                  }}
+                >
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#16a34a", display: "flex" }} />
+                  <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>
+                    Based on {compsCount} comparable listings analyzed
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 48px",
+              backgroundColor: "#2b2823",
+            }}
+          >
+            <span style={{ color: "#d8d6cd", fontSize: "16px" }}>
+              edge.teeco.co
+            </span>
+            <span style={{ color: "#787060", fontSize: "15px" }}>
+              Free STR analysis for any US address
+            </span>
           </div>
         </div>
       ),
@@ -258,7 +309,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // City OG Image - Clean, Premium Design
+  // =========================================================================
+  // CITY OG IMAGE — Premium market analysis card
+  // =========================================================================
   if (data.type === "city") {
     const gradeColors = getGradeColors(data.grade);
 
@@ -270,37 +323,47 @@ export async function GET(request: NextRequest) {
             height: "630px",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#e5e3da",
-            fontFamily: "system-ui, sans-serif",
+            backgroundColor: "#f5f4f0",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {/* Header Bar */}
+          {/* Top accent bar */}
+          <div style={{ width: "100%", height: "6px", backgroundColor: "#2b2823", display: "flex" }} />
+          
+          {/* Header */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "24px 40px",
-              backgroundColor: "#2b2823",
+              padding: "28px 48px 20px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ color: "white", fontSize: "24px", fontWeight: "700" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span style={{ fontSize: "32px", fontWeight: "800", color: "#2b2823", letterSpacing: "-0.5px" }}>
                 Edge
               </span>
-              <span style={{ color: "#787060", fontSize: "18px" }}>by Teeco</span>
+              <div style={{ display: "flex", backgroundColor: "#2b2823", borderRadius: "8px", padding: "6px 14px" }}>
+                <span style={{ color: "#d8d6cd", fontSize: "16px", fontWeight: "600" }}>by Teeco</span>
+              </div>
             </div>
-            <div
-              style={{
-                backgroundColor: "#787060",
-                color: "white",
-                padding: "8px 20px",
-                borderRadius: "20px",
-                fontSize: "16px",
-                fontWeight: "600",
-              }}
-            >
-              STR Market Analysis
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "18px", color: "#787060", fontWeight: "500" }}>STR Grade</span>
+              <div
+                style={{
+                  backgroundColor: gradeColors.bg,
+                  color: gradeColors.text,
+                  padding: "10px 24px",
+                  borderRadius: "14px",
+                  fontSize: "32px",
+                  fontWeight: "800",
+                  display: "flex",
+                }}
+              >
+                {data.grade}
+              </div>
             </div>
           </div>
 
@@ -309,115 +372,128 @@ export async function GET(request: NextRequest) {
             style={{
               flex: 1,
               display: "flex",
-              padding: "40px",
-              gap: "40px",
+              padding: "8px 48px 36px",
+              gap: "48px",
             }}
           >
-            {/* Left Side - City Info */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <h1
-                style={{
-                  fontSize: "56px",
-                  fontWeight: "700",
-                  color: "#2b2823",
-                  margin: "0 0 8px 0",
-                }}
-              >
-                {data.name}
-              </h1>
-              <p
-                style={{
-                  fontSize: "28px",
-                  color: "#787060",
-                  margin: "0 0 32px 0",
-                }}
-              >
-                {data.state}
-              </p>
+            {/* Left — City Info + Score Hero */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <h1
+                  style={{
+                    fontSize: "56px",
+                    fontWeight: "800",
+                    color: "#2b2823",
+                    margin: "0",
+                    lineHeight: 1.1,
+                    letterSpacing: "-1px",
+                  }}
+                >
+                  {data.name}
+                </h1>
+                <p style={{ fontSize: "26px", color: "#787060", margin: "8px 0 0", fontWeight: "500" }}>
+                  {data.state}
+                </p>
+              </div>
 
-              {/* Stats Row */}
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "16px",
-                    padding: "16px 24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>Market Score</span>
-                  <span style={{ fontSize: "28px", fontWeight: "700", color: "#2b2823" }}>
-                    {data.score}/100
+              <div style={{ display: "flex", flexDirection: "column", marginTop: "24px" }}>
+                <span style={{ fontSize: "18px", color: "#787060", fontWeight: "500", marginBottom: "4px" }}>
+                  Market Score
+                </span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "80px",
+                      fontWeight: "800",
+                      color: "#2b2823",
+                      lineHeight: 1,
+                      letterSpacing: "-2px",
+                    }}
+                  >
+                    {data.score}
                   </span>
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "16px",
-                    padding: "16px 24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>Median Price</span>
-                  <span style={{ fontSize: "28px", fontWeight: "700", color: "#2b2823" }}>
-                    {formatCurrency(data.price)}
-                  </span>
+                  <span style={{ fontSize: "32px", color: "#787060", fontWeight: "600" }}>/100</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Side - Revenue Card with Grade */}
+            {/* Right — Metrics Cards */}
             <div
               style={{
-                width: "320px",
-                backgroundColor: "white",
-                borderRadius: "24px",
-                padding: "28px",
+                width: "380px",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
+                gap: "16px",
                 justifyContent: "center",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                position: "relative",
               }}
             >
-              {/* Grade Badge */}
               <div
                 style={{
-                  position: "absolute",
-                  top: "-16px",
-                  right: "24px",
-                  backgroundColor: gradeColors.bg,
-                  color: gradeColors.text,
-                  padding: "8px 20px",
-                  borderRadius: "12px",
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                 }}
               >
-                {data.grade}
+                <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Avg Annual Revenue</span>
+                <span style={{ fontSize: "36px", fontWeight: "800", color: "#16a34a", letterSpacing: "-1px" }}>
+                  {formatCurrency(data.revenue * 12)}
+                </span>
               </div>
 
-              <span style={{ fontSize: "16px", color: "#787060", marginBottom: "4px", marginTop: "8px" }}>
-                Avg STR Revenue
-              </span>
-              <span
+              <div
                 style={{
-                  fontSize: "52px",
-                  fontWeight: "700",
-                  color: "#16a34a",
-                  lineHeight: 1,
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                 }}
               >
-                {formatCurrency(data.revenue * 12)}
-              </span>
-              <span style={{ fontSize: "20px", color: "#16a34a" }}>/year</span>
+                <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Median Home Price</span>
+                <span style={{ fontSize: "36px", fontWeight: "800", color: "#2b2823", letterSpacing: "-1px" }}>
+                  {formatCurrency(data.price)}
+                </span>
+              </div>
+
+              {data.appreciation && (
+                <div
+                  style={{
+                    backgroundColor: "#ffffff",
+                    borderRadius: "20px",
+                    padding: "24px 28px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>YoY Appreciation</span>
+                  <span style={{ fontSize: "36px", fontWeight: "800", color: "#16a34a", letterSpacing: "-1px" }}>
+                    +{data.appreciation}%
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 48px",
+              backgroundColor: "#2b2823",
+            }}
+          >
+            <span style={{ color: "#d8d6cd", fontSize: "16px" }}>edge.teeco.co</span>
+            <span style={{ color: "#787060", fontSize: "15px" }}>Explore 1,000+ STR markets across the US</span>
           </div>
         </div>
       ),
@@ -428,7 +504,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // State OG Image - Clean, Premium Design
+  // =========================================================================
+  // STATE OG IMAGE — Premium state analysis card
+  // =========================================================================
   if (data.type === "state") {
     const gradeColors = getGradeColors(data.grade);
 
@@ -440,37 +518,47 @@ export async function GET(request: NextRequest) {
             height: "630px",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#e5e3da",
-            fontFamily: "system-ui, sans-serif",
+            backgroundColor: "#f5f4f0",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {/* Header Bar */}
+          {/* Top accent bar */}
+          <div style={{ width: "100%", height: "6px", backgroundColor: "#2b2823", display: "flex" }} />
+          
+          {/* Header */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "24px 40px",
-              backgroundColor: "#2b2823",
+              padding: "28px 48px 20px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ color: "white", fontSize: "24px", fontWeight: "700" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span style={{ fontSize: "32px", fontWeight: "800", color: "#2b2823", letterSpacing: "-0.5px" }}>
                 Edge
               </span>
-              <span style={{ color: "#787060", fontSize: "18px" }}>by Teeco</span>
+              <div style={{ display: "flex", backgroundColor: "#2b2823", borderRadius: "8px", padding: "6px 14px" }}>
+                <span style={{ color: "#d8d6cd", fontSize: "16px", fontWeight: "600" }}>by Teeco</span>
+              </div>
             </div>
-            <div
-              style={{
-                backgroundColor: "#787060",
-                color: "white",
-                padding: "8px 20px",
-                borderRadius: "20px",
-                fontSize: "16px",
-                fontWeight: "600",
-              }}
-            >
-              STR State Analysis
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "18px", color: "#787060", fontWeight: "500" }}>STR Grade</span>
+              <div
+                style={{
+                  backgroundColor: gradeColors.bg,
+                  color: gradeColors.text,
+                  padding: "10px 24px",
+                  borderRadius: "14px",
+                  fontSize: "32px",
+                  fontWeight: "800",
+                  display: "flex",
+                }}
+              >
+                {data.grade}
+              </div>
             </div>
           </div>
 
@@ -479,115 +567,128 @@ export async function GET(request: NextRequest) {
             style={{
               flex: 1,
               display: "flex",
-              padding: "40px",
-              gap: "40px",
+              padding: "8px 48px 36px",
+              gap: "48px",
             }}
           >
-            {/* Left Side - State Info */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <h1
-                style={{
-                  fontSize: "64px",
-                  fontWeight: "700",
-                  color: "#2b2823",
-                  margin: "0 0 8px 0",
-                }}
-              >
-                {data.name}
-              </h1>
-              <p
-                style={{
-                  fontSize: "28px",
-                  color: "#787060",
-                  margin: "0 0 32px 0",
-                }}
-              >
-                {data.id}
-              </p>
+            {/* Left — State Info + Score Hero */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <h1
+                  style={{
+                    fontSize: "56px",
+                    fontWeight: "800",
+                    color: "#2b2823",
+                    margin: "0",
+                    lineHeight: 1.1,
+                    letterSpacing: "-1px",
+                  }}
+                >
+                  {data.name}
+                </h1>
+                <p style={{ fontSize: "22px", color: "#787060", margin: "8px 0 0", fontWeight: "500" }}>
+                  {data.cityCount} markets analyzed
+                </p>
+              </div>
 
-              {/* Stats Row */}
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "16px",
-                    padding: "16px 24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>Markets Analyzed</span>
-                  <span style={{ fontSize: "28px", fontWeight: "700", color: "#2b2823" }}>
-                    {data.cityCount}
+              <div style={{ display: "flex", flexDirection: "column", marginTop: "24px" }}>
+                <span style={{ fontSize: "18px", color: "#787060", fontWeight: "500", marginBottom: "4px" }}>
+                  State Score
+                </span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "80px",
+                      fontWeight: "800",
+                      color: "#2b2823",
+                      lineHeight: 1,
+                      letterSpacing: "-2px",
+                    }}
+                  >
+                    {data.score}
                   </span>
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "16px",
-                    padding: "16px 24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "#787060", marginBottom: "4px" }}>Top Market</span>
-                  <span style={{ fontSize: "28px", fontWeight: "700", color: "#2b2823" }}>
-                    {data.topCity}
-                  </span>
+                  <span style={{ fontSize: "32px", color: "#787060", fontWeight: "600" }}>/100</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Side - Score Card with Grade */}
+            {/* Right — Metrics Cards */}
             <div
               style={{
-                width: "280px",
-                backgroundColor: "white",
-                borderRadius: "24px",
-                padding: "28px",
+                width: "380px",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
+                gap: "16px",
                 justifyContent: "center",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                position: "relative",
               }}
             >
-              {/* Grade Badge */}
               <div
                 style={{
-                  position: "absolute",
-                  top: "-16px",
-                  right: "24px",
-                  backgroundColor: gradeColors.bg,
-                  color: gradeColors.text,
-                  padding: "8px 20px",
-                  borderRadius: "12px",
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                 }}
               >
-                {data.grade}
+                <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Top Market</span>
+                <span style={{ fontSize: "28px", fontWeight: "800", color: "#2b2823" }}>
+                  {data.topCity}
+                </span>
               </div>
 
-              <span style={{ fontSize: "16px", color: "#787060", marginBottom: "4px", marginTop: "8px" }}>
-                State Score
-              </span>
-              <span
+              {data.avgRevenue && (
+                <div
+                  style={{
+                    backgroundColor: "#ffffff",
+                    borderRadius: "20px",
+                    padding: "24px 28px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Avg Revenue</span>
+                  <span style={{ fontSize: "36px", fontWeight: "800", color: "#16a34a", letterSpacing: "-1px" }}>
+                    {formatCurrency(data.avgRevenue)}
+                  </span>
+                </div>
+              )}
+
+              <div
                 style={{
-                  fontSize: "64px",
-                  fontWeight: "700",
-                  color: "#2b2823",
-                  lineHeight: 1,
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 28px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                 }}
               >
-                {data.score}
-              </span>
-              <span style={{ fontSize: "20px", color: "#787060" }}>/100</span>
+                <span style={{ fontSize: "15px", color: "#787060", fontWeight: "500" }}>Markets</span>
+                <span style={{ fontSize: "36px", fontWeight: "800", color: "#2b2823", letterSpacing: "-1px" }}>
+                  {data.cityCount}
+                </span>
+              </div>
             </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 48px",
+              backgroundColor: "#2b2823",
+            }}
+          >
+            <span style={{ color: "#d8d6cd", fontSize: "16px" }}>edge.teeco.co</span>
+            <span style={{ color: "#787060", fontSize: "15px" }}>Explore 1,000+ STR markets across the US</span>
           </div>
         </div>
       ),
