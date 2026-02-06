@@ -30,6 +30,7 @@ export interface FlatCity {
   incomeBySize: Record<string, number>;
   amenityDelta: Array<{ name: string; boost: number; priority: string }>;
   marketType: string;
+  highlights: string[];
   // New transparent scoring
   scoring: ScoringBreakdown;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
@@ -125,6 +126,7 @@ export function getAllCities(): FlatCity[] {
           priority: a.priority === "must-have" ? "MUST HAVE" : a.priority === "high-impact" ? "HIGH IMPACT" : "NICE TO HAVE",
         })),
         marketType: city.amenityDelta.marketType,
+        highlights: city.highlights || [],
         // New transparent scoring
         scoring,
         grade: scoring.grade,

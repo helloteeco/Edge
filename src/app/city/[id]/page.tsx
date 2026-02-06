@@ -164,6 +164,99 @@ export default function CityPage({ params }: { params: { id: string } }) {
   const incomeBySize = city.incomeBySize || { "1BR": 2000, "2BR": 2800, "3BR": 3500, "4BR": 4200, "5BR": 4800, "6BR+": 5500 };
   const bestSize = Object.entries(incomeBySize).reduce((a, b) => a[1] > b[1] ? a : b);
 
+  // Generate demand driver descriptions from highlights and market type
+  const getDemandDrivers = () => {
+    const highlights = city.highlights || [];
+    const marketType = city.marketType || 'urban';
+    const drivers: Array<{ icon: string; title: string; description: string }> = [];
+
+    // Market type context
+    const marketTypeInfo: Record<string, { icon: string; title: string; desc: string }> = {
+      'mountain': { icon: '⛰️', title: 'Mountain Destination', desc: 'Year-round outdoor recreation draws hikers, skiers, and nature lovers seeking cabin getaways.' },
+      'beach': { icon: '🏖️', title: 'Beach & Coastal Market', desc: 'Beachfront demand drives premium nightly rates, especially during summer and holiday seasons.' },
+      'urban': { icon: '🏙️', title: 'Urban & Metro Market', desc: 'Business travelers, event-goers, and weekend visitors create consistent year-round demand.' },
+      'lake': { icon: '🛶', title: 'Lakefront Destination', desc: 'Waterfront properties command premium rates from families and groups seeking lake recreation.' },
+      'desert': { icon: '🏜️', title: 'Desert & Southwest Market', desc: 'Snowbird migration and unique landscapes drive strong seasonal demand from northern travelers.' },
+      'rural': { icon: '🌾', title: 'Rural & Country Market', desc: 'Privacy seekers and remote workers fuel growing demand for secluded, nature-adjacent stays.' },
+      'suburban': { icon: '🏘️', title: 'Suburban Market', desc: 'Family-friendly neighborhoods attract group travel, relocations, and insurance-displacement stays.' },
+      'waterfront': { icon: '⚓', title: 'Waterfront Market', desc: 'Water access properties earn significantly higher ADR from boaters, anglers, and vacationers.' },
+      'tropical': { icon: '🌴', title: 'Tropical Destination', desc: 'Warm-weather escapes attract year-round tourism with peak demand during winter months.' },
+    };
+
+    const mInfo = marketTypeInfo[marketType] || marketTypeInfo['urban'];
+    drivers.push({ icon: mInfo.icon, title: mInfo.title, description: mInfo.desc });
+
+    // Map common highlight keywords to rich descriptions
+    const highlightMap: Record<string, { icon: string; title: string; desc: string }> = {
+      'national park': { icon: '🏞️', title: 'Near National Park', desc: 'National park proximity drives millions of annual visitors seeking nearby accommodation.' },
+      'state park': { icon: '🌲', title: 'State Park Access', desc: 'State park visitors create steady demand for nearby short-term rentals.' },
+      'ski': { icon: '⛷️', title: 'Ski Resort Area', desc: 'Winter sports enthusiasts book premium properties during ski season, often weeks in advance.' },
+      'university': { icon: '🎓', title: 'University Town', desc: 'Parents visiting, graduation weekends, and football games create predictable high-demand periods.' },
+      'college': { icon: '🎓', title: 'College Town', desc: 'Academic calendars drive reliable seasonal demand from parents, prospective students, and alumni.' },
+      'football': { icon: '🏈', title: 'Game Day Demand', desc: 'College and pro football weekends command 2-3x normal rates in surrounding areas.' },
+      'beach': { icon: '🏖️', title: 'Beach Access', desc: 'Direct or nearby beach access is the #1 demand driver for coastal vacation rentals.' },
+      'lake': { icon: '🛶', title: 'Lake Recreation', desc: 'Boating, fishing, and lakefront relaxation attract families and groups year-round.' },
+      'historic': { icon: '🏛️', title: 'Historic District', desc: 'Historic charm and walkable downtowns attract cultural tourists and weekend getaway travelers.' },
+      'wine': { icon: '🍷', title: 'Wine Country', desc: 'Wine tourism brings affluent travelers willing to pay premium nightly rates.' },
+      'music': { icon: '🎵', title: 'Music & Culture Hub', desc: 'Live music venues and cultural events create consistent visitor demand throughout the year.' },
+      'festival': { icon: '🎪', title: 'Festival & Events', desc: 'Annual festivals and events create predictable booking spikes with premium pricing.' },
+      'military': { icon: '🎖️', title: 'Military Base Proximity', desc: 'PCS moves, TDY assignments, and visiting families create steady mid-term rental demand.' },
+      'medical': { icon: '🏥', title: 'Medical Tourism', desc: 'Patients and families visiting major medical centers need comfortable extended stays.' },
+      'tech': { icon: '💻', title: 'Tech & Innovation Hub', desc: 'Tech industry growth brings business travelers and relocating professionals.' },
+      'nasa': { icon: '🚀', title: 'NASA & Aerospace', desc: 'Space industry workers and launch tourism create unique demand patterns.' },
+      'casino': { icon: '🎰', title: 'Casino & Entertainment', desc: 'Casino visitors and entertainment seekers drive high weekend and holiday occupancy.' },
+      'golf': { icon: '⛳', title: 'Golf Destination', desc: 'Golf tourism attracts affluent travelers seeking multi-day stays near premier courses.' },
+      'fishing': { icon: '🎣', title: 'Fishing & Outdoors', desc: 'Anglers and outdoor enthusiasts book seasonal stays near prime fishing locations.' },
+      'hunting': { icon: '🦌', title: 'Hunting Season Demand', desc: 'Hunting season creates concentrated demand periods with group bookings.' },
+      'river': { icon: '🏞️', title: 'River Recreation', desc: 'Rafting, kayaking, and riverside activities attract adventure travelers and families.' },
+      'hiking': { icon: '🥾', title: 'Hiking & Trails', desc: 'Trail access draws outdoor enthusiasts for weekend and week-long adventure stays.' },
+      'affordable': { icon: '💰', title: 'Affordable Entry Point', desc: 'Lower property prices mean better cash-on-cash returns and easier market entry for new investors.' },
+      'growing': { icon: '📈', title: 'Growing Market', desc: 'Population and economic growth signal increasing demand and property appreciation potential.' },
+      'family': { icon: '👨‍👩‍👧‍👦', title: 'Family Destination', desc: 'Family-friendly attractions drive group bookings with longer average stays.' },
+      'resort': { icon: '🏨', title: 'Resort Area', desc: 'Resort proximity creates overflow demand and attracts vacationers seeking alternatives.' },
+      'cruise': { icon: '🚢', title: 'Cruise Port', desc: 'Pre and post-cruise stays create reliable demand from cruise passengers.' },
+      'theme park': { icon: '🎢', title: 'Theme Park Area', desc: 'Theme park visitors need multi-night stays, driving consistent family bookings.' },
+      'hot springs': { icon: '♨️', title: 'Hot Springs & Wellness', desc: 'Wellness tourism attracts health-conscious travelers seeking relaxation retreats.' },
+      'mardi gras': { icon: '🎭', title: 'Mardi Gras & Festivals', desc: 'Major annual celebrations create extreme demand spikes with 3-5x normal pricing.' },
+      'port': { icon: '⚓', title: 'Port City', desc: 'Maritime commerce and port tourism bring diverse visitor demographics year-round.' },
+      'recording studio': { icon: '🎙️', title: 'Music Heritage', desc: 'Music history tourism draws fans and artists to iconic recording locations.' },
+      'corporate': { icon: '💼', title: 'Corporate Travel Hub', desc: 'Business travelers provide reliable weekday occupancy at competitive nightly rates.' },
+      'seafood': { icon: '🦐', title: 'Culinary Destination', desc: 'Food tourism and local cuisine attract travelers seeking authentic dining experiences.' },
+      'appalachian': { icon: '🏔️', title: 'Appalachian Region', desc: 'Mountain culture, scenic beauty, and outdoor recreation draw nature-loving travelers.' },
+      'smoky': { icon: '🌄', title: 'Great Smoky Mountains', desc: 'America\'s most-visited national park brings 12M+ annual visitors to surrounding areas.' },
+      'ozark': { icon: '🏞️', title: 'Ozarks Region', desc: 'Lakes, caves, and natural beauty make the Ozarks a top Midwest vacation destination.' },
+      'bourbon': { icon: '🥃', title: 'Bourbon Trail', desc: 'Kentucky\'s bourbon tourism attracts spirits enthusiasts for distillery tours and tastings.' },
+      'horse': { icon: '🐎', title: 'Horse Country', desc: 'Equestrian events and horse farm tourism create niche but premium demand.' },
+      'nascar': { icon: '🏎️', title: 'NASCAR & Racing', desc: 'Race weekends fill every available rental within driving distance of the track.' },
+    };
+
+    for (const highlight of highlights) {
+      const lower = highlight.toLowerCase();
+      for (const [keyword, info] of Object.entries(highlightMap)) {
+        if (lower.includes(keyword)) {
+          // Avoid duplicate icons/titles
+          if (!drivers.some(d => d.title === info.title)) {
+            drivers.push({ icon: info.icon, title: info.title, description: info.desc });
+          }
+          break;
+        }
+      }
+    }
+
+    // Add any unmatched highlights as generic items
+    for (const highlight of highlights) {
+      const lower = highlight.toLowerCase();
+      const matched = Object.keys(highlightMap).some(k => lower.includes(k));
+      if (!matched && !drivers.some(d => d.title.toLowerCase() === lower)) {
+        drivers.push({ icon: '📍', title: highlight, description: `${highlight} contributes to visitor demand and market appeal in ${city.name}.` });
+      }
+    }
+
+    return drivers.slice(0, 5); // Max 5 drivers
+  };
+
+  const demandDrivers = getDemandDrivers();
+
   // Top amenity
   const amenities = city.amenityDelta || [
     { name: "Hot Tub", boost: 22, priority: "MUST HAVE" },
@@ -256,6 +349,61 @@ export default function CityPage({ params }: { params: { id: string } }) {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Why This Market? - Demand Drivers & Attractions */}
+        {demandDrivers.length > 0 && (
+          <div 
+            className="rounded-2xl p-5 mb-4"
+            style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 
+                className="font-semibold"
+                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                Why {city.name}?
+              </h3>
+              <span 
+                className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
+              >
+                {city.marketType.charAt(0).toUpperCase() + city.marketType.slice(1)} Market
+              </span>
+            </div>
+            <p className="text-sm mb-4" style={{ color: '#787060' }}>What drives short-term rental demand here</p>
+            
+            <div className="space-y-3">
+              {demandDrivers.map((driver, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex gap-3 p-3 rounded-xl"
+                  style={{ backgroundColor: idx === 0 ? 'rgba(43, 40, 35, 0.05)' : '#f8f7f4' }}
+                >
+                  <span className="text-xl flex-shrink-0 mt-0.5">{driver.icon}</span>
+                  <div>
+                    <div className="font-semibold text-sm" style={{ color: '#2b2823' }}>{driver.title}</div>
+                    <div className="text-sm mt-0.5" style={{ color: '#787060', lineHeight: '1.5' }}>{driver.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Highlight Tags */}
+            {city.highlights && city.highlights.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4 pt-4" style={{ borderTop: '1px solid #e5e3da' }}>
+                {city.highlights.map((tag: string, idx: number) => (
+                  <span 
+                    key={idx}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Overall Grade & Score */}
         <div 
           className="rounded-2xl p-5 mb-4"
