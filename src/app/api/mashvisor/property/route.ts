@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
+import { supabase } from "@/lib/supabase";
 
 // Force dynamic rendering for this API route
 export const dynamic = "force-dynamic";
@@ -1599,6 +1600,49 @@ export async function POST(request: NextRequest) {
                       neighborhoodData?.median_price || 
                       Math.round((neighborhoodData?.price_per_sqft || 150) * (property?.sqft || 1500)),
     };
+
+    // =========================================================================
+    // SILENT LOGGING: Capture every analysis for proprietary dataset
+    // This is invisible to users - server-side only, insert-only RLS
+    // =========================================================================
+    try {
+      const compStrength = result.compSetStrength || {};
+      await supabase.from('analysis_log').insert({
+        address: address,
+        city: result.property?.city || city,
+        state: result.property?.state || state,
+        zip: result.property?.zipCode || zip,
+        latitude: latitude,
+        longitude: longitude,
+        bedrooms: bedrooms,
+        bathrooms: bathrooms,
+        guest_count: accommodates,
+        annual_revenue: result.neighborhood?.annualRevenue || annualRevenue,
+        monthly_revenue: result.neighborhood?.monthlyRevenue || Math.round(annualRevenue / 12),
+        adr: result.neighborhood?.adr || adjustedAdr,
+        occupancy_rate: result.neighborhood?.occupancy || adjustedOccupancy,
+        revenue_source: revenueSource,
+        comp_count: comparableListings.length,
+        comp_set_strength: compStrength.score || 0,
+        excellent_comps: compStrength.details?.excellentMatches || 0,
+        good_comps: compStrength.details?.goodMatches || 0,
+        data_provider: dataSource,
+        revenue_p25: result.percentiles?.revenue?.p25 || null,
+        revenue_p50: result.percentiles?.revenue?.p50 || null,
+        revenue_p75: result.percentiles?.revenue?.p75 || null,
+        revenue_p90: result.percentiles?.revenue?.p90 || null,
+        seasonality_data: result.historical || null,
+        is_instant: false,
+        analysis_type: 'ownership',
+        raw_response: result,
+        market_city: city,
+        market_state: state,
+      });
+      console.log('[AnalysisLog] Logged analysis for:', address);
+    } catch (logError) {
+      // Never let logging failures break the user experience
+      console.error('[AnalysisLog] Failed to log (non-blocking):', logError);
+    }
 
     return NextResponse.json(result);
   } catch (error) {
