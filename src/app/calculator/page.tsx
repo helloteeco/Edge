@@ -366,11 +366,38 @@ export default function CalculatorPage() {
         const cachedSearch = recentSearches.find((s: { address: string }) => s.address === addressParam);
         if (cachedSearch?.cachedResult) {
           setResult(cachedSearch.cachedResult);
-          if (cachedSearch.cachedResult.listPrice > 0) {
-            setPurchasePrice(cachedSearch.cachedResult.listPrice.toString());
-          }
           if (cachedSearch.cachedResult.sqft > 0) {
             setPropertySqft(cachedSearch.cachedResult.sqft);
+          }
+          if (cachedSearch.cachedBedrooms) setBedrooms(cachedSearch.cachedBedrooms);
+          if (cachedSearch.cachedBathrooms) setBathrooms(cachedSearch.cachedBathrooms);
+          if (cachedSearch.cachedGuestCount) setGuestCount(cachedSearch.cachedGuestCount);
+          
+          // Restore cached calculator settings (purchase price, opex, rates, etc.)
+          if (cachedSearch.cachedSettings) {
+            const s = cachedSearch.cachedSettings;
+            if (s.purchasePrice) setPurchasePrice(s.purchasePrice);
+            else if (cachedSearch.cachedResult.listPrice > 0) setPurchasePrice(cachedSearch.cachedResult.listPrice.toString());
+            if (s.downPaymentPercent !== undefined) setDownPaymentPercent(s.downPaymentPercent);
+            if (s.interestRate !== undefined) setInterestRate(s.interestRate);
+            if (s.loanTerm !== undefined) setLoanTerm(s.loanTerm);
+            if (s.propertyTaxRate !== undefined) setPropertyTaxRate(s.propertyTaxRate);
+            if (s.insuranceAnnual !== undefined) setInsuranceAnnual(s.insuranceAnnual);
+            if (s.managementFeePercent !== undefined) setManagementFeePercent(s.managementFeePercent);
+            if (s.maintenancePercent !== undefined) setMaintenancePercent(s.maintenancePercent);
+            if (s.electricMonthly !== undefined) setElectricMonthly(s.electricMonthly);
+            if (s.waterMonthly !== undefined) setWaterMonthly(s.waterMonthly);
+            if (s.internetMonthly !== undefined) setInternetMonthly(s.internetMonthly);
+            if (s.lawnCareMonthly !== undefined) setLawnCareMonthly(s.lawnCareMonthly);
+            if (s.houseSuppliesMonthly !== undefined) setHouseSuppliesMonthly(s.houseSuppliesMonthly);
+            if (s.maintenanceRepairMonthly !== undefined) setMaintenanceRepairMonthly(s.maintenanceRepairMonthly);
+            if (s.trashMonthly !== undefined) setTrashMonthly(s.trashMonthly);
+            if (s.rentalSoftwareMonthly !== undefined) setRentalSoftwareMonthly(s.rentalSoftwareMonthly);
+            if (s.pestControlMonthly !== undefined) setPestControlMonthly(s.pestControlMonthly);
+            if (s.miscMonthly !== undefined) setMiscMonthly(s.miscMonthly);
+          } else {
+            // Fallback for old cached searches without settings
+            if (cachedSearch.cachedResult.listPrice > 0) setPurchasePrice(cachedSearch.cachedResult.listPrice.toString());
           }
         }
       }
