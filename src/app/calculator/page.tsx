@@ -34,6 +34,27 @@ interface RecentSearch {
   cachedBedrooms?: number;
   cachedBathrooms?: number;
   cachedGuestCount?: number;
+  // Cached calculator settings so user customizations persist
+  cachedSettings?: {
+    purchasePrice?: string;
+    downPaymentPercent?: number;
+    interestRate?: number;
+    loanTerm?: number;
+    propertyTaxRate?: number;
+    insuranceAnnual?: number;
+    managementFeePercent?: number;
+    maintenancePercent?: number;
+    electricMonthly?: number;
+    waterMonthly?: number;
+    internetMonthly?: number;
+    lawnCareMonthly?: number;
+    houseSuppliesMonthly?: number;
+    maintenanceRepairMonthly?: number;
+    trashMonthly?: number;
+    rentalSoftwareMonthly?: number;
+    pestControlMonthly?: number;
+    miscMonthly?: number;
+  };
 }
 
 interface AddressSuggestion {
@@ -152,7 +173,7 @@ export default function CalculatorPage() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [skipNextAutocomplete, setSkipNextAutocomplete] = useState(false);
+  const skipNextAutocompleteRef = useRef(false);
   
   // Manual income override
   const [useCustomIncome, setUseCustomIncome] = useState(false);
@@ -328,7 +349,7 @@ export default function CalculatorPage() {
     const forceParam = urlParams.get("force");
     
     if (addressParam) {
-      setSkipNextAutocomplete(true);
+      skipNextAutocompleteRef.current = true;
       setAddress(addressParam);
       if (bedroomsParam) setBedrooms(parseInt(bedroomsParam, 10));
       if (bathroomsParam) setBathrooms(parseInt(bathroomsParam, 10));
@@ -456,7 +477,7 @@ export default function CalculatorPage() {
           // Clear any existing suggestions
           setSuggestions([]);
           setShowSuggestions(false);
-          setSkipNextAutocomplete(true);
+          skipNextAutocompleteRef.current = true;
           setAddress(pendingAddress);
           if (pendingBedrooms) setBedrooms(parseInt(pendingBedrooms, 10));
           if (pendingBathrooms) setBathrooms(parseInt(pendingBathrooms, 10));
@@ -783,6 +804,50 @@ export default function CalculatorPage() {
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
   };
 
+  // Auto-update cached settings in recent searches when user modifies calculator values
+  useEffect(() => {
+    if (!result || !address) return;
+    const currentSettings = {
+      purchasePrice,
+      downPaymentPercent,
+      interestRate,
+      loanTerm,
+      propertyTaxRate,
+      insuranceAnnual,
+      managementFeePercent,
+      maintenancePercent,
+      electricMonthly,
+      waterMonthly,
+      internetMonthly,
+      lawnCareMonthly,
+      houseSuppliesMonthly,
+      maintenanceRepairMonthly,
+      trashMonthly,
+      rentalSoftwareMonthly,
+      pestControlMonthly,
+      miscMonthly,
+    };
+    // Debounce the localStorage write to avoid excessive writes
+    const settingsTimer = setTimeout(() => {
+      try {
+        const searches = JSON.parse(localStorage.getItem('edge_recent_searches') || '[]');
+        const updatedSearches = searches.map((s: RecentSearch) => 
+          s.address === address ? { ...s, cachedSettings: currentSettings } : s
+        );
+        localStorage.setItem('edge_recent_searches', JSON.stringify(updatedSearches));
+        // Also update the in-memory state
+        setRecentSearches(updatedSearches);
+      } catch (e) {
+        // Silently fail — settings persistence is best-effort
+      }
+    }, 1000);
+    return () => clearTimeout(settingsTimer);
+  }, [result, address, purchasePrice, downPaymentPercent, interestRate, loanTerm,
+    propertyTaxRate, insuranceAnnual, managementFeePercent, maintenancePercent,
+    electricMonthly, waterMonthly, internetMonthly, lawnCareMonthly,
+    houseSuppliesMonthly, maintenanceRepairMonthly, trashMonthly,
+    rentalSoftwareMonthly, pestControlMonthly, miscMonthly]);
+
   // Save report to Saved section
   const saveReport = async () => {
     if (!result) return;
@@ -942,19 +1007,23 @@ export default function CalculatorPage() {
   // Address autocomplete with debounce
   useEffect(() => {
     // Skip autocomplete if address was set programmatically (from cache/URL/selection)
-    if (skipNextAutocomplete) {
-      setSkipNextAutocomplete(false);
+    if (skipNextAutocompleteRef.current) {
+      skipNextAutocompleteRef.current = false;
       return;
     }
     
     const debounceTimer = setTimeout(async () => {
+      // Double-check refs inside the timer — selection may have happened during debounce wait
+      if (skipNextAutocompleteRef.current || justSelectedRef.current) {
+        return;
+      }
       if (address.length >= 3) {
         setIsLoadingSuggestions(true);
         try {
           const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`);
           const data = await response.json();
           // Only show suggestions if we haven't selected one in the meantime
-          if (data.suggestions && !skipNextAutocomplete && !justSelectedRef.current) {
+          if (data.suggestions && !skipNextAutocompleteRef.current && !justSelectedRef.current) {
             setSuggestions(data.suggestions.slice(0, 4));
             setShowSuggestions(true);
           }
@@ -970,7 +1039,7 @@ export default function CalculatorPage() {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [address, skipNextAutocomplete]);
+  }, [address]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -989,22 +1058,22 @@ export default function CalculatorPage() {
   const justSelectedRef = useRef(false);
 
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    // Mark that we just selected — this ref survives React state batching
+    // Mark BOTH refs immediately — these survive React state batching and async timers
     justSelectedRef.current = true;
+    skipNextAutocompleteRef.current = true;
     // Close dropdown and clear suggestions FIRST to prevent any re-render flicker
     setShowSuggestions(false);
     setSuggestions([]);
-    // Skip autocomplete so selecting a suggestion doesn't trigger another search
-    setSkipNextAutocomplete(true);
     setAddress(suggestion.display);
     // Blur the input to dismiss the mobile keyboard and prevent re-focus showing dropdown
     if (inputRef.current) {
       inputRef.current.blur();
     }
-    // Reset the ref after a delay longer than the debounce timer (300ms)
+    // Reset the ref after a delay much longer than the debounce timer (300ms)
+    // This ensures no in-flight debounced fetch can show suggestions after selection
     setTimeout(() => {
       justSelectedRef.current = false;
-    }, 500);
+    }, 800);
   };
 
   // Check if form is valid for analysis
@@ -1197,6 +1266,27 @@ export default function CalculatorPage() {
         cachedBedrooms: bedrooms,
         cachedBathrooms: bathrooms,
         cachedGuestCount: guestCount || bedrooms * 2,
+        // Cache calculator settings so they persist when loading from history
+        cachedSettings: {
+          purchasePrice: purchasePrice || (analysisResult.listPrice > 0 ? analysisResult.listPrice.toString() : ''),
+          downPaymentPercent,
+          interestRate,
+          loanTerm,
+          propertyTaxRate,
+          insuranceAnnual,
+          managementFeePercent,
+          maintenancePercent,
+          electricMonthly,
+          waterMonthly,
+          internetMonthly,
+          lawnCareMonthly,
+          houseSuppliesMonthly,
+          maintenanceRepairMonthly,
+          trashMonthly,
+          rentalSoftwareMonthly,
+          pestControlMonthly,
+          miscMonthly,
+        },
       });
       
       // Cache the API response in Supabase (90-day TTL)
@@ -2388,7 +2478,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   }
                 }}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
-                onFocus={() => { if (suggestions.length > 0 && !skipNextAutocomplete && !justSelectedRef.current) setShowSuggestions(true); }}
+                onFocus={() => { if (suggestions.length > 0 && !skipNextAutocompleteRef.current && !justSelectedRef.current) setShowSuggestions(true); }}
                 placeholder="Enter property address..."
                 autoComplete="off"
                 autoCorrect="off"
@@ -4864,8 +4954,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                     
                     // If we have cached result, load it instantly without API call
                     if (search.cachedResult) {
-                      setSkipNextAutocomplete(true);
+                      skipNextAutocompleteRef.current = true;
+                      justSelectedRef.current = true;
                       setAddress(search.address);
+                      setTimeout(() => { justSelectedRef.current = false; }, 800);
                       
                       // If cached result is missing coordinates, geocode the address
                       if (!search.cachedResult.latitude || !search.cachedResult.longitude) {
@@ -4898,18 +4990,42 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       if (search.cachedBedrooms) setBedrooms(search.cachedBedrooms);
                       if (search.cachedBathrooms) setBathrooms(search.cachedBathrooms);
                       if (search.cachedGuestCount) setGuestCount(search.cachedGuestCount);
-                      // Auto-fill purchase price if available
-                      if (search.cachedResult.listPrice > 0 && !purchasePrice) {
-                        setPurchasePrice(search.cachedResult.listPrice.toString());
-                      }
                       // Auto-set sqft
                       if (search.cachedResult.sqft > 0) {
                         setPropertySqft(search.cachedResult.sqft);
                       }
+                      // Restore cached calculator settings if available
+                      if (search.cachedSettings) {
+                        const s = search.cachedSettings;
+                        if (s.purchasePrice) setPurchasePrice(s.purchasePrice);
+                        else if (search.cachedResult.listPrice > 0) setPurchasePrice(search.cachedResult.listPrice.toString());
+                        if (s.downPaymentPercent !== undefined) setDownPaymentPercent(s.downPaymentPercent);
+                        if (s.interestRate !== undefined) setInterestRate(s.interestRate);
+                        if (s.loanTerm !== undefined) setLoanTerm(s.loanTerm);
+                        if (s.propertyTaxRate !== undefined) setPropertyTaxRate(s.propertyTaxRate);
+                        if (s.insuranceAnnual !== undefined) setInsuranceAnnual(s.insuranceAnnual);
+                        if (s.managementFeePercent !== undefined) setManagementFeePercent(s.managementFeePercent);
+                        if (s.maintenancePercent !== undefined) setMaintenancePercent(s.maintenancePercent);
+                        if (s.electricMonthly !== undefined) setElectricMonthly(s.electricMonthly);
+                        if (s.waterMonthly !== undefined) setWaterMonthly(s.waterMonthly);
+                        if (s.internetMonthly !== undefined) setInternetMonthly(s.internetMonthly);
+                        if (s.lawnCareMonthly !== undefined) setLawnCareMonthly(s.lawnCareMonthly);
+                        if (s.houseSuppliesMonthly !== undefined) setHouseSuppliesMonthly(s.houseSuppliesMonthly);
+                        if (s.maintenanceRepairMonthly !== undefined) setMaintenanceRepairMonthly(s.maintenanceRepairMonthly);
+                        if (s.trashMonthly !== undefined) setTrashMonthly(s.trashMonthly);
+                        if (s.rentalSoftwareMonthly !== undefined) setRentalSoftwareMonthly(s.rentalSoftwareMonthly);
+                        if (s.pestControlMonthly !== undefined) setPestControlMonthly(s.pestControlMonthly);
+                        if (s.miscMonthly !== undefined) setMiscMonthly(s.miscMonthly);
+                      } else {
+                        // Fallback for old cached searches without settings
+                        if (search.cachedResult.listPrice > 0) setPurchasePrice(search.cachedResult.listPrice.toString());
+                      }
                     } else {
                       // Fallback: re-analyze if no cached data (old searches)
-                      setSkipNextAutocomplete(true);
+                      skipNextAutocompleteRef.current = true;
+                      justSelectedRef.current = true;
                       setAddress(search.address);
+                      setTimeout(() => { justSelectedRef.current = false; }, 800);
                       if (bedrooms && bathrooms) {
                         handleAnalyze(search.address);
                       }
