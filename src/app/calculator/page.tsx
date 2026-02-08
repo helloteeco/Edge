@@ -167,6 +167,10 @@ export default function CalculatorPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'info'>('success');
   
+  // Share sheet state
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  
   // Address autocomplete
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -939,15 +943,25 @@ export default function CalculatorPage() {
       const data = await response.json();
       
       if (data.success) {
-        alert("Report saved! View it in the Saved section.");
+        setIsSaved(true);
+        setToastType('success');
+        setToastMessage('Saved to your reports');
+        setTimeout(() => setToastMessage(null), 2500);
       } else if (data.error?.includes("already")) {
-        alert("This property is already saved!");
+        setIsSaved(true);
+        setToastType('info');
+        setToastMessage('Already in your saved reports');
+        setTimeout(() => setToastMessage(null), 2500);
       } else {
-        alert("Failed to save report. Please try again.");
+        setToastType('info');
+        setToastMessage('Failed to save. Try again.');
+        setTimeout(() => setToastMessage(null), 2500);
       }
     } catch (error) {
       console.error("Error saving to server:", error);
-      alert("Failed to save report. Please check your connection and try again.");
+      setToastType('info');
+      setToastMessage('Connection error. Try again.');
+      setTimeout(() => setToastMessage(null), 2500);
     }
   };
 
@@ -2101,6 +2115,69 @@ export default function CalculatorPage() {
     furnishingCost, rentersInsurance
   ]);
 
+  // Generate share URL for the current analysis
+  const generateShareUrl = useCallback(() => {
+    if (!result) return '';
+    const coc = investment.cashOnCashReturn || 0;
+    const grade = coc >= 25 ? 'A+' : coc >= 20 ? 'A' : coc >= 15 ? 'B+' : coc >= 10 ? 'B' : coc >= 5 ? 'C' : 'D';
+    const shareData = {
+      type: "deal",
+      address: result.address || result.neighborhood,
+      city: result.city,
+      state: result.state,
+      bedrooms: result.bedrooms,
+      bathrooms: result.bathrooms,
+      revenue: displayRevenue,
+      occupancy: result.occupancy,
+      adr: result.adr,
+      coc: coc,
+      purchasePrice: purchasePrice || undefined,
+      grade: grade,
+      comparablesCount: result.comparables?.length || 0,
+    };
+    const encoded = btoa(JSON.stringify(shareData));
+    return `https://edge.teeco.co/share?d=${encoded}`;
+  }, [result, investment, displayRevenue, purchasePrice]);
+
+  // Handle share action by channel
+  const handleShare = useCallback((channel: 'copy' | 'text' | 'email' | 'whatsapp' | 'native') => {
+    const shareUrl = generateShareUrl();
+    if (!shareUrl) return;
+    const shareText = `Check out this STR deal I found \u2014 $${Math.round(displayRevenue / 1000)}K/yr projected revenue:\n\n${shareUrl}`;
+    
+    switch (channel) {
+      case 'native':
+        if (navigator.share) {
+          navigator.share({ title: `STR Analysis \u2014 ${result?.address}`, text: shareText, url: shareUrl })
+            .catch(() => {});
+        } else {
+          navigator.clipboard.writeText(shareUrl);
+          setToastType('success');
+          setToastMessage('Link copied!');
+          setTimeout(() => setToastMessage(null), 2500);
+        }
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          setToastType('success');
+          setToastMessage('Link copied!');
+          setTimeout(() => setToastMessage(null), 2500);
+        });
+        break;
+      case 'text':
+        window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
+        break;
+      case 'email':
+        setShowShareSheet(false);
+        setShowEmailModal(true);
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+        break;
+    }
+    setShowShareSheet(false);
+  }, [generateShareUrl, displayRevenue, result]);
+
   // Get AI Analysis of the deal
   const getAiAnalysis = async () => {
     if (!result || investment.needsPrice) return;
@@ -2502,6 +2579,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   // If user is actively typing (editing), clear result so suggestions can show
                   if (result && e.target.value !== address) {
                     setResult(null);
+                    setIsSaved(false);
                   }
                 }}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
@@ -2689,102 +2767,53 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       </p>
                     )}
                   </div>
-                  {/* Action Buttons - Sleek Design */}
-                  <div className="flex items-center gap-2">
-                    {/* Save Report Button */}
+                  {/* Action Buttons — Instagram-style Share + Bookmark */}
+                  <div className="flex items-center gap-3">
+                    {/* Share Button — iOS share icon, universally recognized */}
+                    <button
+                      onClick={() => setShowShareSheet(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.03] active:scale-95"
+                      style={{ 
+                        backgroundColor: '#22c55e', 
+                        color: '#ffffff',
+                        boxShadow: '0 2px 8px rgba(34,197,94,0.4)',
+                      }}
+                    >
+                      {/* iOS Share icon (box with arrow) */}
+                      <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M12 2.25v12M12 2.25l3 3M12 2.25l-3 3" />
+                      </svg>
+                      Share
+                    </button>
+                    
+                    {/* Bookmark / Save Button — Instagram-style toggle */}
                     <button
                       onClick={saveReport}
-                      className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:scale-105 active:scale-95"
-                      style={{ backgroundColor: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)" }}
-                      title="Save Report"
+                      className="flex items-center justify-center w-10 h-10 rounded-xl transition-all hover:scale-[1.08] active:scale-90"
+                      style={{ 
+                        backgroundColor: isSaved ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.15)', 
+                        backdropFilter: 'blur(10px)',
+                      }}
+                      title={isSaved ? 'Saved' : 'Save to your reports'}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" strokeWidth={isSaved ? 0 : 2} stroke={isSaved ? 'none' : 'rgba(255,255,255,0.9)'} fill={isSaved ? '#2b2823' : 'none'}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                       </svg>
-                      <span className="hidden sm:inline">Save</span>
                     </button>
                     
-                    {/* Email Button */}
-                    <button
-                      onClick={() => setShowEmailModal(true)}
-                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
-                      title="Email Report"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <span className="hidden sm:inline">Email</span>
-                    </button>
-                    
-                    {/* PDF Download Button */}
+                    {/* PDF Download — subtle icon button */}
                     <button
                       onClick={downloadPDFReport}
-                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
-                      title="Download PDF Report"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span className="hidden sm:inline">PDF</span>
-                    </button>
-                    
-                    {/* Share via Text Button */}
-                    <button
-                      onClick={() => {
-                        const displayRevenue = getDisplayRevenue();
-                        
-                        // Calculate grade from CoC return
-                        const coc = investment.cashOnCashReturn || 0;
-                        const grade = coc >= 25 ? 'A+' : coc >= 20 ? 'A' : coc >= 15 ? 'B+' : coc >= 10 ? 'B' : coc >= 5 ? 'C' : 'D';
-                        
-                        // Create shareable data object with grade and extra data
-                        const shareData = {
-                          type: "deal",
-                          address: result.address || result.neighborhood,
-                          city: result.city,
-                          state: result.state,
-                          bedrooms: result.bedrooms,
-                          bathrooms: result.bathrooms,
-                          revenue: displayRevenue,
-                          occupancy: result.occupancy,
-                          adr: result.adr,
-                          coc: coc,
-                          purchasePrice: purchasePrice || undefined,
-                          grade: grade,
-                          comparablesCount: result.comparables?.length || 0,
-                        };
-                        
-                        // Encode data for URL
-                        const encoded = btoa(JSON.stringify(shareData));
-                        const shareUrl = `https://edge.teeco.co/share?d=${encoded}`;
-                        
-                        // Create share text with link
-                        const shareText = `Check out this STR investment I'm analyzing:\n\n${shareUrl}`;
-                        
-                        // Use SMS link for mobile, fallback to clipboard for desktop
-                        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                          window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
-                          setToastType('success');
-                          setToastMessage('Opening messages...');
-                          setTimeout(() => setToastMessage(null), 2000);
-                        } else {
-                          navigator.clipboard.writeText(shareText).then(() => {
-                            setToastType('success');
-                            setToastMessage('Share link copied to clipboard!');
-                            setTimeout(() => setToastMessage(null), 3000);
-                          });
-                        }
+                      className="flex items-center justify-center w-10 h-10 rounded-xl transition-all hover:scale-[1.08] active:scale-90"
+                      style={{ 
+                        backgroundColor: 'rgba(255,255,255,0.15)', 
+                        backdropFilter: 'blur(10px)',
                       }}
-                      className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: "#22c55e", color: "#ffffff" }}
-                      title="Share via Text"
+                      title="Download PDF"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      <svg className="w-5 h-5" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
-                      <span className="hidden sm:inline">Text</span>
                     </button>
                   </div>
                 </div>
@@ -5126,6 +5155,124 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
           </div>
         </div>
       </main>
+      
+      {/* Share Sheet — Instagram-style bottom sheet */}
+      {showShareSheet && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/40 z-[60]" 
+            onClick={() => setShowShareSheet(false)}
+            style={{ animation: 'fadeIn 0.2s ease-out' }}
+          />
+          {/* Sheet */}
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-[61] bg-white rounded-t-3xl px-5 pt-3 pb-8 max-w-lg mx-auto"
+            style={{ 
+              animation: 'sheetSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.15)',
+            }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center mb-4">
+              <div className="w-10 h-1 rounded-full bg-gray-300" />
+            </div>
+            
+            {/* Preview card — shows what they're sharing */}
+            <div className="rounded-2xl p-4 mb-5" style={{ backgroundColor: '#f8f7f4', border: '1px solid #eae8e1' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2b2823' }}>
+                  <span className="text-white text-lg font-bold">
+                    {investment.cashOnCashReturn >= 15 ? 'A' : investment.cashOnCashReturn >= 10 ? 'B' : investment.cashOnCashReturn >= 5 ? 'C' : 'D'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate" style={{ color: '#2b2823' }}>{result?.address || result?.neighborhood}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#787060' }}>
+                    ${Math.round(displayRevenue / 1000)}K/yr • {investment.cashOnCashReturn.toFixed(1)}% CoC • {result?.bedrooms}BR
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Share channels — icon circles like Instagram/iOS */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {/* Messages / Text */}
+              <button 
+                onClick={() => handleShare('text')}
+                className="flex flex-col items-center gap-2 transition-all active:scale-90"
+              >
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#22c55e' }}>
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <span className="text-xs font-medium" style={{ color: '#2b2823' }}>Message</span>
+              </button>
+              
+              {/* WhatsApp */}
+              <button 
+                onClick={() => handleShare('whatsapp')}
+                className="flex flex-col items-center gap-2 transition-all active:scale-90"
+              >
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#25D366' }}>
+                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                </div>
+                <span className="text-xs font-medium" style={{ color: '#2b2823' }}>WhatsApp</span>
+              </button>
+              
+              {/* Email */}
+              <button 
+                onClick={() => handleShare('email')}
+                className="flex flex-col items-center gap-2 transition-all active:scale-90"
+              >
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#3b82f6' }}>
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <span className="text-xs font-medium" style={{ color: '#2b2823' }}>Email</span>
+              </button>
+              
+              {/* Copy Link */}
+              <button 
+                onClick={() => handleShare('copy')}
+                className="flex flex-col items-center gap-2 transition-all active:scale-90"
+              >
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#6b7280' }}>
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <span className="text-xs font-medium" style={{ color: '#2b2823' }}>Copy Link</span>
+              </button>
+            </div>
+            
+            {/* Secondary actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={downloadPDFReport}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.97]"
+                style={{ backgroundColor: '#f5f4f0', color: '#2b2823', border: '1px solid #e5e3da' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Download PDF
+              </button>
+              <button
+                onClick={() => setShowShareSheet(false)}
+                className="px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.97]"
+                style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       
       {/* Email Modal */}
       {showEmailModal && (
