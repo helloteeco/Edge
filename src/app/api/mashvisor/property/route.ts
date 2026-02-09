@@ -879,6 +879,79 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // =========================================================================
+    // STEP 7: If comparables are empty/insufficient, try Apify scraper fallback
+    // This ensures consistent comp data even in rural areas where Airbtics/Mashvisor
+    // may not have coverage. Apify scrapes live Airbnb search results.
+    // =========================================================================
+    if (comparableListings.length < 3 && latitude && longitude) {
+      console.log(`[Apify Fallback] Only ${comparableListings.length} comps from Airbtics/Mashvisor, trying Apify scraper...`);
+      try {
+        // Determine the base URL for internal API calls
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : 'http://localhost:3000';
+
+        const apifyResponse = await fetch(`${baseUrl}/api/airbnb-comps`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            latitude,
+            longitude,
+            bedrooms,
+            marketOccupancy: adjustedOccupancy,
+            marketAdr: adjustedAdr,
+          }),
+        });
+
+        if (apifyResponse.ok) {
+          const apifyData = await apifyResponse.json();
+          if (apifyData.success && apifyData.listings?.length > 0) {
+            // Map Apify comps to Edge's ComparableListing format
+            const apifyComps = apifyData.listings
+              .filter((l: any) => Math.abs((l.bedrooms || bedrooms) - bedrooms) <= 1)
+              .filter((l: any) => (l.distance || 0) <= 25)
+              .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999))
+              .slice(0, 10 - comparableListings.length)
+              .map((l: any) => ({
+                id: l.id,
+                name: l.name,
+                url: l.url,
+                image: l.image,
+                bedrooms: l.bedrooms || bedrooms,
+                bathrooms: l.bathrooms || bathrooms,
+                accommodates: l.accommodates || bedrooms * 2,
+                sqft: 0,
+                nightPrice: l.nightPrice || adjustedAdr,
+                occupancy: l.occupancy || adjustedOccupancy,
+                monthlyRevenue: l.monthlyRevenue || Math.round((l.nightPrice || adjustedAdr) * 365 * ((l.occupancy || adjustedOccupancy) / 100) / 12),
+                annualRevenue: l.annualRevenue || Math.round((l.nightPrice || adjustedAdr) * 365 * ((l.occupancy || adjustedOccupancy) / 100)),
+                rating: l.rating || 0,
+                reviewsCount: l.reviewsCount || 0,
+                propertyType: l.propertyType || 'Entire home',
+                distance: l.distance || 0,
+                source: 'apify',
+              }));
+
+            // Combine: existing comps first, then Apify comps
+            comparableListings = [...comparableListings, ...apifyComps].slice(0, 10);
+            console.log(`[Apify Fallback] Added ${apifyComps.length} comps from Apify. Total: ${comparableListings.length}`);
+
+            // Update counts if Apify provided more data
+            if (apifyData.count > totalListingsInArea) {
+              totalListingsInArea = apifyData.count;
+            }
+            if (apifyData.count > filteredListingsCount) {
+              filteredListingsCount = apifyData.count;
+            }
+          }
+        }
+      } catch (apifyErr) {
+        console.warn('[Apify Fallback] Failed to fetch Apify comps:', apifyErr);
+        // Non-fatal — continue with whatever comps we have
+      }
+    }
+
     const result = {
       success: true,
       dataSource: dataSource,
