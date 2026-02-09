@@ -2157,7 +2157,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                               annualRevenue: displayRevenue,
                               occupancyRate: result.occupancy,
                               adr: result.adr,
-                              cashFlow: investment.annualCashFlow,
+                              cashFlow: investment.cashFlow,
                               cashOnCash: investment.cashOnCashReturn,
                               analysisData: {
                                 activeListings: result.nearbyListings,
@@ -3361,7 +3361,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                                       annualRevenue: displayRevenue,
                                       occupancyRate: result.occupancy,
                                       adr: result.adr,
-                                      cashFlow: investment.annualCashFlow,
+                                      cashFlow: investment.cashFlow,
                                       cashOnCash: investment.cashOnCashReturn,
                                       analysisData: {
                                         activeListings: result.nearbyListings,
