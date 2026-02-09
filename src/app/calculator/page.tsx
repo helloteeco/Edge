@@ -1840,12 +1840,23 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <p className="text-sm font-medium" style={{ color: "#787060" }}>STR Investment Calculator</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e8f5e9', color: '#2e7d32' }}>AI-Assisted</span>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e8f5e9', color: '#2e7d32' }}>AI Powered</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
             Analyze any rental property<br />in the United States
           </h1>
           <p className="text-gray-600">Get accurate revenue estimates based on real Airbnb data</p>
+          {/* Chat Assistant Tip */}
+          <div 
+            className="mt-4 mx-auto max-w-md rounded-xl p-4 flex items-start gap-3"
+            style={{ backgroundColor: '#e8f5e9', border: '1px solid #c8e6c9' }}
+          >
+            <span className="text-xl flex-shrink-0">💬</span>
+            <p className="text-sm text-left" style={{ color: '#2e7d32' }}>
+              <strong>Real estate has its own language!</strong>{' '}
+              Tap the chat button in the corner anytime &mdash; our Edge Assistant explains everything in simple terms.
+            </p>
+          </div>
         </div>
 
         {/* Search Box */}
