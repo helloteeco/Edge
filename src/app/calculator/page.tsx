@@ -3582,6 +3582,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </div>
             </div>
           </div>
+          </div>
         )}
 
         {/* Recent Searches */}
