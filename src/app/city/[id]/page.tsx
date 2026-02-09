@@ -165,6 +165,79 @@ export default function CityPage({ params }: { params: { id: string } }) {
     { name: "EV Charger", boost: 8, priority: "NICE TO HAVE" },
   ];
 
+  // Market type display info
+  const marketTypeLabels: Record<string, { label: string; emoji: string }> = {
+    mountain: { label: 'Mountain Market', emoji: '🏔️' },
+    beach: { label: 'Beach Market', emoji: '🏖️' },
+    urban: { label: 'Urban Market', emoji: '🏙️' },
+    lake: { label: 'Lake Market', emoji: '🌊' },
+    desert: { label: 'Desert Market', emoji: '🏜️' },
+    rural: { label: 'Rural Market', emoji: '🌾' },
+    suburban: { label: 'Suburban Market', emoji: '🏘️' },
+    waterfront: { label: 'Waterfront Market', emoji: '⚓' },
+    tropical: { label: 'Tropical Market', emoji: '🌴' },
+  };
+  const marketLabel = marketTypeLabels[city.marketType] || { label: 'Market', emoji: '📍' };
+
+  // Generate "Why [City]?" descriptions based on market type and data
+  const getWhyCityReasons = () => {
+    const reasons: Array<{ emoji: string; title: string; description: string }> = [];
+    
+    // Market type specific reason
+    const typeReasons: Record<string, { emoji: string; title: string; desc: string }> = {
+      mountain: { emoji: '🏔️', title: 'Mountain Getaway', desc: 'Ski season and summer hiking create year-round demand for mountain retreats and cabin stays.' },
+      beach: { emoji: '🏖️', title: 'Coastal Destination', desc: 'Beach proximity drives premium nightly rates and strong seasonal demand from vacationers.' },
+      urban: { emoji: '🏙️', title: 'Urban Hub', desc: 'Business travel, events, and tourism create consistent year-round occupancy in city centers.' },
+      lake: { emoji: '🌊', title: 'Lakefront Appeal', desc: 'Waterfront properties command premium rates with strong summer demand and growing shoulder seasons.' },
+      desert: { emoji: '🏜️', title: 'Desert Retreat', desc: 'Unique landscapes and winter warmth attract snowbirds and adventure seekers during peak season.' },
+      rural: { emoji: '🌾', title: 'Rural & Country Market', desc: 'Privacy seekers and remote workers fuel growing demand for secluded, nature-adjacent stays.' },
+      suburban: { emoji: '🏘️', title: 'Suburban Stay', desc: 'Family-friendly neighborhoods near attractions offer spacious stays at accessible price points.' },
+      waterfront: { emoji: '⚓', title: 'Waterfront Living', desc: 'Direct water access and scenic views drive premium pricing and high guest satisfaction scores.' },
+      tropical: { emoji: '🌴', title: 'Tropical Paradise', desc: 'Year-round warm weather and resort-style amenities attract vacationers seeking island experiences.' },
+    };
+    const typeReason = typeReasons[city.marketType];
+    if (typeReason) reasons.push({ emoji: typeReason.emoji, title: typeReason.title, description: typeReason.desc });
+    
+    // Growth/saturation reason
+    if (city.listingsPerThousand < 5) {
+      reasons.push({ emoji: '📈', title: 'Growing Market', description: 'Population and economic growth signal increasing demand and property appreciation potential.' });
+    } else if (city.listingsPerThousand < 10) {
+      reasons.push({ emoji: '⚖️', title: 'Balanced Supply', description: 'Healthy supply-demand ratio means room for new listings without oversaturation concerns.' });
+    } else {
+      reasons.push({ emoji: '🔥', title: 'High Demand Zone', description: 'Strong traveler demand supports a competitive market with proven revenue potential.' });
+    }
+    
+    // Highlight-based reasons
+    const highlights = city.highlights || [];
+    for (const h of highlights.slice(0, 2)) {
+      const hl = h.toLowerCase();
+      if (hl.includes('rural escape') || hl.includes('nature')) {
+        reasons.push({ emoji: '📍', title: 'Rural escape', description: 'Rural escape contributes to visitor demand and supports short-term rental revenue.' });
+      } else if (hl.includes('tech') || hl.includes('corporate')) {
+        reasons.push({ emoji: '💼', title: 'Business Travel', description: 'Corporate relocations and business travel create consistent midweek bookings.' });
+      } else if (hl.includes('tourism') || hl.includes('tourist')) {
+        reasons.push({ emoji: '🎯', title: 'Tourism Draw', description: 'Local attractions and tourism infrastructure drive steady visitor traffic year-round.' });
+      } else if (hl.includes('university') || hl.includes('college')) {
+        reasons.push({ emoji: '🎓', title: 'University Town', description: 'Parent visits, graduations, and sports events create predictable demand spikes.' });
+      } else if (hl.includes('growing') || hl.includes('growth')) {
+        reasons.push({ emoji: '📈', title: 'Growth Corridor', description: 'Rapid population growth and new development signal increasing rental demand.' });
+      } else if (hl.includes('ski') || hl.includes('winter')) {
+        reasons.push({ emoji: '⛷️', title: 'Ski Season', description: 'Winter sports enthusiasts drive premium rates during peak ski season months.' });
+      } else if (hl.includes('wine') || hl.includes('vineyard')) {
+        reasons.push({ emoji: '🍷', title: 'Wine Country', description: 'Wine tourism and culinary experiences attract affluent travelers willing to pay premium rates.' });
+      } else if (hl.includes('national park') || hl.includes('outdoor')) {
+        reasons.push({ emoji: '🏕️', title: 'Outdoor Recreation', description: 'Proximity to parks and outdoor activities draws adventure travelers and families.' });
+      } else if (hl.includes('medical') || hl.includes('hospital')) {
+        reasons.push({ emoji: '🏥', title: 'Medical Tourism', description: 'Major medical facilities bring traveling nurses, patients, and families needing extended stays.' });
+      } else if (hl.includes('military') || hl.includes('base')) {
+        reasons.push({ emoji: '🎖️', title: 'Military Presence', description: 'Military installations create steady demand from relocating families and visiting personnel.' });
+      }
+    }
+    
+    return reasons.slice(0, 3); // Max 3 reasons
+  };
+  const whyCityReasons = getWhyCityReasons();
+
   return (
     <DoubleTapSave isSaved={isSaved} onToggleSave={toggleSave}>
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#e5e3da' }}>
@@ -341,6 +414,45 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.marketHeadroom.score}/10</div>
               <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.marketHeadroom.rating}</div>
             </div>
+          </div>
+        </div>
+
+        {/* Why [City]? */}
+        <div 
+          className="rounded-2xl p-5 mb-4"
+          style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h3 
+              className="font-semibold"
+              style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+            >
+              Why {city.name}?
+            </h3>
+            <span 
+              className="px-3 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: '#f5f0e8', color: '#2b2823', border: '1px solid #d8d6cd' }}
+            >
+              {marketLabel.label}
+            </span>
+          </div>
+          <p className="text-sm mb-4" style={{ color: '#787060' }}>What drives short-term rental demand here</p>
+          <div className="space-y-3">
+            {whyCityReasons.map((reason, idx) => (
+              <div 
+                key={idx}
+                className="rounded-xl p-4"
+                style={{ backgroundColor: '#faf8f4', border: '1px solid #ebe8e0' }}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">{reason.emoji}</span>
+                  <div>
+                    <div className="font-semibold text-sm" style={{ color: '#2b2823' }}>{reason.title}</div>
+                    <p className="text-sm mt-0.5" style={{ color: '#787060' }}>{reason.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
