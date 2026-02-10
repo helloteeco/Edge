@@ -2188,7 +2188,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f5f4f0" }}>
+    <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: "#f5f4f0" }}>
       {/* Header */}
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -2280,7 +2280,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 overflow-x-hidden">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 overflow-x-clip">
         {/* Hero Section */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">

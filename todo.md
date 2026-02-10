@@ -582,3 +582,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Match the calculator share's rich branded image card format (IMG_7662 reference)
 - Root cause: satori rendering engine requires display:flex on all multi-child divs, and &bull; HTML entities crash it
 - Fix: replaced all HTML entities with Unicode chars, added display:flex to all divs, wrapped text in spans
+
+
+## Tab Bar Floating Bug Fix (February 2026)
+- [x] Fix tab bar floating up into content when scrolling instead of staying fixed at bottom
+- [x] Ensure tab bar is always pinned to bottom of viewport on all pages
+- Root cause: overflow-x: hidden on html/body in globals.css breaks position: fixed on iOS Safari
+- Fix: replaced overflow-x: hidden with overflow-x: clip (clips without creating containing block)
