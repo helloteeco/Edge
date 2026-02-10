@@ -576,7 +576,9 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## OG Preview Card iMessage Fix (February 2026)
-- [ ] Fix state share showing tiny text-only preview instead of rich image card in iMessage
-- [ ] Fix city share showing tiny text-only preview instead of rich image card in iMessage
-- [ ] Ensure OG image routes are accessible and returning valid images on production
-- [ ] Match the calculator share's rich branded image card format (IMG_7662 reference)
+- [x] Fix state share showing tiny text-only preview instead of rich image card in iMessage
+- [x] Fix city share showing tiny text-only preview instead of rich image card in iMessage
+- [x] Ensure OG image routes are accessible and returning valid images on production
+- [x] Match the calculator share's rich branded image card format (IMG_7662 reference)
+- Root cause: satori rendering engine requires display:flex on all multi-child divs, and &bull; HTML entities crash it
+- Fix: replaced all HTML entities with Unicode chars, added display:flex to all divs, wrapped text in spans
