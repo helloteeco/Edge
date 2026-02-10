@@ -573,3 +573,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Redesign state OG image to match calculator card style (not generic Teeco image)
 - [x] Remove extra share text from city/state/calculator share so iMessage shows clean image card only
 - [x] Ensure all share previews show rich branded image with dynamic data
+
+
+## OG Preview Card iMessage Fix (February 2026)
+- [ ] Fix state share showing tiny text-only preview instead of rich image card in iMessage
+- [ ] Fix city share showing tiny text-only preview instead of rich image card in iMessage
+- [ ] Ensure OG image routes are accessible and returning valid images on production
+- [ ] Match the calculator share's rich branded image card format (IMG_7662 reference)
