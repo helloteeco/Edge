@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
+import AuthModal from "@/components/AuthModal";
 import { FloatingActionPill } from "@/components/DoubleTapSave";
 import dynamic from "next/dynamic";
 
@@ -4995,122 +4996,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
         </div>
       )}
       
-      {/* Magic Link Authentication Modal */}
-      {showAuthModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full" style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-            {/* Close button */}
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={() => {
-                  setShowAuthModal(false);
-                  setAuthStep("email");
-                  setAuthError(null);
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            {authStep === "email" && (
-              <>
-                {/* Logo */}
-                <div className="flex justify-center mb-6">
-                  <Image src="/teeco-logocopy.PNG" alt="Teeco" width={120} height={40} className="h-10 w-auto" />
-                </div>
-                
-                <h2 className="text-2xl font-bold text-center mb-2" style={{ color: '#2b2823' }}>
-                  Sign in to Analyze
-                </h2>
-                <p className="text-center text-sm mb-6" style={{ color: '#787060' }}>
-                  Enter your email to receive a secure sign-in link. No password needed.
-                </p>
-                
-                {authError && (
-                  <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200">
-                    <p className="text-red-700 text-sm">{authError}</p>
-                  </div>
-                )}
-                
-                <input
-                  type="email"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMagicLink()}
-                  placeholder="your@email.com"
-                  className="w-full px-4 py-4 rounded-xl border-2 text-base mb-4 transition-colors focus:outline-none"
-                  style={{ borderColor: '#e5e5e5' }}
-                  autoFocus
-                />
-                
-                <button
-                  onClick={sendMagicLink}
-                  disabled={!authEmail || !authEmail.includes("@")}
-                  className="w-full py-4 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
-                  style={{ backgroundColor: '#2b2823' }}
-                >
-                  Send Magic Link
-                </button>
-                
-                <p className="text-xs text-center mt-4" style={{ color: '#a0a0a0' }}>
-                  By signing in, you agree to our Terms of Service and Privacy Policy.
-                </p>
-              </>
-            )}
-            
-            {authStep === "verifying" && (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 border-3 border-gray-200 border-t-gray-800 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-lg font-medium" style={{ color: '#2b2823' }}>Verifying...</p>
-                <p className="text-sm mt-2" style={{ color: '#787060' }}>Please wait a moment.</p>
-              </div>
-            )}
-            
-            {authStep === "sent" && (
-              <div className="text-center py-4">
-                {/* Success Icon */}
-                <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#e8f5e9' }}>
-                  <svg className="w-8 h-8" fill="none" stroke="#4caf50" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                
-                <h2 className="text-2xl font-bold mb-2" style={{ color: '#2b2823' }}>
-                  Check Your Email
-                </h2>
-                <p className="text-sm mb-4" style={{ color: '#787060' }}>
-                  We sent a magic link to:
-                </p>
-                <p className="font-semibold text-lg mb-6" style={{ color: '#2b2823' }}>
-                  {authEmail}
-                </p>
-                <p className="text-sm mb-6" style={{ color: '#787060' }}>
-                  Click the link in the email to sign in. The link expires in 15 minutes.
-                </p>
-                
-                <div className="border-t pt-4" style={{ borderColor: '#e5e5e5' }}>
-                  <p className="text-xs mb-3" style={{ color: '#a0a0a0' }}>
-                    Didn&apos;t receive it? Check your spam folder or
-                  </p>
-                  <button
-                    onClick={() => {
-                      setAuthStep("email");
-                      setAuthError(null);
-                    }}
-                    className="text-sm font-medium underline"
-                    style={{ color: '#2b2823' }}
-                  >
-                    Try a different email
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Magic Link Authentication Modal - uses shared AuthModal component */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setAuthStep("email");
+          setAuthError(null);
+        }}
+        onSuccess={(email) => {
+          setAuthEmail(email);
+          setIsAuthenticated(true);
+          setShowAuthModal(false);
+          setAuthStep("email");
+          fetchUserCredits(email);
+        }}
+        title="Sign in to Analyze"
+        subtitle="No password needed. No credit card required."
+      />
       {/* Floating Action Pill for Analysis Pages */}
       {result && (
         <FloatingActionPill

@@ -20,7 +20,7 @@ export default function AuthModal({
   onSuccess,
   title = "Sign in Free",
   subtitle = "No password needed. No credit card required.",
-  showValuePreview = true
+  showValuePreview = false
 }: AuthModalProps) {
   const [authStep, setAuthStep] = useState<AuthStep>("email");
   const [authEmail, setAuthEmail] = useState("");

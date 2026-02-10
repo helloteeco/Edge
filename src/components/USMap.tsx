@@ -136,33 +136,42 @@ export function USMap() {
 
   const currentViewIndex = views.findIndex(v => v.key === mapView);
 
+  const hasMoved = useRef<boolean>(false);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = e.touches[0].clientX; // Initialize to same position
+    hasMoved.current = false;
     isSwiping.current = true;
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping.current) return;
     touchEndX.current = e.touches[0].clientX;
+    hasMoved.current = true;
   }, []);
 
   const handleTouchEnd = useCallback(() => {
     if (!isSwiping.current) return;
     
-    const swipeDistance = touchStartX.current - touchEndX.current;
-    const minSwipeDistance = 50; // Minimum distance for a valid swipe
-    
-    if (Math.abs(swipeDistance) > minSwipeDistance) {
-      if (swipeDistance > 0 && currentViewIndex < views.length - 1) {
-        // Swipe left - go to next tab
-        setMapView(views[currentViewIndex + 1].key as MapView);
-      } else if (swipeDistance < 0 && currentViewIndex > 0) {
-        // Swipe right - go to previous tab
-        setMapView(views[currentViewIndex - 1].key as MapView);
+    // Only process swipe if the user actually moved their finger (not a tap)
+    if (hasMoved.current) {
+      const swipeDistance = touchStartX.current - touchEndX.current;
+      const minSwipeDistance = 50; // Minimum distance for a valid swipe
+      
+      if (Math.abs(swipeDistance) > minSwipeDistance) {
+        if (swipeDistance > 0 && currentViewIndex < views.length - 1) {
+          // Swipe left - go to next tab
+          setMapView(views[currentViewIndex + 1].key as MapView);
+        } else if (swipeDistance < 0 && currentViewIndex > 0) {
+          // Swipe right - go to previous tab
+          setMapView(views[currentViewIndex - 1].key as MapView);
+        }
       }
     }
     
     isSwiping.current = false;
+    hasMoved.current = false;
     touchStartX.current = 0;
     touchEndX.current = 0;
   // eslint-disable-next-line react-hooks/exhaustive-deps

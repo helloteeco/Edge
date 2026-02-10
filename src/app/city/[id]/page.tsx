@@ -284,15 +284,15 @@ export default function CityPage({ params }: { params: { id: string } }) {
                 >
                   {verdictInfo.text}
                 </span>
-                <span 
-                  className="px-3 py-1 rounded-full text-xs font-semibold"
-                  style={{ 
-                    backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
-                    color: '#ffffff'
-                  }}
+                <a
+                  href={`https://www.proper.insure/regulations/${city.stateCode.toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff' }}
                 >
-                  {city.regulation}
-                </span>
+                  STR Rules →
+                </a>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -666,26 +666,8 @@ export default function CityPage({ params }: { params: { id: string } }) {
           >
             📋 Regulation Status
           </h3>
-          <div className="flex items-center gap-2 mb-3">
-            <span 
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ 
-                backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
-                color: '#ffffff'
-              }}
-            >
-              {city.regulation}
-            </span>
-            <span className="text-sm" style={{ color: '#787060' }}>
-              {city.strStatus === 'restricted' ? 'Restrictions Apply' :
-               city.strStatus === 'varies' ? 'Varies by Area' :
-               city.strStatus === 'banned' ? 'Banned' : 'Permit Likely Required'}
-            </span>
-          </div>
           <p className="text-sm mb-4" style={{ color: '#787060' }}>
-            {city.regulation === "Legal"
-              ? "Short-term rentals are allowed in this area. Most cities require a permit or registration — always verify local ordinances before purchasing."
-              : "Some restrictions apply. Research local permit requirements and zoning laws carefully."}
+            Regulations vary by city and county. Always verify local STR ordinances, permit requirements, and zoning laws before purchasing.
           </p>
           <div className="flex flex-wrap gap-2">
             <a

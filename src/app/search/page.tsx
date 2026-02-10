@@ -386,15 +386,16 @@ export default function SearchPage() {
                     >
                       {getVerdictStyle(state.marketScore).text}
                     </span>
-                    <span 
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                      style={{ 
-                        backgroundColor: state.regulation === "Legal" ? '#2b2823' : '#787060',
-                        color: '#ffffff'
-                      }}
+                    <a
+                      href={`https://www.proper.insure/regulations/${state.abbreviation.toLowerCase()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: '#e5e3da', color: '#787060' }}
                     >
-                      {state.regulation}
-                    </span>
+                      STR Rules →
+                    </a>
                   </div>
                 </div>
 
@@ -464,15 +465,16 @@ export default function SearchPage() {
                     >
                       {getVerdictStyle(city.marketScore).text}
                     </span>
-                    <span 
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                      style={{ 
-                        backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
-                        color: '#ffffff'
-                      }}
+                    <a
+                      href={`https://www.proper.insure/regulations/${city.stateCode.toLowerCase()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: '#e5e3da', color: '#787060' }}
                     >
-                      {city.regulation}
-                    </span>
+                      STR Rules →
+                    </a>
                   </div>
                 </div>
 
@@ -543,16 +545,17 @@ export default function SearchPage() {
                       >
                         {getVerdictStyle(city.marketScore || 0).text}
                       </span>
-                      {city.regulation && (
-                        <span 
-                          className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                          style={{ 
-                            backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
-                            color: '#ffffff'
-                          }}
+                      {city.state && (
+                        <a
+                          href={`https://www.proper.insure/regulations/${city.state.toLowerCase()}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                          style={{ backgroundColor: '#e5e3da', color: '#787060' }}
                         >
-                          {city.regulation}
-                        </span>
+                          STR Rules →
+                        </a>
                       )}
                     </div>
                   </div>

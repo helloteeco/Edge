@@ -279,15 +279,15 @@ export default function StatePage({ params }: { params: { id: string } }) {
                 >
                   {getVerdictText(state.verdict)}
                 </span>
-                <span 
-                  className="px-3 py-1 rounded-full text-xs font-semibold"
-                  style={{ 
-                    backgroundColor: state.regulation === "Legal" ? '#2b2823' : '#787060',
-                    color: '#ffffff'
-                  }}
+                <a
+                  href={`https://www.proper.insure/regulations/${state.abbreviation.toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff' }}
                 >
-                  {state.regulation}
-                </span>
+                  STR Rules →
+                </a>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -401,24 +401,40 @@ export default function StatePage({ params }: { params: { id: string } }) {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Regulation", value: state.regulation, highlight: state.regulation === "Legal" },
+            { label: "STR Rules", value: "View →", highlight: false, link: `https://www.proper.insure/regulations/${state.abbreviation.toLowerCase()}` },
             { label: "Avg ADR", value: `$${state.avgADR}`, highlight: false },
             { label: "Median Home", value: `$${(state.medianHomeValue / 1000).toFixed(0)}K`, highlight: false },
             { label: "1Y Appreciation", value: `${state.appreciation >= 0 ? "+" : ""}${state.appreciation}%`, highlight: state.appreciation >= 0 },
           ].map((stat) => (
-            <div 
-              key={stat.label} 
-              className="rounded-xl p-4 text-center"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}
-            >
-              <div className="text-xs mb-1" style={{ color: '#787060' }}>{stat.label}</div>
-              <div 
-                className="font-bold text-lg"
-                style={{ color: stat.highlight ? '#000000' : '#2b2823' }}
+            ('link' in stat && stat.link) ? (
+              <a
+                key={stat.label}
+                href={stat.link as string}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl p-4 text-center hover:opacity-80 transition-opacity"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}
               >
-                {stat.value}
+                <div className="text-xs mb-1" style={{ color: '#787060' }}>{stat.label}</div>
+                <div className="font-bold text-lg" style={{ color: '#787060' }}>
+                  {stat.value}
+                </div>
+              </a>
+            ) : (
+              <div 
+                key={stat.label} 
+                className="rounded-xl p-4 text-center"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}
+              >
+                <div className="text-xs mb-1" style={{ color: '#787060' }}>{stat.label}</div>
+                <div 
+                  className="font-bold text-lg"
+                  style={{ color: stat.highlight ? '#000000' : '#2b2823' }}
+                >
+                  {stat.value}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
 
@@ -582,15 +598,16 @@ export default function StatePage({ params }: { params: { id: string } }) {
                   >
                     {city.dsi ? "✓ Pays Bills" : "✗ Bills Risk"}
                   </span>
-                  <span 
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                    style={{ 
-                      backgroundColor: city.regulation === "Legal" ? '#2b2823' : '#787060',
-                      color: '#ffffff'
-                    }}
+                  <a
+                    href={`https://www.proper.insure/regulations/${city.stateCode.toLowerCase()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: '#e5e3da', color: '#787060' }}
                   >
-                    {city.regulation}
-                  </span>
+                    STR Rules →
+                  </a>
                 </div>
                 <div className="flex items-center gap-2">
                   <button

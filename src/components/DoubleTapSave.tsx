@@ -440,7 +440,7 @@ export function FloatingActionPill({ isSaved, onToggleSave, shareText }: Floatin
     <div 
       className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
       style={{
-        bottom: '140px',
+        bottom: '160px',
         backgroundColor: '#ffffff',
         border: '1.5px solid #d8d6cd',
         borderRadius: '20px',
