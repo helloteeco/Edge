@@ -832,3 +832,56 @@ export async function getActiveLimitedDataLocations(): Promise<LimitedDataLocati
   
   return data;
 }
+
+
+// ============================================
+// QUIZ LEADS - Email capture from funding quiz
+// ============================================
+
+export interface QuizLead {
+  id: number;
+  email: string;
+  quiz_answers: Record<string, string>;
+  recommended_methods: string[];
+  created_at: string;
+}
+
+// Save a quiz lead (email + quiz results)
+export async function saveQuizLead(
+  email: string,
+  quizAnswers: Record<string, string>,
+  recommendedMethods: string[]
+): Promise<boolean> {
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  const { error } = await supabase
+    .from('quiz_leads')
+    .insert({
+      email: normalizedEmail,
+      quiz_answers: quizAnswers,
+      recommended_methods: recommendedMethods,
+    });
+  
+  if (error) {
+    console.error('Error saving quiz lead:', error);
+    return false;
+  }
+  
+  console.log(`[QuizLead] Saved: ${normalizedEmail}`);
+  return true;
+}
+
+// Get all quiz leads (for admin/export)
+export async function getAllQuizLeads(): Promise<QuizLead[]> {
+  const { data, error } = await supabase
+    .from('quiz_leads')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (error || !data) {
+    console.error('Error getting quiz leads:', error);
+    return [];
+  }
+  
+  return data;
+}

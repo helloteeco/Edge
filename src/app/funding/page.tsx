@@ -889,6 +889,10 @@ export default function FundingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showQuizResults, setShowQuizResults] = useState(false);
   const [showFinancingTip, setShowFinancingTip] = useState(false);
+  const [quizEmail, setQuizEmail] = useState('');
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   const handleAnswer = (value: string, tags: string[]) => {
     const newAnswers = { ...answers, [quizQuestions[currentQuestion].id]: value };
@@ -901,7 +905,7 @@ export default function FundingPage() {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setQuizComplete(true);
-      setShowQuizResults(true);
+      // Don't show results yet - show email gate first
     }
   };
 
@@ -912,6 +916,39 @@ export default function FundingPage() {
     setCollectedTags([]);
     setQuizComplete(false);
     setShowQuizResults(false);
+    setQuizEmail('');
+    setEmailSubmitted(false);
+    setEmailError('');
+  };
+
+  const handleEmailSubmit = async () => {
+    if (!quizEmail || !quizEmail.includes('@')) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    setEmailLoading(true);
+    setEmailError('');
+    try {
+      const methods = getRecommendedMethods();
+      await fetch('/api/quiz-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: quizEmail,
+          quizAnswers: answers,
+          recommendedMethods: methods.slice(0, 5).map(m => m.name),
+        }),
+      });
+      setEmailSubmitted(true);
+      setShowQuizResults(true);
+    } catch (err) {
+      console.error('Email submit error:', err);
+      // Show results anyway even if save fails
+      setEmailSubmitted(true);
+      setShowQuizResults(true);
+    } finally {
+      setEmailLoading(false);
+    }
   };
 
   // Score methods based on collected tags
@@ -1107,6 +1144,57 @@ export default function FundingPage() {
                   ← Back
                 </button>
               )}
+            </div>
+          ) : !emailSubmitted ? (
+            /* Email Capture Gate */
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#f0fdf4' }}>
+                  <span className="text-3xl">🎉</span>
+                </div>
+                <h3 
+                  className="text-xl font-bold mb-2"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Your Results Are Ready!
+                </h3>
+                <p className="text-sm" style={{ color: '#787060' }}>
+                  Enter your email to unlock your personalized funding recommendations.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={quizEmail}
+                  onChange={(e) => { setQuizEmail(e.target.value); setEmailError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
+                  className="w-full px-4 py-3 rounded-xl text-base"
+                  style={{ 
+                    backgroundColor: '#ffffff',
+                    border: emailError ? '2px solid #ef4444' : '1px solid #d8d6cd',
+                    color: '#2b2823'
+                  }}
+                />
+                {emailError && (
+                  <p className="text-sm" style={{ color: '#ef4444' }}>{emailError}</p>
+                )}
+                <button
+                  onClick={handleEmailSubmit}
+                  disabled={emailLoading}
+                  className="w-full py-3 rounded-xl font-semibold text-base transition-all"
+                  style={{ 
+                    backgroundColor: emailLoading ? '#9a9488' : '#2b2823',
+                    color: '#ffffff',
+                    opacity: emailLoading ? 0.7 : 1
+                  }}
+                >
+                  {emailLoading ? 'Loading...' : 'See My Results →'}
+                </button>
+                <p className="text-xs text-center" style={{ color: '#9a9488' }}>
+                  We&apos;ll never spam you. Unsubscribe anytime.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="p-6">

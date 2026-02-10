@@ -438,7 +438,7 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Rebuild Lost Features (February 2026)
-- [ ] Fix share UX on city cards to match screenshot (share icon inline with heart counter)
+- [x] Fix share UX on city cards to match screenshot (share icon inline with heart counter)
 - [ ] Add email capture to funding quiz (collect email before showing results, save to Supabase)
 - [ ] Add email results functionality to funding quiz
 - [ ] Add missing legal pages (Cookies policy, Content Sharing policy)
