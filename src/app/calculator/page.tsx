@@ -163,10 +163,10 @@ export default function CalculatorPage() {
   const [interestRate, setInterestRate] = useState(7.0);
   const [loanTerm, setLoanTerm] = useState(30);
   const [propertyTaxRate, setPropertyTaxRate] = useState(1.2);
-  const [insuranceAnnual, setInsuranceAnnual] = useState(1800);
+  const [insuranceAnnual, setInsuranceAnnual] = useState(3200);
   const [managementFeePercent, setManagementFeePercent] = useState(20);
   const [maintenancePercent, setMaintenancePercent] = useState(5);
-  const [vacancyPercent, setVacancyPercent] = useState(10);
+  const [vacancyPercent, setVacancyPercent] = useState(0);
   
   // Teeco Design/Setup Costs (sqft-based)
   const [includeDesignServices, setIncludeDesignServices] = useState(false);
@@ -186,7 +186,7 @@ export default function CalculatorPage() {
   const [trashMonthly, setTrashMonthly] = useState(30);
   const [lawnCareMonthly, setLawnCareMonthly] = useState(60);
   const [pestControlMonthly, setPestControlMonthly] = useState(25);
-  const [cleaningMonthly, setCleaningMonthly] = useState(150);
+  const [cleaningMonthly, setCleaningMonthly] = useState(0);
   const [houseSuppliesMonthly, setHouseSuppliesMonthly] = useState(50);
   const [maintenanceMonthly, setMaintenanceMonthly] = useState(100);
   const [rentalSoftwareMonthly, setRentalSoftwareMonthly] = useState(30);
@@ -675,10 +675,22 @@ export default function CalculatorPage() {
     
     console.log("[Auth] Analyze clicked - isAuthenticated:", isAuthenticated, "hasValidSession:", hasValidSession);
     
-    // Check if user is authenticated
+    // Check if this is the user's first free analysis (no sign-in required)
+    const hasUsedFreePreview = localStorage.getItem("edge_free_preview_used");
+    const isFirstFreeAnalysis = !hasUsedFreePreview && !isAuthenticated && !hasValidSession;
+    
+    if (isFirstFreeAnalysis) {
+      // Allow first analysis without sign-in — show value first
+      console.log("[Auth] First free preview - skipping auth");
+      // Go straight to analysis (skip credit confirm too)
+      handleAnalyze();
+      localStorage.setItem("edge_free_preview_used", "true");
+      return;
+    }
+    
+    // After first free analysis, require sign-in
     if (!isAuthenticated && !hasValidSession) {
       // Save pending analysis state to localStorage before showing auth modal
-      // This allows us to restore state after magic link redirect
       localStorage.setItem("edge_pending_address", address);
       localStorage.setItem("edge_pending_bedrooms", bedrooms?.toString() || "");
       localStorage.setItem("edge_pending_bathrooms", bathrooms?.toString() || "");
@@ -1598,7 +1610,7 @@ export default function CalculatorPage() {
     <table class="table">
       <tr><td>Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage * 12)}</td></tr>
       <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(investment.annualPropertyTax)}</td></tr>
-      <tr><td>Insurance</td><td class="right">${formatCurrency(investment.annualInsurance)}</td></tr>
+      <tr><td>STR Insurance</td><td class="right">${formatCurrency(investment.annualInsurance)}</td></tr>
       <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(investment.annualManagement)}</td></tr>
       <tr><td>Operating Expenses</td><td class="right">${formatCurrency(investment.monthlyOperating * 12)}</td></tr>
       <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
@@ -1700,24 +1712,60 @@ export default function CalculatorPage() {
     ${analysisMode === "buying" && purchasePrice ? `
     <h2>10-Year Investment Projection</h2>
     <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px;">
-      ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
-        const annualCashFlow = investment.cashFlow;
-        const cumulativeCashFlow = annualCashFlow * year;
-        const principalPaid = investment.monthlyMortgage * 12 * year * 0.3;
-        const appreciation = (parseFloat(purchasePrice) || 0) * 0.03 * year;
-        const totalReturn = cumulativeCashFlow + investment.downPayment + principalPaid + appreciation - investment.totalCashNeeded;
-        return `<div style="text-align: center; padding: 8px; background: ${totalReturn >= 0 ? '#ecfdf5' : '#fef2f2'}; border-radius: 4px;">
-          <div style="font-size: 10px; color: #666;">Year ${year}</div>
-          <div style="font-size: 11px; font-weight: bold; color: ${totalReturn >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(totalReturn)}</div>
-        </div>`;
-      }).join('')}
+      ${(() => {
+        // Proper amortization for PDF
+        const pdfPrice = parseFloat(purchasePrice) || 0;
+        const pdfLoan = pdfPrice - investment.downPayment;
+        const pdfMonthlyR = interestRate / 100 / 12;
+        let pdfBal = pdfLoan;
+        let pdfTotalPrin = 0;
+        const pdfCumPrincipal: number[] = [];
+        for (let yr = 1; yr <= 10; yr++) {
+          for (let m = 0; m < 12; m++) {
+            if (pdfBal <= 0) break;
+            const intPmt = pdfBal * pdfMonthlyR;
+            const prinPmt = Math.min(investment.monthlyMortgage - intPmt, pdfBal);
+            pdfTotalPrin += Math.max(0, prinPmt);
+            pdfBal -= Math.max(0, prinPmt);
+          }
+          pdfCumPrincipal.push(pdfTotalPrin);
+        }
+        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
+          const annualCashFlow = investment.cashFlow;
+          const cumulativeCashFlow = annualCashFlow * year;
+          const principalPaid = pdfCumPrincipal[year - 1] || 0;
+          const appreciation = pdfPrice * 0.03 * year;
+          const totalReturn = cumulativeCashFlow + investment.downPayment + principalPaid + appreciation - investment.totalCashNeeded;
+          return `<div style="text-align: center; padding: 8px; background: ${totalReturn >= 0 ? '#ecfdf5' : '#fef2f2'}; border-radius: 4px;">
+            <div style="font-size: 10px; color: #666;">Year ${year}</div>
+            <div style="font-size: 11px; font-weight: bold; color: ${totalReturn >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(totalReturn)}</div>
+          </div>`;
+        }).join('');
+      })()}
     </div>
-    <table class="table">
-      <tr><td>10-Year Cumulative Cash Flow</td><td class="right" style="color: ${investment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(investment.cashFlow * 10)}</td></tr>
-      <tr><td>Estimated Equity Built (Principal + 3% Appreciation)</td><td class="right">${formatCurrency(investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3))}</td></tr>
-      <tr class="total"><td><strong>Total 10-Year Return</strong></td><td class="right" style="color: #22c55e;"><strong>${formatCurrency((investment.cashFlow * 10) + investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - investment.totalCashNeeded)}</strong></td></tr>
-    </table>
-    <p style="font-size: 10px; color: #999; text-align: center; margin-top: 8px;">*Assumes 3% annual appreciation and average principal paydown rate</p>
+    ${(() => {
+      const pdfPrice2 = parseFloat(purchasePrice) || 0;
+      const pdfLoan2 = pdfPrice2 - investment.downPayment;
+      const pdfMonthlyR2 = interestRate / 100 / 12;
+      let pdfBal2 = pdfLoan2;
+      let pdfTotalPrin2 = 0;
+      for (let i = 0; i < 120; i++) {
+        if (pdfBal2 <= 0) break;
+        const intPmt = pdfBal2 * pdfMonthlyR2;
+        const prinPmt = Math.min(investment.monthlyMortgage - intPmt, pdfBal2);
+        pdfTotalPrin2 += Math.max(0, prinPmt);
+        pdfBal2 -= Math.max(0, prinPmt);
+      }
+      const pdfAppreciation10 = pdfPrice2 * 0.03 * 10;
+      const pdfEquity = investment.downPayment + pdfTotalPrin2 + pdfAppreciation10;
+      const pdfTotalReturn = (investment.cashFlow * 10) + pdfEquity - investment.totalCashNeeded;
+      return `<table class="table">
+        <tr><td>10-Year Cumulative Cash Flow</td><td class="right" style="color: ${investment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(investment.cashFlow * 10)}</td></tr>
+        <tr><td>Estimated Equity Built (Principal + 3% Appreciation)</td><td class="right">${formatCurrency(pdfEquity)}</td></tr>
+        <tr class="total"><td><strong>Total 10-Year Return</strong></td><td class="right" style="color: #22c55e;"><strong>${formatCurrency(pdfTotalReturn)}</strong></td></tr>
+      </table>`;
+    })()}
+    <p style="font-size: 10px; color: #999; text-align: center; margin-top: 8px;">*Assumes 3% annual appreciation with proper amortization schedule</p>
     ` : ''}
     
     <!-- Footer -->
@@ -1911,7 +1959,7 @@ export default function CalculatorPage() {
   const calculateMonthlyExpenses = () => {
     const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
     const propertyMaintenance = lawnCareMonthly + pestControlMonthly + maintenanceMonthly;
-    const operations = cleaningMonthly + houseSuppliesMonthly + rentalSoftwareMonthly;
+    const operations = houseSuppliesMonthly + rentalSoftwareMonthly;
     return utilities + propertyMaintenance + operations;
   };
 
@@ -2012,12 +2060,14 @@ export default function CalculatorPage() {
     const grossRevenue = getDisplayRevenue();
     const annualManagement = grossRevenue * (managementFeePercent / 100);
     const annualMaintenance = grossRevenue * (maintenancePercent / 100);
-    const annualVacancy = grossRevenue * (vacancyPercent / 100);
+    // Note: Vacancy is NOT added separately — occupancy rate already accounts for vacancy.
+    // Adding a separate vacancy % would double-count it.
+    const annualVacancy = 0;
     const monthlyOperating = calculateMonthlyExpenses();
     const annualOperating = monthlyOperating * 12;
     
-    const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualMaintenance + annualVacancy + annualOperating;
-    const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsurance - annualManagement - annualMaintenance - annualVacancy - annualOperating;
+    const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualMaintenance + annualOperating;
+    const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsurance - annualManagement - annualMaintenance - annualOperating;
     const cashFlow = grossRevenue - totalAnnualExpenses;
     
     const startupCosts = calculateStartupCosts();
@@ -2756,10 +2806,21 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <p className="text-3xl sm:text-4xl font-bold" style={{ color: "#22c55e" }}>
                   {formatCurrency(getDisplayRevenue())}
                 </p>
-                {/* Confidence Range */}
+                {/* Confidence Range - uses real p25-p75 percentile data when available */}
                 <p className="text-sm mt-1" style={{ color: "#787060" }}>
-                  Range: {formatCurrency(Math.round(getDisplayRevenue() * 0.8))} – {formatCurrency(Math.round(getDisplayRevenue() * 1.2))}
+                  Range: {formatCurrency(
+                    result.percentiles?.revenue?.p25 
+                      ? Math.round(result.percentiles.revenue.p25 * getGuestCountMultiplier() * (teecoStrategyActive ? getTeecoStrategyBoost().multiplier : 1.0))
+                      : Math.round(getDisplayRevenue() * 0.8)
+                  )} – {formatCurrency(
+                    result.percentiles?.revenue?.p75
+                      ? Math.round(result.percentiles.revenue.p75 * getGuestCountMultiplier() * (teecoStrategyActive ? getTeecoStrategyBoost().multiplier : 1.0))
+                      : Math.round(getDisplayRevenue() * 1.2)
+                  )}
                 </p>
+                {result.percentiles?.revenue?.p25 && (
+                  <p className="text-[10px] mt-0.5" style={{ color: "#a0a0a0" }}>25th – 75th percentile from comparable listings</p>
+                )}
                 <p className="text-xs text-gray-400 mt-1">
                   Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby listings
                 </p>
@@ -3690,15 +3751,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   />
                 </div>
                 
-                {/* Row 4: Cleaning & House Supplies */}
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Cleaning</label>
-                  <input
-                    type="number"
-                    value={cleaningMonthly}
-                    onChange={(e) => setCleaningMonthly(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
-                  />
+                {/* Row 4: House Supplies (Cleaning note) */}
+                <div className="col-span-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 bg-gray-50">
+                  <p className="text-xs text-gray-500">💡 <strong>Cleaning fees & pet fees</strong> are typically passed on to guests as separate line items and are not included in your expenses.</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">House Supplies</label>
@@ -3823,7 +3878,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <input type="range" min="0" max="35" value={managementFeePercent} onChange={(e) => setManagementFeePercent(parseInt(e.target.value))} className="w-full" />
                     </div>
                     <div>
-                      <label className="text-sm block mb-1" style={{ color: "#787060" }}>Annual Insurance</label>
+                      <label className="text-sm block mb-1" style={{ color: "#787060" }}>STR Insurance (Annual)</label>
                       <input type="number" value={insuranceAnnual} onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
                     </div>
                   </div>
@@ -3857,7 +3912,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between"><span className="text-gray-600">Mortgage (P&I)</span><span className="font-medium">{formatCurrency(investment.monthlyMortgage * 12)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Property Tax</span><span className="font-medium">{formatCurrency(investment.annualPropertyTax)}</span></div>
-                          <div className="flex justify-between"><span className="text-gray-600">Insurance</span><span className="font-medium">{formatCurrency(investment.annualInsurance)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">STR Insurance</span><span className="font-medium">{formatCurrency(investment.annualInsurance)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Management ({managementFeePercent}%)</span><span className="font-medium">{formatCurrency(investment.annualManagement)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Operating Expenses</span><span className="font-medium">{formatCurrency(investment.monthlyOperating * 12)}</span></div>
                           <div className="border-t border-gray-300 pt-2 mt-2"><div className="flex justify-between font-medium"><span>Total Annual Expenses</span><span className="text-red-600">{formatCurrency(investment.totalAnnualExpenses)}</span></div></div>
@@ -3871,14 +3926,40 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <h4 className="font-medium mb-4" style={{ color: "#2b2823" }}>10-Year Investment Projection</h4>
                         <div className="relative">
                           <div className="flex items-end gap-1 h-40 mb-2">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
+                            {(() => {
+                              // Proper amortization: calculate cumulative principal paid per year
+                              const price = parseFloat(purchasePrice) || 0;
+                              const loanAmt = price - investment.downPayment;
+                              const monthlyR = interestRate / 100 / 12;
+                              const nPayments = loanTerm * 12;
+                              
+                              // Build cumulative principal schedule
+                              const cumulativePrincipal: number[] = [];
+                              let remainingBalance = loanAmt;
+                              let totalPrincipalPaid = 0;
+                              for (let yr = 1; yr <= 10; yr++) {
+                                for (let m = 0; m < 12; m++) {
+                                  if (remainingBalance <= 0) break;
+                                  const interestPayment = remainingBalance * monthlyR;
+                                  const principalPayment = Math.min(investment.monthlyMortgage - interestPayment, remainingBalance);
+                                  totalPrincipalPaid += Math.max(0, principalPayment);
+                                  remainingBalance -= Math.max(0, principalPayment);
+                                }
+                                cumulativePrincipal.push(totalPrincipalPaid);
+                              }
+                              
+                              // Calculate max return for bar scaling
+                              const yr10Principal = cumulativePrincipal[9] || 0;
+                              const yr10Appreciation = price * 0.03 * 10;
+                              const maxReturn = (investment.cashFlow * 10) + investment.downPayment + yr10Principal + yr10Appreciation - investment.totalCashNeeded;
+                              
+                              return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
                               const annualCashFlow = investment.cashFlow;
                               const cumulativeCashFlow = annualCashFlow * year;
-                              const principalPaid = investment.monthlyMortgage * 12 * year * 0.3;
-                              const appreciation = (parseFloat(purchasePrice) || 0) * 0.03 * year;
+                              const principalPaid = cumulativePrincipal[year - 1] || 0;
+                              const appreciation = price * 0.03 * year;
                               const totalEquity = investment.downPayment + principalPaid + appreciation;
                               const totalReturn = cumulativeCashFlow + totalEquity - investment.totalCashNeeded;
-                              const maxReturn = (annualCashFlow * 10) + investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - investment.totalCashNeeded;
                               const heightPercent = maxReturn > 0 ? Math.max(10, Math.min(100, (totalReturn / maxReturn) * 100)) : 50;
                               const isPositive = totalReturn >= 0;
                               return (
@@ -3886,7 +3967,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                   <div className="w-full rounded-t transition-all" style={{ height: `${heightPercent}%`, backgroundColor: isPositive ? '#22c55e' : '#ef4444', opacity: 0.7 + (year * 0.03) }} title={`Year ${year}: ${formatCurrency(totalReturn)} total return`}></div>
                                 </div>
                               );
-                            })}
+                            });
+                            })()}
                           </div>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => (
@@ -3900,14 +3982,36 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                             <p className="text-xs text-gray-500">10-Yr Cash Flow</p>
                             <p className={`font-bold ${investment.cashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(investment.cashFlow * 10)}</p>
                           </div>
-                          <div className="p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
-                            <p className="text-xs text-gray-500">Est. Equity Built</p>
-                            <p className="font-bold" style={{ color: "#2b2823" }}>{formatCurrency(investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3))}</p>
-                          </div>
-                          <div className="p-3 rounded-lg" style={{ backgroundColor: "#ecfdf5" }}>
-                            <p className="text-xs text-gray-500">Total 10-Yr Return</p>
-                            <p className="font-bold text-green-600">{formatCurrency((investment.cashFlow * 10) + investment.downPayment + (investment.monthlyMortgage * 120 * 0.3) + ((parseFloat(purchasePrice) || 0) * 0.3) - investment.totalCashNeeded)}</p>
-                          </div>
+                          {(() => {
+                            // Proper amortization for summary metrics
+                            const price = parseFloat(purchasePrice) || 0;
+                            const loanAmt = price - investment.downPayment;
+                            const monthlyR = interestRate / 100 / 12;
+                            let bal = loanAmt;
+                            let totalPrin = 0;
+                            for (let i = 0; i < 120; i++) {
+                              if (bal <= 0) break;
+                              const intPmt = bal * monthlyR;
+                              const prinPmt = Math.min(investment.monthlyMortgage - intPmt, bal);
+                              totalPrin += Math.max(0, prinPmt);
+                              bal -= Math.max(0, prinPmt);
+                            }
+                            const appreciation10 = price * 0.03 * 10;
+                            const equityBuilt = investment.downPayment + totalPrin + appreciation10;
+                            const totalReturn10 = (investment.cashFlow * 10) + equityBuilt - investment.totalCashNeeded;
+                            return (
+                              <>
+                                <div className="p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
+                                  <p className="text-xs text-gray-500">Est. Equity Built</p>
+                                  <p className="font-bold" style={{ color: "#2b2823" }}>{formatCurrency(equityBuilt)}</p>
+                                </div>
+                                <div className="p-3 rounded-lg" style={{ backgroundColor: "#ecfdf5" }}>
+                                  <p className="text-xs text-gray-500">Total 10-Yr Return</p>
+                                  <p className="font-bold text-green-600">{formatCurrency(totalReturn10)}</p>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                         <p className="text-xs text-gray-400 mt-2 text-center">*Assumes 3% annual appreciation and average principal paydown</p>
                       </div>
