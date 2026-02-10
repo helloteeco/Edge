@@ -555,3 +555,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix dynamic OG preview cards for city page shares (city name, score, key metrics)
 - [x] Ensure preview cards match the design from the user's screenshot (Edge by Teeco branding)
 - [x] Verify share links generate proper og:image meta tags with dynamic data
+
+
+## Calculator Bug Fixes (February 2026)
+- [ ] Fix green share button (top action bar) not creating proper share link with OG preview
+- [ ] Fix heart/save indicator not lighting up (filled red) when report is saved via double-tap or floating pill

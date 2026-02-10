@@ -128,6 +128,7 @@ export default function CalculatorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [isReportSaved, setIsReportSaved] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [bedrooms, setBedrooms] = useState<number | null>(null);
   const [bathrooms, setBathrooms] = useState<number | null>(null);
@@ -397,6 +398,10 @@ export default function CalculatorPage() {
         const cachedSearch = recentSearches.find((s: { address: string }) => s.address === addressParam);
         if (cachedSearch?.cachedResult) {
           setResult(cachedSearch.cachedResult);
+          // Check if this address is already saved
+          const savedLocal = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
+          const addr = cachedSearch.cachedResult.address || cachedSearch.cachedResult.neighborhood;
+          setIsReportSaved(savedLocal.some((r: any) => r.address === addr));
           if (cachedSearch.cachedResult.listPrice > 0) {
             setPurchasePrice(cachedSearch.cachedResult.listPrice.toString());
           }
@@ -873,6 +878,7 @@ export default function CalculatorPage() {
     };
     
     setResult(analysisResult);
+    setIsReportSaved(false); // Reset saved state for new analysis
     setAddress(pendingAnalysis || address);
     
     if (analysisResult.listPrice > 0 && !purchasePrice) {
@@ -988,6 +994,14 @@ export default function CalculatorPage() {
       const data = await response.json();
       
       if (data.success) {
+        setIsReportSaved(true);
+        // Also cache in localStorage so the floating pill heart stays filled
+        const savedLocal = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
+        const addr = result.address || result.neighborhood;
+        if (!savedLocal.some((r: any) => r.address === addr)) {
+          savedLocal.push({ address: addr, savedAt: Date.now() });
+          localStorage.setItem('edge_saved_reports', JSON.stringify(savedLocal));
+        }
         alert("Report saved! View it in the Saved section.");
       } else if (data.error?.includes("already")) {
         alert("This property is already saved!");
@@ -2573,15 +2587,29 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     {/* Save Report Button */}
                     <button
-                      onClick={saveReport}
+                      onClick={() => {
+                        if (isReportSaved) {
+                          // Unsave
+                          const addr = result.address || result.neighborhood;
+                          const saved = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
+                          const idx = saved.findIndex((r: any) => r.address === addr);
+                          if (idx >= 0) {
+                            saved.splice(idx, 1);
+                            localStorage.setItem('edge_saved_reports', JSON.stringify(saved));
+                          }
+                          setIsReportSaved(false);
+                        } else {
+                          saveReport();
+                        }
+                      }}
                       className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: "#e5e3da", color: "#2b2823" }}
-                      title="Save Report"
+                      style={{ backgroundColor: isReportSaved ? "#22c55e" : "#e5e3da", color: isReportSaved ? "#ffffff" : "#2b2823" }}
+                      title={isReportSaved ? "Saved" : "Save Report"}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill={isReportSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                       </svg>
-                      <span className="hidden sm:inline">Save</span>
+                      <span className="hidden sm:inline">{isReportSaved ? "Saved" : "Save"}</span>
                     </button>
                     
                     {/* Email Button */}
@@ -2652,9 +2680,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           const { shareUrl } = await response.json();
                           
                           // Copy link and share
+                          const shareMessage = `Check out this STR investment I'm analyzing:`;
                           if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                             await navigator.share({
                               title: `STR Analysis: ${result.address || result.neighborhood}`,
+                              text: shareMessage,
                               url: shareUrl
                             });
                           } else {
@@ -4360,9 +4390,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                   
                                   const { shareUrl } = await response.json();
                                   
+                                  const shareMsg = `Check out this STR investment I'm analyzing:`;
                                   if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                                     await navigator.share({
                                       title: `STR Analysis: ${result.address || result.neighborhood}`,
+                                      text: shareMsg,
                                       url: shareUrl
                                     });
                                   } else {
@@ -5023,20 +5055,20 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
       {/* Floating Action Pill for Analysis Pages */}
       {result && (
         <FloatingActionPill
-          isSaved={(() => {
-            if (typeof window === 'undefined') return false;
-            const saved = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
-            const addr = result.address || result.neighborhood;
-            return saved.some((r: any) => r.address === addr);
-          })()}
+          isSaved={isReportSaved}
           onToggleSave={() => {
-            const addr = result.address || result.neighborhood;
-            const saved = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
-            const exists = saved.findIndex((r: any) => r.address === addr);
-            if (exists >= 0) {
-              saved.splice(exists, 1);
-              localStorage.setItem('edge_saved_reports', JSON.stringify(saved));
+            if (isReportSaved) {
+              // Unsave: remove from localStorage and update state
+              const addr = result.address || result.neighborhood;
+              const saved = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
+              const exists = saved.findIndex((r: any) => r.address === addr);
+              if (exists >= 0) {
+                saved.splice(exists, 1);
+                localStorage.setItem('edge_saved_reports', JSON.stringify(saved));
+              }
+              setIsReportSaved(false);
             } else {
+              // Save: calls saveReport which sets isReportSaved on success
               saveReport();
             }
           }}
