@@ -592,9 +592,9 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Tier 1 Launch Blocker Fixes (February 2026)
-- [ ] Fix 1: Allow first analysis without sign-in — show results, gate sign-in after value is demonstrated
-- [ ] Fix 2: Remove cleaning cost from expenses — add note that cleaning fees & pet fees are passed on to guests
-- [ ] Fix 3: Remove vacancy double-counting in buying mode — occupancy already accounts for vacancy
-- [ ] Fix 4: Fix insurance default from $1,800 to $3,200 and label as "STR Insurance"
-- [ ] Fix 5: Fix fake ±20% confidence range — use actual p25-p75 percentile data
-- [ ] Fix 6: Fix 10-year amortization math — use proper principal paydown schedule instead of flat 30%
+- [x] Fix 1: Allow first analysis without sign-in — show results, gate sign-in after value is demonstrated
+- [x] Fix 2: Remove cleaning cost from expenses — add note that cleaning fees & pet fees are passed on to guests
+- [x] Fix 3: Remove vacancy double-counting in buying mode — occupancy already accounts for vacancy
+- [x] Fix 4: Fix insurance default from $1,800 to $3,200 and label as "STR Insurance"
+- [x] Fix 5: Fix fake ±20% confidence range — use actual p25-p75 percentile data
+- [x] Fix 6: Fix 10-year amortization math — use proper principal paydown schedule instead of flat 30%
