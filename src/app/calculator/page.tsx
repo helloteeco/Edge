@@ -19,6 +19,12 @@ const CompCalendar = dynamic(() => import("@/components/CompCalendar"), {
   loading: () => <div className="rounded-2xl p-6 animate-pulse" style={{ backgroundColor: '#f5f4f0', height: 300 }} />,
 });
 
+// Dynamic import for CompAmenityComparison
+const CompAmenityComparison = dynamic(() => import("@/components/CompAmenityComparison"), {
+  ssr: false,
+  loading: () => <div className="rounded-2xl p-6 animate-pulse" style={{ backgroundColor: '#f5f4f0', height: 200 }} />,
+});
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -73,6 +79,9 @@ interface ComparableListing {
   latitude: number;
   longitude: number;
   relevanceScore: number;
+  amenities?: string[];
+  hostName?: string;
+  isSuperhost?: boolean;
 }
 
 interface AnalysisResult {
@@ -3290,6 +3299,21 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   occupancy: c.occupancy,
                 }))}
                 occupancyData={realOccupancyData}
+              />
+            )}
+
+            {/* Comp Amenity Comparison */}
+            {result.comparables && result.comparables.length > 0 && (
+              <CompAmenityComparison
+                comparables={result.comparables.map(c => ({
+                  id: String(c.id || ''),
+                  name: c.name || 'Listing',
+                  amenities: c.amenities || [],
+                  nightPrice: c.nightPrice,
+                  rating: c.rating,
+                  isSuperhost: c.isSuperhost || false,
+                }))}
+                excludedCompIds={excludedCompIds}
               />
             )}
 

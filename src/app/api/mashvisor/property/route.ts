@@ -905,6 +905,9 @@ function buildResponse(params: {
       longitude: c.longitude || 0,
       relevanceScore: c.relevanceScore || 0,
       source: c.source || "apify",
+      amenities: c.amenities || c._raw?.amenities || [],
+      hostName: c.hostName || c._raw?.hostName || "",
+      isSuperhost: c.isSuperhost || c._raw?.isSuperhost || false,
     })),
 
     historical: params.historical,

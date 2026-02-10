@@ -52,14 +52,11 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
     }).filter(c => c.hasCalendar);
   }, [comparables, occupancyData]);
 
-  if (compsWithCalendar.length === 0) {
-    return null;
-  }
-
   const selectedComp = compsWithCalendar[selectedCompIdx] || compsWithCalendar[0];
 
   // Build calendar grid for the selected month
   const calendarGrid = useMemo(() => {
+    if (!selectedComp) return [];
     const { year, month } = viewMonth;
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
@@ -104,6 +101,7 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
 
   // Calculate month stats
   const monthStats = useMemo(() => {
+    if (!selectedComp) return { booked: 0, total: 0, occupancy: 0 };
     const { year, month } = viewMonth;
     const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
     const monthDays = selectedComp.calendar.filter(d => d.date.startsWith(monthPrefix));
@@ -112,6 +110,11 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
     const occupancy = total > 0 ? Math.round((booked / total) * 100) : 0;
     return { booked, total, occupancy };
   }, [viewMonth, selectedComp]);
+
+  // Early return AFTER all hooks
+  if (compsWithCalendar.length === 0 || !selectedComp) {
+    return null;
+  }
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
@@ -131,12 +134,6 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
     if (available === null) return "transparent";
     if (available) return "#dcfce7"; // green-100 — available
     return "#fee2e2"; // red-100 — booked
-  };
-
-  const getDayBorder = (available: boolean | null) => {
-    if (available === null) return "transparent";
-    if (available) return "#86efac"; // green-300
-    return "#fca5a5"; // red-300
   };
 
   return (

@@ -304,6 +304,9 @@ function enrichCompsWithRevenue(
       annualRevenue,
       monthlyRevenue,
       distance: Math.round(distance * 10) / 10,
+      amenities: listing.amenities || listing._raw?.amenities || [],
+      hostName: listing.hostName || listing._raw?.hostName || "",
+      isSuperhost: listing.isSuperhost || listing._raw?.isSuperhost || false,
     };
   });
 }

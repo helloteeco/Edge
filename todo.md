@@ -500,8 +500,16 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Medium Priority Calculator Improvements (Feb 10, 2026)
-- [ ] Forward-looking 30-day revenue estimate based on real occupancy/seasonal patterns
-- [ ] Comp calendar view with pricing and availability heatmap per listing
-- [ ] Calendar shows booked vs available days with nightly rate color coding
-- [ ] Tap a day on calendar to see rate details
-- [ ] Aggregate 30-day forecast from calendar data across included comps
+- [x] Forward-looking 30-day revenue estimate based on real occupancy/seasonal patterns
+- [x] Comp calendar view with pricing and availability heatmap per listing
+- [x] Calendar shows booked vs available days with nightly rate color coding
+- [x] Tap a day on calendar to see rate details
+- [x] Aggregate 30-day forecast from calendar data across included comps
+
+
+## Low Priority: Comp Amenity Comparison (Feb 10, 2026)
+- [x] Audit Apify scrape data for available amenity fields
+- [x] Update airbnb-comps API to capture and return amenity data
+- [x] Build comp amenity comparison table/grid component
+- [x] Show which amenities top comps have vs what user might be missing
+- [x] Integrate into calculator page below comp listings
