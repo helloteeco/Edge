@@ -378,3 +378,67 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
     </>
   );
 }
+
+// Floating Share Button Component
+export function FloatingShareButton() {
+  const [showCopied, setShowCopied] = useState(false);
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: document.title,
+          url: shareUrl
+        });
+      } catch (err) {
+        console.log('Share cancelled');
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={handleShare}
+        className="fixed bottom-[8.5rem] right-4 z-40 flex items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
+        style={{
+          backgroundColor: '#ffffff',
+          border: '2px solid #d8d6cd',
+          boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.2)',
+          width: '56px',
+          height: '56px',
+          borderRadius: '16px'
+        }}
+        aria-label="Share"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#2b2823"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 19V5m0 0l-5 5m5-5l5 5" />
+        </svg>
+      </button>
+
+      {/* Copied Toast */}
+      {showCopied && (
+        <div
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-xl shadow-lg"
+          style={{ backgroundColor: '#2b2823' }}
+        >
+          <p className="text-white font-medium text-sm">Link copied to clipboard!</p>
+        </div>
+      )}
+    </>
+  );
+}

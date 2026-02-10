@@ -435,3 +435,13 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Compress funding page educational cards - make them collapsible to show quiz sooner
 - [x] Improve spacing in 'You've Used Your Free Analyses' modal - add breathing room
 - [x] Implement 3-tier Hormozi pricing with 100-credit Power tier
+
+
+## Rebuild Lost Features (February 2026)
+- [ ] Fix share UX on city cards to match screenshot (share icon inline with heart counter)
+- [ ] Add email capture to funding quiz (collect email before showing results, save to Supabase)
+- [ ] Add email results functionality to funding quiz
+- [ ] Add missing legal pages (Cookies policy, Content Sharing policy)
+- [ ] Store project context in Supabase for future sessions
+- [x] Fix city-data.ts formatting (JSON->TS, missing commas, invalid rprRating)
+- [x] Push 1,063 cities fix to GitHub - deployment now READY
