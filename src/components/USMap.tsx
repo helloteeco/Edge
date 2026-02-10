@@ -124,7 +124,7 @@ export function USMap() {
   // Tab order: STR Grade (our value prop) first, then familiar metrics → technical metrics
   // This builds user confidence by starting with recognizable concepts
   const views = [
-    { key: "strScore", label: "STR Grade", description: "Our overall investment score based on cash flow, affordability, and legality." },
+    { key: "strScore", label: "STR Grade", description: "Our overall investment score based on cash flow, affordability, year-round income, and market headroom." },
     { key: "homeValue", label: "Home Prices", description: "Lower prices mean easier entry and better cash-on-cash returns." },
     { key: "appreciation", label: "Appreciation", description: "Higher appreciation means your property value grows faster over time." },
     { key: "daysOnMarket", label: "Days on Market", description: "Median days homes sit on market. Longer = slower market with more room to negotiate." },

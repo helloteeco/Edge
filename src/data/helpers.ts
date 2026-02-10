@@ -31,6 +31,8 @@ export interface FlatCity {
   amenityDelta: Array<{ name: string; boost: number; priority: string }>;
   marketType: string;
   highlights: string[];
+  strStatus: string;
+  permitRequired: boolean;
   // New transparent scoring
   scoring: ScoringBreakdown;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
@@ -70,11 +72,10 @@ function calculateCityScore(city: CityData, stateCode: string): ScoringBreakdown
   return calculateScore({
     monthlyRevenue: city.rental.monthlyRevenue,
     medianHomePrice: city.rental.medianHomePrice,
-    strStatus: city.strStatus,
-    permitRequired: city.permitRequired,
+    occupancyRate: city.rental.occupancyRate,
     stateCode: stateCode,
     listingsPerThousand: city.saturationRisk.listingsPerThousand,
-    oneYearAppreciation: getStateAppreciation(stateCode),
+    population: city.population,
   });
 }
 
@@ -103,14 +104,14 @@ export function getAllCities(): FlatCity[] {
         strMonthlyRevenue: city.rental.monthlyRevenue,
         medianHomeValue: city.rental.medianHomePrice,
         regulation: city.strStatus === "legal" ? "Legal" : "Restricted",
-        marketHeadroom: scoring.marketHeadroom.score, // Use new scoring (10 = excellent, 2 = crowded)
+        marketHeadroom: scoring.roomToGrow.score, // Use new scoring (15 = excellent, 3 = crowded)
         listingsPerThousand: city.saturationRisk.listingsPerThousand,
         scores: {
           demand: city.marketScore.demand,
           affordability: city.marketScore.affordability,
           regulation: city.marketScore.regulation,
           seasonality: city.marketScore.seasonality,
-          marketHeadroom: scoring.marketHeadroom.score,
+          marketHeadroom: scoring.roomToGrow.score,
         },
         incomeBySize: {
           "1BR": city.incomeBySize.oneBR,
@@ -127,6 +128,8 @@ export function getAllCities(): FlatCity[] {
         })),
         marketType: city.amenityDelta.marketType,
         highlights: city.highlights || [],
+        strStatus: city.strStatus,
+        permitRequired: city.permitRequired,
         // New transparent scoring
         scoring,
         grade: scoring.grade,

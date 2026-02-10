@@ -1,5 +1,5 @@
 /**
- * Edge by Teeco - STR Scoring Model
+ * Edge by Teeco - STR Scoring Model v2
  * 
  * A transparent, defensible scoring system biased toward:
  * - Rural, affordable, self-managed STRs
@@ -10,10 +10,12 @@
  * =====================================
  * 1. Cash-on-Cash Return            - 35 points (heaviest weight)
  * 2. Affordability                  - 25 points
- * 3. STR Legality                   - 15 points
+ * 3. Year-Round Income              - 15 points (seasonality consistency)
  * 4. Landlord Friendliness          - 10 points
- * 5. Market Headroom               - 10 points
- * 6. Appreciation Potential         - 5 points (lowest - we're not chasing appreciation)
+ * 5. Room to Grow (Market Headroom) - 15 points
+ * 
+ * NOTE: STR Legality is no longer part of the score.
+ * It is displayed separately with a link to permitting resources.
  * 
  * CASH-ON-CASH RETURN CALCULATION
  * ================================
@@ -37,10 +39,9 @@
 export interface ScoringBreakdown {
   cashOnCash: { score: number; maxScore: 35; value: number; rating: string };
   affordability: { score: number; maxScore: 25; value: number; rating: string };
-  legality: { score: number; maxScore: 15; status: string; rating: string };
+  yearRoundIncome: { score: number; maxScore: 15; value: number; rating: string };
   landlordFriendly: { score: number; maxScore: 10; rating: string };
-  marketHeadroom: { score: number; maxScore: 10; value: number; rating: string };
-  appreciation: { score: number; maxScore: 5; value: number; rating: string };
+  roomToGrow: { score: number; maxScore: 15; value: number; rating: string };
   totalScore: number;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
   verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
@@ -130,21 +131,23 @@ export function scoreAffordability(medianHomePrice: number): { score: number; ra
 }
 
 /**
- * Calculate STR Legality score (15 points max)
+ * Calculate Year-Round Income score (15 points max)
+ * Based on occupancy rate as a proxy for year-round demand consistency.
+ * Higher occupancy = more consistent income throughout the year.
  * 
  * Scoring:
- * - Legal (no restrictions): 15 points
- * - Legal (permit required): 12 points
- * - Varies by area: 8 points
- * - Restricted: 4 points
- * - Banned: 0 points
+ * - >= 65%: 15 points (Excellent Year-Round)
+ * - >= 55%: 12 points (Strong Year-Round)
+ * - >= 45%: 9 points (Moderate Seasonality)
+ * - >= 35%: 5 points (Seasonal Market)
+ * - < 35%: 2 points (Highly Seasonal)
  */
-export function scoreLegality(status: string, permitRequired: boolean): { score: number; rating: string } {
-  if (status === 'banned') return { score: 0, rating: 'Banned' };
-  if (status === 'restricted') return { score: 4, rating: 'Restricted' };
-  if (status === 'varies') return { score: 8, rating: 'Varies by Area' };
-  if (status === 'legal' && permitRequired) return { score: 12, rating: 'Legal (Permit Required)' };
-  return { score: 15, rating: 'Fully Legal' };
+export function scoreYearRoundIncome(occupancyRate: number): { score: number; rating: string } {
+  if (occupancyRate >= 65) return { score: 15, rating: 'Excellent Year-Round' };
+  if (occupancyRate >= 55) return { score: 12, rating: 'Strong Year-Round' };
+  if (occupancyRate >= 45) return { score: 9, rating: 'Moderate Seasonality' };
+  if (occupancyRate >= 35) return { score: 5, rating: 'Seasonal Market' };
+  return { score: 2, rating: 'Highly Seasonal' };
 }
 
 /**
@@ -179,62 +182,40 @@ export function scoreLandlordFriendly(stateCode: string): { score: number; ratin
 }
 
 /**
- * Calculate Market Headroom score (10 points max)
+ * Calculate Room to Grow score (15 points max)
  * Based on STR listings per 1,000 residents
  * Higher score = more room for new STRs (less competition)
  * 
  * IMPORTANT: Small tourism towns (population < 5,000) use adjusted thresholds
- * because their visitor-to-resident ratio is naturally high. A town of 500 people
- * with 10 STRs (20 per 1,000) might still have excellent headroom if it hosts
- * 50,000 visitors annually.
+ * because their visitor-to-resident ratio is naturally high.
  * 
  * Standard Scoring (population >= 5,000):
- * - < 3 listings/1000: 10 points (Excellent Headroom)
- * - < 6 listings/1000: 8 points (Good Headroom)
- * - < 10 listings/1000: 5 points (Limited Headroom)
- * - >= 10 listings/1000: 2 points (Crowded Market)
+ * - < 3 listings/1000: 15 points (Excellent Headroom)
+ * - < 6 listings/1000: 12 points (Good Headroom)
+ * - < 10 listings/1000: 8 points (Limited Headroom)
+ * - >= 10 listings/1000: 3 points (Crowded Market)
  * 
  * Tourism Town Scoring (population < 5,000):
- * - < 15 listings/1000: 10 points (Excellent Headroom)
- * - < 30 listings/1000: 8 points (Good Headroom)
- * - < 50 listings/1000: 5 points (Limited Headroom)
- * - >= 50 listings/1000: 2 points (Crowded Market)
+ * - < 15 listings/1000: 15 points (Excellent Headroom)
+ * - < 30 listings/1000: 12 points (Good Headroom)
+ * - < 50 listings/1000: 8 points (Limited Headroom)
+ * - >= 50 listings/1000: 3 points (Crowded Market)
  */
-export function scoreMarketHeadroom(listingsPerThousand: number, population?: number): { score: number; rating: string } {
+export function scoreRoomToGrow(listingsPerThousand: number, population?: number): { score: number; rating: string } {
   // Use tourism-adjusted thresholds for small towns (likely tourism destinations)
   const isTourismTown = population !== undefined && population < 5000;
   
   if (isTourismTown) {
-    // Tourism town thresholds (more lenient due to high visitor-to-resident ratio)
-    if (listingsPerThousand < 15) return { score: 10, rating: 'Excellent Headroom' };
-    if (listingsPerThousand < 30) return { score: 8, rating: 'Good Headroom' };
-    if (listingsPerThousand < 50) return { score: 5, rating: 'Limited Headroom' };
-    return { score: 2, rating: 'Crowded Market' };
+    if (listingsPerThousand < 15) return { score: 15, rating: 'Excellent Headroom' };
+    if (listingsPerThousand < 30) return { score: 12, rating: 'Good Headroom' };
+    if (listingsPerThousand < 50) return { score: 8, rating: 'Limited Headroom' };
+    return { score: 3, rating: 'Crowded Market' };
   }
   
-  // Standard thresholds for larger cities
-  if (listingsPerThousand < 3) return { score: 10, rating: 'Excellent Headroom' };
-  if (listingsPerThousand < 6) return { score: 8, rating: 'Good Headroom' };
-  if (listingsPerThousand < 10) return { score: 5, rating: 'Limited Headroom' };
-  return { score: 2, rating: 'Crowded Market' };
-}
-
-/**
- * Calculate Appreciation score (5 points max)
- * We assume ~3% annual appreciation as baseline
- * This is the LOWEST weighted factor - we're not chasing appreciation
- * 
- * Scoring:
- * - >= 4%: 5 points (Above Average)
- * - >= 2%: 4 points (Average)
- * - >= 0%: 2 points (Flat)
- * - < 0%: 1 point (Declining)
- */
-export function scoreAppreciation(oneYearAppreciation: number): { score: number; rating: string } {
-  if (oneYearAppreciation >= 4) return { score: 5, rating: 'Above Average' };
-  if (oneYearAppreciation >= 2) return { score: 4, rating: 'Average' };
-  if (oneYearAppreciation >= 0) return { score: 2, rating: 'Flat' };
-  return { score: 1, rating: 'Declining' };
+  if (listingsPerThousand < 3) return { score: 15, rating: 'Excellent Headroom' };
+  if (listingsPerThousand < 6) return { score: 12, rating: 'Good Headroom' };
+  if (listingsPerThousand < 10) return { score: 8, rating: 'Limited Headroom' };
+  return { score: 3, rating: 'Crowded Market' };
 }
 
 /**
@@ -280,11 +261,9 @@ export function getVerdict(grade: string): 'strong-buy' | 'buy' | 'hold' | 'caut
 export interface MarketData {
   monthlyRevenue: number;
   medianHomePrice: number;
-  strStatus: string;
-  permitRequired: boolean;
+  occupancyRate: number;
   stateCode: string;
   listingsPerThousand: number;
-  oneYearAppreciation: number;
   population?: number;
 }
 
@@ -294,18 +273,16 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   
   const cashOnCash = scoreCashOnCash(cashOnCashReturn);
   const affordability = scoreAffordability(data.medianHomePrice);
-  const legality = scoreLegality(data.strStatus, data.permitRequired);
+  const yearRoundIncome = scoreYearRoundIncome(data.occupancyRate);
   const landlordFriendly = scoreLandlordFriendly(data.stateCode);
-  const marketHeadroom = scoreMarketHeadroom(data.listingsPerThousand, data.population);
-  const appreciation = scoreAppreciation(data.oneYearAppreciation);
+  const roomToGrow = scoreRoomToGrow(data.listingsPerThousand, data.population);
   
   const totalScore = 
     cashOnCash.score + 
     affordability.score + 
-    legality.score + 
+    yearRoundIncome.score +
     landlordFriendly.score + 
-    marketHeadroom.score + 
-    appreciation.score;
+    roomToGrow.score;
   
   const grade = getGrade(totalScore);
   const verdict = getVerdict(grade);
@@ -313,10 +290,9 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
   return {
     cashOnCash: { score: cashOnCash.score, maxScore: 35, value: cashOnCashReturn, rating: cashOnCash.rating },
     affordability: { score: affordability.score, maxScore: 25, value: data.medianHomePrice, rating: affordability.rating },
-    legality: { score: legality.score, maxScore: 15, status: data.strStatus, rating: legality.rating },
+    yearRoundIncome: { score: yearRoundIncome.score, maxScore: 15, value: data.occupancyRate, rating: yearRoundIncome.rating },
     landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
-    marketHeadroom: { score: marketHeadroom.score, maxScore: 10, value: data.listingsPerThousand, rating: marketHeadroom.rating },
-    appreciation: { score: appreciation.score, maxScore: 5, value: data.oneYearAppreciation, rating: appreciation.rating },
+    roomToGrow: { score: roomToGrow.score, maxScore: 15, value: data.listingsPerThousand, rating: roomToGrow.rating },
     totalScore,
     grade,
     verdict,
@@ -337,4 +313,34 @@ export function calculateStateScore(cityScores: number[]): number {
   
   // Return average of top half
   return Math.round(topHalf.reduce((sum, s) => sum + s, 0) / topHalf.length);
+}
+
+// ============================================
+// LEGACY COMPATIBILITY EXPORTS
+// These are kept for backward compatibility with
+// existing code that references the old scoring fields.
+// They will be removed in a future cleanup.
+// ============================================
+
+/** @deprecated Use scoreRoomToGrow instead */
+export function scoreMarketHeadroom(listingsPerThousand: number, population?: number) {
+  const result = scoreRoomToGrow(listingsPerThousand, population);
+  return { score: Math.round(result.score * (10/15)), rating: result.rating };
+}
+
+/** @deprecated Use scoreYearRoundIncome instead */
+export function scoreAppreciation(oneYearAppreciation: number): { score: number; rating: string } {
+  if (oneYearAppreciation >= 4) return { score: 5, rating: 'Above Average' };
+  if (oneYearAppreciation >= 2) return { score: 4, rating: 'Average' };
+  if (oneYearAppreciation >= 0) return { score: 2, rating: 'Flat' };
+  return { score: 1, rating: 'Declining' };
+}
+
+/** @deprecated Legality is no longer part of the score */
+export function scoreLegality(status: string, permitRequired: boolean): { score: number; rating: string } {
+  if (status === 'banned') return { score: 0, rating: 'Banned' };
+  if (status === 'restricted') return { score: 4, rating: 'Restricted' };
+  if (status === 'varies') return { score: 8, rating: 'Varies by Area' };
+  if (status === 'legal' && permitRequired) return { score: 12, rating: 'Legal (Permit Required)' };
+  return { score: 15, rating: 'Fully Legal' };
 }

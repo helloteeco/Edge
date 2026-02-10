@@ -364,12 +364,11 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>Score Breakdown</div>
               
               {[
-                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 35 },
-                { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 25 },
-                { icon: '⚖️', label: 'STR Legality', score: city.scoring.legality.score, max: 15 },
-                { icon: '🤝', label: 'Landlord Friendly', score: city.scoring.landlordFriendly.score, max: 10 },
-                { icon: '📊', label: 'Market Headroom', score: city.scoring.marketHeadroom.score, max: 10 },
-                { icon: '📈', label: 'Appreciation', score: city.scoring.appreciation.score, max: 5 },
+                { icon: '💰', label: 'Cash-on-Cash', score: city.scoring.cashOnCash.score, max: 35, info: 'Annual cash flow divided by total cash invested' },
+                { icon: '🏠', label: 'Affordability', score: city.scoring.affordability.score, max: 25, info: 'Based on median home price in this market' },
+                { icon: '📅', label: 'Year-Round Income', score: city.scoring.yearRoundIncome.score, max: 15, info: 'Occupancy consistency throughout the year' },
+                { icon: '🤝', label: 'Landlord Friendly', score: city.scoring.landlordFriendly.score, max: 10, info: 'State-level tenant/landlord law favorability' },
+                { icon: '📈', label: 'Room to Grow', score: city.scoring.roomToGrow.score, max: 15, info: 'Market saturation and competition level' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
                   <span className="text-sm">{item.icon}</span>
@@ -410,9 +409,9 @@ export default function CityPage({ params }: { params: { id: string } }) {
               <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.affordability.rating}</div>
             </div>
             <div className="rounded-lg p-3" style={{ backgroundColor: '#e5e3da' }}>
-              <div style={{ color: '#787060' }}>Headroom</div>
-              <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.marketHeadroom.score}/10</div>
-              <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.marketHeadroom.rating}</div>
+              <div style={{ color: '#787060' }}>Room to Grow</div>
+              <div className="font-semibold" style={{ color: '#2b2823' }}>{city.scoring.roomToGrow.score}/15</div>
+              <div className="text-xs" style={{ color: '#787060' }}>{city.scoring.roomToGrow.rating}</div>
             </div>
           </div>
         </div>
@@ -677,13 +676,44 @@ export default function CityPage({ params }: { params: { id: string } }) {
             >
               {city.regulation}
             </span>
-            <span className="text-sm" style={{ color: '#787060' }}>({city.scoring.legality.rating})</span>
+            <span className="text-sm" style={{ color: '#787060' }}>
+              {city.strStatus === 'legal' && city.permitRequired ? 'Permit Required' : 
+               city.strStatus === 'legal' ? 'No Permit Required' :
+               city.strStatus === 'restricted' ? 'Restrictions Apply' :
+               city.strStatus === 'varies' ? 'Varies by Area' : 'Banned'}
+            </span>
           </div>
-          <p className="text-sm" style={{ color: '#787060' }}>
+          <p className="text-sm mb-4" style={{ color: '#787060' }}>
             {city.regulation === "Legal"
               ? "Short-term rentals are allowed in this area. Always verify local ordinances before purchasing."
               : "Some restrictions apply. Research local permit requirements and zoning laws carefully."}
           </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent(city.name + ' ' + city.stateCode + ' short term rental permit requirements')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
+              style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Permitting Resources
+            </a>
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent('short term rental insurance ' + city.stateCode + ' Airbnb host insurance')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
+              style={{ backgroundColor: '#e5e3da', color: '#2b2823' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              STR Insurance
+            </a>
+          </div>
         </div>
 
         {/* View Comparable Listings */}
