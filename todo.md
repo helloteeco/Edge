@@ -525,3 +525,15 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Fix address suggestions dropdown appearing twice (above and below input)
 - [ ] Ensure suggestions only appear once, below the input field
 - [ ] Ensure clicking a suggestion auto-populates the address field immediately
+
+
+## "I'm Still Stuck" AI Help Assistant (February 2026)
+- [ ] Build reusable StuckHelper component with tab-specific context
+- [ ] Integrate into Map tab with map-specific sticking points
+- [ ] Integrate into Search tab with search-specific sticking points
+- [ ] Integrate into Calculator tab with calculator-specific sticking points
+- [ ] Integrate into Saved tab with saved-specific sticking points
+- [ ] Integrate into Funding/Resources tab with funding-specific sticking points
+- [ ] AI diagnoses common sticking points with short list of likely issues
+- [ ] AI answers questions using Edge chat assistant context
+- [ ] AI recommends links to all resources, services, and affiliates offered in the app

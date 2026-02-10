@@ -21,6 +21,7 @@ import {
   ArrowRightIcon,
 } from '@/components/Icons';
 import AuthHeader from '@/components/AuthHeader';
+import { StuckHelper } from '@/components/StuckHelper';
 
 // Types
 interface FundingMethod {
@@ -1597,6 +1598,9 @@ export default function FundingPage() {
         </div>
 
         {/* Final Disclaimer */}
+        {/* Stuck Helper */}
+        <StuckHelper tabName="funding" />
+
         <div className="mt-6 p-4 rounded-xl text-center" style={{ backgroundColor: 'rgba(43, 40, 35, 0.04)' }}>
           <p className="text-xs" style={{ color: '#787060' }}>
             <strong>Disclaimer:</strong> The information provided here is for educational purposes only and does not constitute financial, legal, or tax advice. 

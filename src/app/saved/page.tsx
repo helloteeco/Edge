@@ -20,6 +20,7 @@ import {
   HomeEquityIcon,
 } from "@/components/Icons";
 import AuthModal from "@/components/AuthModal";
+import { StuckHelper } from "@/components/StuckHelper";
 
 // Type for saved property reports
 interface SavedReport {
@@ -1049,6 +1050,11 @@ export default function SavedPage() {
         title="Sign in to Sync"
         subtitle="Sign in to sync your saved reports across all your devices. No password needed."
       />
+
+      {/* Stuck Helper */}
+      <div className="max-w-4xl mx-auto px-4">
+        <StuckHelper tabName="saved" />
+      </div>
     </div>
   );
 }

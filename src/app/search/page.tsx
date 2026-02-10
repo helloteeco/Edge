@@ -13,6 +13,7 @@ import {
   TrendUpIcon,
   GemIcon,
 } from "@/components/Icons";
+import { StuckHelper } from "@/components/StuckHelper";
 import AuthHeader from "@/components/AuthHeader";
 
 type FilterType = "all" | "states" | "cities" | "minScore" | "recommended" | "allCities";
@@ -691,6 +692,8 @@ export default function SearchPage() {
             </p>
           </div>
         )}
+        {/* Stuck Helper */}
+        <StuckHelper tabName="search" />
       </div>
     </div>
   );

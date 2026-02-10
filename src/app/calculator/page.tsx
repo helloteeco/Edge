@@ -7,6 +7,7 @@ import AuthHeader from "@/components/AuthHeader";
 import AuthModal from "@/components/AuthModal";
 import { FloatingActionPill } from "@/components/DoubleTapSave";
 import dynamic from "next/dynamic";
+import { StuckHelper } from "@/components/StuckHelper";
 
 // Dynamic import for CompMap (Leaflet needs client-side only)
 const CompMap = dynamic(() => import("@/components/CompMap").then(mod => ({ default: mod.CompMap })), {
@@ -5037,6 +5038,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
           shareText={`Check out this STR deal I found — ${formatCurrency(getDisplayRevenue())}/yr projected revenue:`}
         />
       )}
+
+      {/* Stuck Helper - shown below main content */}
+      <div className="max-w-4xl mx-auto px-4">
+        <StuckHelper tabName="calculator" />
+      </div>
     </div>
   );
 }

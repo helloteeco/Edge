@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { USMap } from "@/components/USMap";
 import { TopMarkets } from "@/components/TopMarkets";
 import AuthHeader from "@/components/AuthHeader";
+import { StuckHelper } from "@/components/StuckHelper";
 import { cityData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
   GraduationIcon,
@@ -915,6 +916,9 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
+
+        {/* Stuck Helper */}
+        <StuckHelper tabName="map" />
       </div>
     </div>
   );
