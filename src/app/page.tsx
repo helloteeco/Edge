@@ -127,9 +127,15 @@ function SocialShareSection() {
 export default function HomePage() {
   const [activeJourneyInfo, setActiveJourneyInfo] = useState<string | null>(null);
 
-  // Force scroll to top on page load
+  // Force scroll to top on page load - disable browser scroll restoration
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
     window.scrollTo(0, 0);
+    // Also scroll after a brief delay to override any async scroll restoration
+    const timer = setTimeout(() => window.scrollTo(0, 0), 100);
+    return () => clearTimeout(timer);
   }, []);
   
   // Journey stage info content - accurate Edge features

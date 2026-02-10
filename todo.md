@@ -450,8 +450,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 ## Front Page & Navigation Fixes (February 2026)
 - [x] Restore full hero section with heading, badges, CTA, and How Edge Works
 - [x] Fix banner text to match original ("Most students successfully launch their first STR with just $65K")
-- [ ] Fix page landing position - should start at top (hero), not jump to How Edge Works
-- [ ] Make "Use the Map tab" link smooth-scroll to interactive map section
+- [x] Fix page landing position - should start at top (hero), not jump to How Edge Works
+- [x] Make "Use the Map tab" link smooth-scroll to interactive map section
 - [ ] Make "Use the Calculator tab" and "Use the Funding tab" navigate to correct tabs
 
 ## Remaining Work Items
