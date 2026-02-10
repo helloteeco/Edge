@@ -460,21 +460,30 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Floating Pill, Share Preview & Saved Tab Enhancements (February 2026)
-- [ ] Redesign floating pill: heart with 0/10 counter + paper plane share icon (matching screenshot)
-- [ ] Add floating pill to calculator analysis pages (arbitrage + buying)
-- [ ] Fix share icon from up-arrow to paper plane (send) icon
+- [x] Redesign floating pill: heart with 0/10 counter + paper plane share icon (matching screenshot)
+- [x] Add floating pill to calculator analysis pages (arbitrage + buying)
+- [x] Fix share icon from up-arrow to paper plane (send) icon
 - [ ] Double-tap save/unsave on analysis cards in calculator
-- [ ] Improve OG preview card: make annual revenue much larger and more prominent
-- [ ] Enhance OG card with STR Grade badge and Edge branding
+- [x] Improve OG preview card: make annual revenue much larger and more prominent
+- [x] Enhance OG card with STR Grade badge and Edge branding
 - [ ] Saved tab: ensure 10 max per category (cities, states, analyses)
-- [ ] Saved analyses preserve custom expenses, property price, down payment
+- [x] Saved analyses preserve custom expenses, property price, down payment
 - [ ] Saved/cached items can be pulled up without spending a credit
-- [ ] Share preview card shows address, grade, CoC, occupancy, ADR, and large annual revenue
+- [x] Share preview card shows address, grade, CoC, occupancy, ADR, and large annual revenue
 
 
 ## Calculator Improvements & Comp Map (Feb 10, 2026)
-- [ ] Restore buy more credits option on calculator tab
-- [ ] Improve comp matching to prioritize bed/bath/guest count proximity
-- [ ] Research AirDNA and Rabbu comp features for competitive parity
-- [ ] Add interactive comp map with scrollable markers, data overlays, and Airbnb listing links
-- [ ] Full audit of both calculators vs AirDNA/Rabbu with recommendations
+- [x] Restore buy more credits option on calculator tab
+- [x] Improve comp matching to prioritize bed/bath/guest count proximity
+- [x] Research AirDNA and Rabbu comp features for competitive parity
+- [x] Add interactive comp map with scrollable markers, data overlays, and Airbnb listing links
+- [x] Full audit of both calculators vs AirDNA/Rabbu with recommendations
+
+
+## High Priority Calculator Improvements (Feb 10, 2026)
+- [ ] Custom comp selection: add include/exclude toggle on each comp
+- [ ] Recalculate revenue estimate when comps are toggled on/off
+- [ ] Update comp map markers to reflect included/excluded state
+- [ ] Build per-listing Apify scrape API for real occupancy data (calendar scraping)
+- [ ] Integrate real occupancy data into comp display (actual vs estimated labels)
+- [ ] Update revenue estimates with real occupancy when available

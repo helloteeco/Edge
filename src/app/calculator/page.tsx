@@ -192,6 +192,42 @@ export default function CalculatorPage() {
   // Share link state
   const [isCreatingShareLink, setIsCreatingShareLink] = useState(false);
   
+  // Custom comp selection: track excluded comp IDs
+  const [excludedCompIds, setExcludedCompIds] = useState<Set<number | string>>(new Set());
+  
+  // Real occupancy data from calendar scraping
+  const [realOccupancyData, setRealOccupancyData] = useState<Record<string, { occupancyRate: number; bookedDays: number; totalDays: number; peakMonths: string[]; lowMonths: string[]; source: string }>>({});
+  const [isLoadingOccupancy, setIsLoadingOccupancy] = useState(false);
+  
+  // Toggle a comp in/out of the selection
+  const toggleCompExclusion = (compId: number | string) => {
+    setExcludedCompIds(prev => {
+      const next = new Set(prev);
+      if (next.has(compId)) {
+        next.delete(compId);
+      } else {
+        next.add(compId);
+      }
+      return next;
+    });
+  };
+  
+  // Get the active (included) comps
+  const getActiveComps = (): ComparableListing[] => {
+    if (!result?.comparables) return [];
+    return result.comparables.filter(c => !excludedCompIds.has(c.id));
+  };
+  
+  // Recalculate revenue from active comps only
+  const getCompBasedRevenue = (): { adr: number; occupancy: number; annualRevenue: number } | null => {
+    const activeComps = getActiveComps();
+    if (activeComps.length === 0) return null;
+    const avgAdr = Math.round(activeComps.reduce((sum, c) => sum + c.nightPrice, 0) / activeComps.length);
+    const avgOcc = Math.round(activeComps.reduce((sum, c) => sum + c.occupancy, 0) / activeComps.length);
+    const avgRevenue = Math.round(activeComps.reduce((sum, c) => sum + (c.annualRevenue || c.monthlyRevenue * 12), 0) / activeComps.length);
+    return { adr: avgAdr, occupancy: avgOcc, annualRevenue: avgRevenue };
+  };
+  
   // Limited data warning modal
   const [showLimitedDataWarning, setShowLimitedDataWarning] = useState(false);
   const [limitedDataInfo, setLimitedDataInfo] = useState<{
@@ -200,6 +236,49 @@ export default function CalculatorPage() {
     nearestMarket: string;
     distanceMiles: number | null;
   } | null>(null);
+
+  // Reset excluded comps when a new analysis is run
+  useEffect(() => {
+    setExcludedCompIds(new Set());
+    setRealOccupancyData({});
+  }, [result?.address]);
+  
+  // Fetch real occupancy data for comps after analysis completes
+  useEffect(() => {
+    if (!result?.comparables || result.comparables.length === 0) return;
+    
+    const roomIds = result.comparables
+      .slice(0, 8)
+      .map(c => String(c.id))
+      .filter(id => id && id !== '0');
+    
+    if (roomIds.length === 0) return;
+    
+    const fetchOccupancy = async () => {
+      setIsLoadingOccupancy(true);
+      try {
+        const response = await fetch('/api/airbnb-occupancy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomIds }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.occupancy) {
+            setRealOccupancyData(data.occupancy);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch real occupancy data:', err);
+      } finally {
+        setIsLoadingOccupancy(false);
+      }
+    };
+    
+    // Delay slightly so it doesn't block the main analysis render
+    const timer = setTimeout(fetchOccupancy, 1500);
+    return () => clearTimeout(timer);
+  }, [result?.comparables]);
 
   // Lock body scroll when AI Analysis modal is open
   useEffect(() => {
@@ -2876,22 +2955,29 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 targetLat={result.targetCoordinates.latitude}
                 targetLng={result.targetCoordinates.longitude}
                 targetAddress={result.address}
+                excludedIds={excludedCompIds}
               />
             )}
 
             {/* Comparable Listings */}
             {result.comparables && result.comparables.length > 0 && (() => {
-              // Calculate confidence score based on comp quality
-              const comps = result.comparables;
-              const bedroomMatches = comps.filter(c => c.bedrooms === result.bedrooms).length;
-              const bedroomMatchPct = comps.length > 0 ? (bedroomMatches / comps.length) * 100 : 0;
-              const avgDistance = comps.reduce((sum, c) => sum + (c.distance || 0), 0) / (comps.length || 1);
-              const hasEnoughComps = comps.length >= 5;
+              // Calculate confidence score based on ACTIVE comp quality
+              const allComps = result.comparables;
+              const activeComps = allComps.filter(c => !excludedCompIds.has(c.id));
+              const comps = allComps; // Show all, but mark excluded
+              const bedroomMatches = activeComps.filter(c => c.bedrooms === result.bedrooms).length;
+              const bedroomMatchPct = activeComps.length > 0 ? (bedroomMatches / activeComps.length) * 100 : 0;
+              const avgDistance = activeComps.reduce((sum, c) => sum + (c.distance || 0), 0) / (activeComps.length || 1);
+              const hasEnoughComps = activeComps.length >= 5;
               const hasGoodMatches = bedroomMatchPct >= 50;
               const isCloseProximity = avgDistance <= 5;
-              const confidenceScore = (hasEnoughComps ? 33 : comps.length * 6) + (hasGoodMatches ? 34 : bedroomMatchPct * 0.34) + (isCloseProximity ? 33 : Math.max(0, 33 - avgDistance * 3));
+              const confidenceScore = (hasEnoughComps ? 33 : activeComps.length * 6) + (hasGoodMatches ? 34 : bedroomMatchPct * 0.34) + (isCloseProximity ? 33 : Math.max(0, 33 - avgDistance * 3));
               const confidenceLabel = confidenceScore >= 75 ? "High" : confidenceScore >= 45 ? "Medium" : "Low";
               const confidenceColor = confidenceScore >= 75 ? "#16a34a" : confidenceScore >= 45 ? "#ca8a04" : "#ef4444";
+              
+              // Comp-based revenue recalculation
+              const compRevenue = getCompBasedRevenue();
+              const hasExclusions = excludedCompIds.size > 0;
 
               return (
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
@@ -2903,64 +2989,163 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     {confidenceLabel} Confidence
                   </span>
                 </div>
-                <p className="text-xs mb-4" style={{ color: "#787060" }}>
-                  {comps.length} comps analyzed • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
+                <p className="text-xs mb-2" style={{ color: "#787060" }}>
+                  {activeComps.length}/{allComps.length} comps included • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
                 </p>
-                <div className="space-y-3">
-                  {comps.slice(0, 10).map((listing, index) => (
-                    <a
-                      key={listing.id || index}
-                      href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
+                
+                {/* Real Occupancy Data Banner */}
+                {Object.keys(realOccupancyData).length > 0 && (() => {
+                  const realEntries = Object.values(realOccupancyData);
+                  const avgRealOcc = Math.round(realEntries.reduce((s, e) => s + e.occupancyRate, 0) / realEntries.length);
+                  // Aggregate peak months
+                  const peakCounts = new Map<string, number>();
+                  realEntries.forEach(e => e.peakMonths?.forEach((m: string) => peakCounts.set(m, (peakCounts.get(m) || 0) + 1)));
+                  const topPeaks = Array.from(peakCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+                  return (
+                    <div className="mb-4 p-3 rounded-xl" style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-semibold" style={{ color: '#1d4ed8' }}>📅 Real Calendar Occupancy</p>
+                          <p className="text-xs mt-0.5" style={{ color: '#787060' }}>
+                            Based on {realEntries.length} listing calendar{realEntries.length !== 1 ? 's' : ''} scraped
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold" style={{ color: '#1d4ed8' }}>{avgRealOcc}%</p>
+                          <p className="text-xs" style={{ color: '#787060' }}>vs {result.occupancy}% est.</p>
+                        </div>
+                      </div>
+                      {topPeaks.length > 0 && (
+                        <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Peak months: {topPeaks.join(', ')}</p>
+                      )}
+                    </div>
+                  );
+                })()}
+                {isLoadingOccupancy && Object.keys(realOccupancyData).length === 0 && (
+                  <div className="mb-4 p-3 rounded-xl animate-pulse" style={{ backgroundColor: '#f0f9ff', border: '1px solid #e0f2fe' }}>
+                    <p className="text-xs font-medium" style={{ color: '#0284c7' }}>📅 Fetching real calendar occupancy for top comps...</p>
+                  </div>
+                )}
+                
+                {/* Comp-based revenue recalculation banner */}
+                {hasExclusions && compRevenue && (
+                  <div className="mb-4 p-3 rounded-xl border-2 border-dashed" style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold" style={{ color: '#15803d' }}>Custom Comp Average ({activeComps.length} selected)</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#787060' }}>
+                          ${compRevenue.adr}/night • {compRevenue.occupancy}% occ
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold" style={{ color: '#15803d' }}>{formatCurrency(compRevenue.annualRevenue)}/yr</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setExcludedCompIds(new Set())}
+                      className="mt-2 text-xs font-medium px-3 py-1 rounded-full transition-colors"
+                      style={{ backgroundColor: '#dcfce7', color: '#15803d' }}
                     >
-                      {/* Comp Photo */}
-                      <div className="flex-shrink-0 relative">
-                        {listing.image ? (
-                          <img
-                            src={listing.image}
-                            alt={listing.name}
-                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f5f4f0' }}>
-                            <span className="text-2xl">🏠</span>
-                          </div>
-                        )}
-                        {/* Numbered badge */}
-                        <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: index < 5 ? '#22c55e' : '#3b82f6' }}>
-                          {index + 1}
-                        </div>
-                      </div>
-                      {/* Comp Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base">{listing.name}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {listing.bedrooms}bd / {listing.bathrooms}ba • {listing.accommodates || listing.bedrooms * 2} guests • {listing.distance > 0 ? `${listing.distance}mi` : listing.propertyType}
-                            </p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
-                            <p className="text-xs text-gray-500">${listing.nightPrice}/night</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-gray-500">{listing.occupancy}% occ</span>
-                          {listing.rating > 0 && (
-                            <span className="text-xs text-gray-400">⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount})</span>
+                      Reset Selection (Include All)
+                    </button>
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  {comps.slice(0, 10).map((listing, index) => {
+                    const isExcluded = excludedCompIds.has(listing.id);
+                    return (
+                    <div
+                      key={listing.id || index}
+                      className={`flex gap-3 p-3 sm:p-4 rounded-xl transition-all border ${isExcluded ? 'opacity-40 border-gray-200 bg-gray-50' : 'border-gray-100 hover:bg-gray-50'}`}
+                    >
+                      {/* Include/Exclude Toggle */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleCompExclusion(listing.id);
+                        }}
+                        className="flex-shrink-0 self-center"
+                        title={isExcluded ? "Include this comp" : "Exclude this comp"}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors"
+                          style={{
+                            borderColor: isExcluded ? '#d1d5db' : '#22c55e',
+                            backgroundColor: isExcluded ? '#f9fafb' : '#22c55e',
+                          }}
+                        >
+                          {!isExcluded && (
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                              <path d="M3 7L6 10L11 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                           )}
-                          <span className="text-xs font-medium ml-auto" style={{ color: '#ff5a5f' }}>View on Airbnb →</span>
                         </div>
-                      </div>
-                    </a>
-                  ))}
+                      </button>
+                      
+                      {/* Comp Photo */}
+                      <a
+                        href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex gap-3 flex-1 min-w-0 group"
+                      >
+                        <div className="flex-shrink-0 relative">
+                          {listing.image ? (
+                            <img
+                              src={listing.image}
+                              alt={listing.name}
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f5f4f0' }}>
+                              <span className="text-2xl">🏠</span>
+                            </div>
+                          )}
+                          {/* Numbered badge */}
+                          <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: isExcluded ? '#9ca3af' : (index < 5 ? '#22c55e' : '#3b82f6') }}>
+                            {index + 1}
+                          </div>
+                        </div>
+                        {/* Comp Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className={`font-medium truncate text-sm sm:text-base ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-900 group-hover:text-blue-600'}`}>{listing.name}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {listing.bedrooms}bd / {listing.bathrooms}ba • {listing.accommodates || listing.bedrooms * 2} guests • {listing.distance > 0 ? `${listing.distance}mi` : listing.propertyType}
+                              </p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className={`font-bold text-sm sm:text-base ${isExcluded ? 'text-gray-400' : 'text-green-600'}`}>{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
+                              <p className="text-xs text-gray-500">${listing.nightPrice}/night</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            {realOccupancyData[String(listing.id)] ? (
+                              <span className="text-xs font-medium" style={{ color: '#16a34a' }} title={`Real data: ${realOccupancyData[String(listing.id)].bookedDays}/${realOccupancyData[String(listing.id)].totalDays} days booked`}>
+                                📅 {realOccupancyData[String(listing.id)].occupancyRate}% occ
+                              </span>
+                            ) : isLoadingOccupancy ? (
+                              <span className="text-xs text-gray-400 animate-pulse">⏳ {listing.occupancy}% occ</span>
+                            ) : (
+                              <span className="text-xs text-gray-500">{listing.occupancy}% occ</span>
+                            )}
+                            {listing.rating > 0 && (
+                              <span className="text-xs text-gray-400">⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount})</span>
+                            )}
+                            <span className="text-xs font-medium ml-auto" style={{ color: '#ff5a5f' }}>View on Airbnb →</span>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                    );
+                  })}
                 </div>
                 <p className="text-xs mt-3 text-center" style={{ color: '#a09880' }}>
-                  Revenue estimates based on review velocity • Tap any listing to view on Airbnb
+                  Tap checkboxes to include/exclude comps • Revenue recalculates automatically
                 </p>
               </div>
               );

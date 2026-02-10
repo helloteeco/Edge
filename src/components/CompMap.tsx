@@ -29,6 +29,7 @@ interface CompMapProps {
   targetLng: number;
   targetAddress?: string;
   onSelectComp?: (comp: CompListing) => void;
+  excludedIds?: Set<number | string>;
 }
 
 function formatCurrency(value: number): string {
@@ -36,7 +37,7 @@ function formatCurrency(value: number): string {
   return `$${value.toLocaleString()}`;
 }
 
-export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp }: CompMapProps) {
+export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, excludedIds = new Set() }: CompMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -121,9 +122,11 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
       // Comp markers
       const markers: any[] = [];
       validComps.forEach((comp, index) => {
+        const isExcluded = excludedIds.has(comp.id);
         const isTopMatch = index < 5;
-        const markerColor = isTopMatch ? "#22c55e" : "#3b82f6";
+        const markerColor = isExcluded ? "#9ca3af" : (isTopMatch ? "#22c55e" : "#3b82f6");
         const markerSize = isTopMatch ? 32 : 26;
+        const markerOpacity = isExcluded ? 0.4 : 1;
 
         const compIcon = L.divIcon({
           className: "comp-map-marker",
@@ -134,6 +137,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
             display: flex; align-items: center; justify-content: center;
             color: white; font-size: ${isTopMatch ? 12 : 10}px; font-weight: 700;
             cursor: pointer; transition: transform 0.15s;
+            opacity: ${markerOpacity};
           " onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${index + 1}</div>`,
           iconSize: [markerSize, markerSize],
           iconAnchor: [markerSize / 2, markerSize / 2],
@@ -208,7 +212,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         mapInstanceRef.current = null;
       }
     };
-  }, [targetLat, targetLng, validComps, targetAddress, onSelectComp]);
+  }, [targetLat, targetLng, validComps, targetAddress, onSelectComp, excludedIds]);
 
   if (validComps.length === 0) {
     return null;
