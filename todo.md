@@ -513,3 +513,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Build comp amenity comparison table/grid component
 - [x] Show which amenities top comps have vs what user might be missing
 - [x] Integrate into calculator page below comp listings
+
+
+## Bug Fixes - Saved Page & History (Feb 10, 2026)
+- [ ] Recent search bar missing from calculator page
+- [ ] History tab not recording analyses (shows 0)
+- [ ] Saved reports not accessible via shareable link
+- [ ] Create ROADMAP.md with next 5 anticipated features and scaffold forward-looking code

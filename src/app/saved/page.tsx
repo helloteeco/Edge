@@ -886,7 +886,7 @@ export default function SavedPage() {
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: '#787060' }}>
                           <span>${item.adr?.toFixed(0) || '—'} ADR</span>
                           <span className="w-1 h-1 rounded-full" style={{ backgroundColor: '#d8d6cd' }}></span>
-                          <span>{(item.occupancy * 100)?.toFixed(0) || '—'}% Occ</span>
+                          <span>{item.occupancy?.toFixed(0) || '—'}% Occ</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs mt-2" style={{ color: '#9a9488' }}>
                           <span>Analyzed {formatDate(item.timestamp)}</span>

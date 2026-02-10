@@ -388,8 +388,9 @@ export default function CalculatorPage() {
         setForceRefresh(true);
       }
       
-      // If cached=true, load from localStorage cache instead of making API call
-      if (cachedParam === "true") {
+      // If cached=true or fromSaved=true, load from localStorage cache first, then try Supabase cache
+      const fromSavedParam = urlParams.get("fromSaved");
+      if (cachedParam === "true" || fromSavedParam === "true") {
         const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
         const cachedSearch = recentSearches.find((s: { address: string }) => s.address === addressParam);
         if (cachedSearch?.cachedResult) {
@@ -401,6 +402,80 @@ export default function CalculatorPage() {
             setPropertySqft(cachedSearch.cachedResult.sqft);
             setFurnishingsCost(Math.round(cachedSearch.cachedResult.sqft * 15));
           }
+        } else {
+          // No local cache — try Supabase property-cache API (no credit used)
+          fetch(`/api/property-cache?address=${encodeURIComponent(addressParam)}`)
+            .then(res => res.json())
+            .then(cacheData => {
+              if (cacheData.success && cacheData.cached && cacheData.data) {
+                // Use the same handleAnalyzeWithCache path
+                const data = cacheData.data as {
+                  property?: Record<string, unknown>;
+                  neighborhood?: Record<string, unknown>;
+                  percentiles?: Record<string, unknown>;
+                  comparables?: unknown[];
+                  historical?: unknown[];
+                  recommendedAmenities?: unknown[];
+                };
+                const parseNum = (val: unknown): number => {
+                  if (typeof val === "number") return val;
+                  if (typeof val === "string") return parseFloat(val) || 0;
+                  return 0;
+                };
+                const property = data.property || {};
+                const neighborhood = data.neighborhood || {};
+                const percentiles = data.percentiles;
+                const avgAdr = parseNum(neighborhood?.adr);
+                const avgOccupancy = parseNum(neighborhood?.occupancy);
+                let annualRevenue: number;
+                let monthlyRevenue: number;
+                const percentilesTyped = percentiles as { revenue?: { p50?: number } } | null;
+                if (percentilesTyped?.revenue?.p50 && percentilesTyped.revenue.p50 > 0) {
+                  annualRevenue = percentilesTyped.revenue.p50;
+                  monthlyRevenue = Math.round(annualRevenue / 12);
+                } else if (parseNum(neighborhood?.annualRevenue) > 0) {
+                  annualRevenue = parseNum(neighborhood?.annualRevenue);
+                  monthlyRevenue = Math.round(annualRevenue / 12);
+                } else {
+                  annualRevenue = 0;
+                  monthlyRevenue = 0;
+                }
+                const analysisResult: AnalysisResult = {
+                  address: addressParam,
+                  city: (property?.city as string) || (neighborhood?.city as string) || "",
+                  state: (property?.state as string) || (neighborhood?.state as string) || "",
+                  neighborhood: (neighborhood?.name as string) || "Unknown",
+                  annualRevenue,
+                  monthlyRevenue,
+                  adr: Math.round(avgAdr),
+                  occupancy: Math.round(avgOccupancy),
+                  revPAN: avgAdr > 0 && avgOccupancy > 0 ? Math.round(avgAdr * (avgOccupancy / 100)) : 0,
+                  bedrooms: parseInt(bedroomsParam || "3", 10),
+                  bathrooms: parseInt(bathroomsParam || "2", 10),
+                  sqft: parseNum(property?.sqft),
+                  propertyType: (property?.propertyType as string) || "house",
+                  listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
+                  nearbyListings: parseNum(neighborhood?.listingsCount),
+                  percentiles: percentiles as AnalysisResult["percentiles"] || null,
+                  comparables: (data.comparables as ComparableListing[]) || [],
+                  revenueChange: (neighborhood?.revenueChange as string) || "stable",
+                  revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
+                  occupancyChange: (neighborhood?.occupancyChange as string) || "stable",
+                  occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
+                  historical: (data.historical as AnalysisResult["historical"]) || [],
+                  recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
+                };
+                setResult(analysisResult);
+                if (analysisResult.listPrice > 0) {
+                  setPurchasePrice(analysisResult.listPrice.toString());
+                }
+                if (analysisResult.sqft > 0) {
+                  setPropertySqft(analysisResult.sqft);
+                  setFurnishingsCost(Math.round(analysisResult.sqft * 15));
+                }
+              }
+            })
+            .catch(err => console.error("[FromSaved] Cache fetch error:", err));
         }
       }
       
@@ -809,6 +884,19 @@ export default function CalculatorPage() {
     
     setUseCustomIncome(false);
     setCustomAnnualIncome("");
+
+    // Save to recent searches so History tab and Recent Searches bar work
+    saveRecentSearch({
+      address: analysisResult.address,
+      annualRevenue: analysisResult.annualRevenue,
+      adr: analysisResult.adr,
+      occupancy: analysisResult.occupancy,
+      timestamp: Date.now(),
+      cachedResult: analysisResult,
+      cachedBedrooms: bedrooms || analysisResult.bedrooms,
+      cachedBathrooms: bathrooms || analysisResult.bathrooms,
+      cachedGuestCount: guestCount || (bedrooms || analysisResult.bedrooms) * 2,
+    });
   };
 
   // Save recent search
