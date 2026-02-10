@@ -130,9 +130,9 @@ export default function CalculatorPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isReportSaved, setIsReportSaved] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const [bedrooms, setBedrooms] = useState<number | null>(null);
-  const [bathrooms, setBathrooms] = useState<number | null>(null);
-  const [guestCount, setGuestCount] = useState<number | null>(null);
+  const [bedrooms, setBedrooms] = useState<number | null>(3);
+  const [bathrooms, setBathrooms] = useState<number | null>(2);
+  const [guestCount, setGuestCount] = useState<number | null>(6);
   
   // Address autocomplete
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -165,6 +165,7 @@ export default function CalculatorPage() {
   const [propertyTaxRate, setPropertyTaxRate] = useState(1.2);
   const [insuranceAnnual, setInsuranceAnnual] = useState(3200);
   const [managementFeePercent, setManagementFeePercent] = useState(20);
+  const [platformFeePercent, setPlatformFeePercent] = useState(3); // Airbnb host fee ~3%
   const [maintenancePercent, setMaintenancePercent] = useState(5);
   const [vacancyPercent, setVacancyPercent] = useState(0);
   
@@ -1165,17 +1166,14 @@ export default function CalculatorPage() {
   };
 
   // Check if form is valid for analysis
-  const canAnalyze = address.trim() && bedrooms !== null && bathrooms !== null;
+  const canAnalyze = address.trim().length > 0;
 
   // Analyze address
   const handleAnalyze = async (searchAddress?: string) => {
     const addressToAnalyze = searchAddress || address;
     if (!addressToAnalyze.trim()) return;
     
-    if (bedrooms === null || bathrooms === null) {
-      setError("Please select the number of bedrooms and bathrooms before analyzing.");
-      return;
-    }
+    // Bedrooms/bathrooms default to 3/2 so they're always set
 
     setIsLoading(true);
     setError(null);
@@ -1185,7 +1183,7 @@ export default function CalculatorPage() {
       const response = await fetch("/api/mashvisor/property", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || bedrooms * 2 }),
+        body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || (bedrooms ?? 3) * 2 }),
       });
 
       const data = await response.json();
@@ -1247,8 +1245,8 @@ export default function CalculatorPage() {
         adr: Math.round(avgAdr),
         occupancy: Math.round(avgOccupancy),
         revPAN,
-        bedrooms: bedrooms,
-        bathrooms: bathrooms,
+        bedrooms: bedrooms ?? 3,
+        bathrooms: bathrooms ?? 2,
         sqft: sqft,
         propertyType: property?.propertyType || "house",
         listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
@@ -1350,9 +1348,9 @@ export default function CalculatorPage() {
         timestamp: Date.now(),
         // Cache full result for instant recall
         cachedResult: analysisResult,
-        cachedBedrooms: bedrooms,
-        cachedBathrooms: bathrooms,
-        cachedGuestCount: guestCount || bedrooms * 2,
+        cachedBedrooms: bedrooms ?? 3,
+        cachedBathrooms: bathrooms ?? 2,
+        cachedGuestCount: guestCount || (bedrooms ?? 3) * 2,
       });
       
       // Cache the API response in Supabase (90-day TTL)
@@ -1612,6 +1610,7 @@ export default function CalculatorPage() {
       <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(investment.annualPropertyTax)}</td></tr>
       <tr><td>STR Insurance</td><td class="right">${formatCurrency(investment.annualInsurance)}</td></tr>
       <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(investment.annualManagement)}</td></tr>
+      <tr><td>Platform Fee (${platformFeePercent}%)</td><td class="right">${formatCurrency(investment.annualPlatformFee)}</td></tr>
       <tr><td>Operating Expenses</td><td class="right">${formatCurrency(investment.monthlyOperating * 12)}</td></tr>
       <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
       <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(displayRevenue)}</td></tr>
@@ -1632,6 +1631,7 @@ export default function CalculatorPage() {
     <table class="table">
       <tr><td>Rent to Landlord</td><td class="right">${formatCurrency(arbitrage.annualRent)}</td></tr>
       <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(arbitrage.annualManagement)}</td></tr>
+      <tr><td>Platform Fee (${platformFeePercent}%)</td><td class="right">${formatCurrency(arbitrage.annualPlatformFee)}</td></tr>
       <tr><td>Liability Insurance</td><td class="right">${formatCurrency(arbitrage.annualInsurance)}</td></tr>
       <tr><td>Operating Expenses</td><td class="right">${formatCurrency(arbitrage.monthlyOperating * 12)}</td></tr>
       <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(arbitrage.totalAnnualExpenses)}</td></tr>
@@ -1805,10 +1805,18 @@ export default function CalculatorPage() {
     
     if (extraGuests <= 0) return 1.0; // No bonus if at or below baseline
     
-    // Each extra guest above baseline adds ~6% revenue (industry average)
-    // Capped at 50% bonus to prevent unrealistic estimates
-    const bonus = Math.min(extraGuests * 0.06, 0.50);
-    return 1.0 + bonus;
+    // Diminishing returns per extra guest above baseline:
+    // Guest 1-2 above baseline: 6% each (bunk beds, easy wins)
+    // Guest 3-4: 4% each (sleeper sofas, air mattresses)
+    // Guest 5+: 2% each (diminishing marginal value)
+    // Capped at 40% total bonus
+    let bonus = 0;
+    for (let i = 1; i <= extraGuests; i++) {
+      if (i <= 2) bonus += 0.06;
+      else if (i <= 4) bonus += 0.04;
+      else bonus += 0.02;
+    }
+    return 1.0 + Math.min(bonus, 0.40);
   };
 
   // Teeco Strategy boost calculation
@@ -1884,9 +1892,8 @@ export default function CalculatorPage() {
         default:
           baseRevenue = result.percentiles.revenue.p50;
       }
-      // Apply guest count multiplier + Teeco Strategy boost
-      const teecoMultiplier = teecoStrategyActive ? getTeecoStrategyBoost().multiplier : 1.0;
-      return Math.round(baseRevenue * guestMultiplier * teecoMultiplier);
+      // Apply guest count multiplier only — revenue tiers come from real comp percentiles
+      return Math.round(baseRevenue * guestMultiplier);
     }
     
     // Fallback to calculated revenue with multipliers
@@ -1899,9 +1906,8 @@ export default function CalculatorPage() {
         baseRevenue = Math.round(result.annualRevenue * 1.45);
         break;
     }
-    // Apply guest count multiplier + Teeco Strategy boost
-    const teecoMultiplier = teecoStrategyActive ? getTeecoStrategyBoost().multiplier : 1.0;
-    return Math.round(baseRevenue * guestMultiplier * teecoMultiplier);
+    // Apply guest count multiplier only
+    return Math.round(baseRevenue * guestMultiplier);
   };
 
   // Get base revenue WITHOUT Teeco Strategy (for comparison display)
@@ -1975,6 +1981,7 @@ export default function CalculatorPage() {
         totalUpfront: 0,
         annualRent: 0,
         annualManagement: 0,
+        annualPlatformFee: 0,
         annualInsurance: 0,
         monthlyOperating: 0,
         totalAnnualExpenses: 0,
@@ -1993,11 +2000,12 @@ export default function CalculatorPage() {
     const annualRent = rent * 12;
     const grossRevenue = getDisplayRevenue();
     const annualManagement = grossRevenue * (managementFeePercent / 100);
+    const annualPlatformFee = grossRevenue * (platformFeePercent / 100);
     const annualInsurance = landlordInsuranceMonthly * 12;
     const monthlyOperating = calculateMonthlyExpenses();
     const annualOperating = monthlyOperating * 12;
     
-    const totalAnnualExpenses = annualRent + annualManagement + annualInsurance + annualOperating;
+    const totalAnnualExpenses = annualRent + annualManagement + annualPlatformFee + annualInsurance + annualOperating;
     const cashFlow = grossRevenue - totalAnnualExpenses;
     
     const startupCosts = calculateStartupCosts();
@@ -2012,6 +2020,7 @@ export default function CalculatorPage() {
       totalUpfront,
       annualRent,
       annualManagement,
+      annualPlatformFee,
       annualInsurance,
       monthlyOperating,
       totalAnnualExpenses,
@@ -2035,6 +2044,7 @@ export default function CalculatorPage() {
         annualPropertyTax: 0,
         annualInsurance: 0,
         annualManagement: 0,
+        annualPlatformFee: 0,
         annualMaintenance: 0,
         annualVacancy: 0,
         monthlyOperating: 0,
@@ -2059,6 +2069,7 @@ export default function CalculatorPage() {
     const annualInsurance = insuranceAnnual;
     const grossRevenue = getDisplayRevenue();
     const annualManagement = grossRevenue * (managementFeePercent / 100);
+    const annualPlatformFee = grossRevenue * (platformFeePercent / 100);
     const annualMaintenance = grossRevenue * (maintenancePercent / 100);
     // Note: Vacancy is NOT added separately — occupancy rate already accounts for vacancy.
     // Adding a separate vacancy % would double-count it.
@@ -2066,8 +2077,8 @@ export default function CalculatorPage() {
     const monthlyOperating = calculateMonthlyExpenses();
     const annualOperating = monthlyOperating * 12;
     
-    const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualMaintenance + annualOperating;
-    const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsurance - annualManagement - annualMaintenance - annualOperating;
+    const totalAnnualExpenses = (monthlyMortgage * 12) + annualPropertyTax + annualInsurance + annualManagement + annualPlatformFee + annualMaintenance + annualOperating;
+    const netOperatingIncome = grossRevenue - annualPropertyTax - annualInsurance - annualManagement - annualPlatformFee - annualMaintenance - annualOperating;
     const cashFlow = grossRevenue - totalAnnualExpenses;
     
     const startupCosts = calculateStartupCosts();
@@ -2082,6 +2093,7 @@ export default function CalculatorPage() {
       annualPropertyTax,
       annualInsurance,
       annualManagement,
+      annualPlatformFee,
       annualMaintenance,
       annualVacancy,
       monthlyOperating,
@@ -2129,6 +2141,7 @@ export default function CalculatorPage() {
 - **Property Tax (${propertyTaxRate}%):** $${investment.annualPropertyTax.toLocaleString()}
 - **Insurance:** $${investment.annualInsurance.toLocaleString()}
 - **Management Fee (${managementFeePercent}%):** $${investment.annualManagement.toLocaleString()}
+- **Platform Fee (${platformFeePercent}%):** $${investment.annualPlatformFee.toLocaleString()}
 - **Operating Expenses:** $${(investment.monthlyOperating * 12).toLocaleString()}
 - **Total Annual Expenses:** $${investment.totalAnnualExpenses.toLocaleString()}
 
@@ -2147,6 +2160,7 @@ export default function CalculatorPage() {
 ## ANNUAL EXPENSES
 - **Rent to Landlord:** $${arbitrage.annualRent.toLocaleString()}
 - **Management Fee (${managementFeePercent}%):** $${arbitrage.annualManagement.toLocaleString()}
+- **Platform Fee (${platformFeePercent}%):** $${arbitrage.annualPlatformFee.toLocaleString()}
 - **Liability Insurance:** $${arbitrage.annualInsurance.toLocaleString()}
 - **Operating Expenses:** $${(arbitrage.monthlyOperating * 12).toLocaleString()}
 - **Total Annual Expenses:** $${arbitrage.totalAnnualExpenses.toLocaleString()}
@@ -2316,7 +2330,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm" style={{ color: '#0369a1' }}>
-                <strong>3 Free Property Analyses</strong> — Then just $1/analysis (or $0.80 in bulk)
+                <strong>Your first analysis is free</strong> — no credit card required
               </span>
             </div>
             <button
@@ -2324,7 +2338,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
               style={{ backgroundColor: '#0284c7', color: 'white' }}
             >
-              Sign In Free
+              Sign In
             </button>
           </div>
         </div>
@@ -2334,127 +2348,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
         {/* Hero Section */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <p className="text-sm font-medium" style={{ color: "#787060" }}>STR Investment Calculator</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e8f5e9', color: '#2e7d32' }}>AI Powered</span>
+            <p className="text-sm font-medium" style={{ color: "#787060" }}>Short-Term Rental Calculator</p>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f5f4f0', color: '#787060' }}>Live Airbnb Data</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
-            Analyze any rental property<br />in the United States
+            How much could your<br />Airbnb earn?
           </h1>
-          <p className="text-gray-600">Get accurate revenue estimates based on real Airbnb data</p>
-          {/* Chat Assistant Tip */}
-          <div 
-            className="mt-4 mx-auto max-w-md rounded-xl p-4 flex items-start gap-3"
-            style={{ backgroundColor: '#e8f5e9', border: '1px solid #c8e6c9' }}
-          >
-            <span className="text-xl flex-shrink-0">💬</span>
-            <p className="text-sm text-left" style={{ color: '#2e7d32' }}>
-              <strong>Real estate has its own language!</strong>{' '}
-              Tap the chat button in the corner anytime &mdash; our Edge Assistant explains everything in simple terms.
-            </p>
-          </div>
+          <p className="text-gray-600">Revenue estimates from 30+ real Airbnb comps near your property</p>
         </div>
 
         {/* Search Box */}
         <div className="rounded-2xl p-4 sm:p-6 mb-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", overflow: "visible", position: "relative", zIndex: showSuggestions ? 100 : 1 }}>
-          <h2 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Property Details</h2>
-          
-          {/* Analysis Mode Toggle */}
-          <p className="text-sm mb-2" style={{ color: "#787060" }}>Are you buying or leasing this property?</p>
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setAnalysisMode("buying")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                analysisMode === "buying" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-              }`}
-              style={analysisMode === "buying" ? { backgroundColor: "#2b2823" } : { backgroundColor: "#f5f4f0" }}
-            >
-              🏠 Buying to Own
-            </button>
-            <button
-              onClick={() => setAnalysisMode("arbitrage")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                analysisMode === "arbitrage" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-              }`}
-              style={analysisMode === "arbitrage" ? { backgroundColor: "#2b2823" } : { backgroundColor: "#f5f4f0" }}
-            >
-              🔑 Airbnb Arbitrage
-            </button>
-          </div>
-          
-          {/* Bedroom/Bathroom Selector - REQUIRED */}
-          <div className="flex flex-wrap gap-6 mb-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>
-                Bedrooms <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5, 6].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setBedrooms(num)}
-                    className={`w-12 h-10 rounded-lg font-medium transition-all ${
-                      bedrooms === num 
-                        ? "text-white" 
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                    style={bedrooms === num ? { backgroundColor: "#2b2823" } : {}}
-                  >
-                    {num === 6 ? "6+" : num}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>
-                Bathrooms <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setBathrooms(num)}
-                    className={`w-12 h-10 rounded-lg font-medium transition-all ${
-                      bathrooms === num 
-                        ? "text-white" 
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                    style={bathrooms === num ? { backgroundColor: "#2b2823" } : {}}
-                  >
-                    {num === 5 ? "5+" : num}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block" style={{ color: "#787060" }}>
-                Sleeps
-              </label>
-              <div className="flex gap-2 flex-wrap">
-                {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setGuestCount(num)}
-                    className={`w-12 h-10 rounded-lg font-medium transition-all ${
-                      guestCount === num 
-                        ? "text-white" 
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                    style={guestCount === num ? { backgroundColor: "#2b2823" } : {}}
-                  >
-                    {num === 16 ? "16+" : num}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          {/* Validation message */}
-          {(bedrooms === null || bathrooms === null) && (
-            <p className="text-xs text-amber-600 mb-4">
-              ⚠️ Please select bedrooms and bathrooms to get accurate revenue estimates
-            </p>
-          )}
-          
           {/* Address Input */}
           <div className="flex gap-3" style={{ position: "relative", zIndex: showSuggestions ? 100 : 1 }}>
             <div className="flex-1 relative">
@@ -2536,12 +2440,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {isLoading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
-                "Analyze"
+                "Analyze Free"
               )}
             </button>
           </div>
           
-          <p className="text-xs text-gray-400 mt-2">Format: 123 Main St, City, ST</p>
+          <p className="text-xs text-gray-400 mt-2">Enter any US property address</p>
+          <p className="text-xs text-gray-400 mt-1">Defaults: 3 bed / 2 bath — you can refine after results</p>
           
           {/* Credit Display */}
           {isAuthenticated && creditsRemaining !== null && (
@@ -2570,6 +2475,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
           )}
         </div>
 
+        {/* Social Proof - only show before results */}
+        {!result && (
+          <div className="flex items-center justify-center gap-4 mb-4 py-3">
+            <div className="flex items-center gap-1.5">
+              <div className="flex -space-x-2">
+                <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-600">T</div>
+                <div className="w-6 h-6 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">M</div>
+                <div className="w-6 h-6 rounded-full bg-gray-500 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">R</div>
+              </div>
+              <span className="text-xs text-gray-500">Used by STR investors across 50 states</span>
+            </div>
+            <div className="h-4 w-px bg-gray-200"></div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-semibold" style={{ color: '#22c55e' }}>Free</span>
+              <span className="text-xs text-gray-500">No signup required</span>
+            </div>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="rounded-xl p-4 mb-6 bg-red-50 border border-red-200">
@@ -2577,10 +2501,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
           </div>
         )}
 
-        {/* Stuck Helper - visible before results so users don't have to scroll past entire analysis */}
-        {!result && (
-          <StuckHelper tabName="calculator" />
-        )}
+        {/* Stuck Helper - hidden before results to keep landing clean */}
 
         {/* Results */}
         {result && (
@@ -2810,11 +2731,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <p className="text-sm mt-1" style={{ color: "#787060" }}>
                   Range: {formatCurrency(
                     result.percentiles?.revenue?.p25 
-                      ? Math.round(result.percentiles.revenue.p25 * getGuestCountMultiplier() * (teecoStrategyActive ? getTeecoStrategyBoost().multiplier : 1.0))
+                      ? Math.round(result.percentiles.revenue.p25 * getGuestCountMultiplier())
                       : Math.round(getDisplayRevenue() * 0.8)
                   )} – {formatCurrency(
                     result.percentiles?.revenue?.p75
-                      ? Math.round(result.percentiles.revenue.p75 * getGuestCountMultiplier() * (teecoStrategyActive ? getTeecoStrategyBoost().multiplier : 1.0))
+                      ? Math.round(result.percentiles.revenue.p75 * getGuestCountMultiplier())
                       : Math.round(getDisplayRevenue() * 1.2)
                   )}
                 </p>
@@ -3050,91 +2971,184 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
             </div>
 
-            {/* Teeco Strategy Card */}
-            {result && bedrooms && (() => {
-              const strategy = getTeecoStrategyBoost();
-              const baseRev = getBaseRevenue();
-              const boostedRev = Math.round(baseRev * strategy.multiplier);
-              const revDiff = boostedRev - baseRev;
-              return (
-                <div 
-                  className="rounded-2xl p-4 sm:p-6 transition-all"
-                  style={{ 
-                    backgroundColor: teecoStrategyActive ? '#f0fdf4' : '#ffffff',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    border: teecoStrategyActive ? '2px solid #22c55e' : '2px solid transparent'
-                  }}
+            {/* Refine Your Analysis - bed/bath/sleeps/mode selectors */}
+            <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <h3 className="text-base font-semibold mb-1" style={{ color: "#2b2823" }}>Refine Your Analysis</h3>
+              <p className="text-xs text-gray-500 mb-4">Adjust property details to get more accurate estimates</p>
+              
+              {/* Analysis Mode Toggle */}
+              <p className="text-xs font-medium mb-2" style={{ color: "#787060" }}>Strategy</p>
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setAnalysisMode("buying")}
+                  className={`flex-1 py-2.5 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                    analysisMode === "buying" ? "text-white" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  style={analysisMode === "buying" ? { backgroundColor: "#2b2823" } : { backgroundColor: "#f5f4f0" }}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">🚀</span>
-                      <h3 className="text-base sm:text-lg font-semibold" style={{ color: teecoStrategyActive ? '#16a34a' : '#2b2823' }}>
-                        Teeco Strategy {teecoStrategyActive ? 'Active' : 'Available'}
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() => setTeecoStrategyActive(!teecoStrategyActive)}
-                      className="relative w-12 h-7 rounded-full transition-all"
-                      style={{ backgroundColor: teecoStrategyActive ? '#22c55e' : '#d1d5db' }}
-                    >
-                      <span 
-                        className="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                        style={{ left: teecoStrategyActive ? '22px' : '2px' }}
-                      />
-                    </button>
+                  🏠 Buying
+                </button>
+                <button
+                  onClick={() => setAnalysisMode("arbitrage")}
+                  className={`flex-1 py-2.5 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                    analysisMode === "arbitrage" ? "text-white" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  style={analysisMode === "arbitrage" ? { backgroundColor: "#2b2823" } : { backgroundColor: "#f5f4f0" }}
+                >
+                  🔑 Arbitrage
+                </button>
+              </div>
+              
+              {/* Bed / Bath / Sleeps */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-xs font-medium mb-1.5 block" style={{ color: "#787060" }}>Bedrooms</label>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => { setBedrooms(num); setGuestCount(num * 2); }}
+                        className={`flex-1 h-9 rounded-lg text-sm font-medium transition-all ${
+                          bedrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                        style={bedrooms === num ? { backgroundColor: "#2b2823" } : {}}
+                      >
+                        {num === 6 ? "6+" : num}
+                      </button>
+                    ))}
                   </div>
-
-                  <p className="text-sm text-gray-600 mb-4">
-                    By maximizing guest capacity ({strategy.teecoGuests} guests vs standard {strategy.standardGuests}), 
-                    professional design, and curated amenities, you unlock significantly higher revenue potential. 
-                    Based on real portfolio data where optimized properties earn {strategy.boostPercent}% more.
-                  </p>
-
-                  {/* Side-by-side comparison */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 sm:p-4 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Standard Listing</p>
-                      <p className="text-lg sm:text-xl font-bold" style={{ color: '#2b2823' }}>
-                        {formatCurrency(baseRev)}/yr
-                      </p>
-                      <p className="text-xs text-gray-400">Sleeps {strategy.standardGuests} guests</p>
-                    </div>
-                    <div className="p-3 sm:p-4 rounded-xl" style={{ backgroundColor: teecoStrategyActive ? '#dcfce7' : '#f0fdf4', border: '1px solid #22c55e' }}>
-                      <p className="text-xs font-medium" style={{ color: '#16a34a' }}>With Teeco Strategy</p>
-                      <p className="text-lg sm:text-xl font-bold" style={{ color: '#22c55e' }}>
-                        {formatCurrency(boostedRev)}/yr
-                      </p>
-                      <p className="text-xs" style={{ color: '#16a34a' }}>Sleeps {strategy.teecoGuests} guests</p>
-                    </div>
-                  </div>
-
-                  {/* Boost amount */}
-                  <div className="text-center mb-3">
-                    <p className="text-sm font-semibold" style={{ color: '#22c55e' }}>
-                      +{formatCurrency(revDiff)}/yr (+{strategy.boostPercent}% boost)
-                    </p>
-                  </div>
-
-                  {/* Breakdown (collapsible) */}
-                  {teecoStrategyActive && (
-                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
-                      <p className="text-xs font-medium text-gray-500 mb-2">Revenue boost breakdown:</p>
-                      <div className="space-y-1.5">
-                        {strategy.breakdown.map((item, i) => (
-                          <div key={i} className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600">{item.label}</span>
-                            <span className="text-xs font-semibold" style={{ color: '#22c55e' }}>+{item.boost}%</span>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-400 mt-3">
-                        Teeco helps maximize capacity through smart design, bunk rooms, and sleeper sofas
-                      </p>
-                    </div>
-                  )}
                 </div>
-              );
-            })()}
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-xs font-medium mb-1.5 block" style={{ color: "#787060" }}>Bathrooms</label>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setBathrooms(num)}
+                        className={`flex-1 h-9 rounded-lg text-sm font-medium transition-all ${
+                          bathrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                        style={bathrooms === num ? { backgroundColor: "#2b2823" } : {}}
+                      >
+                        {num === 5 ? "5+" : num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1.5 block" style={{ color: "#787060" }}>Sleeps</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => setGuestCount(num)}
+                      className={`w-11 h-9 rounded-lg text-sm font-medium transition-all ${
+                        guestCount === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                      style={guestCount === num ? { backgroundColor: "#2b2823" } : {}}
+                    >
+                      {num === 16 ? "16+" : num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Re-analyze button */}
+              <button
+                onClick={() => handleAnalyze()}
+                disabled={isLoading}
+                className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
+                style={{ backgroundColor: "#2b2823" }}
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+                ) : (
+                  "Update Analysis"
+                )}
+              </button>
+            </div>
+
+            {/* Performance Path Card - explains what each revenue tier means */}
+            {result && bedrooms && (
+              <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">🎯</span>
+                  <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>What Drives Revenue Tiers</h3>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Revenue estimates above are based on real comparable listings. Here&apos;s what separates each tier.
+                </p>
+                
+                <div className="space-y-3">
+                  {/* Average tier */}
+                  <div 
+                    className="p-3 rounded-xl cursor-pointer transition-all"
+                    style={{ 
+                      backgroundColor: revenuePercentile === 'average' ? '#f5f4f0' : '#fafafa',
+                      border: revenuePercentile === 'average' ? '1.5px solid #2b2823' : '1.5px solid transparent'
+                    }}
+                    onClick={() => setRevenuePercentile('average')}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold" style={{ color: '#2b2823' }}>50th Percentile (Average)</span>
+                      {result.percentiles?.revenue && (
+                        <span className="text-sm font-bold" style={{ color: '#2b2823' }}>
+                          {formatCurrency(Math.round(result.percentiles.revenue.p50 * getGuestCountMultiplier()))}/yr
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">Standard listing, basic furnishing, minimal optimization. What most hosts earn.</p>
+                  </div>
+                  
+                  {/* 75th tier */}
+                  <div 
+                    className="p-3 rounded-xl cursor-pointer transition-all"
+                    style={{ 
+                      backgroundColor: revenuePercentile === '75th' ? '#f0fdf4' : '#fafafa',
+                      border: revenuePercentile === '75th' ? '1.5px solid #22c55e' : '1.5px solid transparent'
+                    }}
+                    onClick={() => setRevenuePercentile('75th')}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold" style={{ color: '#16a34a' }}>75th Percentile</span>
+                      {result.percentiles?.revenue && (
+                        <span className="text-sm font-bold" style={{ color: '#22c55e' }}>
+                          {formatCurrency(Math.round(result.percentiles.revenue.p75 * getGuestCountMultiplier()))}/yr
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">Professional design, smart guest capacity, quality photography. What Teeco-optimized properties target.</p>
+                  </div>
+                  
+                  {/* 90th tier */}
+                  <div 
+                    className="p-3 rounded-xl cursor-pointer transition-all"
+                    style={{ 
+                      backgroundColor: revenuePercentile === '90th' ? '#fffbeb' : '#fafafa',
+                      border: revenuePercentile === '90th' ? '1.5px solid #f59e0b' : '1.5px solid transparent'
+                    }}
+                    onClick={() => setRevenuePercentile('90th')}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold" style={{ color: '#d97706' }}>90th Percentile</span>
+                      {result.percentiles?.revenue && (
+                        <span className="text-sm font-bold" style={{ color: '#f59e0b' }}>
+                          {formatCurrency(Math.round(result.percentiles.revenue.p90 * getGuestCountMultiplier()))}/yr
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">Premium amenities (hot tub, game room), unique theme, exceptional reviews, dynamic pricing mastery. Top 10% of hosts.</p>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #dcfce7' }}>
+                  <p className="text-xs" style={{ color: '#16a34a' }}>
+                    🚀 <span className="font-semibold">Want to reach the 75th percentile?</span> Teeco&apos;s design + setup service helps properties earn more through professional staging, smart capacity planning, and curated amenities.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Seasonality Revenue Chart */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
@@ -3881,6 +3895,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <label className="text-sm block mb-1" style={{ color: "#787060" }}>STR Insurance (Annual)</label>
                       <input type="number" value={insuranceAnnual} onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
                     </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Platform Fee (Airbnb)</span>
+                        <span className="font-medium">{platformFeePercent}%</span>
+                      </div>
+                      <input type="range" min="0" max="15" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseInt(e.target.value))} className="w-full" />
+                    </div>
                   </div>
                   
                   {/* Investment Results */}
@@ -3914,6 +3935,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           <div className="flex justify-between"><span className="text-gray-600">Property Tax</span><span className="font-medium">{formatCurrency(investment.annualPropertyTax)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">STR Insurance</span><span className="font-medium">{formatCurrency(investment.annualInsurance)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Management ({managementFeePercent}%)</span><span className="font-medium">{formatCurrency(investment.annualManagement)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Platform Fee ({platformFeePercent}%)</span><span className="font-medium">{formatCurrency(investment.annualPlatformFee)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Operating Expenses</span><span className="font-medium">{formatCurrency(investment.monthlyOperating * 12)}</span></div>
                           <div className="border-t border-gray-300 pt-2 mt-2"><div className="flex justify-between font-medium"><span>Total Annual Expenses</span><span className="text-red-600">{formatCurrency(investment.totalAnnualExpenses)}</span></div></div>
                           <div className="flex justify-between font-medium"><span>Gross Revenue</span><span className="text-green-600">{formatCurrency(getDisplayRevenue())}</span></div>
@@ -4144,6 +4166,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between"><span className="text-gray-600">Rent to Landlord</span><span className="font-medium">{formatCurrency(arbitrage.annualRent)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Management ({managementFeePercent}%)</span><span className="font-medium">{formatCurrency(arbitrage.annualManagement)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Platform Fee ({platformFeePercent}%)</span><span className="font-medium">{formatCurrency(arbitrage.annualPlatformFee)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Liability Insurance</span><span className="font-medium">{formatCurrency(arbitrage.annualInsurance)}</span></div>
                           <div className="flex justify-between"><span className="text-gray-600">Operating Expenses</span><span className="font-medium">{formatCurrency(arbitrage.monthlyOperating * 12)}</span></div>
                           <div className="border-t border-gray-300 pt-2 mt-2"><div className="flex justify-between font-medium"><span>Total Annual Expenses</span><span className="text-red-600">{formatCurrency(arbitrage.totalAnnualExpenses)}</span></div></div>

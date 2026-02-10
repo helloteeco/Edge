@@ -598,3 +598,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix 4: Fix insurance default from $1,800 to $3,200 and label as "STR Insurance"
 - [x] Fix 5: Fix fake ±20% confidence range — use actual p25-p75 percentile data
 - [x] Fix 6: Fix 10-year amortization math — use proper principal paydown schedule instead of flat 30%
+
+
+## Tier 2 High-Impact Improvements (February 2026)
+- [x] Fix 7: Simplify landing form to just address + Analyze button, move bed/bath/mode to post-results refinement
+- [x] Fix 8: Change headline to benefit-focused "How much could your Airbnb earn?"
+- [x] Fix 10: Add Airbnb platform fee (3%) as an expense line item
+- [x] Fix 11: Replace Teeco Strategy multiplier with transparent percentile path (50th/75th/90th) with real data
+- [x] Fix 12: Add social proof to landing state (investor avatars, "Free" badge)
+- [x] Fix 13: Fix guest count multiplier to use diminishing returns (cap at +30%)
