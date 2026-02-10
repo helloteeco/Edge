@@ -2513,6 +2513,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
           </div>
         )}
 
+        {/* Stuck Helper - visible before results so users don't have to scroll past entire analysis */}
+        {!result && (
+          <StuckHelper tabName="calculator" />
+        )}
+
         {/* Results */}
         {result && (
           <div className="space-y-6">
@@ -5039,10 +5044,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
         />
       )}
 
-      {/* Stuck Helper - shown below main content */}
-      <div className="max-w-4xl mx-auto px-4">
-        <StuckHelper tabName="calculator" />
-      </div>
+      {/* Stuck Helper - shown below results when analysis is complete */}
+      {result && (
+        <div className="max-w-4xl mx-auto px-4">
+          <StuckHelper tabName="calculator" />
+        </div>
+      )}
     </div>
   );
 }

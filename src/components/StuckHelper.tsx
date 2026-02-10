@@ -11,6 +11,59 @@ interface StuckHelperProps {
   tabName: "map" | "search" | "calculator" | "saved" | "funding";
 }
 
+// Per-tab button labels — more contextual than generic "I'm still stuck"
+const TAB_BUTTON_LABELS: Record<string, { title: string; subtitle: string }> = {
+  map: {
+    title: "Not sure where to start?",
+    subtitle: "Get personalized help picking your first market",
+  },
+  search: {
+    title: "Need help deciding?",
+    subtitle: "Let our AI help you narrow down the right market",
+  },
+  calculator: {
+    title: "Numbers not making sense?",
+    subtitle: "Get help understanding your analysis results",
+  },
+  saved: {
+    title: "Not sure what to do next?",
+    subtitle: "Get guidance on your next steps as an investor",
+  },
+  funding: {
+    title: "Still stuck on funding?",
+    subtitle: "Let our AI match you with the right financing strategy",
+  },
+};
+
+// Lightweight analytics helper — fires and forgets, never blocks UI
+const trackStuckEvent = (event: string, tab: string, detail?: string) => {
+  try {
+    if (typeof window !== "undefined") {
+      // Store events in sessionStorage for lightweight tracking
+      const key = "edge_stuck_events";
+      const existing = JSON.parse(sessionStorage.getItem(key) || "[]");
+      existing.push({
+        event,
+        tab,
+        detail: detail || null,
+        timestamp: new Date().toISOString(),
+      });
+      // Keep last 50 events max
+      if (existing.length > 50) existing.shift();
+      sessionStorage.setItem(key, JSON.stringify(existing));
+
+      // Also fire to /api/analytics if it exists (non-blocking)
+      fetch("/api/analytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: `stuck_${event}`, tab, detail }),
+      }).catch(() => {}); // silently fail
+    }
+  } catch {
+    // Never let analytics break the UI
+  }
+};
+
 // Tab-specific sticking points and suggested questions
 const TAB_CONFIG: Record<
   string,
@@ -320,6 +373,8 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
     setIsLoading(true);
     setChatMode(true);
 
+    trackStuckEvent("message_sent", tabName, content.trim().slice(0, 100));
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -359,7 +414,8 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
     }
   };
 
-  const handleStickingPoint = (question: string) => {
+  const handleStickingPoint = (label: string, question: string) => {
+    trackStuckEvent("question_tapped", tabName, label);
     sendMessage(question);
   };
 
@@ -369,11 +425,16 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
     setInput("");
   };
 
+  const buttonLabel = TAB_BUTTON_LABELS[tabName] || TAB_BUTTON_LABELS.map;
+
   if (!isOpen) {
     return (
       <div className="mt-8 mb-4">
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true);
+            trackStuckEvent("opened", tabName);
+          }}
           className="w-full rounded-2xl p-5 text-left transition-all hover:scale-[1.005] active:scale-[0.995]"
           style={{
             backgroundColor: "rgba(43, 40, 35, 0.04)",
@@ -392,11 +453,10 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
                 className="font-semibold text-sm"
                 style={{ color: "#2b2823" }}
               >
-                I&apos;m still stuck
+                {buttonLabel.title}
               </p>
               <p className="text-xs mt-0.5" style={{ color: "#787060" }}>
-                Get personalized help from our AI — it knows everything about
-                Edge
+                {buttonLabel.subtitle}
               </p>
             </div>
             <svg
@@ -490,7 +550,7 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
             {config.stickingPoints.map((sp, i) => (
               <button
                 key={i}
-                onClick={() => handleStickingPoint(sp.question)}
+                onClick={() => handleStickingPoint(sp.label, sp.question)}
                 className="w-full px-4 py-3 rounded-xl text-left text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center gap-3"
                 style={{
                   backgroundColor: "#f5f5f0",
