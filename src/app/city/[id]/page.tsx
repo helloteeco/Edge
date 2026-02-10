@@ -29,25 +29,9 @@ export default function CityPage({ params }: { params: { id: string } }) {
         .catch(console.error);
     }
     
-    // Update document title and meta tags for sharing
+    // Update document title for tab display (OG meta tags are now handled server-side in layout.tsx)
     if (city) {
       document.title = `${city.name}, ${city.stateCode} - STR Grade ${city.grade} | Edge`;
-      
-      // Update Open Graph meta tags dynamically
-      const updateMetaTag = (property: string, content: string) => {
-        let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.setAttribute('property', property);
-          document.head.appendChild(meta);
-        }
-        meta.content = content;
-      };
-      
-      updateMetaTag('og:title', `${city.name}, ${city.stateCode} - STR Grade ${city.grade}`);
-      updateMetaTag('og:description', `Monthly Revenue: $${city.strMonthlyRevenue.toLocaleString()} | Score: ${city.marketScore}/100 | Median Price: $${city.medianHomeValue.toLocaleString()}`);
-      updateMetaTag('og:type', 'website');
-      updateMetaTag('og:site_name', 'Edge by Teeco');
     }
   }, [city?.id, city]);
 
@@ -85,13 +69,15 @@ export default function CityPage({ params }: { params: { id: string } }) {
   };
 
   const handleShare = async () => {
-    // Share just the URL - the Open Graph meta tags will create the preview card
+    // Share the URL - server-side layout.tsx provides OG meta tags for preview cards
     const shareUrl = window.location.href;
+    const shareTitle = city ? `Check out ${city.name}, ${city.stateCode} — $${city.strMonthlyRevenue.toLocaleString()}/mo STR market:` : 'Check out this STR market:';
     
     if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       try {
         await navigator.share({
-          title: `${city?.name} STR Analysis`,
+          title: `${city?.name} STR Market`,
+          text: shareTitle,
           url: shareUrl
         });
       } catch (err) {
@@ -777,7 +763,11 @@ export default function CityPage({ params }: { params: { id: string } }) {
     </div>
     
     {/* Floating Action Pill - Heart + Share */}
-    <FloatingActionPill isSaved={isSaved} onToggleSave={toggleSave} />
+    <FloatingActionPill 
+      isSaved={isSaved} 
+      onToggleSave={toggleSave}
+      shareText={city ? `Check out ${city.name}, ${city.stateCode} — $${city.strMonthlyRevenue.toLocaleString()}/mo STR market:` : undefined}
+    />
     </DoubleTapSave>
   );
 }

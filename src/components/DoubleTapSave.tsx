@@ -361,19 +361,59 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
   );
 }
 
+// Share data interface for creating API-based share links with OG preview
+export interface ShareData {
+  address: string;
+  city: string;
+  state: string;
+  bedrooms: number;
+  bathrooms: number;
+  guestCount: number;
+  purchasePrice: number;
+  annualRevenue: number;
+  occupancyRate: number;
+  adr: number;
+  cashFlow: number;
+  cashOnCash: number;
+  analysisData?: any;
+}
+
 // Floating Share Button Component - redesigned with paper plane icon
-export function FloatingShareButton({ shareText }: { shareText?: string }) {
+export function FloatingShareButton({ shareText, shareData }: { shareText?: string; shareData?: ShareData }) {
   const [showCopied, setShowCopied] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareUrl = window.location.href;
+    
+    let shareUrl = window.location.href;
     const title = shareText || document.title;
+    
+    // If shareData is provided, create an API share link for OG preview
+    if (shareData) {
+      try {
+        setIsCreating(true);
+        const response = await fetch('/api/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(shareData)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          shareUrl = data.shareUrl;
+        }
+      } catch (err) {
+        console.error('Failed to create share link:', err);
+      } finally {
+        setIsCreating(false);
+      }
+    }
     
     if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       try {
         await navigator.share({
           title,
+          text: shareText || undefined,
           url: shareUrl
         });
       } catch (err) {
@@ -433,9 +473,10 @@ interface FloatingActionPillProps {
   isSaved: boolean;
   onToggleSave: () => void;
   shareText?: string;
+  shareData?: ShareData;
 }
 
-export function FloatingActionPill({ isSaved, onToggleSave, shareText }: FloatingActionPillProps) {
+export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData }: FloatingActionPillProps) {
   return (
     <div 
       className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
@@ -450,7 +491,7 @@ export function FloatingActionPill({ isSaved, onToggleSave, shareText }: Floatin
     >
       <FloatingSaveButton isSaved={isSaved} onToggleSave={onToggleSave} />
       <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
-      <FloatingShareButton shareText={shareText} />
+      <FloatingShareButton shareText={shareText} shareData={shareData} />
     </div>
   );
 }

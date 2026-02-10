@@ -548,3 +548,10 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Add second StuckHelper in Calculator between input section and analysis results
 - [x] Update StuckHelper button wording per tab (e.g., "Need help deciding?" on Search)
 - [x] Add lightweight analytics tracking for StuckHelper engagement (open, question tapped, message sent)
+
+
+## Dynamic OG Preview Cards Fix (February 2026)
+- [ ] Fix dynamic OG preview cards for calculator analysis shares (address, revenue, grade, CoC, occupancy, ADR)
+- [ ] Fix dynamic OG preview cards for city page shares (city name, score, key metrics)
+- [ ] Ensure preview cards match the design from the user's screenshot (Edge by Teeco branding)
+- [ ] Verify share links generate proper og:image meta tags with dynamic data

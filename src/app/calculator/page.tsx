@@ -5041,6 +5041,30 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             }
           }}
           shareText={`Check out this STR deal I found — ${formatCurrency(getDisplayRevenue())}/yr projected revenue:`}
+          shareData={{
+            address: result.address || result.neighborhood,
+            city: result.city,
+            state: result.state,
+            bedrooms: result.bedrooms,
+            bathrooms: result.bathrooms,
+            guestCount: guestCount || result.bedrooms * 2,
+            purchasePrice: purchasePrice ? parseFloat(purchasePrice.replace(/,/g, '')) : 0,
+            annualRevenue: getDisplayRevenue(),
+            occupancyRate: result.occupancy,
+            adr: result.adr,
+            cashFlow: investment.cashFlow,
+            cashOnCash: investment.cashOnCashReturn,
+            analysisData: {
+              activeListings: result.nearbyListings,
+              peakMonth: result.historical?.[0]?.month,
+              peakMonthRevenue: result.historical?.[0]?.revenue,
+              downPayment: investment.downPayment,
+              downPaymentPercent: downPaymentPercent,
+              loanAmount: investment.loanAmount,
+              monthlyMortgage: investment.monthlyMortgage,
+              percentiles: result.percentiles
+            }
+          }}
         />
       )}
 
