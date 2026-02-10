@@ -413,7 +413,6 @@ export function FloatingShareButton({ shareText, shareData }: { shareText?: stri
       try {
         await navigator.share({
           title,
-          text: shareText || undefined,
           url: shareUrl
         });
       } catch (err) {

@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { getStateByCode, getCitiesByState } from '@/data/helpers';
+import { stateData as stateDataByCode } from '@/data/state-data';
 
 type Props = {
   params: { id: string };
@@ -23,22 +24,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .slice(0, 3)
     .map(c => c.name);
 
-  const title = `${state.name} STR Markets - ${cities.length} Cities Analyzed | Edge by Teeco`;
-  const description = `${state.name} · ${cities.length} STR markets · Avg ADR: $${Math.round(state.avgADR)} · Median Home: $${state.medianHomeValue.toLocaleString()} · Top markets: ${topCities.join(', ')}`;
+  // Get raw state data for rental info
+  const rawState = stateDataByCode[stateCode.toUpperCase()];
+  const avgRevenue = rawState?.rental?.shortTermMonthly || 0;
+  const avgOccupancy = rawState?.rental?.occupancyRate || 0;
+  const annualRevenueK = Math.round((avgRevenue * 12) / 1000);
 
-  // Use the default OG image for state pages (the US map)
+  const title = `${state.name} STR Markets - ${cities.length} Cities Analyzed | Edge by Teeco`;
+  const description = `${state.name} · ${cities.length} STR markets · Avg Revenue: $${avgRevenue.toLocaleString()}/mo · Avg ADR: $${Math.round(state.avgADR)} · Median Home: $${state.medianHomeValue.toLocaleString()} · Top markets: ${topCities.join(', ')}`;
+
+  const ogImageUrl = `https://edge.teeco.co/api/og/state?name=${encodeURIComponent(state.name)}&code=${encodeURIComponent(state.abbreviation)}&cities=${cities.length}&avgADR=${Math.round(state.avgADR)}&medianHome=${Math.round(state.medianHomeValue)}&topMarkets=${encodeURIComponent(topCities.join(', '))}&avgOccupancy=${avgOccupancy}&avgRevenue=${avgRevenue}`;
+
   return {
     title,
     description,
     openGraph: {
-      title: `${state.name} - ${cities.length} STR Markets Analyzed`,
+      title: `${state.name} - $${annualRevenueK}K/yr Avg · ${cities.length} STR Markets`,
       description,
       type: 'website',
       url: `https://edge.teeco.co/state/${stateCode.toLowerCase()}`,
       siteName: 'Edge by Teeco',
       images: [
         {
-          url: 'https://edge.teeco.co/og-image.png',
+          url: ogImageUrl,
           width: 1200,
           height: 630,
           alt: `STR Markets in ${state.name}`,
@@ -47,9 +55,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${state.name} - ${cities.length} STR Markets Analyzed`,
+      title: `${state.name} - $${annualRevenueK}K/yr Avg · ${cities.length} STR Markets`,
       description,
-      images: ['https://edge.teeco.co/og-image.png'],
+      images: [ogImageUrl],
     },
   };
 }

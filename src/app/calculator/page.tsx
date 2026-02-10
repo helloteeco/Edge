@@ -2680,11 +2680,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           const { shareUrl } = await response.json();
                           
                           // Copy link and share
-                          const shareMessage = `Check out this STR investment I'm analyzing:`;
                           if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                             await navigator.share({
                               title: `STR Analysis: ${result.address || result.neighborhood}`,
-                              text: shareMessage,
                               url: shareUrl
                             });
                           } else {
@@ -4390,11 +4388,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                   
                                   const { shareUrl } = await response.json();
                                   
-                                  const shareMsg = `Check out this STR investment I'm analyzing:`;
                                   if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                                     await navigator.share({
                                       title: `STR Analysis: ${result.address || result.neighborhood}`,
-                                      text: shareMsg,
                                       url: shareUrl
                                     });
                                   } else {

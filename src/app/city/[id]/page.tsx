@@ -71,13 +71,10 @@ export default function CityPage({ params }: { params: { id: string } }) {
   const handleShare = async () => {
     // Share the URL - server-side layout.tsx provides OG meta tags for preview cards
     const shareUrl = window.location.href;
-    const shareTitle = city ? `Check out ${city.name}, ${city.stateCode} — $${city.strMonthlyRevenue.toLocaleString()}/mo STR market:` : 'Check out this STR market:';
-    
     if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       try {
         await navigator.share({
-          title: `${city?.name} STR Market`,
-          text: shareTitle,
+          title: `${city?.name}, ${city?.stateCode} STR Market`,
           url: shareUrl
         });
       } catch (err) {

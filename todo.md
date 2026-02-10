@@ -564,5 +564,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Address Suggestion Dropdown Bug (February 2026)
-- [ ] Fix address suggestion dropdown appearing when tapping input after analysis is already loaded
-- [ ] Hide suggestions when result is already displayed on screen
+- [x] Fix address suggestion dropdown appearing when tapping input after analysis is already loaded
+- [x] Hide suggestions when result is already displayed on screen
+
+
+## OG Preview Card Redesign (February 2026)
+- [x] Redesign city OG image to match calculator card style (Edge by Teeco branding, grade badge, key metrics)
+- [x] Redesign state OG image to match calculator card style (not generic Teeco image)
+- [x] Remove extra share text from city/state/calculator share so iMessage shows clean image card only
+- [x] Ensure all share previews show rich branded image with dynamic data
