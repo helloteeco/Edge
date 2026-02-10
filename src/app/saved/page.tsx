@@ -394,7 +394,7 @@ export default function SavedPage() {
               }
             >
               <DocumentIcon className="w-4 h-4" color={activeTab === 'reports' ? '#ffffff' : '#787060'} />
-              Property Reports ({savedReports.length})
+              Reports ({savedReports.length}/10)
             </button>
             <button
               onClick={() => setActiveTab('markets')}
@@ -409,7 +409,7 @@ export default function SavedPage() {
               }
             >
               <HeartIcon className="w-4 h-4" color={activeTab === 'markets' ? '#ffffff' : '#787060'} />
-              Markets ({savedCityData.length + savedStateData.length})
+              Markets ({savedCityData.length + savedStateData.length}/10)
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -426,7 +426,7 @@ export default function SavedPage() {
               <svg className="w-4 h-4" fill="none" stroke={activeTab === 'history' ? '#ffffff' : '#787060'} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              History ({analysisHistory.length})
+              History ({analysisHistory.length}/5)
             </button>
           </div>
         </div>
@@ -529,10 +529,10 @@ export default function SavedPage() {
                       
                       <div className="flex gap-2 shrink-0">
                         <Link
-                          href={`/calculator?address=${encodeURIComponent(report.address)}&bedrooms=${report.bedrooms}&bathrooms=${report.bathrooms}&guests=${report.guestCount}`}
+                          href={`/calculator?address=${encodeURIComponent(report.address)}&bedrooms=${report.bedrooms}&bathrooms=${report.bathrooms}&guests=${report.guestCount}&fromSaved=true`}
                           className="p-2 rounded-lg transition-all hover:bg-gray-100"
                           style={{ color: '#787060' }}
-                          title="Re-analyze"
+                          title="Open Analysis (no credit used)"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -856,7 +856,7 @@ export default function SavedPage() {
             ) : (
               <div className="space-y-4 pb-24">
                 <p className="text-sm" style={{ color: '#787060' }}>
-                  Recent analyses from this device. Save a report to sync it across devices.
+                  Last 5 analyses cached on this device. Tap &quot;View&quot; to pull up without using a credit.
                 </p>
                 {analysisHistory.sort((a, b) => b.timestamp - a.timestamp).map((item, index) => (
                   <div

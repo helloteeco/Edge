@@ -27,6 +27,7 @@ export interface SavedProperty {
   bedrooms: number | null;
   bathrooms: number | null;
   guest_count: number | null;
+  custom_inputs: Record<string, unknown> | null;
 }
 
 // User functions
@@ -116,6 +117,7 @@ export async function saveProperty(
     bedrooms?: number;
     bathrooms?: number;
     guest_count?: number;
+    custom_inputs?: Record<string, unknown>;
   }
 ): Promise<SavedProperty | null> {
   const normalizedEmail = email.toLowerCase().trim();
@@ -140,6 +142,7 @@ export async function saveProperty(
         bedrooms: property.bedrooms ?? existingProperty.bedrooms,
         bathrooms: property.bathrooms ?? existingProperty.bathrooms,
         guest_count: property.guest_count ?? existingProperty.guest_count,
+        custom_inputs: property.custom_inputs ?? existingProperty.custom_inputs,
         saved_at: new Date().toISOString(),
       })
       .eq('id', existingProperty.id)
@@ -167,6 +170,7 @@ export async function saveProperty(
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       guest_count: property.guest_count,
+      custom_inputs: property.custom_inputs || null,
     })
     .select()
     .single();

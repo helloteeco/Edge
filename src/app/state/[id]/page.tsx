@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getCitiesByState, getStateByCode } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
-import { DoubleTapSave, FloatingSaveButton, FloatingShareButton } from "@/components/DoubleTapSave";
+import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 
 type SortOption = "score" | "adr" | "revenue" | "price";
 type FilterOption = "all" | "gems" | "legal" | "restricted";
@@ -660,22 +660,8 @@ export default function StatePage({ params }: { params: { id: string } }) {
       </div>
     </div>
     
-    {/* Floating Action Buttons - Combined Pill */}
-    <div 
-      className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
-      style={{
-        bottom: '140px',
-        backgroundColor: '#ffffff',
-        border: '1.5px solid #d8d6cd',
-        borderRadius: '16px',
-        boxShadow: '0 4px 16px -4px rgba(43, 40, 35, 0.15)',
-        width: '56px',
-      }}
-    >
-      <FloatingSaveButton isSaved={isSaved} onToggleSave={toggleSave} />
-      <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
-      <FloatingShareButton />
-    </div>
+    {/* Floating Action Pill - Heart + Share */}
+    <FloatingActionPill isSaved={isSaved} onToggleSave={toggleSave} />
     </DoubleTapSave>
   );
 }

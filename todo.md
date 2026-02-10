@@ -457,3 +457,16 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 ## Remaining Work Items
 - [ ] Integrate Apify for real comp data
 - [ ] Fix 404/500 pre-existing build errors (Html import in pages/_document)
+
+
+## Floating Pill, Share Preview & Saved Tab Enhancements (February 2026)
+- [ ] Redesign floating pill: heart with 0/10 counter + paper plane share icon (matching screenshot)
+- [ ] Add floating pill to calculator analysis pages (arbitrage + buying)
+- [ ] Fix share icon from up-arrow to paper plane (send) icon
+- [ ] Double-tap save/unsave on analysis cards in calculator
+- [ ] Improve OG preview card: make annual revenue much larger and more prominent
+- [ ] Enhance OG card with STR Grade badge and Edge branding
+- [ ] Saved tab: ensure 10 max per category (cities, states, analyses)
+- [ ] Saved analyses preserve custom expenses, property price, down payment
+- [ ] Saved/cached items can be pulled up without spending a credit
+- [ ] Share preview card shows address, grade, CoC, occupancy, ADR, and large annual revenue

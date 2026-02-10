@@ -15,14 +15,23 @@ export async function GET(request: NextRequest) {
   const occupancy = searchParams.get('occupancy') || '0';
   const adr = searchParams.get('adr') || '0';
   const coc = searchParams.get('coc') || '0';
+  const grade = searchParams.get('grade') || '';
 
-  const formatCurrency = (value: string) => {
+  const formatRevenue = (value: string) => {
     const num = parseFloat(value);
     if (num >= 1000) {
-      return '$' + (num / 1000).toFixed(0) + 'k';
+      return '$' + Math.round(num / 1000) + 'K';
     }
-    return '$' + num.toFixed(0);
+    return '$' + Math.round(num);
   };
+
+  const formatMonthly = (value: string) => {
+    const num = parseFloat(value);
+    return '$' + Math.round(num / 12 / 1000) + 'K';
+  };
+
+  const cocValue = parseFloat(coc);
+  const cocColor = cocValue >= 15 ? '#16a34a' : cocValue >= 0 ? '#2b2823' : '#dc2626';
 
   return new ImageResponse(
     (
@@ -32,117 +41,199 @@ export async function GET(request: NextRequest) {
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#E8E4DD',
-          padding: '40px',
+          backgroundColor: '#f5f4f0',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{ 
-            fontSize: '32px', 
-            fontWeight: 'bold', 
-            color: '#3D3D3D',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span style={{ 
-              width: '40px', 
-              height: '40px', 
-              backgroundColor: '#3D3D3D', 
-              borderRadius: '8px',
+        {/* Top Bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '24px 40px',
+          backgroundColor: '#ffffff',
+          borderBottom: '1px solid #e5e3da',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              fontSize: '28px',
+              fontWeight: 800,
+              color: '#2b2823',
+              letterSpacing: '-0.5px',
+            }}>
+              Edge
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: '#ffffff',
+              backgroundColor: '#787060',
+              padding: '3px 10px',
+              borderRadius: '6px',
+              fontWeight: 600,
+            }}>
+              by Teeco
+            </div>
+          </div>
+          {grade && (
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '20px'
-            }}>🏠</span>
-            teeco
-          </div>
-          <div style={{ 
-            marginLeft: 'auto', 
-            backgroundColor: '#22C55E', 
-            color: 'white', 
-            padding: '8px 16px', 
-            borderRadius: '20px',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}>
-            STR Analysis
-          </div>
+              gap: '8px',
+            }}>
+              <span style={{ fontSize: '14px', color: '#787060', fontWeight: 500 }}>STR Grade</span>
+              <div style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '10px',
+                backgroundColor: '#2b2823',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                fontSize: '20px',
+                fontWeight: 800,
+              }}>
+                {grade}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Property Info */}
-        <div style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '20px', 
-          padding: '30px',
-          marginBottom: '20px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+        {/* Main Content */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '32px 40px',
         }}>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#3D3D3D', marginBottom: '8px' }}>
+          {/* Address */}
+          <div style={{
+            fontSize: '26px',
+            fontWeight: 700,
+            color: '#2b2823',
+            marginBottom: '6px',
+            lineHeight: 1.2,
+          }}>
             {address}
           </div>
-          <div style={{ fontSize: '18px', color: '#22C55E', fontWeight: '500' }}>
-            {city}, {state} · {bedrooms} Bed / {bathrooms} Bath
+          <div style={{
+            fontSize: '16px',
+            color: '#787060',
+            marginBottom: '28px',
+          }}>
+            {city}, {state} &bull; {bedrooms} Bed / {bathrooms} Bath
           </div>
-        </div>
 
-        {/* Key Metrics */}
-        <div style={{ 
-          backgroundColor: '#3D3D3D', 
-          borderRadius: '20px', 
-          padding: '30px',
-          display: 'flex',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <div style={{ color: '#9CA3AF', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Projected Revenue
+          {/* Metrics Row */}
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            marginBottom: '28px',
+          }}>
+            {/* Cash-on-Cash */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e3da',
+              borderRadius: '12px',
+              padding: '14px 20px',
+              flex: 1,
+            }}>
+              <span style={{ fontSize: '14px', color: '#787060' }}>Cash-on-Cash Return</span>
+              <span style={{ fontSize: '20px', fontWeight: 700, color: cocColor }}>{coc}%</span>
             </div>
-            <div style={{ color: '#22C55E', fontSize: '36px', fontWeight: 'bold' }}>
-              {formatCurrency(revenue)}/yr
+
+            {/* Occupancy */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e3da',
+              borderRadius: '12px',
+              padding: '14px 20px',
+              flex: 1,
+            }}>
+              <span style={{ fontSize: '14px', color: '#787060' }}>Occupancy Rate</span>
+              <span style={{ fontSize: '20px', fontWeight: 700, color: '#2b2823' }}>{occupancy}%</span>
+            </div>
+
+            {/* ADR */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e3da',
+              borderRadius: '12px',
+              padding: '14px 20px',
+              flex: 1,
+            }}>
+              <span style={{ fontSize: '14px', color: '#787060' }}>Avg Nightly Rate</span>
+              <span style={{ fontSize: '20px', fontWeight: 700, color: '#2b2823' }}>${adr}</span>
             </div>
           </div>
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <div style={{ color: '#9CA3AF', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Occupancy
-            </div>
-            <div style={{ color: '#22C55E', fontSize: '36px', fontWeight: 'bold' }}>
-              {occupancy}%
-            </div>
+
+          {/* Revenue Hero */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '4px',
+            marginBottom: '4px',
+          }}>
+            <span style={{ fontSize: '14px', color: '#787060', fontWeight: 500 }}>Projected Annual Revenue</span>
           </div>
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <div style={{ color: '#9CA3AF', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Avg Nightly
-            </div>
-            <div style={{ color: '#22C55E', fontSize: '36px', fontWeight: 'bold' }}>
-              ${adr}
-            </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '8px',
+          }}>
+            <span style={{
+              fontSize: '64px',
+              fontWeight: 800,
+              color: '#16a34a',
+              lineHeight: 1,
+              letterSpacing: '-2px',
+            }}>
+              {formatRevenue(revenue)}
+            </span>
+            <span style={{
+              fontSize: '28px',
+              fontWeight: 600,
+              color: '#22c55e',
+            }}>
+              /yr
+            </span>
           </div>
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <div style={{ color: '#9CA3AF', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Cash-on-Cash
-            </div>
-            <div style={{ color: '#22C55E', fontSize: '36px', fontWeight: 'bold' }}>
-              {coc}%
-            </div>
+          <div style={{
+            fontSize: '16px',
+            color: '#787060',
+            marginTop: '4px',
+          }}>
+            {formatMonthly(revenue)}/mo estimated
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ 
-          marginTop: 'auto', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
           alignItems: 'center',
-          paddingTop: '20px'
+          justifyContent: 'space-between',
+          padding: '16px 40px',
+          backgroundColor: '#2b2823',
         }}>
-          <div style={{ color: '#6B7280', fontSize: '14px' }}>
-            Analyzed with Edge by Teeco
+          <div style={{ fontSize: '13px', color: '#9a9488' }}>
+            &bull; Based on {bedrooms} comparable listings analyzed
           </div>
-          <div style={{ color: '#3D3D3D', fontSize: '16px', fontWeight: '500' }}>
-            edge.teeco.co
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '13px', color: '#9a9488' }}>Free STR analysis for any US address</span>
+            <span style={{ fontSize: '14px', color: '#ffffff', fontWeight: 600 }}>edge.teeco.co</span>
           </div>
         </div>
       </div>

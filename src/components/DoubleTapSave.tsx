@@ -61,13 +61,11 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
 
   const handleDoubleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300; // ms
+    const DOUBLE_TAP_DELAY = 300;
 
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected!
       e.preventDefault();
       
-      // Get tap position for heart animation
       let clientX: number, clientY: number;
       if ('touches' in e) {
         clientX = e.touches[0]?.clientX || e.changedTouches[0]?.clientX || 0;
@@ -77,7 +75,6 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
         clientY = e.clientY;
       }
 
-      // Calculate position relative to container
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         setHeartPosition({
@@ -86,16 +83,14 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
         });
       }
 
-      // Check if already saved
       if (isSaved) {
-        // Already saved - just show heart animation
+        // Double-tap to unsave
         setAnimationType('pop');
         setShowHeart(true);
+        onToggleSave();
         setTimeout(() => setShowHeart(false), 1000);
       } else {
-        // Not saved - check limit
         if (isAtSaveLimit()) {
-          // At limit - show shake animation and warning
           setAnimationType('shake');
           setShowHeart(true);
           setShowLimitWarning(true);
@@ -104,29 +99,26 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
             setShowLimitWarning(false);
           }, 2500);
         } else {
-          // Can save - show pop animation and save
           setAnimationType('pop');
           setShowHeart(true);
           onToggleSave();
           setTimeout(() => setShowHeart(false), 1000);
           
-          // Show login prompt after first save if not logged in
           if (!isUserLoggedIn() && !hasShownLoginPrompt()) {
             setTimeout(() => {
               setShowLoginPrompt(true);
               markLoginPromptShown();
-            }, 1200); // Show after heart animation
+            }, 1200);
           }
         }
       }
       
-      lastTapRef.current = 0; // Reset to prevent triple-tap
+      lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
     }
   }, [isSaved, onToggleSave]);
 
-  // Handle touch start to record position
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     lastTapPositionRef.current = {
       x: e.touches[0].clientX,
@@ -134,9 +126,7 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
     };
   }, []);
 
-  // Handle touch end for double-tap detection on mobile
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    // Use the stored position from touchstart
     const mockEvent = {
       ...e,
       clientX: lastTapPositionRef.current.x,
@@ -146,9 +136,7 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
     handleDoubleTap(mockEvent);
   }, [handleDoubleTap]);
 
-  // Handle click for desktop double-click
   const handleClick = useCallback((e: React.MouseEvent) => {
-    // On touch devices, ignore click events (use touch events instead)
     if ('ontouchstart' in window) return;
     handleDoubleTap(e);
   }, [handleDoubleTap]);
@@ -178,7 +166,7 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
               width="80" 
               height="80" 
               viewBox="0 0 24 24" 
-              fill={animationType === 'pop' ? '#ef4444' : '#9ca3af'}
+              fill={animationType === 'pop' ? (isSaved ? '#9ca3af' : '#ef4444') : '#9ca3af'}
               className="drop-shadow-lg"
             >
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -206,7 +194,7 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
         </div>
       )}
 
-      {/* Login Prompt Modal - Using React Portal to render at document body */}
+      {/* Login Prompt Modal */}
       {showLoginPrompt && typeof document !== 'undefined' && createPortal(
         <div 
           style={{ 
@@ -237,7 +225,6 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center relative">
-              {/* Close button */}
               <button
                 onClick={() => setShowLoginPrompt(false)}
                 className="absolute -top-2 -right-2 p-2 rounded-full hover:bg-gray-100 transition-all"
@@ -287,7 +274,6 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
         onClose={() => setShowAuthModal(false)}
         onSuccess={() => {
           setShowAuthModal(false);
-          // Optionally trigger a sync of saved items here
         }}
         title="Sign in to Edge"
         subtitle="Sign in to save your favorite markets and sync across all your devices. No password needed."
@@ -296,7 +282,7 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
   );
 }
 
-// Floating Save Button Component with count
+// Floating Save Button Component with count - redesigned to match screenshot
 interface FloatingSaveButtonProps {
   isSaved: boolean;
   onToggleSave: () => void;
@@ -306,7 +292,6 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
   const [saveCount, setSaveCount] = useState(0);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
 
-  // Update count on mount and when saved state changes
   useEffect(() => {
     setSaveCount(getTotalSavedCount());
   }, [isSaved]);
@@ -314,7 +299,6 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // If trying to save and at limit, show warning
     if (!isSaved && isAtSaveLimit()) {
       setShowLimitWarning(true);
       setTimeout(() => setShowLimitWarning(false), 2500);
@@ -330,26 +314,26 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
         onClick={handleClick}
         className="flex flex-col items-center justify-center transition-all active:scale-95"
         style={{ 
-          backgroundColor: isSaved ? '#ef4444' : 'transparent',
+          backgroundColor: 'transparent',
           width: '56px',
-          padding: '10px 0 6px 0',
+          padding: '12px 0 4px 0',
           borderRadius: 0,
         }}
         aria-label={isSaved ? "Remove from saved" : "Save"}
       >
         <svg 
-          width="24" 
-          height="24" 
+          width="26" 
+          height="26" 
           viewBox="0 0 24 24" 
-          fill={isSaved ? '#ffffff' : 'none'}
-          stroke={isSaved ? '#ffffff' : '#2b2823'}
+          fill={isSaved ? '#ef4444' : 'none'}
+          stroke={isSaved ? '#ef4444' : '#2b2823'}
           strokeWidth="1.5"
         >
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
         <span 
-          className="text-[10px] font-medium mt-1"
-          style={{ color: isSaved ? '#ffffff' : '#787060' }}
+          className="text-[10px] font-medium mt-0.5"
+          style={{ color: isSaved ? '#ef4444' : '#787060' }}
         >
           {saveCount}/{SAVE_LIMIT}
         </span>
@@ -377,16 +361,19 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
   );
 }
 
-// Floating Share Button Component
-export function FloatingShareButton() {
+// Floating Share Button Component - redesigned with paper plane icon
+export function FloatingShareButton({ shareText }: { shareText?: string }) {
   const [showCopied, setShowCopied] = useState(false);
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     const shareUrl = window.location.href;
+    const title = shareText || document.title;
+    
     if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       try {
         await navigator.share({
-          title: document.title,
+          title,
           url: shareUrl
         });
       } catch (err) {
@@ -407,11 +394,12 @@ export function FloatingShareButton() {
         style={{
           backgroundColor: 'transparent',
           width: '56px',
-          padding: '10px 0',
+          padding: '10px 0 12px 0',
           borderRadius: 0,
         }}
         aria-label="Share"
       >
+        {/* Paper plane / send icon */}
         <svg
           width="22"
           height="22"
@@ -422,7 +410,8 @@ export function FloatingShareButton() {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="M12 19V5m0 0l-5 5m5-5l5 5" />
+          <path d="M22 2L11 13" />
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" />
         </svg>
       </button>
 
@@ -436,5 +425,32 @@ export function FloatingShareButton() {
         </div>
       )}
     </>
+  );
+}
+
+// Combined Floating Action Pill - Heart + Share in a white rounded pill
+interface FloatingActionPillProps {
+  isSaved: boolean;
+  onToggleSave: () => void;
+  shareText?: string;
+}
+
+export function FloatingActionPill({ isSaved, onToggleSave, shareText }: FloatingActionPillProps) {
+  return (
+    <div 
+      className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
+      style={{
+        bottom: '140px',
+        backgroundColor: '#ffffff',
+        border: '1.5px solid #d8d6cd',
+        borderRadius: '20px',
+        boxShadow: '0 4px 20px -4px rgba(43, 40, 35, 0.18)',
+        width: '56px',
+      }}
+    >
+      <FloatingSaveButton isSaved={isSaved} onToggleSave={onToggleSave} />
+      <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
+      <FloatingShareButton shareText={shareText} />
+    </div>
   );
 }

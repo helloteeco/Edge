@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
         bathrooms: p.bathrooms,
         guestCount: p.guest_count,
       },
+      customInputs: p.custom_inputs,
     }));
 
     return NextResponse.json({
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
       bedrooms: property.result?.bedrooms,
       bathrooms: property.result?.bathrooms,
       guest_count: property.result?.guestCount,
+      custom_inputs: property.customInputs || null,
     });
 
     if (!savedProperty) {
@@ -128,6 +130,7 @@ export async function POST(request: NextRequest) {
           bathrooms: savedProperty.bathrooms,
           guestCount: savedProperty.guest_count,
         },
+        customInputs: savedProperty.custom_inputs,
       },
       totalSaved: allProperties.length,
     });

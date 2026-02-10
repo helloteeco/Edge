@@ -36,8 +36,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
-    const title = `STR Analysis: ${data.address}`;
-    const description = `${data.bedrooms} bed / ${data.bathrooms} bath · $${Math.round(data.annual_revenue).toLocaleString()}/yr projected · ${data.occupancy_rate}% occupancy · ${data.cash_on_cash.toFixed(1)}% CoC`;
+    const revenueK = Math.round(data.annual_revenue / 1000);
+    const monthlyK = Math.round(data.annual_revenue / 12 / 1000);
+    const title = `${data.address}, ${data.city}, ${data.state} - $${revenueK}K/yr STR Analysis`;
+    const description = `${data.city}, ${data.state} · ${data.bedrooms} Bed / ${data.bathrooms} Bath · Cash-on-Cash: ${data.cash_on_cash.toFixed(1)}% · Occupancy: ${data.occupancy_rate}% · ADR: $${Math.round(data.adr)} · $${monthlyK}K/mo estimated`;
     
     const ogImageUrl = `https://edge.teeco.co/api/og?address=${encodeURIComponent(data.address)}&city=${encodeURIComponent(data.city)}&state=${encodeURIComponent(data.state)}&bedrooms=${data.bedrooms}&bathrooms=${data.bathrooms}&revenue=${Math.round(data.annual_revenue)}&occupancy=${data.occupancy_rate}&adr=${Math.round(data.adr)}&coc=${data.cash_on_cash.toFixed(1)}`;
 
