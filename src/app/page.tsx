@@ -192,57 +192,157 @@ export default function HomePage() {
           <div className="flex items-center justify-center gap-2">
             
             <p className="text-xs sm:text-sm" style={{ color: '#2b2823' }}>
-              Most successful students start with around <span className="font-semibold">$65K</span> for the smoothest journey to their first STR.
+              Most students successfully launch their first STR with just <span className="font-semibold">$65K</span>.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Hero Header - Clean Gray/Black gradient */}
+      {/* Hero Header - Full hero with heading, badges, CTA */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 50%, #2b2823 100%)' }}>
-        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            {/* Left: Logo and Description */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <Image src="/teeco-icon-black.png" alt="Teeco" width={40} height={40} className="w-10 h-10 invert" />
-                <h1 
-                  className="text-2xl sm:text-3xl font-bold tracking-tight"
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-10">
+          {/* Top bar: Logo + Auth */}
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
+            <div className="flex items-center gap-3">
+              <Image src="/teeco-icon-black.png" alt="Teeco" width={40} height={40} className="w-10 h-10 invert" />
+              <h2 
+                className="text-xl sm:text-2xl font-bold tracking-tight"
+                style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                Edge by Teeco
+              </h2>
+            </div>
+            <AuthHeader variant="dark" />
+          </div>
+
+          {/* Hero Content */}
+          <div className="max-w-2xl">
+            <h1 
+              className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-4"
+              style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+            >
+              Find Your Next<br />Cash-Flowing Airbnb
+            </h1>
+            <p className="text-sm sm:text-base mb-4 leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
+              Edge is your AI-powered tool to research STR markets, analyze property deals, and discover funding &mdash; all backed by real data across every US state.
+            </p>
+            <p className="text-xs sm:text-sm mb-5" style={{ color: 'rgba(255, 255, 255, 0.55)' }}>
+              Built by a real investor generating $1M+/yr in STR income
+            </p>
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                AI-Powered Analysis
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                AI Assistant Built In
+              </span>
+            </div>
+
+            {/* CTA Button */}
+            <Link 
+              href="/calculator"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-base font-semibold transition-all hover:opacity-90 active:scale-95"
+              style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
+            >
+              Analyze a Property Free
+              <ArrowRightIcon className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Stats Row */}
+          <div className="flex gap-3 mt-8 pt-6" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            {[
+              { value: '50', label: 'States Analyzed' },
+              { value: `${Math.floor(getMarketCounts().total / 1000)}K+`, label: 'Cities Covered' },
+              { value: String(getMarketCounts().withFullData), label: 'Markets w/ Data' },
+            ].map((stat, i) => (
+              <div 
+                key={i}
+                className="rounded-xl px-4 py-3 min-w-[95px]"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(8px)' }}
+              >
+                <div 
+                  className="text-xl sm:text-2xl font-bold"
                   style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
-                  Edge by Teeco
-                </h1>
-                {/* Auth Header - Sign In button */}
-                <AuthHeader variant="dark" />
-              </div>
-              <p className="text-sm sm:text-base max-w-lg" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-                Your unfair advantage in STR investing
-              </p>
-            </div>
-            
-            {/* Right: Quick Stats */}
-            <div className="flex gap-3">
-              {[
-                { value: '50', label: 'States Analyzed' },
-                { value: `${Math.floor(getMarketCounts().total / 1000)}K+`, label: 'Cities Covered' },
-                { value: String(getMarketCounts().withFullData), label: 'Markets w/ Data' },
-              ].map((stat, i) => (
-                <div 
-                  key={i}
-                  className="rounded-xl px-4 py-3 min-w-[95px]"
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(8px)' }}
-                >
-                  <div 
-                    className="text-xl sm:text-2xl font-bold"
-                    style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                    {stat.label}
-                  </div>
+                  {stat.value}
                 </div>
-              ))}
+                <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* How Edge Works - 3 Cards */}
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+        <div 
+          className="rounded-2xl p-5 sm:p-6"
+          style={{ 
+            backgroundColor: '#ffffff', 
+            border: '1px solid #d8d6cd',
+            boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+          }}
+        >
+          <div className="text-center mb-5">
+            <h2 
+              className="text-lg sm:text-xl font-semibold mb-1"
+              style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+            >
+              How Edge Works
+            </h2>
+            <p className="text-sm" style={{ color: '#787060' }}>
+              Three AI-enhanced tools. Everything you need to invest with confidence.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Card 1: Explore Markets */}
+            <div className="rounded-xl p-5" style={{ border: '1px solid #e5e3da' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#2b2823' }}>
+                <SearchMarketIcon className="w-5 h-5" color="#ffffff" />
+              </div>
+              <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>1. Explore Markets</h3>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
+                Browse the interactive US map to find high cash flow STR markets. See grades, home prices, and revenue data for 1,000+ cities.
+              </p>
+              <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
+                Use the Map tab <ArrowRightIcon className="w-3 h-3" />
+              </Link>
+            </div>
+
+            {/* Card 2: Analyze Properties */}
+            <div className="rounded-xl p-5" style={{ border: '1px solid #e5e3da' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#2b2823' }}>
+                <CalculatorIcon className="w-5 h-5" color="#ffffff" />
+              </div>
+              <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>2. Analyze Properties</h3>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
+                Enter any US address and get estimated annual revenue, cash-on-cash return, and a full investment report. Then tap <strong>Get AI Analysis</strong> for a plain-English breakdown of your deal.
+              </p>
+              <Link href="/calculator" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
+                Use the Calculator tab <ArrowRightIcon className="w-3 h-3" />
+              </Link>
+            </div>
+
+            {/* Card 3: Find Funding */}
+            <div className="rounded-xl p-5" style={{ border: '1px solid #e5e3da' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#2b2823' }}>
+                <DollarIcon className="w-5 h-5" color="#ffffff" />
+              </div>
+              <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>3. Find Funding</h3>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
+                Discover 45+ creative financing strategies. Take a quick quiz to find the best options, or ask the <strong>Edge AI Assistant</strong> for personalized guidance.
+              </p>
+              <Link href="/funding" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
+                Use the Funding tab <ArrowRightIcon className="w-3 h-3" />
+              </Link>
             </div>
           </div>
         </div>
