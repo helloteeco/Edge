@@ -520,3 +520,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] History tab not recording analyses (shows 0)
 - [ ] Saved reports not accessible via shareable link
 - [ ] Create ROADMAP.md with next 5 anticipated features and scaffold forward-looking code
+
+## Bug Fix - Duplicate Address Suggestions (Feb 10, 2026)
+- [ ] Fix address suggestions dropdown appearing twice (above and below input)
+- [ ] Ensure suggestions only appear once, below the input field
+- [ ] Ensure clicking a suggestion auto-populates the address field immediately

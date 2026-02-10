@@ -2406,6 +2406,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 placeholder="Enter property address..."
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                name="property-address-search"
                 className="w-full pl-12 pr-4 py-4 rounded-xl border-2 text-base transition-colors"
                 style={{ 
                   borderColor: showSuggestions ? "#2b2823" : "#e5e5e5",
@@ -2421,15 +2426,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
               )}
               
-              {/* Suggestions dropdown - using fixed position to escape all containers */}
-              {showSuggestions && suggestions.length > 0 && inputRef.current && (
+              {/* Suggestions dropdown - positioned absolutely below input */}
+              {showSuggestions && suggestions.length > 0 && (
                 <div 
                   ref={suggestionsRef}
-                  className="fixed bg-white rounded-xl border border-gray-200 overflow-y-auto"
+                  className="absolute left-0 right-0 bg-white rounded-xl border border-gray-200 overflow-y-auto"
                   style={{ 
-                    top: inputRef.current.getBoundingClientRect().bottom + 4,
-                    left: inputRef.current.getBoundingClientRect().left,
-                    width: inputRef.current.getBoundingClientRect().width,
+                    top: "100%",
+                    marginTop: 4,
                     zIndex: 99999,
                     maxHeight: "min(280px, 40vh)",
                     boxShadow: "0 10px 40px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15)"
@@ -2438,8 +2442,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   {suggestions.map((suggestion, index) => (
                     <button
                       key={index}
-                      onClick={() => handleSelectSuggestion(suggestion)}
+                      onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(suggestion); }}
+                      onClick={(e) => { e.preventDefault(); handleSelectSuggestion(suggestion); }}
+                      onTouchEnd={(e) => { e.preventDefault(); handleSelectSuggestion(suggestion); }}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100 flex items-start gap-3 border-b border-gray-100 last:border-b-0"
+                      type="button"
                     >
                       <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "#787060" }} fill="currentColor" viewBox="0 0 24 24">
                         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
