@@ -561,3 +561,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix green share button (top action bar) — added share text to navigator.share call
 - [x] Fix heart/save indicator — added isReportSaved React state synced with server save + localStorage
 - [x] Bookmark button in action bar turns green with 'Saved' label when saved
+
+
+## Address Suggestion Dropdown Bug (February 2026)
+- [ ] Fix address suggestion dropdown appearing when tapping input after analysis is already loaded
+- [ ] Hide suggestions when result is already displayed on screen
