@@ -149,3 +149,139 @@ Required Occupancy = (LTR Annual Profit + STR Expenses) / (ADR × 365)
 | **Total** | **5 hours** |
 
 Ready to proceed when you approve.
+
+
+---
+
+# Competitive Audit: Edge vs AirDNA Rentalizer vs Rabbu Calculator (Feb 2026)
+
+## Feature-by-Feature Comparison
+
+| Feature | AirDNA | Rabbu | Edge (Current) | Priority |
+|---------|--------|-------|-----------------|----------|
+| **Comp Map (interactive)** | ✅ Scrollable, zoomable | ✅ Map with pins | ✅ Just added (Leaflet) | ✅ Done |
+| **Comp bed/bath/guest matching** | ✅ Primary filter + relevance index | ✅ Bedroom filter | ✅ Just improved (relevance score) | ✅ Done |
+| **Click comp → Airbnb** | ✅ | ✅ | ✅ (map + list) | ✅ Done |
+| **Custom comp selection** | ✅ Add/remove from map | ✅ Include/exclude toggle | ❌ Not yet | 🔴 HIGH |
+| **Confidence score** | ✅ High/Medium/Low | ❌ | ❌ | 🟡 MEDIUM |
+| **Comp calendar view** | ❌ | ✅ (occupancy + pricing by day) | ❌ | 🟡 MEDIUM |
+| **Seasonality chart** | ✅ | ✅ (with 25th/75th percentile) | ✅ (monthly forecast) | ✅ Done |
+| **Percentile toggles** | ✅ | ✅ (25th/75th) | ✅ (25th/50th/75th/90th) | ✅ Done |
+| **Revenue breakdown** | Annual, Monthly, ADR | ADR, Occ, RevPAN | Annual, Monthly, ADR, Occ, RevPAN | ✅ Done |
+| **ROI calculator** | NOI, Cap Rate | Cap Rate, CoC, Gross Yield | CoC, Net Income (no Cap Rate) | ✅ Good |
+| **Arbitrage mode** | ❌ | ❌ | ✅ Unique advantage | ✅ Edge wins |
+| **AI analysis** | ❌ | ❌ | ✅ Unique advantage | ✅ Edge wins |
+| **Deal score/grade** | ❌ | ❌ | ✅ (A+ to F) | ✅ Edge wins |
+| **Amenity recommendations** | ❌ | ❌ | ✅ (market-specific) | ✅ Edge wins |
+| **Startup costs** | ❌ | ❌ | ✅ (Teeco integration) | ✅ Edge wins |
+| **Next steps checklist** | ❌ | ❌ | ✅ | ✅ Edge wins |
+| **Share preview cards** | ❌ | ❌ | ✅ (OG image) | ✅ Edge wins |
+| **Weekly data refresh** | Monthly | Weekly | On-demand (Apify scrape) | ✅ Edge wins |
+| **Comp photos** | ✅ (thumbnails) | ✅ | ❌ (images in data but not shown) | 🔴 HIGH |
+| **Comp count shown** | 20-50+ | 10-30 | Up to 30 | ✅ Comparable |
+
+---
+
+## What Edge Already Does BETTER Than Both
+
+1. **Arbitrage Calculator** — Neither AirDNA nor Rabbu offer rental arbitrage analysis. Edge has a full arbitrage mode with rent input, upfront costs, and payback period. This is a major differentiator.
+
+2. **AI-Powered Analysis** — The "Get AI Analysis" feature provides personalized investment insights that neither competitor offers. This is like getting a $500 consultation for free.
+
+3. **Deal Score (A+ to F)** — Neither competitor grades deals. Edge's scoring system gives instant clarity on deal quality.
+
+4. **Amenity Revenue Boost** — Market-specific amenity recommendations with estimated revenue impact (e.g., "Hot Tub +22%"). Neither competitor does this.
+
+5. **Startup Cost Estimation** — Built-in Teeco design/setup cost calculator. Unique to Edge.
+
+6. **Share Preview Cards** — Beautiful OG image cards for sharing via text/social. Neither competitor has this.
+
+7. **On-Demand Fresh Data** — Apify scrapes live Airbnb data per search vs. AirDNA's monthly refresh.
+
+---
+
+## What Needs Improvement to Match/Beat Competitors
+
+### 🔴 HIGH PRIORITY
+
+1. **Show Comp Photos in List**
+   - AirDNA and Rabbu both show thumbnail images for each comp
+   - Edge already scrapes `image` data from Apify but doesn't display it
+   - **Action**: Add thumbnail images to the comp list items
+   - **Effort**: Small (data already exists)
+
+2. **Custom Comp Selection (Include/Exclude)**
+   - Both AirDNA and Rabbu let users toggle individual comps on/off
+   - When a comp is excluded, the revenue estimate recalculates
+   - **Action**: Add checkboxes to comp list + map markers; recalculate averages on toggle
+   - **Effort**: Medium (needs state management + recalculation logic)
+
+3. **Comp Data Enrichment via Apify Individual Scraping**
+   - Currently comps come from search results only (limited data)
+   - AirDNA shows per-comp: actual revenue, actual occupancy, actual ADR (from calendar data)
+   - **Action**: For top 10 comps, run a secondary Apify scrape on individual listing pages to get calendar/pricing data
+   - **Effort**: Medium-High (additional Apify cost per analysis, ~$0.01-0.05 per listing)
+   - **Alternative**: Use the review count heuristic (already implemented) but label it as "estimated"
+
+4. **Occupancy Estimation Accuracy**
+   - Current: Uses review count heuristic (reviews/year × 3 = bookings)
+   - AirDNA: Uses actual calendar scraping for real occupancy
+   - Rabbu: Uses forward-looking calendar data (next 30 days)
+   - **Action**: Scrape individual listing calendars via Apify for top comps to get real blocked/available dates
+   - **Effort**: High (requires per-listing scraping)
+   - **Alternative**: Label current estimates clearly as "estimated based on review velocity" and add a confidence indicator
+
+### 🟡 MEDIUM PRIORITY
+
+5. **Confidence Score**
+   - AirDNA shows High/Medium/Low confidence based on comp quality
+   - **Action**: Calculate from: number of comps, bedroom match %, distance spread, review count
+   - **Effort**: Small (pure frontend calculation)
+
+6. **Comp Calendar View**
+   - Rabbu shows a calendar view per comp with pricing and availability
+   - **Action**: Would require per-listing calendar scraping (expensive)
+   - **Alternative**: Show "booking pattern" estimate based on seasonality data
+   - **Effort**: High if real data, Low if estimated
+
+7. **Forward-Looking Revenue (Next 30 Days)**
+   - Rabbu shows ADR and occupancy for the next 30 days specifically
+   - **Action**: Use Apify check-in/check-out date parameters to get forward pricing
+   - **Effort**: Medium (already supported in the scrape URL, just need to parse differently)
+
+### 🟢 LOW PRIORITY (Nice to Have)
+
+8. **Comp Amenity Comparison** — Show which amenities each comp has. Data already partially scraped.
+
+9. **Revenue Growth Trend** — Show YoY revenue change for the market.
+
+10. **Neighborhood Walkability/Transit Scores** — Integrate Walk Score API (free tier: 5,000/day).
+
+---
+
+## Recommended Action Plan
+
+### Phase 1: Quick Wins (can do now)
+1. ✅ Show comp photos in the listing cards (data already exists)
+2. ✅ Add confidence score indicator based on comp quality
+3. ✅ Label estimated vs. actual data clearly
+
+### Phase 2: Competitive Parity (4-8 hours)
+4. Custom comp selection (include/exclude toggle)
+5. Forward-looking 30-day revenue estimate
+6. Comp amenity display
+
+### Phase 3: Competitive Advantage (Future)
+7. Per-listing calendar scraping for real occupancy
+8. Revenue growth trends
+9. Walk Score integration
+
+---
+
+## Summary
+
+Edge already wins on: Arbitrage mode, AI analysis, deal scoring, amenity recommendations, share cards, startup costs, fresh data.
+
+Edge needs to match on: Comp photos, custom comp selection, confidence scoring, occupancy accuracy.
+
+Edge can leapfrog with: Per-listing calendar data (real occupancy), forward-looking pricing, and the existing AI analysis that neither competitor has.

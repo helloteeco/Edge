@@ -5,6 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
 import { FloatingActionPill } from "@/components/DoubleTapSave";
+import dynamic from "next/dynamic";
+
+// Dynamic import for CompMap (Leaflet needs client-side only)
+const CompMap = dynamic(() => import("@/components/CompMap").then(mod => ({ default: mod.CompMap })), {
+  ssr: false,
+  loading: () => <div className="rounded-2xl p-6 animate-pulse" style={{ backgroundColor: '#f5f4f0', height: 380 }} />,
+});
 
 // ============================================================================
 // TYPES
@@ -47,6 +54,7 @@ interface ComparableListing {
   image: string | null;
   bedrooms: number;
   bathrooms: number;
+  accommodates: number;
   sqft: number;
   nightPrice: number;
   occupancy: number;
@@ -55,6 +63,10 @@ interface ComparableListing {
   rating: number;
   reviewsCount: number;
   propertyType: string;
+  distance: number;
+  latitude: number;
+  longitude: number;
+  relevanceScore: number;
 }
 
 interface AnalysisResult {
@@ -87,6 +99,7 @@ interface AnalysisResult {
   occupancyChangePercent: number;
   historical: { year: number; month: number; occupancy: number; adr?: number; revenue?: number }[];
   recommendedAmenities?: { name: string; boost: number; priority: string; icon: string }[];
+  targetCoordinates?: { latitude: number; longitude: number };
 }
 
 // ============================================================================
@@ -753,14 +766,14 @@ export default function CalculatorPage() {
         downPaymentPercent,
         interestRate,
         managementFeePercent,
-        cleaningCostPerStay,
+        cleaningCostPerStay: cleaningMonthly,
         revenuePercentile,
         useCustomIncome,
         customAnnualIncome,
         monthlyRent,
         securityDeposit,
         firstLastMonth,
-        startupBudget,
+        startupBudget: 0,
       },
     };
     
@@ -973,7 +986,7 @@ export default function CalculatorPage() {
         return;
       }
 
-      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities } = data;
+      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates } = data;
 
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
@@ -1038,6 +1051,7 @@ export default function CalculatorPage() {
         occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
         historical: historical || [],
         recommendedAmenities: recommendedAmenities || [],
+        targetCoordinates: targetCoordinates || undefined,
       };
 
       setResult(analysisResult);
@@ -2028,20 +2042,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 }
               </span>
             </div>
-            {creditsRemaining === 0 && (
-              <button
-                onClick={() => setShowPaywall(true)}
-                className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
-                style={{ backgroundColor: '#2b2823', color: 'white' }}
-              >
-                Get More Credits
-              </button>
-            )}
-            {creditsRemaining > 0 && creditsRemaining <= 2 && (
-              <span className="text-xs" style={{ color: '#787060' }}>
-                Running low? <button onClick={() => setShowPaywall(true)} className="underline font-medium">Get more</button>
-              </span>
-            )}
+            <button
+              onClick={() => setShowPaywall(true)}
+              className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
+              style={{ backgroundColor: creditsRemaining === 0 ? '#2b2823' : '#e5e3da', color: creditsRemaining === 0 ? 'white' : '#2b2823' }}
+            >
+              {creditsRemaining === 0 ? 'Get More Credits' : 'Buy More'}
+            </button>
           </div>
         </div>
       )}
@@ -2297,15 +2304,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   }
                 </span>
               </div>
-              {creditsRemaining <= 1 && (
-                <button
-                  onClick={() => setShowPaywall(true)}
-                  className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
-                  style={{ backgroundColor: "#2b2823", color: "#fff" }}
-                >
-                  Get More
-                </button>
-              )}
+              <button
+                onClick={() => setShowPaywall(true)}
+                className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
+                style={{ backgroundColor: creditsRemaining <= 1 ? '#2b2823' : '#e5e3da', color: creditsRemaining <= 1 ? '#fff' : '#2b2823' }}
+              >
+                {creditsRemaining <= 1 ? 'Get More' : 'Buy More'}
+              </button>
             </div>
           )}
         </div>
@@ -2864,48 +2869,102 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
             </div>
 
+            {/* Comparable Listings Map */}
+            {result.comparables && result.comparables.length > 0 && result.targetCoordinates && (
+              <CompMap
+                comparables={result.comparables}
+                targetLat={result.targetCoordinates.latitude}
+                targetLng={result.targetCoordinates.longitude}
+                targetAddress={result.address}
+              />
+            )}
+
             {/* Comparable Listings */}
-            {result.comparables && result.comparables.length > 0 && (
+            {result.comparables && result.comparables.length > 0 && (() => {
+              // Calculate confidence score based on comp quality
+              const comps = result.comparables;
+              const bedroomMatches = comps.filter(c => c.bedrooms === result.bedrooms).length;
+              const bedroomMatchPct = comps.length > 0 ? (bedroomMatches / comps.length) * 100 : 0;
+              const avgDistance = comps.reduce((sum, c) => sum + (c.distance || 0), 0) / (comps.length || 1);
+              const hasEnoughComps = comps.length >= 5;
+              const hasGoodMatches = bedroomMatchPct >= 50;
+              const isCloseProximity = avgDistance <= 5;
+              const confidenceScore = (hasEnoughComps ? 33 : comps.length * 6) + (hasGoodMatches ? 34 : bedroomMatchPct * 0.34) + (isCloseProximity ? 33 : Math.max(0, 33 - avgDistance * 3));
+              const confidenceLabel = confidenceScore >= 75 ? "High" : confidenceScore >= 45 ? "Medium" : "Low";
+              const confidenceColor = confidenceScore >= 75 ? "#16a34a" : confidenceScore >= 45 ? "#ca8a04" : "#ef4444";
+
+              return (
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-                <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>
-                  Top Performing {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
-                </h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
+                    Top Performing {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
+                  </h3>
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: `${confidenceColor}15`, color: confidenceColor }}>
+                    {confidenceLabel} Confidence
+                  </span>
+                </div>
+                <p className="text-xs mb-4" style={{ color: "#787060" }}>
+                  {comps.length} comps analyzed • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
+                </p>
                 <div className="space-y-3">
-                  {result.comparables.slice(0, 10).map((listing, index) => (
+                  {comps.slice(0, 10).map((listing, index) => (
                     <a
                       key={listing.id || index}
                       href={listing.url || `https://www.airbnb.com/rooms/${listing.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
+                      className="flex gap-3 p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
                     >
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base" style={{ maxWidth: 'calc(100vw - 120px)' }}>{listing.name}</p>
-                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
+                      {/* Comp Photo */}
+                      <div className="flex-shrink-0 relative">
+                        {listing.image ? (
+                          <img
+                            src={listing.image}
+                            alt={listing.name}
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f5f4f0' }}>
+                            <span className="text-2xl">🏠</span>
                           </div>
-                          <p className="text-xs sm:text-sm text-gray-500">
-                            {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.propertyType}
-                          </p>
-                        </div>
-                        <div className="text-left sm:text-right flex-shrink-0">
-                          <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
-                          <p className="text-xs text-gray-500">{formatCurrency(listing.nightPrice)}/night • {listing.occupancy}% occ</p>
+                        )}
+                        {/* Numbered badge */}
+                        <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: index < 5 ? '#22c55e' : '#3b82f6' }}>
+                          {index + 1}
                         </div>
                       </div>
-                      {listing.rating > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          ⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount} reviews)
-                        </p>
-                      )}
+                      {/* Comp Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 text-sm sm:text-base">{listing.name}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {listing.bedrooms}bd / {listing.bathrooms}ba • {listing.accommodates || listing.bedrooms * 2} guests • {listing.distance > 0 ? `${listing.distance}mi` : listing.propertyType}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold text-green-600 text-sm sm:text-base">{formatCurrency(listing.annualRevenue || listing.monthlyRevenue * 12)}/yr</p>
+                            <p className="text-xs text-gray-500">${listing.nightPrice}/night</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs text-gray-500">{listing.occupancy}% occ</span>
+                          {listing.rating > 0 && (
+                            <span className="text-xs text-gray-400">⭐ {listing.rating.toFixed(1)} ({listing.reviewsCount})</span>
+                          )}
+                          <span className="text-xs font-medium ml-auto" style={{ color: '#ff5a5f' }}>View on Airbnb →</span>
+                        </div>
+                      </div>
                     </a>
                   ))}
                 </div>
+                <p className="text-xs mt-3 text-center" style={{ color: '#a09880' }}>
+                  Revenue estimates based on review velocity • Tap any listing to view on Airbnb
+                </p>
               </div>
-            )}
+              );
+            })()}
 
             {/* Recommended Amenities for 90th Percentile */}
             {result.recommendedAmenities && result.recommendedAmenities.length > 0 && (

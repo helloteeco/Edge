@@ -348,6 +348,8 @@ function enrichListings(
   targetLat: number,
   targetLng: number,
   targetBedrooms: number,
+  targetBathrooms?: number,
+  targetGuests?: number,
 ): {
   enriched: any[];
   avgAdr: number;
@@ -355,6 +357,9 @@ function enrichListings(
   avgAnnualRevenue: number;
   percentiles: { revenue: any; adr: any; occupancy: any };
 } {
+  const tBath = targetBathrooms || Math.ceil(targetBedrooms / 2);
+  const tGuests = targetGuests || targetBedrooms * 2;
+
   // Filter to similar bedroom count (within ±1)
   const bedroomFiltered = listings.filter((l) => {
     const diff = Math.abs((l.bedrooms || targetBedrooms) - targetBedrooms);
@@ -364,7 +369,7 @@ function enrichListings(
   // Use bedroom-filtered if we have enough, otherwise use all
   const compsForCalc = bedroomFiltered.length >= 5 ? bedroomFiltered : listings;
 
-  // Calculate occupancy for each listing
+  // Calculate occupancy and relevance score for each listing
   const enriched = compsForCalc.map((listing) => {
     const nightPrice = listing.nightPrice || 150;
     const occupancy = estimateOccupancy(listing.reviewsCount || 0);
@@ -372,17 +377,29 @@ function enrichListings(
     const monthlyRevenue = Math.round(annualRevenue / 12);
     const distance = calcDistance(targetLat, targetLng, listing.latitude, listing.longitude);
 
+    // Relevance score: lower = better match (like AirDNA's weighting)
+    // Bed match is most important (weight 40), then bath (20), then guest count (15), then distance (25)
+    const bedDiff = Math.abs((listing.bedrooms || targetBedrooms) - targetBedrooms);
+    const bathDiff = Math.abs((listing.bathrooms || tBath) - tBath);
+    const guestDiff = Math.abs((listing.accommodates || tGuests) - tGuests);
+    const distScore = Math.min(distance / 15, 1); // Normalize: 15mi = max penalty
+    const relevanceScore = (bedDiff * 40) + (bathDiff * 20) + (guestDiff * 2.5) + (distScore * 25);
+
     return {
       ...listing,
       occupancy,
       annualRevenue,
       monthlyRevenue,
       distance: Math.round(distance * 10) / 10,
+      relevanceScore: Math.round(relevanceScore * 10) / 10,
     };
   });
 
-  // Sort by distance (closest first) and take top 30
-  enriched.sort((a, b) => a.distance - b.distance);
+  // Sort by relevance score (best match first), then distance as tiebreaker
+  enriched.sort((a, b) => {
+    if (a.relevanceScore !== b.relevanceScore) return a.relevanceScore - b.relevanceScore;
+    return a.distance - b.distance;
+  });
   const top30 = enriched.slice(0, 30);
 
   // Calculate market averages from enriched comps
@@ -642,6 +659,8 @@ export async function POST(request: NextRequest) {
         latitude,
         longitude,
         bedrooms,
+        bathrooms,
+        accommodates,
       );
 
       // Use cached percentiles if they exist, otherwise use recalculated
@@ -702,6 +721,8 @@ export async function POST(request: NextRequest) {
       latitude,
       longitude,
       bedrooms,
+      bathrooms,
+      accommodates,
     );
 
     // Generate seasonality from market data
@@ -857,6 +878,12 @@ function buildResponse(params: {
       totalListingsInArea: params.totalListings,
     },
 
+    // Target property coordinates for comp map
+    targetCoordinates: {
+      latitude: params.latitude,
+      longitude: params.longitude,
+    },
+
     comparables: params.comparables.map((c) => ({
       id: c.id,
       name: c.name,
@@ -874,6 +901,9 @@ function buildResponse(params: {
       reviewsCount: c.reviewsCount,
       propertyType: c.propertyType,
       distance: c.distance,
+      latitude: c.latitude || 0,
+      longitude: c.longitude || 0,
+      relevanceScore: c.relevanceScore || 0,
       source: c.source || "apify",
     })),
 

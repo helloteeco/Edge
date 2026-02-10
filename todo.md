@@ -470,3 +470,11 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Saved analyses preserve custom expenses, property price, down payment
 - [ ] Saved/cached items can be pulled up without spending a credit
 - [ ] Share preview card shows address, grade, CoC, occupancy, ADR, and large annual revenue
+
+
+## Calculator Improvements & Comp Map (Feb 10, 2026)
+- [ ] Restore buy more credits option on calculator tab
+- [ ] Improve comp matching to prioritize bed/bath/guest count proximity
+- [ ] Research AirDNA and Rabbu comp features for competitive parity
+- [ ] Add interactive comp map with scrollable markers, data overlays, and Airbnb listing links
+- [ ] Full audit of both calculators vs AirDNA/Rabbu with recommendations
