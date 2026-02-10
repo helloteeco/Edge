@@ -607,3 +607,15 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix 11: Replace Teeco Strategy multiplier with transparent percentile path (50th/75th/90th) with real data
 - [x] Fix 12: Add social proof to landing state (investor avatars, "Free" badge)
 - [x] Fix 13: Fix guest count multiplier to use diminishing returns (cap at +30%)
+
+
+## Tier 3 Polish Improvements (February 2026)
+- [x] Fix 14: Skip — component extraction is too risky before launch (would touch every line)
+- [x] Fix 15: Memoize calculateInvestment and calculateArbitrage with useMemo
+- [x] Fix 16: Show dual CoC numbers when Teeco services are toggled on (with vs without Teeco costs)
+- [x] Fix 17: Personalize Deal Score explanations with user's specific numbers (payback period, percentile rank)
+- [x] Fix 18: Add React error boundaries around results and calculation sections
+- [x] Fix 19: Increase touch targets to 44x44px minimum (bedroom/bathroom/sleeps buttons)
+- [x] Fix 20: Add "Supplies & Consumables" expense line (~$75/month default)
+- [x] Fix 21: Spell out "STR" as "Short-Term Rental" or "Airbnb" in user-facing labels
+- [x] Fix 22: Add disclaimer when percentile data falls back to hardcoded multipliers

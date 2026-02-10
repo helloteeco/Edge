@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, Component, type ReactNode, type ErrorInfo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
@@ -120,6 +120,49 @@ interface AnalysisResult {
 }
 
 // ============================================================================
+// ERROR BOUNDARY
+// ============================================================================
+
+class CalculatorErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[Calculator Error Boundary]', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div className="rounded-2xl p-6 text-center" style={{ backgroundColor: '#fef2f2' }}>
+            <p className="text-base font-medium" style={{ color: '#ef4444' }}>Something went wrong with this section.</p>
+            <p className="text-sm mt-2" style={{ color: '#787060' }}>Try adjusting your inputs or refreshing the page.</p>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="mt-3 px-4 py-2 rounded-lg text-sm font-medium text-white"
+              style={{ backgroundColor: '#2b2823' }}
+            >
+              Try Again
+            </button>
+          </div>
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 
@@ -189,6 +232,7 @@ export default function CalculatorPage() {
   const [pestControlMonthly, setPestControlMonthly] = useState(25);
   const [cleaningMonthly, setCleaningMonthly] = useState(0);
   const [houseSuppliesMonthly, setHouseSuppliesMonthly] = useState(50);
+  const [suppliesConsumablesMonthly, setSuppliesConsumablesMonthly] = useState(75); // Toiletries, linens replacement, kitchen supplies
   const [maintenanceMonthly, setMaintenanceMonthly] = useState(100);
   const [rentalSoftwareMonthly, setRentalSoftwareMonthly] = useState(30);
 
@@ -1965,7 +2009,7 @@ export default function CalculatorPage() {
   const calculateMonthlyExpenses = () => {
     const utilities = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
     const propertyMaintenance = lawnCareMonthly + pestControlMonthly + maintenanceMonthly;
-    const operations = houseSuppliesMonthly + rentalSoftwareMonthly;
+    const operations = houseSuppliesMonthly + suppliesConsumablesMonthly + rentalSoftwareMonthly;
     return utilities + propertyMaintenance + operations;
   };
 
@@ -2107,8 +2151,29 @@ export default function CalculatorPage() {
     };
   };
 
-  const investment = calculateInvestment();
-  const arbitrage = calculateArbitrage();
+  // Memoize expensive calculations to avoid recalculating on every render
+  const investment = useMemo(() => calculateInvestment(), [
+    purchasePrice, downPaymentPercent, interestRate, loanTerm, propertyTaxRate,
+    insuranceAnnual, managementFeePercent, maintenancePercent, platformFeePercent,
+    result, revenuePercentile, guestCount, bedrooms, useCustomIncome, customAnnualIncome,
+    electricMonthly, waterMonthly, internetMonthly, trashMonthly,
+    lawnCareMonthly, pestControlMonthly, maintenanceMonthly, houseSuppliesMonthly,
+    rentalSoftwareMonthly, cleaningMonthly, suppliesConsumablesMonthly,
+    includeDesignServices, includeSetupServices,
+    includeFurnishings, includeAmenities, furnishingsCost, amenitiesCost, propertySqft,
+    studentDiscount, excludedCompIds,
+  ]);
+  const arbitrage = useMemo(() => calculateArbitrage(), [
+    monthlyRent, securityDeposit, firstLastMonth, landlordInsuranceMonthly,
+    managementFeePercent, maintenancePercent, platformFeePercent,
+    result, revenuePercentile, guestCount, bedrooms, useCustomIncome, customAnnualIncome,
+    electricMonthly, waterMonthly, internetMonthly, trashMonthly,
+    lawnCareMonthly, pestControlMonthly, maintenanceMonthly, houseSuppliesMonthly,
+    rentalSoftwareMonthly, cleaningMonthly, suppliesConsumablesMonthly,
+    includeDesignServices, includeSetupServices,
+    includeFurnishings, includeAmenities, furnishingsCost, amenitiesCost, propertySqft,
+    studentDiscount, excludedCompIds,
+  ]);
 
   // Get AI Analysis of the deal
   const getAiAnalysis = async () => {
@@ -2445,7 +2510,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             </button>
           </div>
           
-          <p className="text-xs text-gray-400 mt-2">Enter any US property address</p>
+          <p className="text-xs text-gray-400 mt-2">Free short-term rental revenue analysis for any US address</p>
           <p className="text-xs text-gray-400 mt-1">Defaults: 3 bed / 2 bath — you can refine after results</p>
           
           {/* Credit Display */}
@@ -3008,7 +3073,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <button
                         key={num}
                         onClick={() => { setBedrooms(num); setGuestCount(num * 2); }}
-                        className={`flex-1 h-9 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
                           bedrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                         style={bedrooms === num ? { backgroundColor: "#2b2823" } : {}}
@@ -3025,7 +3090,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <button
                         key={num}
                         onClick={() => setBathrooms(num)}
-                        className={`flex-1 h-9 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
                           bathrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                         style={bathrooms === num ? { backgroundColor: "#2b2823" } : {}}
@@ -3043,7 +3108,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     <button
                       key={num}
                       onClick={() => setGuestCount(num)}
-                      className={`w-11 h-9 rounded-lg text-sm font-medium transition-all ${
+                      className={`w-11 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
                         guestCount === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                       style={guestCount === num ? { backgroundColor: "#2b2823" } : {}}
@@ -3147,6 +3212,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     🚀 <span className="font-semibold">Want to reach the 75th percentile?</span> Teeco&apos;s design + setup service helps properties earn more through professional staging, smart capacity planning, and curated amenities.
                   </p>
                 </div>
+                <p className="text-[10px] text-gray-400 mt-2 text-center">
+                  Revenue tiers are based on comparable listings within the same market and bedroom count. Actual results vary based on property condition, management quality, and market conditions.
+                </p>
               </div>
             )}
 
@@ -3779,7 +3847,19 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   />
                 </div>
                 
-                {/* Row 5: Maintenance & Rental Software */}
+                {/* Row 5: Supplies & Consumables + Maintenance */}
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Supplies & Consumables</label>
+                  <input
+                    type="number"
+                    value={suppliesConsumablesMonthly}
+                    onChange={(e) => setSuppliesConsumablesMonthly(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                    placeholder="Toiletries, linens, kitchen"
+                  />
+                </div>
+                
+                {/* Row 6: Maintenance & Rental Software */}
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Maintenance/Repair</label>
                   <input
@@ -3920,6 +4000,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                           <p className="text-xs text-gray-500">Cash-on-Cash</p>
                           <p className="text-xl font-bold" style={{ color: "#2b2823" }}>{investment.cashOnCashReturn.toFixed(1)}%</p>
+                          {(includeDesignServices || includeSetupServices || includeFurnishings) && (() => {
+                            // Calculate CoC without startup costs to show the impact
+                            const cocWithoutStartup = (investment.totalCashNeeded - investment.startupCosts) > 0
+                              ? (investment.cashFlow / (investment.totalCashNeeded - investment.startupCosts)) * 100 : 0;
+                            return cocWithoutStartup > investment.cashOnCashReturn ? (
+                              <p className="text-[10px] text-gray-400 mt-1">{cocWithoutStartup.toFixed(1)}% without setup</p>
+                            ) : null;
+                          })()}
                         </div>
                         <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                           <p className="text-xs text-gray-500">Total Cash Needed</p>
@@ -4153,6 +4241,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                           <p className="text-xs text-gray-500">Cash-on-Cash</p>
                           <p className="text-xl font-bold" style={{ color: "#2b2823" }}>{arbitrage.cashOnCashReturn.toFixed(1)}%</p>
+                          {(includeDesignServices || includeSetupServices || includeFurnishings) && (() => {
+                            const cocWithoutStartup = (arbitrage.totalCashNeeded - arbitrage.startupCosts) > 0
+                              ? (arbitrage.cashFlow / (arbitrage.totalCashNeeded - arbitrage.startupCosts)) * 100 : 0;
+                            return cocWithoutStartup > arbitrage.cashOnCashReturn ? (
+                              <p className="text-[10px] text-gray-400 mt-1">{cocWithoutStartup.toFixed(1)}% without setup</p>
+                            ) : null;
+                          })()}
                         </div>
                         <div className="text-center p-4 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                           <p className="text-xs text-gray-500">Total Cash Needed</p>
@@ -4267,26 +4362,32 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     let verdictBg = "#fef3c7";
                     let explanation = "This deal may work but requires careful consideration.";
                     
+                    // Personalized metrics for explanations
+                    const paybackMonths = activeCalc.monthlyCashFlow > 0 ? Math.ceil(activeCalc.totalCashNeeded / activeCalc.monthlyCashFlow) : 0;
+                    const paybackYears = paybackMonths > 0 ? (paybackMonths / 12).toFixed(1) : null;
+                    const cocPct = activeCalc.cashOnCashReturn.toFixed(1);
+                    const monthlyNet = formatCurrency(activeCalc.monthlyCashFlow);
+                    
                     if (totalScore >= 75) {
                       verdict = "STRONG BUY";
                       verdictColor = "#16a34a";
                       verdictBg = "#dcfce7";
-                      explanation = "Excellent returns with strong market fundamentals.";
+                      explanation = `${cocPct}% CoC return with ${monthlyNet}/mo cash flow. ${paybackYears ? `Full payback in ~${paybackYears} years.` : ''} Top-tier deal.`;
                     } else if (totalScore >= 60) {
                       verdict = "GOOD DEAL";
                       verdictColor = "#22c55e";
                       verdictBg = "#ecfdf5";
-                      explanation = "Solid investment with good cash flow potential.";
+                      explanation = `${cocPct}% CoC return netting ${monthlyNet}/mo. ${paybackYears ? `Payback in ~${paybackYears} years.` : ''} Solid fundamentals.`;
                     } else if (totalScore >= 45) {
                       verdict = "CONSIDER";
                       verdictColor = "#eab308";
                       verdictBg = "#fefce8";
-                      explanation = "Moderate returns - may need value-add strategy.";
+                      explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. ${activeCalc.cashOnCashReturn < 8 ? 'Returns are below the 8% target — consider negotiating price.' : 'Moderate returns — a value-add strategy could improve this.'}`;
                     } else {
                       verdict = "CAUTION";
                       verdictColor = "#ef4444";
                       verdictBg = "#fef2f2";
-                      explanation = "Low returns at current price - negotiate or pass.";
+                      explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. ${activeCalc.monthlyCashFlow < 0 ? 'This property loses money monthly at current assumptions.' : 'Returns are too thin to justify the risk — negotiate or pass.'}`;
                     }
                     
                     return (
