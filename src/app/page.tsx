@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { USMap } from "@/components/USMap";
@@ -126,6 +126,11 @@ function SocialShareSection() {
 
 export default function HomePage() {
   const [activeJourneyInfo, setActiveJourneyInfo] = useState<string | null>(null);
+
+  // Force scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   // Journey stage info content - accurate Edge features
   const journeyInfo: Record<string, { title: string; description: string; features: string[] }> = {
@@ -312,9 +317,9 @@ export default function HomePage() {
               <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
                 Browse the interactive US map to find high cash flow STR markets. See grades, home prices, and revenue data for 1,000+ cities.
               </p>
-              <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
+              <a href="#interactive-map" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }} onClick={(e) => { e.preventDefault(); document.getElementById('interactive-map')?.scrollIntoView({ behavior: 'smooth' }); }}>
                 Use the Map tab <ArrowRightIcon className="w-3 h-3" />
-              </Link>
+              </a>
             </div>
 
             {/* Card 2: Analyze Properties */}
@@ -520,6 +525,7 @@ export default function HomePage() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Map Section */}
         <div 
+          id="interactive-map"
           className="rounded-2xl p-5 sm:p-7 mb-8"
           style={{ 
             backgroundColor: '#ffffff', 

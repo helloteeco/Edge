@@ -445,3 +445,15 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [ ] Store project context in Supabase for future sessions
 - [x] Fix city-data.ts formatting (JSON->TS, missing commas, invalid rprRating)
 - [x] Push 1,063 cities fix to GitHub - deployment now READY
+
+
+## Front Page & Navigation Fixes (February 2026)
+- [x] Restore full hero section with heading, badges, CTA, and How Edge Works
+- [x] Fix banner text to match original ("Most students successfully launch their first STR with just $65K")
+- [ ] Fix page landing position - should start at top (hero), not jump to How Edge Works
+- [ ] Make "Use the Map tab" link smooth-scroll to interactive map section
+- [ ] Make "Use the Calculator tab" and "Use the Funding tab" navigate to correct tabs
+
+## Remaining Work Items
+- [ ] Integrate Apify for real comp data
+- [ ] Fix 404/500 pre-existing build errors (Html import in pages/_document)
