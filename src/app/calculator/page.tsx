@@ -13,6 +13,12 @@ const CompMap = dynamic(() => import("@/components/CompMap").then(mod => ({ defa
   loading: () => <div className="rounded-2xl p-6 animate-pulse" style={{ backgroundColor: '#f5f4f0', height: 380 }} />,
 });
 
+// Dynamic import for CompCalendar (availability heatmap)
+const CompCalendar = dynamic(() => import("@/components/CompCalendar"), {
+  ssr: false,
+  loading: () => <div className="rounded-2xl p-6 animate-pulse" style={{ backgroundColor: '#f5f4f0', height: 300 }} />,
+});
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -196,7 +202,7 @@ export default function CalculatorPage() {
   const [excludedCompIds, setExcludedCompIds] = useState<Set<number | string>>(new Set());
   
   // Real occupancy data from calendar scraping
-  const [realOccupancyData, setRealOccupancyData] = useState<Record<string, { occupancyRate: number; bookedDays: number; totalDays: number; peakMonths: string[]; lowMonths: string[]; source: string }>>({});
+  const [realOccupancyData, setRealOccupancyData] = useState<Record<string, { occupancyRate: number; bookedDays: number; totalDays: number; peakMonths: string[]; lowMonths: string[]; source: string; dailyCalendar?: { date: string; available: boolean }[] }>>({});
   const [isLoadingOccupancy, setIsLoadingOccupancy] = useState(false);
   
   // Toggle a comp in/out of the selection
@@ -2632,6 +2638,128 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 )}
               </div>
 
+              {/* Forward-Looking 30-Day Revenue Estimate */}
+              {(() => {
+                const today = new Date();
+                const currentMonth = today.getMonth(); // 0-indexed
+                const dayOfMonth = today.getDate();
+                const daysInCurrentMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
+                const daysInNextMonth = new Date(today.getFullYear(), currentMonth + 2, 0).getDate();
+                const daysLeftThisMonth = daysInCurrentMonth - dayOfMonth;
+                const daysFromNextMonth = 30 - daysLeftThisMonth;
+                
+                const seasonalData = getSeasonalityData();
+                const annualRev = getDisplayRevenue() || 0;
+                const baseMonthlyRev = annualRev / 12;
+                const guestMult = getGuestCountMultiplier();
+                const baseOcc = result.occupancy || 55;
+                
+                // Calculate revenue for current month
+                const currentMonthData = seasonalData.find(m => m.month === currentMonth + 1);
+                let currentMonthRev = baseMonthlyRev;
+                if (currentMonthData?.revenue && currentMonthData.revenue > 0) {
+                  currentMonthRev = Math.round(currentMonthData.revenue * guestMult);
+                } else if (currentMonthData) {
+                  const mult = baseOcc > 0 ? (currentMonthData.occupancy / baseOcc) : 1;
+                  currentMonthRev = Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5));
+                }
+                
+                // Calculate revenue for next month
+                const nextMonthIdx = (currentMonth + 1) % 12;
+                const nextMonthData = seasonalData.find(m => m.month === nextMonthIdx + 1);
+                let nextMonthRev = baseMonthlyRev;
+                if (nextMonthData?.revenue && nextMonthData.revenue > 0) {
+                  nextMonthRev = Math.round(nextMonthData.revenue * guestMult);
+                } else if (nextMonthData) {
+                  const mult = baseOcc > 0 ? (nextMonthData.occupancy / baseOcc) : 1;
+                  nextMonthRev = Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5));
+                }
+                
+                // Daily rates for each month
+                const dailyRateThisMonth = currentMonthRev / daysInCurrentMonth;
+                const dailyRateNextMonth = nextMonthRev / daysInNextMonth;
+                
+                // Blended 30-day revenue
+                const thirtyDayRevenue = Math.round(
+                  (dailyRateThisMonth * daysLeftThisMonth) + 
+                  (dailyRateNextMonth * Math.max(daysFromNextMonth, 0))
+                );
+                
+                // Current month occupancy
+                const currentOcc = currentMonthData?.occupancy || baseOcc;
+                const nextOcc = nextMonthData?.occupancy || baseOcc;
+                const blendedOcc = Math.round(
+                  (currentOcc * daysLeftThisMonth + nextOcc * Math.max(daysFromNextMonth, 0)) / 30
+                );
+                
+                // Estimated booked nights
+                const bookedNights = Math.round(30 * blendedOcc / 100);
+                const estimatedADR = bookedNights > 0 ? Math.round(thirtyDayRevenue / bookedNights) : (result.adr || 0);
+                
+                // Determine if this is peak, average, or low
+                const monthlyAvg = annualRev / 12;
+                const isHigh = thirtyDayRevenue > monthlyAvg * 1.1;
+                const isLow = thirtyDayRevenue < monthlyAvg * 0.9;
+                const periodLabel = isHigh ? 'Peak Period' : isLow ? 'Low Period' : 'Average Period';
+                const periodColor = isHigh ? '#16a34a' : isLow ? '#f59e0b' : '#3b82f6';
+                const periodBg = isHigh ? '#f0fdf4' : isLow ? '#fffbeb' : '#eff6ff';
+                
+                const currentMonthName = monthNames[currentMonth];
+                const nextMonthName = monthNames[nextMonthIdx];
+                const endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                const dateRange = `${currentMonthName} ${dayOfMonth} – ${monthNames[endDate.getMonth()]} ${endDate.getDate()}`;
+                
+                return (
+                  <div className="mt-4 rounded-2xl p-5" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `2px solid ${periodColor}20` }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>Next 30 Days</h3>
+                        <p className="text-xs" style={{ color: '#787060' }}>{dateRange}</p>
+                      </div>
+                      <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: periodBg, color: periodColor }}>
+                        {periodLabel}
+                      </span>
+                    </div>
+                    
+                    <div className="text-center py-3 rounded-xl mb-3" style={{ backgroundColor: periodBg }}>
+                      <p className="text-xs font-medium mb-1" style={{ color: periodColor }}>Projected 30-Day Revenue</p>
+                      <p className="text-3xl font-bold" style={{ color: periodColor }}>
+                        {formatCurrency(thirtyDayRevenue)}
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                        <p className="text-xs" style={{ color: '#787060' }}>Est. ADR</p>
+                        <p className="text-sm font-bold" style={{ color: '#2b2823' }}>${estimatedADR}</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                        <p className="text-xs" style={{ color: '#787060' }}>Occupancy</p>
+                        <p className="text-sm font-bold" style={{ color: '#2b2823' }}>{blendedOcc}%</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                        <p className="text-xs" style={{ color: '#787060' }}>Booked</p>
+                        <p className="text-sm font-bold" style={{ color: '#2b2823' }}>{bookedNights}/30 nights</p>
+                      </div>
+                    </div>
+                    
+                    {/* Blended breakdown */}
+                    <div className="mt-3 flex gap-2">
+                      <div className="flex-1 p-2 rounded-lg text-center" style={{ backgroundColor: '#fafaf8' }}>
+                        <p className="text-[10px]" style={{ color: '#787060' }}>{currentMonthName} ({daysLeftThisMonth}d left)</p>
+                        <p className="text-xs font-semibold" style={{ color: '#2b2823' }}>{formatCurrency(Math.round(dailyRateThisMonth * daysLeftThisMonth))}</p>
+                      </div>
+                      {daysFromNextMonth > 0 && (
+                        <div className="flex-1 p-2 rounded-lg text-center" style={{ backgroundColor: '#fafaf8' }}>
+                          <p className="text-[10px]" style={{ color: '#787060' }}>{nextMonthName} ({daysFromNextMonth}d)</p>
+                          <p className="text-xs font-semibold" style={{ color: '#2b2823' }}>{formatCurrency(Math.round(dailyRateNextMonth * daysFromNextMonth))}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Google Maps Location */}
               <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
                 <div className="p-3 flex items-center justify-between" style={{ backgroundColor: '#f5f4f0' }}>
@@ -3150,6 +3278,20 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
               );
             })()}
+
+            {/* Comp Calendar Heatmap */}
+            {Object.keys(realOccupancyData).length > 0 && result.comparables && result.comparables.length > 0 && (
+              <CompCalendar
+                comparables={result.comparables.map(c => ({
+                  id: String(c.id || ''),
+                  name: c.name || 'Listing',
+                  url: c.url || '',
+                  adr: c.nightPrice,
+                  occupancy: c.occupancy,
+                }))}
+                occupancyData={realOccupancyData}
+              />
+            )}
 
             {/* Recommended Amenities for 90th Percentile */}
             {result.recommendedAmenities && result.recommendedAmenities.length > 0 && (

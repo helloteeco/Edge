@@ -22,6 +22,7 @@ interface OccupancyData {
   peakMonths: string[];
   lowMonths: string[];
   source: "calendar" | "estimated";
+  dailyCalendar?: { date: string; available: boolean }[];
 }
 
 // Check Supabase cache for existing occupancy data
@@ -168,7 +169,7 @@ async function scrapeOccupancyData(
 
     // Process calendar data into occupancy metrics per room
     // Output format: { room_id, date, available: boolean }
-    const roomCalendars = new Map<string, { booked: number; total: number; monthlyBooked: Map<number, number>; monthlyTotal: Map<number, number> }>();
+    const roomCalendars = new Map<string, { booked: number; total: number; monthlyBooked: Map<number, number>; monthlyTotal: Map<number, number>; dailyCalendar: { date: string; available: boolean }[] }>();
 
     for (const record of rawResults) {
       const roomId = String(record.room_id);
@@ -178,6 +179,7 @@ async function scrapeOccupancyData(
           total: 0,
           monthlyBooked: new Map(),
           monthlyTotal: new Map(),
+          dailyCalendar: [],
         });
       }
 
@@ -185,6 +187,10 @@ async function scrapeOccupancyData(
       cal.total++;
       if (!record.available) {
         cal.booked++;
+      }
+      // Store daily calendar entry for heatmap
+      if (record.date) {
+        cal.dailyCalendar.push({ date: record.date, available: !!record.available });
       }
 
       // Track monthly breakdown for seasonality
@@ -216,6 +222,9 @@ async function scrapeOccupancyData(
       const peakMonths = monthlyRates.slice(0, 3).map((m) => monthNames[m.month]);
       const lowMonths = monthlyRates.slice(-3).reverse().map((m) => monthNames[m.month]);
 
+      // Sort daily calendar by date
+      cal.dailyCalendar.sort((a, b) => a.date.localeCompare(b.date));
+
       const result: OccupancyData = {
         roomId,
         occupancyRate,
@@ -224,6 +233,7 @@ async function scrapeOccupancyData(
         peakMonths,
         lowMonths,
         source: "calendar",
+        dailyCalendar: cal.dailyCalendar,
       };
 
       occupancyResults.push(result);

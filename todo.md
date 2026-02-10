@@ -496,4 +496,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Quick Win: Cache TTL Extension (Feb 10, 2026)
-- [ ] Extend airbnb_comp_cache TTL from 24 hours to 7 days (saves 7x Apify costs)
+- [x] Extend airbnb_comp_cache TTL from 24 hours to 7 days (saves 7x Apify costs)
+
+
+## Medium Priority Calculator Improvements (Feb 10, 2026)
+- [ ] Forward-looking 30-day revenue estimate based on real occupancy/seasonal patterns
+- [ ] Comp calendar view with pricing and availability heatmap per listing
+- [ ] Calendar shows booked vs available days with nightly rate color coding
+- [ ] Tap a day on calendar to see rate details
+- [ ] Aggregate 30-day forecast from calendar data across included comps
