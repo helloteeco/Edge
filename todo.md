@@ -528,12 +528,12 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## "I'm Still Stuck" AI Help Assistant (February 2026)
-- [ ] Build reusable StuckHelper component with tab-specific context
-- [ ] Integrate into Map tab with map-specific sticking points
-- [ ] Integrate into Search tab with search-specific sticking points
-- [ ] Integrate into Calculator tab with calculator-specific sticking points
-- [ ] Integrate into Saved tab with saved-specific sticking points
-- [ ] Integrate into Funding/Resources tab with funding-specific sticking points
-- [ ] AI diagnoses common sticking points with short list of likely issues
-- [ ] AI answers questions using Edge chat assistant context
-- [ ] AI recommends links to all resources, services, and affiliates offered in the app
+- [x] Build reusable StuckHelper component with tab-specific context
+- [x] Integrate into Map tab with map-specific sticking points
+- [x] Integrate into Search tab with search-specific sticking points
+- [x] Integrate into Calculator tab with calculator-specific sticking points
+- [x] Integrate into Saved tab with saved-specific sticking points
+- [x] Integrate into Funding/Resources tab with funding-specific sticking points
+- [x] AI diagnoses common sticking points with short list of likely issues
+- [x] AI answers questions using Edge chat assistant context
+- [x] AI recommends links to all resources, services, and affiliates offered in the app
