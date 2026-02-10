@@ -660,9 +660,22 @@ export default function StatePage({ params }: { params: { id: string } }) {
       </div>
     </div>
     
-    {/* Floating Save Button */}
-    <FloatingSaveButton isSaved={isSaved} onToggleSave={toggleSave} />
-    <FloatingShareButton />
+    {/* Floating Action Buttons - Combined Pill */}
+    <div 
+      className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
+      style={{
+        bottom: '140px',
+        backgroundColor: '#ffffff',
+        border: '1.5px solid #d8d6cd',
+        borderRadius: '16px',
+        boxShadow: '0 4px 16px -4px rgba(43, 40, 35, 0.15)',
+        width: '56px',
+      }}
+    >
+      <FloatingSaveButton isSaved={isSaved} onToggleSave={toggleSave} />
+      <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
+      <FloatingShareButton />
+    </div>
     </DoubleTapSave>
   );
 }

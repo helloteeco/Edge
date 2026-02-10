@@ -677,20 +677,19 @@ export default function CityPage({ params }: { params: { id: string } }) {
               {city.regulation}
             </span>
             <span className="text-sm" style={{ color: '#787060' }}>
-              {city.strStatus === 'legal' && city.permitRequired ? 'Permit Required' : 
-               city.strStatus === 'legal' ? 'No Permit Required' :
-               city.strStatus === 'restricted' ? 'Restrictions Apply' :
-               city.strStatus === 'varies' ? 'Varies by Area' : 'Banned'}
+              {city.strStatus === 'restricted' ? 'Restrictions Apply' :
+               city.strStatus === 'varies' ? 'Varies by Area' :
+               city.strStatus === 'banned' ? 'Banned' : 'Permit Likely Required'}
             </span>
           </div>
           <p className="text-sm mb-4" style={{ color: '#787060' }}>
             {city.regulation === "Legal"
-              ? "Short-term rentals are allowed in this area. Always verify local ordinances before purchasing."
+              ? "Short-term rentals are allowed in this area. Most cities require a permit or registration — always verify local ordinances before purchasing."
               : "Some restrictions apply. Research local permit requirements and zoning laws carefully."}
           </p>
           <div className="flex flex-wrap gap-2">
             <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(city.name + ' ' + city.stateCode + ' short term rental permit requirements')}`}
+              href={`https://www.proper.insure/regulations/${encodeURIComponent(city.stateCode.toLowerCase())}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
@@ -702,7 +701,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
               Permitting Resources
             </a>
             <a
-              href={`https://www.google.com/search?q=${encodeURIComponent('short term rental insurance ' + city.stateCode + ' Airbnb host insurance')}`}
+              href="https://www.proper.insure"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
@@ -795,9 +794,22 @@ export default function CityPage({ params }: { params: { id: string } }) {
       </div>
     </div>
     
-    {/* Floating Save Button */}
-    <FloatingSaveButton isSaved={isSaved} onToggleSave={toggleSave} />
-    <FloatingShareButton />
+    {/* Floating Action Buttons - Combined Pill */}
+    <div 
+      className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
+      style={{
+        bottom: '140px',
+        backgroundColor: '#ffffff',
+        border: '1.5px solid #d8d6cd',
+        borderRadius: '16px',
+        boxShadow: '0 4px 16px -4px rgba(43, 40, 35, 0.15)',
+        width: '56px',
+      }}
+    >
+      <FloatingSaveButton isSaved={isSaved} onToggleSave={toggleSave} />
+      <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
+      <FloatingShareButton />
+    </div>
     </DoubleTapSave>
   );
 }

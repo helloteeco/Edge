@@ -328,14 +328,12 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
     <>
       <button
         onClick={handleClick}
-        className="fixed bottom-44 right-4 z-40 flex flex-col items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
+        className="flex flex-col items-center justify-center transition-all active:scale-95"
         style={{ 
-          backgroundColor: isSaved ? '#ef4444' : '#ffffff',
-          border: '2px solid #d8d6cd',
-          boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.2)',
+          backgroundColor: isSaved ? '#ef4444' : 'transparent',
           width: '56px',
-          height: '64px',
-          borderRadius: '16px'
+          padding: '10px 0 6px 0',
+          borderRadius: 0,
         }}
         aria-label={isSaved ? "Remove from saved" : "Save"}
       >
@@ -345,12 +343,12 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
           viewBox="0 0 24 24" 
           fill={isSaved ? '#ffffff' : 'none'}
           stroke={isSaved ? '#ffffff' : '#2b2823'}
-          strokeWidth="2"
+          strokeWidth="1.5"
         >
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
         <span 
-          className="text-xs font-medium mt-0.5"
+          className="text-[10px] font-medium mt-1"
           style={{ color: isSaved ? '#ffffff' : '#787060' }}
         >
           {saveCount}/{SAVE_LIMIT}
@@ -405,14 +403,12 @@ export function FloatingShareButton() {
     <>
       <button
         onClick={handleShare}
-        className="fixed bottom-[8.5rem] right-4 z-40 flex items-center justify-center shadow-lg transition-all active:scale-95 hover:scale-105"
+        className="flex items-center justify-center transition-all active:scale-95"
         style={{
-          backgroundColor: '#ffffff',
-          border: '2px solid #d8d6cd',
-          boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.2)',
+          backgroundColor: 'transparent',
           width: '56px',
-          height: '56px',
-          borderRadius: '16px'
+          padding: '10px 0',
+          borderRadius: 0,
         }}
         aria-label="Share"
       >
@@ -422,7 +418,7 @@ export function FloatingShareButton() {
           viewBox="0 0 24 24"
           fill="none"
           stroke="#2b2823"
-          strokeWidth="2"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         >

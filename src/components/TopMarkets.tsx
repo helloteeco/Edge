@@ -142,37 +142,62 @@ export function TopMarkets() {
         ))}
       </div>
       
-      {/* Scoring Explanation */}
+      {/* How We Score Markets - Legend */}
       <div 
-        className="rounded-xl p-5 text-sm"
+        className="rounded-xl p-5"
         style={{ backgroundColor: 'rgba(43, 40, 35, 0.03)', border: '1px solid #d8d6cd' }}
       >
         <div 
-          className="font-semibold mb-3"
+          className="font-semibold mb-4"
           style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
         >
           How We Score Markets
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" style={{ color: '#787060' }}>
-          <div className="flex items-center gap-1.5">
-            <span>Cash-on-Cash: <strong style={{ color: '#2b2823' }}>35pts</strong></span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-base">💰</span>
+              <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Cash-on-Cash</span>
+            </div>
+            <div className="text-sm font-bold" style={{ color: '#2b2823' }}>35 pts</div>
+            <div className="text-xs" style={{ color: '#787060' }}>Money you make back</div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Affordability: <strong style={{ color: '#2b2823' }}>25pts</strong></span>
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-base">🏠</span>
+              <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Affordability</span>
+            </div>
+            <div className="text-sm font-bold" style={{ color: '#2b2823' }}>25 pts</div>
+            <div className="text-xs" style={{ color: '#787060' }}>Can you afford it?</div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>STR Legality: <strong style={{ color: '#2b2823' }}>15pts</strong></span>
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-base">🗓️</span>
+              <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Year-Round Income</span>
+            </div>
+            <div className="text-sm font-bold" style={{ color: '#2b2823' }}>15 pts</div>
+            <div className="text-xs" style={{ color: '#787060' }}>Money in slow months?</div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Landlord Friendly: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-base">🤝</span>
+              <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Landlord Friendly</span>
+            </div>
+            <div className="text-sm font-bold" style={{ color: '#2b2823' }}>10 pts</div>
+            <div className="text-xs" style={{ color: '#787060' }}>Laws on your side?</div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span>Market Headroom: <strong style={{ color: '#2b2823' }}>10pts</strong></span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span>Appreciation: <strong style={{ color: '#2b2823' }}>5pts</strong></span>
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-base">📈</span>
+              <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Room to Grow</span>
+            </div>
+            <div className="text-sm font-bold" style={{ color: '#2b2823' }}>15 pts</div>
+            <div className="text-xs" style={{ color: '#787060' }}>Space for more rentals?</div>
           </div>
         </div>
+        <p className="text-xs mt-4 pt-3" style={{ color: '#9a9488', borderTop: '1px solid #e5e3da' }}>
+          This score helps you filter markets - it does not replace checking the actual deal.
+        </p>
       </div>
     </div>
   );
