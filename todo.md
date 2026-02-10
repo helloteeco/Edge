@@ -481,9 +481,19 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## High Priority Calculator Improvements (Feb 10, 2026)
-- [ ] Custom comp selection: add include/exclude toggle on each comp
-- [ ] Recalculate revenue estimate when comps are toggled on/off
-- [ ] Update comp map markers to reflect included/excluded state
-- [ ] Build per-listing Apify scrape API for real occupancy data (calendar scraping)
-- [ ] Integrate real occupancy data into comp display (actual vs estimated labels)
-- [ ] Update revenue estimates with real occupancy when available
+- [x] Custom comp selection: add include/exclude toggle on each comp
+- [x] Recalculate revenue estimate when comps are toggled on/off
+- [x] Update comp map markers to reflect included/excluded state
+- [x] Build per-listing Apify scrape API for real occupancy data (calendar scraping)
+- [x] Integrate real occupancy data into comp display (actual vs estimated labels)
+- [x] Update revenue estimates with real occupancy when available
+
+
+## Supabase Data Architecture (Feb 10, 2026)
+- [x] Design long-term caching strategy for comp data, occupancy, and analysis results
+- [x] Audit existing Supabase tables and identify gaps
+- [x] Create architecture document with table schemas, caching policies, and data lifecycle
+
+
+## Quick Win: Cache TTL Extension (Feb 10, 2026)
+- [ ] Extend airbnb_comp_cache TTL from 24 hours to 7 days (saves 7x Apify costs)

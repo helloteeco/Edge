@@ -11,8 +11,8 @@ const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN || "";
 const APIFY_ACTOR_ID = "tri_angle~airbnb-scraper";
 const APIFY_BASE_URL = "https://api.apify.com/v2";
 
-// Cache duration: 24 hours (Airbnb data doesn't change hourly)
-const CACHE_DURATION_HOURS = 24;
+// Cache duration: 7 days (168 hours) — Airbnb listings are stable week-to-week, saves 7x Apify costs
+const CACHE_DURATION_HOURS = 168;
 
 // Generate a cache key from lat/lng/bedrooms (rounded to ~1 mile precision)
 function getCacheKey(lat: number, lng: number, bedrooms: number): string {
