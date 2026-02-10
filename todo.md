@@ -418,8 +418,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 ## Share Buttons & Link Previews (February 2026)
 - [ ] Add share buttons to city/state cards in list views
-- [ ] Set up Open Graph meta tags for city pages (rich link previews)
-- [ ] Set up Open Graph meta tags for state pages (rich link previews)
+- [x] Set up Open Graph meta tags for city pages (rich link previews)
+- [x] Set up Open Graph meta tags for state pages (rich link previews)
 - [ ] Include branded share text with Edge tagline
 - [x] Fix floating heart button overlapping with AI chat button - move higher up
 - [x] Fix dark screen staying after double-tap heart animation
@@ -551,7 +551,7 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## Dynamic OG Preview Cards Fix (February 2026)
-- [ ] Fix dynamic OG preview cards for calculator analysis shares (address, revenue, grade, CoC, occupancy, ADR)
-- [ ] Fix dynamic OG preview cards for city page shares (city name, score, key metrics)
-- [ ] Ensure preview cards match the design from the user's screenshot (Edge by Teeco branding)
-- [ ] Verify share links generate proper og:image meta tags with dynamic data
+- [x] Fix dynamic OG preview cards for calculator analysis shares (address, revenue, grade, CoC, occupancy, ADR)
+- [x] Fix dynamic OG preview cards for city page shares (city name, score, key metrics)
+- [x] Ensure preview cards match the design from the user's screenshot (Edge by Teeco branding)
+- [x] Verify share links generate proper og:image meta tags with dynamic data
