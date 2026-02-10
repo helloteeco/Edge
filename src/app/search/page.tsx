@@ -296,7 +296,7 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="max-w-4xl mx-auto px-4 py-5">
-        {/* Results Count */
+        {/* Results Count */}
         <div className="flex items-center justify-between mb-5">
           <p className="text-sm" style={{ color: '#787060' }}>
             {filter === "allCities" && serverLoading && serverCities.length === 0 ? (

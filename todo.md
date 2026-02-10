@@ -545,6 +545,6 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 
 
 ## StuckHelper Improvements (February 2026)
-- [ ] Add second StuckHelper in Calculator between input section and analysis results
-- [ ] Update StuckHelper button wording per tab (e.g., "Need help deciding?" on Search)
-- [ ] Add lightweight analytics tracking for StuckHelper engagement (open, question tapped, message sent)
+- [x] Add second StuckHelper in Calculator between input section and analysis results
+- [x] Update StuckHelper button wording per tab (e.g., "Need help deciding?" on Search)
+- [x] Add lightweight analytics tracking for StuckHelper engagement (open, question tapped, message sent)
