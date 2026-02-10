@@ -25,6 +25,8 @@ export function ChatAssistant() {
     experience: "",
     email: "",
   });
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -81,11 +83,35 @@ export function ChatAssistant() {
     }
   };
 
-  const handleEmailSubmit = () => {
-    if (!surveyData.email.includes("@")) return;
+  const handleEmailSubmit = async () => {
+    if (!surveyData.email.includes("@")) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    setEmailSaving(true);
+    setEmailError("");
+    
+    try {
+      // Save to Supabase via API
+      await fetch("/api/coaching-leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: surveyData.email,
+          budget: surveyData.budget,
+          timeline: surveyData.timeline,
+          experience: surveyData.experience,
+          source: "assistant",
+        }),
+      });
+    } catch (err) {
+      console.error("Error saving coaching lead:", err);
+      // Continue anyway - don't block the user
+    } finally {
+      setEmailSaving(false);
+    }
+    
     setSurveyStep("complete");
-    // In production, send this data to your backend/email service
-    console.log("Survey completed:", surveyData);
   };
 
   const isQualified = 
@@ -97,6 +123,7 @@ export function ChatAssistant() {
     setMessages([]);
     setSurveyStep("none");
     setSurveyData({ budget: "", timeline: "", experience: "", email: "" });
+    setEmailError("");
   };
 
   // Suggested questions for new users
@@ -254,9 +281,26 @@ export function ChatAssistant() {
                             key={i}
                             onClick={() => {
                               setInput(question);
+                              setTimeout(() => {
+                                const fakeEvent = { key: "Enter" } as React.KeyboardEvent;
+                                void fakeEvent;
+                                setInput("");
+                                const newMessages: Message[] = [{ role: "user", content: question }];
+                                setMessages(newMessages);
+                                setIsLoading(true);
+                                fetch("/api/chat", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+                                }).then(res => res.json()).then(data => {
+                                  setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
+                                }).catch(() => {
+                                  setMessages(prev => [...prev, { role: "assistant", content: "I'm having trouble connecting. Please try again!" }]);
+                                }).finally(() => setIsLoading(false));
+                              }, 50);
                             }}
-                            className="w-full p-2.5 rounded-lg text-left text-sm transition-all hover:scale-[1.02]"
-                            style={{ backgroundColor: '#f5f4f0', color: '#2b2823', border: '1px solid #e5e3da' }}
+                            className="w-full p-2.5 rounded-lg text-left text-sm transition-all"
+                            style={{ backgroundColor: '#f5f5f0', border: '1px solid #e5e3da', color: '#2b2823' }}
                           >
                             {question}
                           </button>
@@ -265,39 +309,34 @@ export function ChatAssistant() {
                     </div>
                   )}
                   {messages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`p-3 rounded-2xl max-w-[85%] text-sm ${
-                        msg.role === "user"
-                          ? "ml-auto rounded-br-md"
-                          : "rounded-bl-md"
-                      }`}
-                      style={{
-                        backgroundColor: msg.role === "user" ? '#2b2823' : '#e5e3da',
-                        color: msg.role === "user" ? '#ffffff' : '#2b2823'
-                      }}
-                    >
-                      {msg.content}
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className="max-w-[85%] px-4 py-2.5 rounded-2xl text-sm"
+                        style={{
+                          backgroundColor: msg.role === "user" ? '#2b2823' : '#e5e3da',
+                          color: msg.role === "user" ? '#ffffff' : '#2b2823',
+                          borderBottomRightRadius: msg.role === "user" ? 4 : undefined,
+                          borderBottomLeftRadius: msg.role === "assistant" ? 4 : undefined,
+                        }}
+                      >
+                        {msg.content}
+                      </div>
                     </div>
                   ))}
                   {isLoading && (
-                    <div 
-                      className="p-3 rounded-2xl rounded-bl-md max-w-[85%] text-sm"
-                      style={{ backgroundColor: '#e5e3da', color: '#787060' }}
-                    >
-                      <div className="flex items-center gap-2">
+                    <div className="flex justify-start">
+                      <div className="px-4 py-3 rounded-2xl" style={{ backgroundColor: '#e5e3da' }}>
                         <div className="flex gap-1">
-                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: "0ms" }}></span>
-                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: "150ms" }}></span>
-                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: "300ms" }}></span>
+                          <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: '300ms' }} />
                         </div>
-                        <span>Thinking...</span>
                       </div>
                     </div>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
-                <div className="p-3 bg-white" style={{ borderTop: '1px solid #d8d6cd' }}>
+                <div className="p-3 border-t" style={{ borderColor: '#e5e3da' }}>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -338,7 +377,8 @@ export function ChatAssistant() {
               <div className="p-4">
                 {surveyStep === "budget" && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>What&apos;s your investment budget?</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>How much deployable cash do you have?</h4>
+                    <p className="text-xs" style={{ color: '#787060' }}>This helps us recommend the right strategy for you.</p>
                     {["Under $100k", "$100k-250k", "$250k-500k", "$500k+"].map((opt) => (
                       <button
                         key={opt}
@@ -354,7 +394,7 @@ export function ChatAssistant() {
 
                 {surveyStep === "timeline" && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>When are you looking to invest?</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>When do you plan to launch your Airbnb?</h4>
                     {["Ready now", "3-6 months", "6-12 months", "Just exploring"].map((opt) => (
                       <button
                         key={opt}
@@ -387,21 +427,38 @@ export function ChatAssistant() {
                 {surveyStep === "email" && (
                   <div className="space-y-4">
                     <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Enter your email to continue</h4>
+                    <p className="text-xs" style={{ color: '#787060' }}>We&apos;ll send you personalized recommendations based on your answers.</p>
                     <input
                       type="email"
                       value={surveyData.email}
-                      onChange={(e) => setSurveyData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => { setSurveyData(prev => ({ ...prev, email: e.target.value })); setEmailError(""); }}
+                      onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
                       placeholder="your@email.com"
                       className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2"
-                      style={{ backgroundColor: '#e5e3da', border: '1px solid #d8d6cd', color: '#2b2823' }}
+                      style={{ 
+                        backgroundColor: '#e5e3da', 
+                        border: emailError ? '2px solid #ef4444' : '1px solid #d8d6cd', 
+                        color: '#2b2823' 
+                      }}
                     />
+                    {emailError && (
+                      <p className="text-sm" style={{ color: '#ef4444' }}>{emailError}</p>
+                    )}
                     <button
                       onClick={handleEmailSubmit}
+                      disabled={emailSaving}
                       className="w-full py-3 rounded-xl font-semibold transition-colors"
-                      style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                      style={{ 
+                        backgroundColor: emailSaving ? '#9a9488' : '#2b2823', 
+                        color: '#ffffff',
+                        opacity: emailSaving ? 0.7 : 1
+                      }}
                     >
-                      Continue
+                      {emailSaving ? 'Saving...' : 'Continue'}
                     </button>
+                    <p className="text-xs text-center" style={{ color: '#9a9488' }}>
+                      We&apos;ll never spam you. Unsubscribe anytime.
+                    </p>
                   </div>
                 )}
 

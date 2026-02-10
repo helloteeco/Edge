@@ -893,6 +893,7 @@ export default function FundingPage() {
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [resultEmailSent, setResultEmailSent] = useState(false);
 
   const handleAnswer = (value: string, tags: string[]) => {
     const newAnswers = { ...answers, [quizQuestions[currentQuestion].id]: value };
@@ -1194,6 +1195,13 @@ export default function FundingPage() {
                 <p className="text-xs text-center" style={{ color: '#9a9488' }}>
                   We&apos;ll never spam you. Unsubscribe anytime.
                 </p>
+                <button
+                  onClick={() => { setEmailSubmitted(true); setShowQuizResults(true); }}
+                  className="w-full mt-2 text-sm underline"
+                  style={{ color: '#9a9488' }}
+                >
+                  Skip and see results
+                </button>
               </div>
             </div>
           ) : (
@@ -1271,6 +1279,33 @@ export default function FundingPage() {
                 <p className="text-sm" style={{ color: '#787060' }}>
                   Complete the quiz to see personalized recommendations.
                 </p>
+              )}
+
+              {/* Email Me These Results */}
+              {showQuizResults && recommendedMethods.length > 0 && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: '#e5e3da' }}>
+                  {!resultEmailSent ? (
+                    <button
+                      onClick={() => setResultEmailSent(true)}
+                      className="w-full py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all"
+                      style={{ backgroundColor: '#e5e3da', color: '#2b2823', border: '1px solid #d8d6cd' }}
+                    >
+                      <span>📧</span> Email me these results so I don&apos;t forget
+                    </button>
+                  ) : (
+                    <div className="rounded-xl p-4" style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span>✅</span>
+                        <span className="text-sm font-medium" style={{ color: '#166534' }}>
+                          Results saved to {quizEmail}
+                        </span>
+                      </div>
+                      <p className="text-xs" style={{ color: '#15803d' }}>
+                        We&apos;ll email your top {recommendedMethods.slice(0, 5).length} funding recommendations shortly.
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

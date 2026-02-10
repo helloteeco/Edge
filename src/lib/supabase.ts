@@ -885,3 +885,117 @@ export async function getAllQuizLeads(): Promise<QuizLead[]> {
   
   return data;
 }
+
+// ============================================================
+// COACHING LEADS (from AI Assistant intake survey)
+// ============================================================
+
+export interface CoachingLead {
+  id: number;
+  email: string;
+  budget: string;
+  timeline: string;
+  experience: string;
+  qualified: boolean;
+  source: string;
+  created_at: string;
+}
+
+export async function saveCoachingLead(
+  email: string,
+  budget: string,
+  timeline: string,
+  experience: string,
+  source: string = 'assistant'
+): Promise<boolean> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const qualified = 
+    (budget === '$100k-250k' || budget === '$250k-500k' || budget === '$500k+') &&
+    (timeline === 'Ready now' || timeline === '3-6 months');
+
+  const { error } = await supabase
+    .from('coaching_leads')
+    .insert({
+      email: normalizedEmail,
+      budget,
+      timeline,
+      experience,
+      qualified,
+      source,
+    });
+
+  if (error) {
+    console.error('Error saving coaching lead:', error);
+    return false;
+  }
+
+  console.log(`[CoachingLead] Saved: ${normalizedEmail} | Qualified: ${qualified} | Source: ${source}`);
+  return true;
+}
+
+export async function getAllCoachingLeads(): Promise<CoachingLead[]> {
+  const { data, error } = await supabase
+    .from('coaching_leads')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    console.error('Error getting coaching leads:', error);
+    return [];
+  }
+
+  return data;
+}
+
+// ============================================================
+// ADMIN DASHBOARD AGGREGATES
+// ============================================================
+
+export async function getAdminDashboardData() {
+  // Parallel fetch all data
+  const [
+    usersRes,
+    quizLeadsRes,
+    coachingLeadsRes,
+    savedPropsRes,
+    propertyCacheRes,
+    analysisLogRes,
+    marketDataRes,
+  ] = await Promise.all([
+    supabase.from('users').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+    supabase.from('quiz_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+    supabase.from('coaching_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+    supabase.from('saved_properties').select('*', { count: 'exact' }),
+    supabase.from('property_cache').select('*', { count: 'exact' }),
+    supabase.from('analysis_log').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+    supabase.from('market_data').select('*', { count: 'exact' }),
+  ]);
+
+  return {
+    users: {
+      count: usersRes.count || 0,
+      data: usersRes.data || [],
+    },
+    quizLeads: {
+      count: quizLeadsRes.count || 0,
+      data: quizLeadsRes.data || [],
+    },
+    coachingLeads: {
+      count: coachingLeadsRes.count || 0,
+      data: coachingLeadsRes.data || [],
+    },
+    savedProperties: {
+      count: savedPropsRes.count || 0,
+    },
+    cachedResults: {
+      count: propertyCacheRes.count || 0,
+    },
+    analysisLog: {
+      count: analysisLogRes.count || 0,
+      data: analysisLogRes.data || [],
+    },
+    marketData: {
+      count: marketDataRes.count || 0,
+    },
+  };
+}
