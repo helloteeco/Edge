@@ -941,7 +941,7 @@ export default function CalculatorPage() {
         return 0;
       };
 
-      // Get REAL data from Mashvisor - STR only
+      // Get REAL data from Apify comps - STR only
       const avgAdr = parseNum(neighborhood?.adr);
       const avgOccupancy = parseNum(neighborhood?.occupancy);
       
@@ -2071,7 +2071,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                       Showing data for: <strong>{marketMismatch.returned}</strong>
                     </p>
                     <p className="text-xs mt-2" style={{ color: '#b45309' }}>
-                      Airbtics doesn&apos;t have specific data for your location. These estimates are based on the nearest market with available data. <strong>Use these numbers as a rough reference only.</strong>
+                      We couldn&apos;t find specific data for your location. These estimates are based on the nearest market with available data. <strong>Use these numbers as a rough reference only.</strong>
                     </p>
                     <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: '#fef9c3' }}>
                       <span className="text-lg">ℹ️</span>
@@ -2320,7 +2320,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                 </label>
                 {useCustomIncome && (
                   <div className="mt-3 space-y-3">
-                    <p className="text-xs text-gray-500">Override Mashvisor data with your market knowledge:</p>
+                    <p className="text-xs text-gray-500">Override market data with your own knowledge:</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
                         <label className="text-xs font-medium text-gray-600 block mb-1">Annual Revenue ($)</label>
@@ -2626,7 +2626,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   placeholder="Enter sqft..."
                 />
                 {result.sqft > 0 && (
-                  <p className="text-xs text-gray-400 mt-1">Mashvisor data: {result.sqft} sqft</p>
+                  <p className="text-xs text-gray-400 mt-1">Market data: {result.sqft} sqft</p>
                 )}
               </div>
               
@@ -3674,7 +3674,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
               </a>
             </p>
             <p className="text-xs" style={{ color: '#a0a0a0' }}>
-              Edge data: <span style={{ color: '#787060' }}>Airbtics</span> · 96%+ accuracy
+              Edge data: <span style={{ color: '#787060' }}>Airbnb Comps</span> · Live market data
             </p>
           </div>
         </div>
@@ -3774,7 +3774,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated in
                   )}
                 </p>
                 <p className="text-xs mt-3" style={{ color: '#b45309' }}>
-                  Airbtics doesn&apos;t have specific rental data for this location. The estimates shown will be based on the nearest market, which may not accurately reflect your area.
+                  We don&apos;t have specific rental data for this location yet. The estimates shown may be based on the nearest market, which may not accurately reflect your area.
                 </p>
               </div>
               
