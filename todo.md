@@ -537,3 +537,8 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] AI diagnoses common sticking points with short list of likely issues
 - [x] AI answers questions using Edge chat assistant context
 - [x] AI recommends links to all resources, services, and affiliates offered in the app
+
+
+## Search Tab StuckHelper Visibility (February 2026)
+- [ ] Move StuckHelper on search page to be visible without scrolling past all results
+- [ ] Ensure it doesn't disrupt the search/filter UX flow

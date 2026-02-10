@@ -289,9 +289,14 @@ export default function SearchPage() {
         </div>
       </div>
 
+      {/* Stuck Helper - placed above results so users see it without scrolling past all cards */}
+      <div className="max-w-4xl mx-auto px-4 pt-2">
+        <StuckHelper tabName="search" />
+      </div>
+
       {/* Results */}
       <div className="max-w-4xl mx-auto px-4 py-5">
-        {/* Results Count */}
+        {/* Results Count */
         <div className="flex items-center justify-between mb-5">
           <p className="text-sm" style={{ color: '#787060' }}>
             {filter === "allCities" && serverLoading && serverCities.length === 0 ? (
@@ -692,8 +697,7 @@ export default function SearchPage() {
             </p>
           </div>
         )}
-        {/* Stuck Helper */}
-        <StuckHelper tabName="search" />
+
       </div>
     </div>
   );
