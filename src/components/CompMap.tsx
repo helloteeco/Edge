@@ -221,6 +221,7 @@ function ensureCustomStyles(): void {
     .comp-map-container .leaflet-container {
       width: 100% !important;
       height: 100% !important;
+      max-height: 300px !important;
     }
     .comp-map-container .leaflet-tile-pane {
       will-change: transform;
@@ -526,10 +527,12 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         ref={mapRef}
         style={{
           width: "100%",
-          height: "400px",
+          height: "300px",
+          maxHeight: "300px",
           position: "relative",
           zIndex: 1,
           background: "#f5f4f0",
+          overflow: "hidden",
         }}
       />
 

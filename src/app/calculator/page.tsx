@@ -4057,29 +4057,23 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               if (mapTargetLat === 0 && mapTargetLng === 0) return null;
               
               return (
-                <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <div className="p-4 pb-2">
-                    <h3 className="text-lg font-semibold" style={{ color: '#2b2823' }}>📍 Comp Map</h3>
-                    <p className="text-xs mt-0.5" style={{ color: '#787060' }}>Your property (blue) vs. comparable listings. Tap a pin for details.</p>
+                <CalculatorErrorBoundary fallback={
+                  <div className="p-6 text-center rounded-2xl" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                    <p className="text-sm" style={{ color: '#ef4444' }}>Map failed to load. Try refreshing the page.</p>
                   </div>
-                  <CalculatorErrorBoundary fallback={
-                    <div className="p-6 text-center">
-                      <p className="text-sm" style={{ color: '#ef4444' }}>Map failed to load. Try refreshing the page.</p>
-                    </div>
-                  }>
-                    <CompMap
-                      comparables={result.comparables}
-                      targetLat={mapTargetLat}
-                      targetLng={mapTargetLng}
-                      targetAddress={result.address}
-                      excludedIds={excludedCompIds}
-                      onSelectComp={(comp) => {
-                        const compEl = document.getElementById(`comp-card-${comp.id}`);
-                        if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }}
-                    />
-                  </CalculatorErrorBoundary>
-                </div>
+                }>
+                  <CompMap
+                    comparables={result.comparables}
+                    targetLat={mapTargetLat}
+                    targetLng={mapTargetLng}
+                    targetAddress={result.address}
+                    excludedIds={excludedCompIds}
+                    onSelectComp={(comp) => {
+                      const compEl = document.getElementById(`comp-card-${comp.id}`);
+                      if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                  />
+                </CalculatorErrorBoundary>
               );
             })()}
 
