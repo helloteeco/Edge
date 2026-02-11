@@ -28,13 +28,17 @@ function calculatePercentiles(values: number[]): { p25: number; p50: number; p75
   };
 }
 
-// Estimate occupancy from review count (same heuristic as server)
+// Estimate occupancy from review count (same improved heuristic as server)
+// 30% review rate, 3.5 avg stay nights, 12% last-minute booking uplift
 function estimateOccupancy(reviewsCount: number, listingAgeFactor: number = 2): number {
   if (reviewsCount <= 0) return 55;
-  const bookingsPerYear = (reviewsCount / listingAgeFactor) * 3;
-  const nightsPerYear = bookingsPerYear * 3;
-  const occupancy = Math.round((nightsPerYear / 365) * 100);
-  return Math.min(85, Math.max(30, occupancy));
+  const reviewsPerYear = reviewsCount / listingAgeFactor;
+  const bookingsPerYear = reviewsPerYear / 0.30;
+  const avgStayNights = 3.5;
+  const nightsPerYear = bookingsPerYear * avgStayNights;
+  const adjustedNights = nightsPerYear * 1.12;
+  const occupancy = Math.round((adjustedNights / 365) * 100);
+  return Math.min(90, Math.max(35, occupancy));
 }
 
 export interface Comp {

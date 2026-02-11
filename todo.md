@@ -58,9 +58,21 @@
 
 
 ## BUG: Calculator dynamic recalculation + comp map (February 2026)
-- [ ] Bedroom/bath/guest changes must dynamically recalculate revenue, ADR, occupancy, next-30-day revenue from full comp pool
-- [ ] Comp list must actually filter by selected bedroom count (currently static)
+- [x] Bedroom/bath/guest changes must dynamically recalculate revenue, ADR, occupancy, next-30-day revenue from full comp pool
+- [x] Comp list must actually filter by selected bedroom count (auto-refilter on change)
 - [ ] User's own 40 Airbnbs in the area don't appear in comps
-- [ ] Add dynamic interactive comp map to calculator page (Rabbu/AirDNA style)
-- [ ] Map should show all comp pins, clickable to show listing details
-- [ ] One-button recalculation after changing bed/bath/guest count
+- [x] Add dynamic interactive comp map to calculator page (fixed: targetCoordinates now saved/restored in all cache paths)
+- [x] Map should show all comp pins, clickable to show listing details (CompMap already existed, was hidden due to missing targetCoordinates)
+- [x] One-button recalculation after changing bed/bath/guest count (now auto-triggers, no button needed)
+
+
+## ACCURACY: Calculator systematically underestimates rural/tourism markets (February 2026)
+- [ ] Research why Airbnb scraped occupancy data is much lower than actual host occupancy
+- [ ] Add last-minute booking uplift factor (Airbnb calendars show "available" but get booked last minute)
+- [ ] Add seasonality-aware revenue calculation (summer peak vs winter trough)
+- [ ] Add superhost/amenity premium adjustment
+- [ ] Add "Host Quality Adjustment" toggle in UI (new host vs experienced host)
+- [ ] Weight comps by performance quality (top performers vs average)
+- [ ] Show revenue range (conservative/moderate/optimistic) instead of single number
+- [ ] Use P50/P75 percentile display to show realistic range for good operators
+- [ ] Fix: only 3 comps found for Oak Hill WV — need wider search radius for rural areas

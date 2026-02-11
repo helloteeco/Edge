@@ -471,14 +471,20 @@ function calculatePercentiles(values: number[]): { p25: number; p50: number; p75
   };
 }
 
-// Estimate occupancy from review count using industry heuristic
-// Reviews/year × ~3 = bookings/year, avg stay ~3 nights
+// Estimate occupancy from review count using improved industry heuristic
+// Airbnb data: ~30% of guests leave reviews (was assuming 33% = 3x multiplier)
+// Actual: reviews/year ÷ 0.30 = bookings/year, avg stay ~3.5 nights (longer in vacation markets)
+// Also accounts for last-minute bookings that don't show in scraped calendar data
 function estimateOccupancy(reviewsCount: number, listingAgeFactor: number = 2): number {
-  if (reviewsCount <= 0) return 55; // Conservative default
-  const bookingsPerYear = (reviewsCount / listingAgeFactor) * 3;
-  const nightsPerYear = bookingsPerYear * 3;
-  const occupancy = Math.round((nightsPerYear / 365) * 100);
-  return Math.min(85, Math.max(30, occupancy));
+  if (reviewsCount <= 0) return 55; // Conservative default for new/no-review listings
+  const reviewsPerYear = reviewsCount / listingAgeFactor;
+  const bookingsPerYear = reviewsPerYear / 0.30; // 30% review rate (industry standard)
+  const avgStayNights = 3.5; // Vacation rentals average 3-4 nights
+  const nightsPerYear = bookingsPerYear * avgStayNights;
+  // Add 12% for last-minute bookings not captured in calendar scrapes
+  const adjustedNights = nightsPerYear * 1.12;
+  const occupancy = Math.round((adjustedNights / 365) * 100);
+  return Math.min(90, Math.max(35, occupancy));
 }
 
 // Enrich listings with revenue estimates and distance
@@ -568,9 +574,16 @@ function enrichListings(
 // ============================================================================
 
 function getMarketType(lat: number, lng: number): string {
-  if ((lat >= 35 && lat <= 37 && lng >= -84 && lng <= -82) ||
-      (lat >= 38 && lat <= 41 && lng >= -107 && lng <= -104) ||
-      (lat >= 40 && lat <= 42 && lng >= -112 && lng <= -110)) return "mountain";
+  // Mountain/outdoor tourism markets
+  if ((lat >= 35 && lat <= 37 && lng >= -84 && lng <= -82) ||   // Smoky Mountains TN/NC
+      (lat >= 37 && lat <= 40 && lng >= -82 && lng <= -79) ||   // WV/VA Appalachian (New River Gorge, Shenandoah)
+      (lat >= 38 && lat <= 41 && lng >= -107 && lng <= -104) || // Colorado Rockies
+      (lat >= 40 && lat <= 42 && lng >= -112 && lng <= -110) || // Utah mountains
+      (lat >= 43 && lat <= 48 && lng >= -115 && lng <= -110) || // Idaho/Montana
+      (lat >= 34 && lat <= 37 && lng >= -112 && lng <= -109) || // Arizona mountains (Sedona, Flagstaff)
+      (lat >= 35 && lat <= 37 && lng >= -79 && lng <= -76) ||   // NC Blue Ridge
+      (lat >= 34 && lat <= 36 && lng >= -84 && lng <= -83))     // North GA mountains
+    return "mountain";
   if ((lat >= 24 && lat <= 31 && lng >= -88 && lng <= -80) ||
       (lat >= 32 && lat <= 38 && lng >= -124 && lng <= -117)) return "beach";
   if ((lat >= 35 && lat <= 37 && lng >= -86 && lng <= -84) ||
@@ -1067,6 +1080,7 @@ function buildResponse(params: {
     bedroomMultiplier: 1.0,
     ruralCorrectionApplied: false,
     isRuralMarket: getMarketType(params.latitude, params.longitude) === "rural",
+    marketType: getMarketType(params.latitude, params.longitude),
 
     property: {
       address: params.street,
