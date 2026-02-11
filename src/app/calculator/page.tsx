@@ -3015,7 +3015,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <div className="flex flex-wrap gap-3 mb-3">
                 <div className="flex-1 min-w-[100px]">
                   <label className="text-[11px] font-medium mb-1 block" style={{ color: '#787060' }}>Bedrooms</label>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1.5">
                     {[1, 2, 3, 4, 5, 6].map((num) => (
                       <button
                         key={num}
@@ -3030,7 +3030,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
                 <div className="flex-1 min-w-[100px]">
                   <label className="text-[11px] font-medium mb-1 block" style={{ color: '#787060' }}>Bathrooms</label>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1.5">
                     {[1, 2, 3, 4, 5].map((num) => (
                       <button
                         key={num}
@@ -3046,7 +3046,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
               <div className="mb-4">
                 <label className="text-[11px] font-medium mb-1 block" style={{ color: '#787060' }}>Sleeps</label>
-                <div className="flex gap-1 flex-wrap">
+                <div className="flex gap-1.5 flex-wrap">
                   {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
                     <button
                       key={num}
@@ -3066,7 +3066,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {/* Host Performance Level — compact */}
               <div className="mb-3">
                 <p className="text-[11px] font-semibold mb-1.5" style={{ color: '#2b2823' }}>Host Performance Level</p>
-                <div className="grid grid-cols-4 gap-1">
+                <div className="grid grid-cols-4 gap-2">
                   {([
                     { key: 'new' as const, label: 'New', desc: '-20%' },
                     { key: 'average' as const, label: 'Average', desc: 'Baseline' },
@@ -3106,7 +3106,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {/* Amenity Premiums — compact 3-col grid */}
               <div className="mb-3">
                 <p className="text-[11px] font-semibold mb-1.5" style={{ color: '#2b2823' }}>Amenity Premiums</p>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-3 gap-2">
                   {([
                     { state: amenityHotTub, setter: setAmenityHotTub, label: 'Hot Tub', boost: '+12%', icon: '♨️' },
                     { state: amenityPool, setter: setAmenityPool, label: 'Pool', boost: '+15%', icon: '🏊' },
@@ -3138,7 +3138,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {/* Adjustment Summary Tags */}
               {getAdjustmentBreakdown().length > 0 && (
                 <div className="pt-2" style={{ borderTop: '1px solid #e5e2dc' }}>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {getAdjustmentBreakdown().map((item, i) => (
                       <span key={i} className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: item.percent > 0 ? '#f0fdf4' : '#fef2f2', color: item.percent > 0 ? '#16a34a' : '#ef4444' }}>
                         {item.label}: {item.percent > 0 ? '+' : ''}{item.percent}%
@@ -3303,7 +3303,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
 
               {/* Percentile Selector */}
-              <div className="flex gap-1.5 sm:gap-2 mb-4 overflow-x-auto">
+              <div className="flex gap-2 sm:gap-3 mb-4 overflow-x-auto">
                 {(["average", "75th", "90th"] as const).map((p) => (
                   <button
                     key={p}
@@ -3444,7 +3444,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 const dateRange = `${currentMonthName} ${dayOfMonth} – ${monthNames[endDate.getMonth()]} ${endDate.getDate()}`;
                 
                 return (
-                  <div className="mt-4 rounded-2xl p-5" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `2px solid ${periodColor}20` }}>
+                  <div className="mt-4 rounded-2xl p-6" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `2px solid ${periodColor}20` }}>
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>Next 30 Days</h3>
@@ -3547,7 +3547,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
 
               {/* Key Metrics */}
-              <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-3 gap-4 mt-6">
                 <div className="text-center p-3 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
                   <p className="text-xs text-gray-500">Avg Nightly Rate</p>
                   <p className="text-lg font-bold" style={{ color: "#2b2823" }}>{formatCurrency(result.adr)}</p>
@@ -3752,7 +3752,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Revenue Projection</h3>
               <p className="text-sm text-gray-500 mb-4">Estimated revenue based on seasonal occupancy</p>
               
-              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
                 {getSeasonalityData().map((month, index) => {
                   const annualRev = getDisplayRevenue() || 0;
                   const baseMonthlyRev = annualRev / 12;
@@ -3879,7 +3879,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   </div>
                 )}
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {comps.slice(0, 10).map((listing, index) => {
                     const isExcluded = excludedCompIds.has(listing.id);
                     return (

@@ -99,3 +99,6 @@
 ## Quick fix: spacing between Deal Score, AI Analysis CTA, and Next Steps (February 2026)
 - [x] Add proper vertical spacing between Deal Score badge, AI Analysis CTA, and Your Next Steps sections (added mt-4 to each)
 - [x] Fix Deal Score breakdown tiles (Cash-on-Cash, Cash Flow, Occupancy, Data Quality) touching each other — gap-2 → gap-3
+
+## Full spacing audit — calculator page (February 2026)
+- [x] Audit and fix all spacing inconsistencies across every section of the calculator results page
