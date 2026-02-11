@@ -221,7 +221,6 @@ function ensureCustomStyles(): void {
     .comp-map-container .leaflet-container {
       width: 100% !important;
       height: 100% !important;
-      max-height: 300px !important;
     }
     .comp-map-container .leaflet-tile-pane {
       will-change: transform;
@@ -316,11 +315,14 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
       // 8. CRITICAL: invalidateSize after tiles start loading to fix tile alignment
       // This forces Leaflet to recalculate the container dimensions
       map.whenReady(() => {
+        // Immediate invalidateSize
+        map.invalidateSize({ animate: false });
+        // Delayed invalidateSize to catch late layout shifts
         setTimeout(() => {
           if (map && mapRef.current) {
             map.invalidateSize({ animate: false });
           }
-        }, 150);
+        }, 200);
       });
 
       // 9. Set up ResizeObserver to handle container resize
@@ -437,36 +439,40 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
       markersRef.current = markers;
 
       // ===== FIT BOUNDS — zoom to show all markers =====
-      if (validComps.length > 0) {
-        // Filter outliers: only include comps within ~69 miles of target
-        const nearbyComps = validComps.filter((c) => {
-          const latDiff = Math.abs(c.latitude - targetLat);
-          const lngDiff = Math.abs(c.longitude - targetLng);
-          return latDiff < 1 && lngDiff < 1 && c.latitude !== 0 && c.longitude !== 0;
-        });
+      const doFitBounds = () => {
+        if (!map || !mapRef.current) return;
+        
+        if (validComps.length > 0) {
+          // Filter outliers: only include comps within ~69 miles of target
+          const nearbyComps = validComps.filter((c) => {
+            const latDiff = Math.abs(c.latitude - targetLat);
+            const lngDiff = Math.abs(c.longitude - targetLng);
+            return latDiff < 1 && lngDiff < 1 && c.latitude !== 0 && c.longitude !== 0;
+          });
 
-        const compsForBounds = nearbyComps.length > 0 ? nearbyComps : validComps;
-        const allPoints = [
-          [targetLat, targetLng],
-          ...compsForBounds.map((c) => [c.latitude, c.longitude]),
-        ];
-        const bounds = L.latLngBounds(allPoints as [number, number][]);
+          const compsForBounds = nearbyComps.length > 0 ? nearbyComps : validComps;
+          const allPoints = [
+            [targetLat, targetLng],
+            ...compsForBounds.map((c) => [c.latitude, c.longitude]),
+          ];
+          const bounds = L.latLngBounds(allPoints as [number, number][]);
 
-        // fitBounds with maxZoom 15 for tight clusters
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-
-        // After fitBounds, do a second invalidateSize + re-fitBounds to fix tile alignment
-        setTimeout(() => {
-          if (map && mapRef.current) {
-            map.invalidateSize({ animate: false });
-            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
-            // Clamp: don't zoom out further than zoom 10 (city level)
-            if (map.getZoom() < 10) {
-              map.setZoom(10);
-            }
+          // fitBounds with maxZoom 15 for tight clusters
+          map.invalidateSize({ animate: false });
+          map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15, animate: false });
+          
+          // Clamp: don't zoom out further than zoom 10 (city level)
+          if (map.getZoom() < 10) {
+            map.setZoom(10);
           }
-        }, 300);
-      }
+        }
+      };
+
+      // Run fitBounds after map is ready and container is fully laid out
+      // Multiple attempts to handle dynamic layout timing
+      doFitBounds();
+      setTimeout(doFitBounds, 300);
+      setTimeout(doFitBounds, 600);
 
       setIsMapReady(true);
     };
@@ -528,11 +534,11 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         style={{
           width: "100%",
           height: "300px",
+          minHeight: "300px",
           maxHeight: "300px",
           position: "relative",
           zIndex: 1,
           background: "#f5f4f0",
-          overflow: "hidden",
         }}
       />
 

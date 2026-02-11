@@ -3998,7 +3998,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                             <div className="min-w-0 flex-1">
                               <p className={`font-medium truncate text-sm sm:text-base ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-900 group-hover:text-blue-600'}`}>{listing.name}</p>
                               <p className="text-xs text-gray-500 mt-0.5">
-                                {listing.bedrooms}bd / {listing.bathrooms}ba • {listing.accommodates || listing.bedrooms * 2} guests • {listing.distance > 0 ? `${listing.distance}mi` : listing.propertyType}
+                                {listing.bedrooms}bd / {listing.bathrooms}ba • {listing.accommodates || listing.bedrooms * 2} guests • {listing.distance > 0 ? `${Number(listing.distance).toFixed(1)}mi` : listing.propertyType}
                               </p>
                             </div>
                             <div className="text-right flex-shrink-0">
