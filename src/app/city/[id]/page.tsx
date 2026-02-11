@@ -728,6 +728,95 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </p>
         </div>
 
+        {/* Take Action - Zillow Links */}
+        <div 
+          className="rounded-2xl p-5 mb-4"
+          style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: '#dbeafe' }}
+            >
+              <svg className="w-5 h-5" style={{ color: '#2563eb' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
+            <div>
+              <h3 
+                className="font-semibold"
+                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+              >
+                Take the Next Step
+              </h3>
+              <p className="text-sm" style={{ color: '#787060' }}>Find homes, agents, and lenders in this market</p>
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            <a
+              href={`https://www.zillow.com/${encodeURIComponent(city.name.toLowerCase().replace(/\s+/g, '-') + '-' + city.stateCode.toLowerCase())}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3.5 rounded-xl transition-all hover:opacity-90"
+              style={{ backgroundColor: '#f0f7ff', border: '1px solid #bfdbfe' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2563eb' }}>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm" style={{ color: '#1e40af' }}>Find a Home in {city.name}</p>
+                <p className="text-xs" style={{ color: '#6b7280' }}>Browse properties for sale on Zillow</p>
+              </div>
+              <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+            <a
+              href="https://www.zillow.com/professionals/real-estate-agent-reviews/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3.5 rounded-xl transition-all hover:opacity-90"
+              style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#16a34a' }}>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm" style={{ color: '#15803d' }}>Find an Agent to Buy Remotely</p>
+                <p className="text-xs" style={{ color: '#6b7280' }}>Top-rated real estate agents near {city.name}</p>
+              </div>
+              <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+            <a
+              href="https://www.zillow.com/homeloans/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3.5 rounded-xl transition-all hover:opacity-90"
+              style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#ca8a04' }}>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm" style={{ color: '#a16207' }}>Get Pre-Approved for a Loan</p>
+                <p className="text-xs" style={{ color: '#6b7280' }}>Compare lenders and get pre-approved today</p>
+              </div>
+              <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+          <p className="text-xs text-center mt-3" style={{ color: '#9ca3af' }}>Opens Zillow.com in a new tab</p>
+        </div>
+
         {/* CTA */}
         <div 
           className="rounded-2xl p-6 text-center"
