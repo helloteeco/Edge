@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { ChatAssistant } from "@/components/ChatAssistant";
+import { Footer } from "@/components/Footer";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -59,6 +60,7 @@ export default function RootLayout({
         <div className="flex flex-col min-h-screen">
           <main className="flex-1 pb-20">
             {children}
+            <Footer />
           </main>
           <Navigation />
           <ChatAssistant />

@@ -197,8 +197,19 @@ export default function TermsPage() {
           </div>
         </div>
 
-        {/* Back Link */}
-        <div className="mt-6 text-center">
+        {/* Footer Links */}
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <Link href="/privacy" className="text-xs font-medium transition-opacity hover:opacity-70" style={{ color: "#787060" }}>
+              Privacy Policy
+            </Link>
+            <Link href="/cookies" className="text-xs font-medium transition-opacity hover:opacity-70" style={{ color: "#787060" }}>
+              Cookie Policy
+            </Link>
+            <Link href="/contact" className="text-xs font-medium transition-opacity hover:opacity-70" style={{ color: "#787060" }}>
+              Contact Us
+            </Link>
+          </div>
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-sm font-medium transition-all hover:opacity-80"
