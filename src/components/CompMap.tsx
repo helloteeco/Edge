@@ -224,6 +224,11 @@ function ensureCustomStyles(): void {
       z-index: 1 !important;
     }
     .comp-map-container .leaflet-pane {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
       z-index: auto !important;
     }
     .comp-map-container .leaflet-tile-pane {
