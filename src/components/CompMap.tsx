@@ -217,16 +217,30 @@ function ensureCustomStyles(): void {
       justify-content: center;
       font-size: 32px;
     }
-    /* CRITICAL: Fix Leaflet tile rendering inside rounded/overflow containers */
+    /* CRITICAL: Fix Leaflet rendering inside rounded/overflow containers */
     .comp-map-container .leaflet-container {
       width: 100% !important;
       height: 100% !important;
+      z-index: 1 !important;
+    }
+    .comp-map-container .leaflet-pane {
+      z-index: auto !important;
     }
     .comp-map-container .leaflet-tile-pane {
       will-change: transform;
+      z-index: 1 !important;
+    }
+    .comp-map-container .leaflet-marker-pane {
+      z-index: 6 !important;
+    }
+    .comp-map-container .leaflet-popup-pane {
+      z-index: 7 !important;
     }
     .comp-map-container .leaflet-tile {
       will-change: transform;
+    }
+    .comp-map-container .leaflet-control-container {
+      z-index: 8 !important;
     }
   `;
   document.head.appendChild(style);
@@ -286,6 +300,20 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
 
       // 4. Guard: container must still exist
       if (!mapRef.current) return;
+
+      // 4b. CRITICAL: Wait until container has actual dimensions
+      // In Next.js dynamic imports, the container may have 0 height initially
+      const waitForDimensions = async (el: HTMLElement, maxWait = 2000): Promise<boolean> => {
+        const start = Date.now();
+        while (Date.now() - start < maxWait) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) return true;
+          await new Promise(r => setTimeout(r, 50));
+        }
+        return false;
+      };
+      const hasDimensions = await waitForDimensions(mapRef.current);
+      if (!hasDimensions || !mapRef.current) return;
 
       // 5. Clean up any previous map instance
       if (mapInstanceRef.current) {
@@ -528,20 +556,28 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         </div>
       </div>
 
-      {/* Map container — fixed height, explicit dimensions for Leaflet */}
+      {/* Map wrapper — creates isolated stacking context and clips Leaflet */}
       <div
-        ref={mapRef}
         style={{
           width: "100%",
           height: "300px",
-          minHeight: "300px",
-          maxHeight: "300px",
           position: "relative",
-          zIndex: 1,
-          background: "#f5f4f0",
           overflow: "hidden",
+          isolation: "isolate",
         }}
-      />
+      >
+        <div
+          ref={mapRef}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "#f5f4f0",
+          }}
+        />
+      </div>
 
       {/* Selected comp detail card (below map) */}
       {selectedComp && (
