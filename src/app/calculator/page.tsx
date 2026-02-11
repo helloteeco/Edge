@@ -299,6 +299,23 @@ export default function CalculatorPage() {
     });
   };
   
+  // Geocode an address to get lat/lng (used as fallback when cached data lacks coordinates)
+  const geocodeAddress = async (addr: string): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr + ', USA')}&format=json&limit=1`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'EdgeByTeeco/1.0 (contact@teeco.co)', 'Accept': 'application/json' },
+      });
+      const data = await res.json();
+      if (data && data.length > 0 && data[0].lat && data[0].lon) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+    } catch (e) {
+      console.error('[Geocode Fallback] Error:', e);
+    }
+    return null;
+  };
+
   // Get the active (included) comps
   const getActiveComps = (): ComparableListing[] => {
     if (!result?.comparables) return [];
@@ -473,6 +490,16 @@ export default function CalculatorPage() {
           }
           if (cachedSearch.cachedResult.targetCoordinates) {
             setTargetCoords({ lat: cachedSearch.cachedResult.targetCoordinates.latitude, lng: cachedSearch.cachedResult.targetCoordinates.longitude });
+          } else {
+            // Geocode fallback for legacy cache entries missing coordinates
+            geocodeAddress(addressParam).then(coords => {
+              if (coords) {
+                console.log('[FromSaved] Geocoded address for CompMap:', coords);
+                setTargetCoords(coords);
+                // Also update the result so CompMap rendering picks it up
+                setResult(prev => prev ? { ...prev, targetCoordinates: { latitude: coords.lat, longitude: coords.lng } } : prev);
+              }
+            });
           }
           setLastAnalyzedAddress(addressParam);
           // Check if this address is already saved
@@ -563,6 +590,15 @@ export default function CalculatorPage() {
                 }
                 if (data.targetCoordinates) {
                   setTargetCoords({ lat: data.targetCoordinates.latitude, lng: data.targetCoordinates.longitude });
+                } else {
+                  // Geocode fallback for legacy cache entries missing coordinates
+                  geocodeAddress(addressParam).then(coords => {
+                    if (coords) {
+                      console.log('[FromSaved/Supabase] Geocoded address for CompMap:', coords);
+                      setTargetCoords(coords);
+                      setResult(prev => prev ? { ...prev, targetCoordinates: { latitude: coords.lat, longitude: coords.lng } } : prev);
+                    }
+                  });
                 }
                 setLastAnalyzedAddress(addressParam);
                 if (analysisResult.listPrice > 0) {
@@ -1008,6 +1044,16 @@ export default function CalculatorPage() {
     const resolvedCoords = analysisResult.targetCoordinates || data.targetCoordinates;
     if (resolvedCoords) {
       setTargetCoords({ lat: resolvedCoords.latitude, lng: resolvedCoords.longitude });
+    } else {
+      // Geocode fallback for legacy cache entries missing all coordinates
+      const addrToGeocode = pendingAnalysis || address;
+      geocodeAddress(addrToGeocode).then(coords => {
+        if (coords) {
+          console.log('[Cache Restore] Geocoded address for CompMap:', coords);
+          setTargetCoords(coords);
+          setResult(prev => prev ? { ...prev, targetCoordinates: { latitude: coords.lat, longitude: coords.lng } } : prev);
+        }
+      });
     }
     setLastAnalyzedAddress(pendingAnalysis || address);
     
@@ -1463,6 +1509,15 @@ export default function CalculatorPage() {
                   longitude: firstWithCoords.longitude,
                 };
                 console.log('[Analyze] Reconstructed targetCoordinates from comp:', firstWithCoords.latitude, firstWithCoords.longitude);
+              }
+            }
+            
+            // If still no coordinates, geocode the address as final fallback
+            if (!cachedResult.targetCoordinates) {
+              const geocoded = await geocodeAddress(addressToAnalyze);
+              if (geocoded) {
+                cachedResult.targetCoordinates = { latitude: geocoded.lat, longitude: geocoded.lng };
+                console.log('[Analyze] Geocoded address for CompMap:', geocoded);
               }
             }
             
@@ -5310,6 +5365,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       }
                       if (search.cachedResult.targetCoordinates) {
                         setTargetCoords({ lat: search.cachedResult.targetCoordinates.latitude, lng: search.cachedResult.targetCoordinates.longitude });
+                      } else {
+                        // Geocode fallback for legacy cache entries missing coordinates
+                        geocodeAddress(search.address).then(coords => {
+                          if (coords) {
+                            setTargetCoords(coords);
+                            setResult(prev => prev ? { ...prev, targetCoordinates: { latitude: coords.lat, longitude: coords.lng } } : prev);
+                          }
+                        });
                       }
                       setLastAnalyzedAddress(search.address);
                       // Auto-fill purchase price if available
