@@ -51,11 +51,22 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   const [isMapReady, setIsMapReady] = useState(false);
   const [imgErrors, setImgErrors] = useState<Set<number | string>>(new Set());
 
-  // Filter comps with valid coordinates
-  const validComps = useMemo(
-    () => comparables.filter((c) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0),
-    [comparables]
-  );
+  // Ensure all comps have coordinates — assign approximate positions for those missing them
+  const validComps = useMemo(() => {
+    return comparables.map((c, i) => {
+      if (c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0) return c;
+      // Comp lacks coordinates — scatter around target based on distance
+      // Use golden angle distribution for even spacing
+      const angle = (i * 137.508) * (Math.PI / 180);
+      const distMiles = c.distance || (2 + i * 0.5); // Use reported distance or estimate
+      const distDeg = distMiles / 69; // ~69 miles per degree latitude
+      return {
+        ...c,
+        latitude: targetLat + distDeg * Math.cos(angle),
+        longitude: targetLng + distDeg * Math.sin(angle) / Math.cos(targetLat * Math.PI / 180),
+      };
+    });
+  }, [comparables, targetLat, targetLng]);
 
   // Track image load errors
   const handleImgError = useCallback((compId: number | string) => {

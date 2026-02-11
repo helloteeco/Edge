@@ -75,8 +75,18 @@ function getCacheKey(lat: number, lng: number, _bedrooms?: number): string {
   return `${roundedLat}_${roundedLng}_all`;
 }
 
-async function getCachedMarketData(cacheKey: string): Promise<any | null> {
+// Generate old-format cache keys for backwards compatibility
+function getOldCacheKeys(lat: number, lng: number, bedrooms: number): string[] {
+  const roundedLat = Math.round(lat * 100) / 100;
+  const roundedLng = Math.round(lng * 100) / 100;
+  // Try the exact bedroom count first, then common alternatives
+  const bedroomVariants = [bedrooms, 3, 2, 4, 1, 5, 6];
+  return Array.from(new Set(bedroomVariants)).map(br => `${roundedLat}_${roundedLng}_${br}br`);
+}
+
+async function getCachedMarketData(cacheKey: string, lat?: number, lng?: number, bedrooms?: number): Promise<any | null> {
   try {
+    // Try new format first
     const { data, error } = await supabase
       .from("market_data")
       .select("*")
@@ -84,16 +94,37 @@ async function getCachedMarketData(cacheKey: string): Promise<any | null> {
       .gt("expires_at", new Date().toISOString())
       .single();
 
-    if (error || !data) return null;
+    if (!error && data) {
+      await supabase
+        .from("market_data")
+        .update({ search_count: (data.search_count || 1) + 1, updated_at: new Date().toISOString() })
+        .eq("cache_key", cacheKey);
+      console.log(`[Cache] HIT for ${cacheKey} (searched ${data.search_count + 1} times)`);
+      return data;
+    }
 
-    // Increment search_count for analytics
-    await supabase
-      .from("market_data")
-      .update({ search_count: (data.search_count || 1) + 1, updated_at: new Date().toISOString() })
-      .eq("cache_key", cacheKey);
+    // Fallback: try old cache key formats (e.g., "35.32_-82.46_3br")
+    if (lat !== undefined && lng !== undefined && bedrooms !== undefined) {
+      const oldKeys = getOldCacheKeys(lat, lng, bedrooms);
+      for (const oldKey of oldKeys) {
+        const { data: oldData, error: oldError } = await supabase
+          .from("market_data")
+          .select("*")
+          .eq("cache_key", oldKey)
+          .gt("expires_at", new Date().toISOString())
+          .single();
+        if (!oldError && oldData) {
+          await supabase
+            .from("market_data")
+            .update({ search_count: (oldData.search_count || 1) + 1, updated_at: new Date().toISOString() })
+            .eq("cache_key", oldKey);
+          console.log(`[Cache] HIT (old key) for ${oldKey} (searched ${oldData.search_count + 1} times)`);
+          return oldData;
+        }
+      }
+    }
 
-    console.log(`[Cache] HIT for ${cacheKey} (searched ${data.search_count + 1} times)`);
-    return data;
+    return null;
   } catch {
     return null;
   }
@@ -827,7 +858,7 @@ export async function POST(request: NextRequest) {
     // STEP 2: Check Supabase cache (market_data table)
     // =====================================================================
     const cacheKey = getCacheKey(latitude, longitude, bedrooms);
-    const cached = await getCachedMarketData(cacheKey);
+    const cached = await getCachedMarketData(cacheKey, latitude, longitude, bedrooms);
 
     if (cached && cached.listings && cached.listings.length > 0) {
       console.log(`[Analyze] Cache HIT — ${cached.listings_count} listings from ${cached.source}`);

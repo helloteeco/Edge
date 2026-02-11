@@ -11,5 +11,10 @@
 
 
 ## Fix Duplicate Address Suggestions (February 2026)
-- [ ] Fix address autocomplete showing duplicate/double suggestion dropdowns
-- [ ] Ensure only one suggestion list appears at a time
+- [x] Fix address autocomplete showing duplicate/double suggestion dropdowns
+- [x] Ensure only one suggestion list appears at a time
+
+
+## Fix Missing Interactive Comp Map + Low Comp Count (February 2026)
+- [ ] Fix interactive CompMap not rendering on deployed site
+- [ ] Investigate why only 4 comps are returned for some addresses
