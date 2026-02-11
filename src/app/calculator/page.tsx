@@ -1312,11 +1312,28 @@ export default function CalculatorPage() {
     setShowSuggestions(false);
 
     try {
-      const response = await fetch("/api/mashvisor/property", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || (bedrooms ?? 3) * 2 }),
-      });
+      // 4-minute client-side timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 240_000);
+
+      let response: Response;
+      try {
+        response = await fetch("/api/mashvisor/property", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || (bedrooms ?? 3) * 2 }),
+          signal: controller.signal,
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        if (fetchErr?.name === 'AbortError') {
+          setError("Analysis timed out. The server took too long to respond. Please try again — results are often cached after the first attempt.");
+          setIsLoading(false);
+          return;
+        }
+        throw fetchErr;
+      }
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 

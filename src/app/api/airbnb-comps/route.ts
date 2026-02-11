@@ -5,11 +5,16 @@ import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
 
+// Vercel Pro: allow up to 300 seconds for Apify scraping
+export const maxDuration = 300;
+
 // Apify configuration
+// SWITCHED to new-fast-airbnb-scraper: $0.50/1000 results (pay-per-event, no proxy charges)
+// Old tri_angle~airbnb-scraper was costing $2-26/run due to RESIDENTIAL proxy bandwidth
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN || "";
-// tri_angle/airbnb-scraper is the most popular and reliable Airbnb scraper on Apify
-const APIFY_ACTOR_ID = "tri_angle~airbnb-scraper";
+const APIFY_ACTOR_ID = "tri_angle~new-fast-airbnb-scraper";
 const APIFY_BASE_URL = "https://api.apify.com/v2";
+const APIFY_TIMEOUT_SECS = 120;
 
 // Cache duration: 7 days (168 hours) — Airbnb listings are stable week-to-week, saves 7x Apify costs
 const CACHE_DURATION_HOURS = 168;
@@ -81,47 +86,35 @@ async function scrapeAirbnbComps(
   }
 
   try {
-    // Build Airbnb search URL with coordinates
-    // Using Airbnb's map-based search which works for any location including rural areas
+    // Use the new fast scraper with locationQueries instead of startUrls
     const today = new Date();
     const defaultCheckIn = checkIn || new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const defaultCheckOut = checkOut || new Date(today.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    // Calculate bounding box (~10 mile radius for rural, ~5 mile for urban)
-    // 0.1 degree ≈ 7 miles latitude
-    const latDelta = 0.15; // ~10.5 miles
-    const lngDelta = 0.15 / Math.cos((lat * Math.PI) / 180); // Adjust for latitude
+    // Build location query from coordinates
+    const locationQuery = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    const neLat = lat + latDelta;
-    const neLng = lng + lngDelta;
-    const swLat = lat - latDelta;
-    const swLng = lng - lngDelta;
+    console.log(`[Apify-Fast] Scraping comps for ${locationQuery} (${bedrooms}br)`);
 
-    // Build the Airbnb search URL
-    const searchUrl = `https://www.airbnb.com/s/homes?ne_lat=${neLat}&ne_lng=${neLng}&sw_lat=${swLat}&sw_lng=${swLng}&search_type=filter_change&tab_id=home_tab&refinement_paths[]=/homes&checkin=${defaultCheckIn}&checkout=${defaultCheckOut}&adults=1&room_types[]=Entire%20home/apt&min_bedrooms=${Math.max(1, bedrooms - 1)}`;
+    // Build input for new-fast-airbnb-scraper
+    // NO proxy config needed — pay-per-event model includes all costs ($0.50/1000 results)
+    const actorInput: any = {
+      locationQueries: [locationQuery],
+      checkIn: defaultCheckIn,
+      checkOut: defaultCheckOut,
+      locale: "en-US",
+      currency: "USD",
+      adults: 1,
+      minBedrooms: Math.max(1, bedrooms - 1),
+    };
 
-    console.log(`[Apify] Scraping Airbnb comps for ${lat},${lng} (${bedrooms}br)`);
-    console.log(`[Apify] Search URL: ${searchUrl}`);
-
-    // Start Apify actor run synchronously (waits for completion)
+    // Start actor run with timeout to prevent runaway costs
     const runResponse = await fetch(
-      `${APIFY_BASE_URL}/acts/${encodeURIComponent(APIFY_ACTOR_ID)}/runs?token=${APIFY_API_TOKEN}`,
+      `${APIFY_BASE_URL}/acts/${encodeURIComponent(APIFY_ACTOR_ID)}/runs?token=${APIFY_API_TOKEN}&timeout=${APIFY_TIMEOUT_SECS}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startUrls: [{ url: searchUrl }],
-          maxListings: 30,
-          // Only get search results, not individual listing pages (faster + cheaper)
-          includeReviews: false,
-          maxReviews: 0,
-          calendarMonths: 0,
-          // Proxy configuration (Apify handles this)
-          proxyConfiguration: {
-            useApifyProxy: true,
-            apifyProxyGroups: ["RESIDENTIAL"],
-          },
-        }),
+        body: JSON.stringify(actorInput),
       }
     );
 
@@ -139,28 +132,41 @@ async function scrapeAirbnbComps(
       return { success: false, listings: [], error: "No run ID returned from Apify" };
     }
 
-    console.log(`[Apify] Run started: ${runId}`);
+    console.log(`[Apify-Fast] Run started: ${runId}`);
 
-    // Poll for completion (max 60 seconds)
+    // Poll for completion (max 120 seconds = 60 attempts × 2s)
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 60;
     let runStatus = "RUNNING";
 
     while (runStatus === "RUNNING" && attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       attempts++;
 
-      const statusResponse = await fetch(
-        `${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`
-      );
-      const statusData = await statusResponse.json();
-      runStatus = statusData?.data?.status || "UNKNOWN";
+      try {
+        const statusResponse = await fetch(
+          `${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`
+        );
+        const statusData = await statusResponse.json();
+        runStatus = statusData?.data?.status || "UNKNOWN";
+      } catch (pollErr) {
+        console.warn(`[Apify-Fast] Poll error (attempt ${attempts}):`, pollErr);
+      }
 
-      console.log(`[Apify] Run status (attempt ${attempts}): ${runStatus}`);
+      if (attempts % 5 === 0) console.log(`[Apify-Fast] Run status (attempt ${attempts}): ${runStatus}`);
     }
 
     if (runStatus !== "SUCCEEDED") {
-      console.error(`[Apify] Run did not succeed. Status: ${runStatus}`);
+      // Abort runaway runs to prevent further charges
+      if (runStatus === "RUNNING") {
+        try {
+          await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}/abort?token=${APIFY_API_TOKEN}`, { method: "POST" });
+          console.warn(`[Apify-Fast] Aborted run ${runId} after timeout`);
+        } catch (abortErr) {
+          console.error(`[Apify-Fast] Failed to abort run:`, abortErr);
+        }
+      }
+      console.error(`[Apify-Fast] Run did not succeed. Status: ${runStatus}`);
       return {
         success: false,
         listings: [],
@@ -168,10 +174,10 @@ async function scrapeAirbnbComps(
       };
     }
 
-    // Fetch results from the dataset
+    // Fetch results from the dataset — cap at 50
     const datasetId = runData?.data?.defaultDatasetId;
     const resultsResponse = await fetch(
-      `${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=30`
+      `${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=50`
     );
 
     if (!resultsResponse.ok) {
@@ -179,25 +185,28 @@ async function scrapeAirbnbComps(
     }
 
     const rawListings = await resultsResponse.json();
-    console.log(`[Apify] Got ${rawListings.length} raw listings`);
+    console.log(`[Apify-Fast] Got ${rawListings.length} raw listings`);
 
-    // Transform Apify results to Edge's ComparableListing format
+    // Transform results to Edge's ComparableListing format
+    // The new fast scraper may have slightly different field names
     const listings = rawListings
-      .filter((item: any) => item.name && (item.pricing?.rate?.amount || item.price))
+      .filter((item: any) => item.name && (item.pricing?.rate?.amount || item.price || item.pricePerNight))
       .map((item: any, index: number) => {
         const nightlyPrice =
           item.pricing?.rate?.amount ||
           item.price ||
+          item.pricePerNight ||
           0;
 
         const rating = item.rating || item.stars || 0;
-        const reviewCount = item.reviewsCount || item.numberOfGuests || 0;
+        const reviewCount = item.reviewsCount || item.numberOfReviews || 0;
         const listingBedrooms = item.bedrooms || bedrooms;
         const listingBathrooms = item.bathrooms || 1;
 
         // Extract listing ID from URL
         const listingId =
           item.id ||
+          item.roomId ||
           item.url?.match(/rooms\/(\d+)/)?.[1] ||
           `apify_${index}`;
 
@@ -207,11 +216,12 @@ async function scrapeAirbnbComps(
           item.images?.[0] ||
           item.thumbnail ||
           item.pictureUrl ||
+          item.image ||
           null;
 
         // Calculate lat/lng for the comp
-        const compLat = item.location?.lat || item.lat || 0;
-        const compLng = item.location?.lng || item.lng || 0;
+        const compLat = item.location?.lat || item.lat || item.latitude || 0;
+        const compLng = item.location?.lng || item.lng || item.longitude || 0;
 
         return {
           id: listingId,
@@ -241,10 +251,10 @@ async function scrapeAirbnbComps(
         };
       });
 
-    console.log(`[Apify] Transformed ${listings.length} listings`);
+    console.log(`[Apify-Fast] Transformed ${listings.length} listings`);
     return { success: true, listings };
   } catch (error) {
-    console.error("[Apify] Scraping error:", error);
+    console.error("[Apify-Fast] Scraping error:", error);
     return { success: false, listings: [], error: `Scraping failed: ${error}` };
   }
 }

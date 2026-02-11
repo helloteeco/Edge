@@ -5,6 +5,9 @@ import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
 
+// Vercel Pro: allow up to 300 seconds for Apify scraping
+export const maxDuration = 300;
+
 // Apify configuration
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN || "";
 const APIFY_ACTOR_ID = "simpleapi~airbnb-occupancy-scraper";
