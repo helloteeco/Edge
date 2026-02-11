@@ -43,6 +43,195 @@ function formatNightPrice(value: number): string {
   return `$${Math.round(value)}`;
 }
 
+// ===== Ensure Leaflet CSS is loaded before map init =====
+function ensureLeafletCSS(): Promise<void> {
+  return new Promise((resolve) => {
+    if (document.getElementById("leaflet-css")) {
+      resolve();
+      return;
+    }
+    const link = document.createElement("link");
+    link.id = "leaflet-css";
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    link.onload = () => resolve();
+    link.onerror = () => resolve(); // proceed even if CSS fails
+    document.head.appendChild(link);
+  });
+}
+
+// ===== Inject custom marker styles =====
+function ensureCustomStyles(): void {
+  if (document.getElementById("comp-map-styles")) return;
+  const style = document.createElement("style");
+  style.id = "comp-map-styles";
+  style.textContent = `
+    .comp-price-tag {
+      background: #2b2823;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: system-ui, -apple-system, sans-serif;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+      text-align: center;
+      line-height: 1;
+    }
+    .comp-price-tag:hover {
+      transform: scale(1.1);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+    }
+    .comp-price-tag::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #2b2823;
+    }
+    .comp-price-tag.excluded {
+      background: #9ca3af;
+      opacity: 0.5;
+    }
+    .comp-price-tag.excluded::after {
+      border-top-color: #9ca3af;
+    }
+    .comp-price-tag.selected {
+      background: #16a34a;
+      transform: scale(1.15);
+    }
+    .comp-price-tag.selected::after {
+      border-top-color: #16a34a;
+    }
+    .target-marker {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 3px solid white;
+      box-shadow: 0 2px 10px rgba(239,68,68,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      animation: targetPulse 2s ease-in-out infinite;
+    }
+    @keyframes targetPulse {
+      0%, 100% { box-shadow: 0 2px 10px rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 2px 20px rgba(239,68,68,0.6); }
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px !important;
+      padding: 0 !important;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      min-width: 240px;
+    }
+    .leaflet-popup-tip {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+    }
+    .comp-popup-card {
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .comp-popup-card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+    .comp-popup-card .comp-popup-body {
+      padding: 10px 12px 12px;
+    }
+    .comp-popup-card .comp-popup-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2b2823;
+      line-height: 1.3;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .comp-popup-card .comp-popup-meta {
+      font-size: 11px;
+      color: #787060;
+      margin-bottom: 6px;
+    }
+    .comp-popup-card .comp-popup-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 8px;
+      margin-bottom: 8px;
+    }
+    .comp-popup-card .comp-popup-stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .comp-popup-card .comp-popup-stat-label {
+      font-size: 10px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .comp-popup-card .comp-popup-stat-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2b2823;
+    }
+    .comp-popup-card .comp-popup-stat-value.green {
+      color: #16a34a;
+    }
+    .comp-popup-card .comp-popup-link {
+      display: block;
+      text-align: center;
+      background: #ff5a5f;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .comp-popup-card .comp-popup-link:hover {
+      opacity: 0.85;
+    }
+    .comp-popup-card .comp-popup-no-img {
+      width: 100%;
+      height: 100px;
+      background: #f5f4f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    /* CRITICAL: Fix Leaflet tile rendering inside rounded/overflow containers */
+    .comp-map-container .leaflet-container {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .comp-map-container .leaflet-tile-pane {
+      will-change: transform;
+    }
+    .comp-map-container .leaflet-tile {
+      will-change: transform;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, excludedIds = new Set() }: CompMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -82,191 +271,32 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
 
     let L: any;
     let map: any;
+    let resizeObserver: ResizeObserver | null = null;
 
     const initMap = async () => {
-      // Dynamically import leaflet (SSR-safe)
+      // 1. Load Leaflet CSS first (wait for it to actually load)
+      await ensureLeafletCSS();
+      ensureCustomStyles();
+
+      // 2. Dynamically import leaflet (SSR-safe)
       L = (await import("leaflet")).default;
 
-      // Add Leaflet CSS if not already present
-      if (!document.getElementById("leaflet-css")) {
-        const link = document.createElement("link");
-        link.id = "leaflet-css";
-        link.rel = "stylesheet";
-        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        document.head.appendChild(link);
-      }
+      // 3. Small delay to ensure CSS is applied to DOM
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Add custom marker styles
-      if (!document.getElementById("comp-map-styles")) {
-        const style = document.createElement("style");
-        style.id = "comp-map-styles";
-        style.textContent = `
-          .comp-price-tag {
-            background: #2b2823;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            font-family: system-ui, -apple-system, sans-serif;
-            white-space: nowrap;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-            position: relative;
-            text-align: center;
-            line-height: 1;
-          }
-          .comp-price-tag:hover {
-            transform: scale(1.1);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.35);
-          }
-          .comp-price-tag::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid #2b2823;
-          }
-          .comp-price-tag.excluded {
-            background: #9ca3af;
-            opacity: 0.5;
-          }
-          .comp-price-tag.excluded::after {
-            border-top-color: #9ca3af;
-          }
-          .comp-price-tag.selected {
-            background: #16a34a;
-            transform: scale(1.15);
-          }
-          .comp-price-tag.selected::after {
-            border-top-color: #16a34a;
-          }
-          .target-marker {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: #ef4444;
-            border: 3px solid white;
-            box-shadow: 0 2px 10px rgba(239,68,68,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            animation: targetPulse 2s ease-in-out infinite;
-          }
-          @keyframes targetPulse {
-            0%, 100% { box-shadow: 0 2px 10px rgba(239,68,68,0.4); }
-            50% { box-shadow: 0 2px 20px rgba(239,68,68,0.6); }
-          }
-          .leaflet-popup-content-wrapper {
-            border-radius: 12px !important;
-            padding: 0 !important;
-            overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
-          }
-          .leaflet-popup-content {
-            margin: 0 !important;
-            min-width: 240px;
-          }
-          .leaflet-popup-tip {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
-          }
-          .comp-popup-card {
-            font-family: system-ui, -apple-system, sans-serif;
-          }
-          .comp-popup-card img {
-            width: 100%;
-            height: 140px;
-            object-fit: cover;
-          }
-          .comp-popup-card .comp-popup-body {
-            padding: 10px 12px 12px;
-          }
-          .comp-popup-card .comp-popup-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #2b2823;
-            line-height: 1.3;
-            margin-bottom: 4px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-          }
-          .comp-popup-card .comp-popup-meta {
-            font-size: 11px;
-            color: #787060;
-            margin-bottom: 6px;
-          }
-          .comp-popup-card .comp-popup-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px 8px;
-            margin-bottom: 8px;
-          }
-          .comp-popup-card .comp-popup-stat {
-            display: flex;
-            flex-direction: column;
-          }
-          .comp-popup-card .comp-popup-stat-label {
-            font-size: 10px;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-          }
-          .comp-popup-card .comp-popup-stat-value {
-            font-size: 13px;
-            font-weight: 600;
-            color: #2b2823;
-          }
-          .comp-popup-card .comp-popup-stat-value.green {
-            color: #16a34a;
-          }
-          .comp-popup-card .comp-popup-link {
-            display: block;
-            text-align: center;
-            background: #ff5a5f;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: opacity 0.15s;
-          }
-          .comp-popup-card .comp-popup-link:hover {
-            opacity: 0.85;
-          }
-          .comp-popup-card .comp-popup-no-img {
-            width: 100%;
-            height: 100px;
-            background: #f5f4f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-          }
-        `;
-        document.head.appendChild(style);
-      }
+      // 4. Guard: container must still exist
+      if (!mapRef.current) return;
 
-      // Wait for CSS to load
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
+      // 5. Clean up any previous map instance
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
 
+      // 6. Create the map
       map = L.map(mapRef.current, {
         center: [targetLat, targetLng],
-        zoom: 12,
+        zoom: 13,
         zoomControl: true,
         attributionControl: false,
         scrollWheelZoom: true,
@@ -276,11 +306,31 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
 
       mapInstanceRef.current = map;
 
-      // Use CartoDB Positron tiles (clean, minimal, free)
+      // 7. Add tile layer
       L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         maxZoom: 19,
         subdomains: "abcd",
       }).addTo(map);
+
+      // 8. CRITICAL: invalidateSize after tiles start loading to fix tile alignment
+      // This forces Leaflet to recalculate the container dimensions
+      map.whenReady(() => {
+        setTimeout(() => {
+          if (map && mapRef.current) {
+            map.invalidateSize({ animate: false });
+          }
+        }, 150);
+      });
+
+      // 9. Set up ResizeObserver to handle container resize
+      if (typeof ResizeObserver !== "undefined" && mapRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          if (map) {
+            map.invalidateSize({ animate: false });
+          }
+        });
+        resizeObserver.observe(mapRef.current);
+      }
 
       // ===== TARGET PROPERTY MARKER =====
       const targetIcon = L.divIcon({
@@ -385,10 +435,9 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
 
       markersRef.current = markers;
 
-      // Fit bounds to show all markers — filter outliers and zoom to a useful level
+      // ===== FIT BOUNDS — zoom to show all markers =====
       if (validComps.length > 0) {
-        // Only include comps within a reasonable distance of the target (< 1 degree ≈ ~69 miles)
-        // This prevents a single outlier from zooming the map to show the entire state
+        // Filter outliers: only include comps within ~69 miles of target
         const nearbyComps = validComps.filter((c) => {
           const latDiff = Math.abs(c.latitude - targetLat);
           const lngDiff = Math.abs(c.longitude - targetLng);
@@ -401,15 +450,21 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           ...compsForBounds.map((c) => [c.latitude, c.longitude]),
         ];
         const bounds = L.latLngBounds(allPoints as [number, number][]);
-        // maxZoom 15 for tight clusters, padding 40px for breathing room
-        // After fitBounds, ensure we're not too zoomed out (min zoom 10 = ~city level)
+
+        // fitBounds with maxZoom 15 for tight clusters
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-        // If fitBounds zoomed out too far (comps very spread), clamp to zoom 10
+
+        // After fitBounds, do a second invalidateSize + re-fitBounds to fix tile alignment
         setTimeout(() => {
-          if (map.getZoom() < 10) {
-            map.setZoom(10);
+          if (map && mapRef.current) {
+            map.invalidateSize({ animate: false });
+            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
+            // Clamp: don't zoom out further than zoom 10 (city level)
+            if (map.getZoom() < 10) {
+              map.setZoom(10);
+            }
           }
-        }, 100);
+        }, 300);
       }
 
       setIsMapReady(true);
@@ -418,6 +473,9 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
     initMap();
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -430,7 +488,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+    <div className="comp-map-container rounded-2xl overflow-hidden" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between">
@@ -463,7 +521,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         </div>
       </div>
 
-      {/* Map container */}
+      {/* Map container — fixed height, explicit dimensions for Leaflet */}
       <div
         ref={mapRef}
         style={{
@@ -471,6 +529,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           height: "400px",
           position: "relative",
           zIndex: 1,
+          background: "#f5f4f0",
         }}
       />
 
