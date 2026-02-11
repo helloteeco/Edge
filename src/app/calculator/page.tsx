@@ -3038,28 +3038,23 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 );
               })()}
 
-              {/* Google Maps Location */}
-              <div className="mt-4 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e3da' }}>
-                <div className="p-3 flex items-center justify-between" style={{ backgroundColor: '#f5f4f0' }}>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" style={{ color: '#787060' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span className="text-sm font-medium" style={{ color: '#2b2823' }}>Property Location</span>
-                  </div>
-                  <span className="text-xs" style={{ color: '#787060' }}>Scroll to explore area</span>
+              {/* Interactive Comp Map — shows target property + all comparable listings */}
+              {result.comparables && result.comparables.length > 0 && result.targetCoordinates && (
+                <div className="mt-4">
+                  <CompMap
+                    comparables={result.comparables}
+                    targetLat={result.targetCoordinates.latitude}
+                    targetLng={result.targetCoordinates.longitude}
+                    targetAddress={result.address}
+                    excludedIds={excludedCompIds}
+                    onSelectComp={(comp) => {
+                      // Scroll to the comp in the list below if needed
+                      const compEl = document.getElementById(`comp-card-${comp.id}`);
+                      if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                  />
                 </div>
-                <iframe
-                  width="100%"
-                  height="250"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(result.address || `${result.neighborhood}, ${result.city}, ${result.state}`)}&zoom=15`}
-                />
-              </div>
+              )}
 
               {/* Custom Income Override */}
               <div className="mt-4 p-4 rounded-xl border-2 border-dashed border-gray-200">
@@ -3450,17 +3445,6 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
             </div>
 
-            {/* Comparable Listings Map */}
-            {result.comparables && result.comparables.length > 0 && result.targetCoordinates && (
-              <CompMap
-                comparables={result.comparables}
-                targetLat={result.targetCoordinates.latitude}
-                targetLng={result.targetCoordinates.longitude}
-                targetAddress={result.address}
-                excludedIds={excludedCompIds}
-              />
-            )}
-
             {/* Comparable Listings */}
             {result.comparables && result.comparables.length > 0 && (() => {
               // Calculate confidence score based on ACTIVE comp quality
@@ -3559,6 +3543,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     return (
                     <div
                       key={listing.id || index}
+                      id={`comp-card-${listing.id}`}
                       className={`flex gap-3 p-3 sm:p-4 rounded-xl transition-all border ${isExcluded ? 'opacity-40 border-gray-200 bg-gray-50' : 'border-gray-100 hover:bg-gray-50'}`}
                     >
                       {/* Include/Exclude Toggle */}
