@@ -184,6 +184,7 @@ export default function CalculatorPage() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const userIsTypingRef = useRef(false); // Only fetch suggestions when user is actively typing
   
   // Manual income override
   const [useCustomIncome, setUseCustomIncome] = useState(false);
@@ -1172,8 +1173,14 @@ export default function CalculatorPage() {
     }
   };
 
-  // Address autocomplete with debounce
+  // Address autocomplete with debounce — only runs when user is actively typing
   useEffect(() => {
+    // Only fetch suggestions when the user typed into the input field.
+    // Programmatic setAddress calls (URL params, auth restore, analysis result,
+    // suggestion selection) do NOT set userIsTypingRef, so they are skipped.
+    if (!userIsTypingRef.current) return;
+    userIsTypingRef.current = false;
+
     const debounceTimer = setTimeout(async () => {
       if (address.length >= 3) {
         setIsLoadingSuggestions(true);
@@ -1212,6 +1219,7 @@ export default function CalculatorPage() {
 
   // Handle suggestion selection
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    // Do NOT set userIsTypingRef — this prevents the useEffect from re-fetching
     setAddress(suggestion.display);
     setShowSuggestions(false);
     setSuggestions([]);
@@ -2529,7 +2537,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 ref={inputRef}
                 type="text"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => { userIsTypingRef.current = true; setAddress(e.target.value); }}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
                 onFocus={() => !result && suggestions.length > 0 && setShowSuggestions(true)}
                 placeholder="Enter property address..."

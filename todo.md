@@ -8,3 +8,8 @@
 - [x] Map should be scrollable/zoomable on mobile (touchscreen friendly)
 - [x] Auto-fit map bounds to show target + all comps
 - [x] Ensure no regressions to existing calculator features
+
+
+## Fix Duplicate Address Suggestions (February 2026)
+- [ ] Fix address autocomplete showing duplicate/double suggestion dropdowns
+- [ ] Ensure only one suggestion list appears at a time
