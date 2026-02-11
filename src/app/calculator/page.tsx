@@ -4870,7 +4870,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <p className="text-sm text-gray-600 mb-4">{explanation}</p>
                         
                         {/* Score Breakdown */}
-                        <div className="grid grid-cols-4 gap-2 text-xs">
+                        <div className="grid grid-cols-4 gap-3 text-xs">
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
                             <p className="text-gray-500">Cash-on-Cash</p>
                             <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(cocScore)}/40</p>
