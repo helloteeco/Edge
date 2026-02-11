@@ -1084,7 +1084,7 @@ export default function CalculatorPage() {
 
   // Save recent search
   const saveRecentSearch = (search: RecentSearch) => {
-    const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 5);
+    const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 10);
     setRecentSearches(updated);
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
   };
