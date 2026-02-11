@@ -5812,17 +5812,35 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
       {result && (
         <FloatingActionPill
           isSaved={isReportSaved}
-          onToggleSave={() => {
+          hideCount={true}
+          onToggleSave={async () => {
             if (isReportSaved) {
-              // Unsave: remove from localStorage and update state
+              // Unsave: remove from localStorage
               const addr = result.address || result.neighborhood;
               const saved = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
+              const matchEntry = saved.find((r: any) => r.address === addr);
               const exists = saved.findIndex((r: any) => r.address === addr);
               if (exists >= 0) {
                 saved.splice(exists, 1);
                 localStorage.setItem('edge_saved_reports', JSON.stringify(saved));
               }
               setIsReportSaved(false);
+              
+              // Also remove from server if authenticated
+              const authEmail = localStorage.getItem('edge_auth_email');
+              const authToken = localStorage.getItem('edge_auth_token');
+              const authExpiry = localStorage.getItem('edge_auth_expiry');
+              if (authEmail && authToken && authExpiry && Date.now() < parseInt(authExpiry, 10)) {
+                try {
+                  await fetch('/api/saved-properties', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: authEmail, propertyId: matchEntry?.id || addr })
+                  });
+                } catch (err) {
+                  console.log('Server unsave failed:', err);
+                }
+              }
             } else {
               // Save: calls saveReport which sets isReportSaved on success
               saveReport();

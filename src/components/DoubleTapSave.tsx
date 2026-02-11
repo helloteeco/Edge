@@ -286,38 +286,55 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
 interface FloatingSaveButtonProps {
   isSaved: boolean;
   onToggleSave: () => void;
+  hideCount?: boolean;
 }
 
-export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButtonProps) {
+export function FloatingSaveButton({ isSaved, onToggleSave, hideCount = false }: FloatingSaveButtonProps) {
   const [saveCount, setSaveCount] = useState(0);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const touchFiredRef = useRef(false);
 
   useEffect(() => {
     setSaveCount(getTotalSavedCount());
   }, [isSaved]);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
+  const doToggle = () => {
     if (!isSaved && isAtSaveLimit()) {
       setShowLimitWarning(true);
       setTimeout(() => setShowLimitWarning(false), 2500);
       return;
     }
-    
     onToggleSave();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    touchFiredRef.current = true;
+    doToggle();
+    // Reset after a short delay so click events on non-touch don't get blocked
+    setTimeout(() => { touchFiredRef.current = false; }, 300);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Skip if touch already handled this
+    if (touchFiredRef.current) return;
+    doToggle();
   };
 
   return (
     <>
       <button
         onClick={handleClick}
+        onTouchEnd={handleTouchEnd}
         className="flex flex-col items-center justify-center transition-all active:scale-95"
         style={{ 
           backgroundColor: 'transparent',
           width: '56px',
           padding: '12px 0 4px 0',
           borderRadius: 0,
+          WebkitTapHighlightColor: 'transparent',
         }}
         aria-label={isSaved ? "Remove from saved" : "Save"}
       >
@@ -331,12 +348,14 @@ export function FloatingSaveButton({ isSaved, onToggleSave }: FloatingSaveButton
         >
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
-        <span 
-          className="text-[10px] font-medium mt-0.5"
-          style={{ color: isSaved ? '#ef4444' : '#787060' }}
-        >
-          {saveCount}/{SAVE_LIMIT}
-        </span>
+        {!hideCount && (
+          <span 
+            className="text-[10px] font-medium mt-0.5"
+            style={{ color: isSaved ? '#ef4444' : '#787060' }}
+          >
+            {saveCount}/{SAVE_LIMIT}
+          </span>
+        )}
       </button>
 
       {/* Limit Warning Toast */}
@@ -382,6 +401,7 @@ export interface ShareData {
 export function FloatingShareButton({ shareText, shareData }: { shareText?: string; shareData?: ShareData }) {
   const [showCopied, setShowCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const touchFiredRef = useRef(false);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -389,7 +409,7 @@ export function FloatingShareButton({ shareText, shareData }: { shareText?: stri
     let shareUrl = window.location.href;
     const title = shareText || document.title;
     
-    // If shareData is provided, create an API share link for OG preview
+    // Try to create an API share link for OG preview, fall back to current URL
     if (shareData) {
       try {
         setIsCreating(true);
@@ -400,26 +420,52 @@ export function FloatingShareButton({ shareText, shareData }: { shareText?: stri
         });
         if (response.ok) {
           const data = await response.json();
-          shareUrl = data.shareUrl;
+          if (data.shareUrl) shareUrl = data.shareUrl;
         }
       } catch (err) {
-        console.error('Failed to create share link:', err);
+        // Fall back to current URL silently
+        console.log('Share link creation failed, using current URL');
       } finally {
         setIsCreating(false);
       }
     }
     
-    if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    // Build a readable share message with the URL
+    const shareMessage = shareData 
+      ? `${title}\n${shareUrl}`
+      : shareUrl;
+    
+    // Use native share on mobile devices
+    if (typeof navigator !== 'undefined' && navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       try {
         await navigator.share({
-          title,
+          title: title,
+          text: title,
           url: shareUrl
         });
-      } catch (err) {
-        console.log('Share cancelled');
+        return;
+      } catch (err: any) {
+        // If user cancelled, don't fall through to clipboard
+        if (err?.name === 'AbortError') return;
+        console.log('Native share failed, falling back to clipboard');
       }
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
+    }
+    
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareMessage);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    } catch (err) {
+      // Last resort: use old execCommand
+      const textArea = document.createElement('textarea');
+      textArea.value = shareMessage;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 2000);
     }
@@ -428,13 +474,15 @@ export function FloatingShareButton({ shareText, shareData }: { shareText?: stri
   return (
     <>
       <button
-        onClick={handleShare}
+        onClick={(e) => { if (touchFiredRef.current) return; handleShare(e); }}
+        onTouchEnd={(e) => { e.preventDefault(); touchFiredRef.current = true; handleShare(e as any); setTimeout(() => { touchFiredRef.current = false; }, 300); }}
         className="flex items-center justify-center transition-all active:scale-95"
         style={{
           backgroundColor: 'transparent',
           width: '56px',
           padding: '10px 0 12px 0',
           borderRadius: 0,
+          WebkitTapHighlightColor: 'transparent',
         }}
         aria-label="Share"
       >
@@ -473,9 +521,10 @@ interface FloatingActionPillProps {
   onToggleSave: () => void;
   shareText?: string;
   shareData?: ShareData;
+  hideCount?: boolean;
 }
 
-export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData }: FloatingActionPillProps) {
+export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData, hideCount = false }: FloatingActionPillProps) {
   return (
     <div 
       className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
@@ -488,7 +537,7 @@ export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData
         width: '56px',
       }}
     >
-      <FloatingSaveButton isSaved={isSaved} onToggleSave={onToggleSave} />
+      <FloatingSaveButton isSaved={isSaved} onToggleSave={onToggleSave} hideCount={hideCount} />
       <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
       <FloatingShareButton shareText={shareText} shareData={shareData} />
     </div>
