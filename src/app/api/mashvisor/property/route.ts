@@ -113,32 +113,43 @@ async function getCachedMarketData(cacheKey: string, lat?: number, lng?: number,
       .single();
 
     if (!error && data) {
-      await supabase
+      // Update search count in background (don't block response)
+      supabase
         .from("market_data")
         .update({ search_count: (data.search_count || 1) + 1, updated_at: new Date().toISOString() })
-        .eq("cache_key", cacheKey);
+        .eq("cache_key", cacheKey)
+        .then(() => {});
       console.log(`[Cache] HIT for ${cacheKey} (searched ${data.search_count + 1} times)`);
       return data;
     }
 
-    // Fallback: try old cache key formats (e.g., "35.32_-82.46_3br")
+    // Fallback: try old cache key formats in parallel (e.g., "35.32_-82.46_3br")
     if (lat !== undefined && lng !== undefined && bedrooms !== undefined) {
       const oldKeys = getOldCacheKeys(lat, lng, bedrooms);
-      for (const oldKey of oldKeys) {
-        const { data: oldData, error: oldError } = await supabase
+      const results = await Promise.all(
+        oldKeys.map(async (oldKey) => {
+          try {
+            const { data: oldData, error: oldError } = await supabase
+              .from("market_data")
+              .select("*")
+              .eq("cache_key", oldKey)
+              .gt("expires_at", new Date().toISOString())
+              .single();
+            if (!oldError && oldData) return { key: oldKey, data: oldData };
+          } catch {}
+          return null;
+        })
+      );
+      const hit = results.find(r => r !== null);
+      if (hit) {
+        // Update search count in background
+        supabase
           .from("market_data")
-          .select("*")
-          .eq("cache_key", oldKey)
-          .gt("expires_at", new Date().toISOString())
-          .single();
-        if (!oldError && oldData) {
-          await supabase
-            .from("market_data")
-            .update({ search_count: (oldData.search_count || 1) + 1, updated_at: new Date().toISOString() })
-            .eq("cache_key", oldKey);
-          console.log(`[Cache] HIT (old key) for ${oldKey} (searched ${oldData.search_count + 1} times)`);
-          return oldData;
-        }
+          .update({ search_count: (hit.data.search_count || 1) + 1, updated_at: new Date().toISOString() })
+          .eq("cache_key", hit.key)
+          .then(() => {});
+        console.log(`[Cache] HIT (old key) for ${hit.key} (searched ${hit.data.search_count + 1} times)`);
+        return hit.data;
       }
     }
 
@@ -938,7 +949,7 @@ export async function POST(request: NextRequest) {
     // STEP 3: Fetch from Airbnb Direct API (PRIMARY — replaced Apify)
     // 2-5 seconds vs 30-120s with Apify
     // =====================================================================
-    console.log(`[Analyze] Cache MISS — fetching via Airbnb Direct API...`);
+    console.log(`[Analyze] Cache MISS — fetching via Airbnb Direct API... [${Date.now() - startTime}ms elapsed]`);
     const scrapeResult = await fetchAirbnbDirect(
       latitude,
       longitude,
@@ -969,45 +980,46 @@ export async function POST(request: NextRequest) {
       accommodates,
     );
 
+    console.log(`[Analyze] Enrichment done — ${enriched.length} comps [${Date.now() - startTime}ms elapsed]`);
+
     // Generate seasonality from market data
     const historical = generateSeasonality(avgAdr, avgOccupancy, latitude, longitude);
 
     // =====================================================================
-    // STEP 5: Save EVERYTHING to Supabase (persistent database)
+    // STEP 5: Save to Supabase IN BACKGROUND (don't block response)
     // =====================================================================
-    await saveMarketData({
-      cacheKey,
-      lat: latitude,
-      lng: longitude,
-      city: city || cityFromAddress,
-      state: state || stateFromAddress,
-      bedrooms,
-      searchAddress: address,
-      avgAdr,
-      avgOccupancy,
-      avgAnnualRevenue,
-      avgMonthlyRevenue: Math.round(avgAnnualRevenue / 12),
-      percentiles,
-      listings: enriched,
-      monthlyData: historical,
-      source: "airbnb-direct",
-      dataQuality: enriched.length >= 15 ? "high" : enriched.length >= 5 ? "standard" : "low",
-    });
-
-    // Also save to legacy cache
-    await saveLegacyCache(cacheKey, latitude, longitude, bedrooms, enriched);
-
-    // Log the analysis
-    await logAnalysis({
-      address, city: city || cityFromAddress, state: state || stateFromAddress,
-      lat: latitude, lng: longitude,
-      bedrooms, bathrooms, guestCount: accommodates,
-      annualRevenue: avgAnnualRevenue,
-      monthlyRevenue: Math.round(avgAnnualRevenue / 12),
-      adr: avgAdr, occupancy: avgOccupancy,
-      source: "airbnb-direct", compCount: enriched.length,
-      percentiles, seasonality: historical,
-    });
+    // Fire-and-forget: save to cache, legacy cache, and log — all in parallel background
+    Promise.all([
+      saveMarketData({
+        cacheKey,
+        lat: latitude,
+        lng: longitude,
+        city: city || cityFromAddress,
+        state: state || stateFromAddress,
+        bedrooms,
+        searchAddress: address,
+        avgAdr,
+        avgOccupancy,
+        avgAnnualRevenue,
+        avgMonthlyRevenue: Math.round(avgAnnualRevenue / 12),
+        percentiles,
+        listings: enriched,
+        monthlyData: historical,
+        source: "airbnb-direct",
+        dataQuality: enriched.length >= 15 ? "high" : enriched.length >= 5 ? "standard" : "low",
+      }),
+      saveLegacyCache(cacheKey, latitude, longitude, bedrooms, enriched),
+      logAnalysis({
+        address, city: city || cityFromAddress, state: state || stateFromAddress,
+        lat: latitude, lng: longitude,
+        bedrooms, bathrooms, guestCount: accommodates,
+        annualRevenue: avgAnnualRevenue,
+        monthlyRevenue: Math.round(avgAnnualRevenue / 12),
+        adr: avgAdr, occupancy: avgOccupancy,
+        source: "airbnb-direct", compCount: enriched.length,
+        percentiles, seasonality: historical,
+      }),
+    ]).catch(err => console.error("[Analyze] Background save error:", err));
 
     console.log(`[Analyze] SUCCESS — ${enriched.length} comps, ADR $${avgAdr}, Occ ${avgOccupancy}%, Rev $${avgAnnualRevenue}/yr [${Date.now() - startTime}ms total]`);
 
