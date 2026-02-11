@@ -2868,7 +2868,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 value={address}
                 onChange={(e) => { userIsTypingRef.current = true; setAddress(e.target.value); }}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
-                onFocus={() => !result && suggestions.length > 0 && setShowSuggestions(true)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 placeholder="Enter property address..."
                 autoComplete="off"
                 autoCorrect="off"
@@ -2891,7 +2891,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               )}
               
               {/* Suggestions dropdown - positioned absolutely below input */}
-              {showSuggestions && !result && suggestions.length > 0 && (
+              {showSuggestions && suggestions.length > 0 && (
                 <div 
                   ref={suggestionsRef}
                   className="absolute left-0 right-0 bg-white rounded-xl border border-gray-200 overflow-y-auto"
