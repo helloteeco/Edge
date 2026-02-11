@@ -88,3 +88,10 @@
 - [ ] Ensure the flow is: Search → Results Summary → Adjust Settings → Detailed Breakdown → Comps → Map
 - [ ] Remove redundant or duplicate controls
 - [ ] Make it feel like a premium, polished experience (not a dev prototype)
+
+
+## BUG: Comp map still not showing on calculator (February 2026)
+- [x] Diagnose why CompMap component is not rendering on the calculator page (root cause: targetCoordinates missing from old property_cache entries + client-side save stripping undefined values)
+- [x] Fix the root cause and ensure map shows subject property + all comps (added fallback coord reconstruction in 4 code paths + API route backfill)
+- [x] Verify map is interactive (scrollable, zoomable, clickable pins) (CompMap component already supports this, was just hidden)
+- [x] Position comp map in the optimal spot in the page flow for best UX (moved from inside Revenue Estimate Card to after Comparable Listings, before Calendar Heatmap)

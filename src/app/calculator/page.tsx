@@ -986,6 +986,15 @@ export default function CalculatorPage() {
       marketType: (data.marketType as string) || undefined,
     };
     
+    // Reconstruct targetCoordinates from comparables if missing
+    if (!analysisResult.targetCoordinates && analysisResult.comparables?.length > 0) {
+      const firstWithCoords = analysisResult.comparables.find(c => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0);
+      if (firstWithCoords) {
+        analysisResult.targetCoordinates = { latitude: firstWithCoords.latitude, longitude: firstWithCoords.longitude };
+        console.log('[Cache Restore] Reconstructed targetCoordinates from comp:', firstWithCoords.latitude, firstWithCoords.longitude);
+      }
+    }
+    
     setResult(analysisResult);
     setIsReportSaved(false); // Reset saved state for new analysis
     setAddress(pendingAnalysis || address);
@@ -996,8 +1005,9 @@ export default function CalculatorPage() {
     } else if (data.comparables && Array.isArray(data.comparables)) {
       setAllComps(data.comparables as ComparableListing[]);
     }
-    if (data.targetCoordinates) {
-      setTargetCoords({ lat: data.targetCoordinates.latitude, lng: data.targetCoordinates.longitude });
+    const resolvedCoords = analysisResult.targetCoordinates || data.targetCoordinates;
+    if (resolvedCoords) {
+      setTargetCoords({ lat: resolvedCoords.latitude, lng: resolvedCoords.longitude });
     }
     setLastAnalyzedAddress(pendingAnalysis || address);
     
@@ -1441,6 +1451,21 @@ export default function CalculatorPage() {
             console.log('[Analyze] INSTANT from property_cache');
             cachedResult.success = true;
             cachedResult.dataSource = cachedResult.dataSource || 'property_cache';
+            
+            // Reconstruct targetCoordinates from comparables if missing (legacy cache entries)
+            if (!cachedResult.targetCoordinates && cachedResult.comparables?.length > 0) {
+              const firstWithCoords = cachedResult.comparables.find(
+                (c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0
+              );
+              if (firstWithCoords) {
+                cachedResult.targetCoordinates = {
+                  latitude: firstWithCoords.latitude,
+                  longitude: firstWithCoords.longitude,
+                };
+                console.log('[Analyze] Reconstructed targetCoordinates from comp:', firstWithCoords.latitude, firstWithCoords.longitude);
+              }
+            }
+            
             data = cachedResult;
             setLoadingStep("Found cached data!");
           }
@@ -1672,12 +1697,22 @@ export default function CalculatorPage() {
       // Skip if data already came from cache (no need to re-save)
       if (data.dataSource !== 'property_cache') {
         try {
+          // Ensure targetCoordinates is always saved (fallback to first comp if undefined)
+          let coordsToSave = targetCoordinates;
+          if (!coordsToSave && comparables?.length > 0) {
+            const firstWithCoords = comparables.find((c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0);
+            if (firstWithCoords) {
+              coordsToSave = { latitude: firstWithCoords.latitude, longitude: firstWithCoords.longitude };
+              console.log('[Cache] Using comp coords as targetCoordinates fallback:', coordsToSave);
+            }
+          }
+          
           await fetch('/api/property-cache', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               address: addressToAnalyze,
-              data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates, allComps: rawAllComps },
+              data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates: coordsToSave || null, allComps: rawAllComps },
             }),
           });
           console.log("[Cache] Stored API response for 90 days");
@@ -3459,23 +3494,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 );
               })()}
 
-              {/* Interactive Comp Map — shows target property + all comparable listings */}
-              {result.comparables && result.comparables.length > 0 && result.targetCoordinates && (
-                <div className="mt-4">
-                  <CompMap
-                    comparables={result.comparables}
-                    targetLat={result.targetCoordinates.latitude}
-                    targetLng={result.targetCoordinates.longitude}
-                    targetAddress={result.address}
-                    excludedIds={excludedCompIds}
-                    onSelectComp={(comp) => {
-                      // Scroll to the comp in the list below if needed
-                      const compEl = document.getElementById(`comp-card-${comp.id}`);
-                      if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                  />
-                </div>
-              )}
+              {/* CompMap moved below Comparable Listings for better flow */}
 
               {/* Custom Income Override */}
               <div className="mt-4 p-4 rounded-xl border-2 border-dashed border-gray-200">
@@ -3958,6 +3977,55 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   Tap checkboxes to include/exclude comps • Revenue recalculates automatically
                 </p>
               </div>
+              );
+            })()}
+
+            {/* ===== Interactive Comp Map — right after comp cards for natural spatial context ===== */}
+            {result.comparables && result.comparables.length > 0 && (() => {
+              const hasComps = true;
+              const hasValidCoords = result.targetCoordinates && result.targetCoordinates.latitude !== 0 && result.targetCoordinates.longitude !== 0;
+              
+              // Determine target coordinates: prefer result.targetCoordinates, fall back to first comp
+              let mapTargetLat = 0;
+              let mapTargetLng = 0;
+              
+              if (hasValidCoords) {
+                mapTargetLat = result.targetCoordinates!.latitude;
+                mapTargetLng = result.targetCoordinates!.longitude;
+              } else {
+                const firstCompWithCoords = result.comparables.find(c => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0);
+                if (firstCompWithCoords) {
+                  mapTargetLat = firstCompWithCoords.latitude;
+                  mapTargetLng = firstCompWithCoords.longitude;
+                }
+              }
+              
+              if (mapTargetLat === 0 && mapTargetLng === 0) return null;
+              
+              return (
+                <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <div className="p-4 pb-2">
+                    <h3 className="text-lg font-semibold" style={{ color: '#2b2823' }}>📍 Comp Map</h3>
+                    <p className="text-xs mt-0.5" style={{ color: '#787060' }}>Your property (blue) vs. comparable listings. Tap a pin for details.</p>
+                  </div>
+                  <CalculatorErrorBoundary fallback={
+                    <div className="p-6 text-center">
+                      <p className="text-sm" style={{ color: '#ef4444' }}>Map failed to load. Try refreshing the page.</p>
+                    </div>
+                  }>
+                    <CompMap
+                      comparables={result.comparables}
+                      targetLat={mapTargetLat}
+                      targetLng={mapTargetLng}
+                      targetAddress={result.address}
+                      excludedIds={excludedCompIds}
+                      onSelectComp={(comp) => {
+                        const compEl = document.getElementById(`comp-card-${comp.id}`);
+                        if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                    />
+                  </CalculatorErrorBoundary>
+                </div>
               );
             })()}
 

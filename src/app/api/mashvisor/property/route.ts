@@ -797,6 +797,28 @@ export async function POST(request: NextRequest) {
         // The property_cache stores the full API response shape
         if (cachedData?.property || cachedData?.neighborhood) {
           console.log(`[Analyze] INSTANT HIT from property_cache (${Date.now() - startTime}ms)`);
+          
+          // Reconstruct targetCoordinates if missing (legacy cache entries)
+          if (!cachedData.targetCoordinates && cachedData.comparables?.length > 0) {
+            const firstCompWithCoords = cachedData.comparables.find(
+              (c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0
+            );
+            if (firstCompWithCoords) {
+              cachedData.targetCoordinates = {
+                latitude: firstCompWithCoords.latitude,
+                longitude: firstCompWithCoords.longitude,
+              };
+              console.log(`[Analyze] Reconstructed targetCoordinates from comp: ${firstCompWithCoords.latitude}, ${firstCompWithCoords.longitude}`);
+              
+              // Update cache entry in background so future hits have targetCoordinates
+              supabase.from("property_cache").update({ data: cachedData }).eq("address", address)
+                .then(({ error: updateErr }) => {
+                  if (updateErr) console.error("[PropertyCache] Failed to backfill targetCoordinates:", updateErr.message);
+                  else console.log(`[PropertyCache] Backfilled targetCoordinates for ${address}`);
+                });
+            }
+          }
+          
           // Re-wrap in success response if needed
           if (cachedData.success !== undefined) {
             return NextResponse.json(cachedData);
