@@ -67,12 +67,24 @@
 
 
 ## ACCURACY: Calculator systematically underestimates rural/tourism markets (February 2026)
-- [ ] Research why Airbnb scraped occupancy data is much lower than actual host occupancy
-- [ ] Add last-minute booking uplift factor (Airbnb calendars show "available" but get booked last minute)
-- [ ] Add seasonality-aware revenue calculation (summer peak vs winter trough)
-- [ ] Add superhost/amenity premium adjustment
-- [ ] Add "Host Quality Adjustment" toggle in UI (new host vs experienced host)
-- [ ] Weight comps by performance quality (top performers vs average)
-- [ ] Show revenue range (conservative/moderate/optimistic) instead of single number
-- [ ] Use P50/P75 percentile display to show realistic range for good operators
-- [ ] Fix: only 3 comps found for Oak Hill WV — need wider search radius for rural areas
+- [x] Research why Airbnb scraped occupancy data is much lower than actual host occupancy (calendar scraping can't distinguish blocked vs booked; review rate assumed too high)
+- [x] Add last-minute booking uplift factor (15-22% based on market type, toggleable in UI)
+- [x] Add seasonality-aware revenue calculation (getMarketType now classifies WV as mountain, correct seasonal patterns applied)
+- [x] Add superhost/amenity premium adjustment (Host Performance Level + 6 amenity checkboxes)
+- [x] Add "Host Quality Adjustment" toggle in UI (New/Average/Experienced/Professional levels)
+- [x] Weight comps by performance quality (Professional = 1.5x multiplier for P85-P95 operators)
+- [x] Show revenue range via adjustment breakdown tags below panel
+- [x] Use P50/P75 percentile display combined with adjustment multipliers
+- [x] Fix: improved estimateOccupancy formula (review rate 30%, longer avg stays for mountain/rural)
+
+
+## UX OVERHAUL: Calculator layout reorganization (February 2026)
+- [ ] Audit current section order and identify all scroll pain points
+- [ ] Design new top-to-bottom flow that eliminates back-and-forth scrolling
+- [ ] Group all adjustable inputs together in one "Settings" area (bedrooms, bath, guests, host level, amenities, percentile)
+- [ ] Move revenue adjustments panel closer to the revenue display so changes are visible immediately
+- [ ] Add contextual help tooltips on confusing sections
+- [ ] Add "Need help?" resource links for stuck users (link to Teeco course, chat assistant)
+- [ ] Ensure the flow is: Search → Results Summary → Adjust Settings → Detailed Breakdown → Comps → Map
+- [ ] Remove redundant or duplicate controls
+- [ ] Make it feel like a premium, polished experience (not a dev prototype)

@@ -2943,6 +2943,176 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
               </div>
             )}
+
+            {/* ===== PROPERTY CONFIGURATION — All inputs in one place ===== */}
+            <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>Property Configuration</h3>
+                  <p className="text-xs" style={{ color: '#787060' }}>Adjust to match your property — revenue updates instantly</p>
+                </div>
+                {getRevenueAdjustmentMultiplier() !== 1.0 && (
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: getRevenueAdjustmentMultiplier() > 1 ? '#f0fdf4' : '#fef2f2', color: getRevenueAdjustmentMultiplier() > 1 ? '#16a34a' : '#ef4444' }}>
+                    {getRevenueAdjustmentMultiplier() > 1 ? '+' : ''}{Math.round((getRevenueAdjustmentMultiplier() - 1) * 100)}% adj
+                  </span>
+                )}
+              </div>
+
+              {/* Strategy Toggle */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setAnalysisMode('buying')}
+                  className={`flex-1 py-2 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${analysisMode === 'buying' ? 'text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  style={analysisMode === 'buying' ? { backgroundColor: '#2b2823' } : { backgroundColor: '#f5f4f0' }}
+                >
+                  🏠 Buying
+                </button>
+                <button
+                  onClick={() => setAnalysisMode('arbitrage')}
+                  className={`flex-1 py-2 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${analysisMode === 'arbitrage' ? 'text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  style={analysisMode === 'arbitrage' ? { backgroundColor: '#2b2823' } : { backgroundColor: '#f5f4f0' }}
+                >
+                  🔑 Arbitrage
+                </button>
+              </div>
+
+              {/* Bed / Bath / Sleeps — compact row */}
+              <div className="flex flex-wrap gap-3 mb-3">
+                <div className="flex-1 min-w-[100px]">
+                  <label className="text-[11px] font-medium mb-1 block" style={{ color: '#787060' }}>Bedrooms</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => { setBedrooms(num); setGuestCount(num * 2); setTimeout(() => handleLocalRefilterAuto(num, bathrooms, num * 2), 50); }}
+                        className={`flex-1 min-h-[36px] rounded-lg text-xs font-medium transition-all ${bedrooms === num ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        style={bedrooms === num ? { backgroundColor: '#2b2823' } : {}}
+                      >
+                        {num === 6 ? '6+' : num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-[100px]">
+                  <label className="text-[11px] font-medium mb-1 block" style={{ color: '#787060' }}>Bathrooms</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => { setBathrooms(num); setTimeout(() => handleLocalRefilterAuto(bedrooms, num, guestCount), 50); }}
+                        className={`flex-1 min-h-[36px] rounded-lg text-xs font-medium transition-all ${bathrooms === num ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        style={bathrooms === num ? { backgroundColor: '#2b2823' } : {}}
+                      >
+                        {num === 5 ? '5+' : num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="text-[11px] font-medium mb-1 block" style={{ color: '#787060' }}>Sleeps</label>
+                <div className="flex gap-1 flex-wrap">
+                  {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => { setGuestCount(num); setTimeout(() => handleLocalRefilterAuto(bedrooms, bathrooms, num), 50); }}
+                      className={`w-10 min-h-[36px] rounded-lg text-xs font-medium transition-all ${guestCount === num ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      style={guestCount === num ? { backgroundColor: '#2b2823' } : {}}
+                    >
+                      {num === 16 ? '16+' : num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t mb-3" style={{ borderColor: '#e5e2dc' }}></div>
+
+              {/* Host Performance Level — compact */}
+              <div className="mb-3">
+                <p className="text-[11px] font-semibold mb-1.5" style={{ color: '#2b2823' }}>Host Performance Level</p>
+                <div className="grid grid-cols-4 gap-1">
+                  {([
+                    { key: 'new' as const, label: 'New', desc: '-20%' },
+                    { key: 'average' as const, label: 'Average', desc: 'Baseline' },
+                    { key: 'experienced' as const, label: 'Experienced', desc: '+25%' },
+                    { key: 'professional' as const, label: 'Pro', desc: '+50%' },
+                  ]).map(({ key, label, desc }) => (
+                    <button
+                      key={key}
+                      onClick={() => setHostPerformance(key)}
+                      className={`py-1.5 px-1 rounded-lg text-center transition-all ${hostPerformance === key ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      style={hostPerformance === key ? { backgroundColor: '#2b2823' } : {}}
+                    >
+                      <span className="block text-[11px] font-medium">{label}</span>
+                      <span className="block text-[9px] opacity-75">{desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Last-Minute Booking Uplift — compact toggle */}
+              <div className="mb-3">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <div
+                    onClick={() => setLastMinuteUplift(!lastMinuteUplift)}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${lastMinuteUplift ? 'bg-green-500' : 'bg-gray-300'}`}
+                    style={{ minWidth: '40px' }}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${lastMinuteUplift ? 'translate-x-5' : ''}`} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold" style={{ color: '#2b2823' }}>Last-Minute Booking Uplift</p>
+                    <p className="text-[9px]" style={{ color: '#787060' }}>+{result?.marketType === 'mountain' ? '20' : result?.marketType === 'rural' ? '22' : result?.marketType === 'beach' ? '18' : '15'}% — bookings scrapers miss</p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Amenity Premiums — compact 3-col grid */}
+              <div className="mb-3">
+                <p className="text-[11px] font-semibold mb-1.5" style={{ color: '#2b2823' }}>Amenity Premiums</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([
+                    { state: amenityHotTub, setter: setAmenityHotTub, label: 'Hot Tub', boost: '+12%', icon: '♨️' },
+                    { state: amenityPool, setter: setAmenityPool, label: 'Pool', boost: '+15%', icon: '🏊' },
+                    { state: amenityGameRoom, setter: setAmenityGameRoom, label: 'Game Room', boost: '+8%', icon: '🎮' },
+                    { state: amenityEVCharger, setter: setAmenityEVCharger, label: 'EV Charger', boost: '+5%', icon: '⚡' },
+                    { state: amenityFirePit, setter: setAmenityFirePit, label: 'Fire Pit', boost: '+4%', icon: '🔥' },
+                    { state: amenityPremiumDesign, setter: setAmenityPremiumDesign, label: 'Premium Design', boost: '+10%', icon: '✨' },
+                  ]).map(({ state, setter, label, boost, icon }) => (
+                    <button
+                      key={label}
+                      onClick={() => setter(!state)}
+                      className={`flex items-center gap-1.5 p-2 rounded-lg text-left transition-all border ${state ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'}`}
+                    >
+                      <span className="text-sm">{icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="block text-[10px] font-medium leading-tight" style={{ color: state ? '#16a34a' : '#2b2823' }}>{label}</span>
+                        <span className="block text-[9px]" style={{ color: state ? '#16a34a' : '#787060' }}>{boost}</span>
+                      </div>
+                      {state && (
+                        <svg className="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Adjustment Summary Tags */}
+              {getAdjustmentBreakdown().length > 0 && (
+                <div className="pt-2" style={{ borderTop: '1px solid #e5e2dc' }}>
+                  <div className="flex flex-wrap gap-1">
+                    {getAdjustmentBreakdown().map((item, i) => (
+                      <span key={i} className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: item.percent > 0 ? '#f0fdf4' : '#fef2f2', color: item.percent > 0 ? '#16a34a' : '#ef4444' }}>
+                        {item.label}: {item.percent > 0 ? '+' : ''}{item.percent}%
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             
             {/* Revenue Estimate Card */}
             <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
@@ -3167,104 +3337,6 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 )}
               </div>
 
-              {/* Revenue Adjustments Panel */}
-              <div className="mt-4 rounded-2xl p-4 sm:p-5" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: '1px solid #e5e2dc' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>Revenue Adjustments</h3>
-                  {getRevenueAdjustmentMultiplier() !== 1.0 && (
-                    <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: getRevenueAdjustmentMultiplier() > 1 ? '#f0fdf4' : '#fef2f2', color: getRevenueAdjustmentMultiplier() > 1 ? '#16a34a' : '#ef4444' }}>
-                      {getRevenueAdjustmentMultiplier() > 1 ? '+' : ''}{Math.round((getRevenueAdjustmentMultiplier() - 1) * 100)}%
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs mb-4" style={{ color: '#787060' }}>Scraped data underestimates revenue by 30-60%. Adjust based on your hosting strategy.</p>
-                
-                {/* Host Performance Level */}
-                <div className="mb-4">
-                  <p className="text-xs font-semibold mb-2" style={{ color: '#2b2823' }}>Host Performance Level</p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {([
-                      { key: 'new' as const, label: 'New', desc: 'Building reviews' },
-                      { key: 'average' as const, label: 'Average', desc: 'Baseline data' },
-                      { key: 'experienced' as const, label: 'Experienced', desc: 'Superhost' },
-                      { key: 'professional' as const, label: 'Pro', desc: '10+ listings' },
-                    ]).map(({ key, label, desc }) => (
-                      <button
-                        key={key}
-                        onClick={() => setHostPerformance(key)}
-                        className={`py-2 px-1 rounded-lg text-center transition-all ${hostPerformance === key ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        style={hostPerformance === key ? { backgroundColor: '#2b2823' } : {}}
-                      >
-                        <span className="block text-xs font-medium">{label}</span>
-                        <span className="block text-[10px] opacity-75">{desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Last-Minute Booking Uplift */}
-                <div className="mb-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <div
-                      onClick={() => setLastMinuteUplift(!lastMinuteUplift)}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${lastMinuteUplift ? 'bg-green-500' : 'bg-gray-300'}`}
-                      style={{ minWidth: '44px' }}
-                    >
-                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${lastMinuteUplift ? 'translate-x-5' : ''}`} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold" style={{ color: '#2b2823' }}>Last-Minute Booking Uplift</p>
-                      <p className="text-[10px]" style={{ color: '#787060' }}>+{result?.marketType === 'mountain' ? '20' : result?.marketType === 'rural' ? '22' : result?.marketType === 'beach' ? '18' : '15'}% — accounts for bookings not captured in scraped calendars</p>
-                    </div>
-                  </label>
-                </div>
-                
-                {/* Amenity Premiums */}
-                <div>
-                  <p className="text-xs font-semibold mb-2" style={{ color: '#2b2823' }}>Amenity Premiums</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {([
-                      { state: amenityHotTub, setter: setAmenityHotTub, label: 'Hot Tub', boost: '+12%', icon: '♨️' },
-                      { state: amenityPool, setter: setAmenityPool, label: 'Pool', boost: '+15%', icon: '🏊' },
-                      { state: amenityGameRoom, setter: setAmenityGameRoom, label: 'Game Room', boost: '+8%', icon: '🎮' },
-                      { state: amenityEVCharger, setter: setAmenityEVCharger, label: 'EV Charger', boost: '+5%', icon: '⚡' },
-                      { state: amenityFirePit, setter: setAmenityFirePit, label: 'Fire Pit', boost: '+4%', icon: '🔥' },
-                      { state: amenityPremiumDesign, setter: setAmenityPremiumDesign, label: 'Premium Design', boost: '+10%', icon: '✨' },
-                    ]).map(({ state, setter, label, boost, icon }) => (
-                      <button
-                        key={label}
-                        onClick={() => setter(!state)}
-                        className={`flex items-center gap-2 p-2.5 rounded-lg text-left transition-all border ${state ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'}`}
-                      >
-                        <span className="text-base">{icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <span className="block text-xs font-medium" style={{ color: state ? '#16a34a' : '#2b2823' }}>{label}</span>
-                          <span className="block text-[10px]" style={{ color: state ? '#16a34a' : '#787060' }}>{boost}</span>
-                        </div>
-                        {state && (
-                          <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Adjustment Summary */}
-                {getAdjustmentBreakdown().length > 0 && (
-                  <div className="mt-3 pt-3" style={{ borderTop: '1px solid #e5e2dc' }}>
-                    <div className="flex flex-wrap gap-1.5">
-                      {getAdjustmentBreakdown().map((item, i) => (
-                        <span key={i} className="text-[10px] px-2 py-1 rounded-full font-medium" style={{ backgroundColor: item.percent > 0 ? '#f0fdf4' : '#fef2f2', color: item.percent > 0 ? '#16a34a' : '#ef4444' }}>
-                          {item.label}: {item.percent > 0 ? '+' : ''}{item.percent}%
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Forward-Looking 30-Day Revenue Estimate */}
               {(() => {
                 const today = new Date();
@@ -3470,104 +3542,6 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <p className="text-lg font-bold" style={{ color: "#2b2823" }}>{result.nearbyListings}</p>
                 </div>
               </div>
-            </div>
-
-            {/* Refine Your Analysis - bed/bath/sleeps/mode selectors */}
-            <div className="rounded-2xl p-4 sm:p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-              <h3 className="text-base font-semibold mb-1" style={{ color: "#2b2823" }}>Refine Your Analysis</h3>
-              <p className="text-xs text-gray-500 mb-4">Adjust property details to get more accurate estimates</p>
-              
-              {/* Analysis Mode Toggle */}
-              <p className="text-xs font-medium mb-2" style={{ color: "#787060" }}>Strategy</p>
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setAnalysisMode("buying")}
-                  className={`flex-1 py-2.5 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                    analysisMode === "buying" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  style={analysisMode === "buying" ? { backgroundColor: "#2b2823" } : { backgroundColor: "#f5f4f0" }}
-                >
-                  🏠 Buying
-                </button>
-                <button
-                  onClick={() => setAnalysisMode("arbitrage")}
-                  className={`flex-1 py-2.5 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                    analysisMode === "arbitrage" ? "text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  style={analysisMode === "arbitrage" ? { backgroundColor: "#2b2823" } : { backgroundColor: "#f5f4f0" }}
-                >
-                  🔑 Arbitrage
-                </button>
-              </div>
-              
-              {/* Bed / Bath / Sleeps */}
-              <div className="flex flex-wrap gap-4 mb-4">
-                <div className="flex-1 min-w-[120px]">
-                  <label className="text-xs font-medium mb-1.5 block" style={{ color: "#787060" }}>Bedrooms</label>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
-                      <button
-                        key={num}
-                        onClick={() => { setBedrooms(num); setGuestCount(num * 2); setTimeout(() => handleLocalRefilterAuto(num, bathrooms, num * 2), 50); }}
-                        className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
-                          bedrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                        style={bedrooms === num ? { backgroundColor: "#2b2823" } : {}}
-                      >
-                        {num === 6 ? "6+" : num}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-[120px]">
-                  <label className="text-xs font-medium mb-1.5 block" style={{ color: "#787060" }}>Bathrooms</label>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4, 5].map((num) => (
-                      <button
-                        key={num}
-                        onClick={() => { setBathrooms(num); setTimeout(() => handleLocalRefilterAuto(bedrooms, num, guestCount), 50); }}
-                        className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
-                          bathrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                        style={bathrooms === num ? { backgroundColor: "#2b2823" } : {}}
-                      >
-                        {num === 5 ? "5+" : num}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1.5 block" style={{ color: "#787060" }}>Sleeps</label>
-                <div className="flex gap-1.5 flex-wrap">
-                  {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
-                    <button
-                      key={num}
-                        onClick={() => { setGuestCount(num); setTimeout(() => handleLocalRefilterAuto(bedrooms, bathrooms, num), 50); }}
-                      className={`w-11 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
-                        guestCount === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                      style={guestCount === num ? { backgroundColor: "#2b2823" } : {}}
-                    >
-                      {num === 16 ? "16+" : num}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Re-analyze button — uses local re-filtering if only bedrooms/bath/guests changed */}
-              <button
-                onClick={() => handleLocalRefilter()}
-                disabled={isLoading}
-                className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
-                style={{ backgroundColor: "#2b2823" }}
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
-                ) : (
-                  "Update Analysis"
-                )}
-              </button>
             </div>
 
             {/* Performance Path Card - explains what each revenue tier means */}
