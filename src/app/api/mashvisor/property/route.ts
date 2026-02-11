@@ -14,8 +14,9 @@ const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN || "";
 const APIFY_ACTOR_ID = "tri_angle~airbnb-scraper";
 const APIFY_BASE_URL = "https://api.apify.com/v2";
 
-// Cache duration: 7 days (Airbnb pricing doesn't change hourly)
-const CACHE_DURATION_DAYS = 7;
+// Cache duration: 30 days — aggressive caching to minimize Apify costs
+// Most STR markets don't shift dramatically month-to-month
+const CACHE_DURATION_DAYS = 30;
 
 // ============================================================================
 // GEOCODING
@@ -215,7 +216,7 @@ async function runApifyScrape(
   lng: number,
   latDelta: number,
   bedrooms: number,
-  maxListings: number = 80,
+  maxListings: number = 50, // Keep at 50 to cap Apify cost at ~$0.30/run
   filterBedrooms: boolean = false,
 ): Promise<{ success: boolean; listings: any[]; error?: string }> {
   if (!APIFY_API_TOKEN) {
@@ -294,7 +295,9 @@ async function runApifyScrape(
 
     // Fetch results
     const datasetId = runData?.data?.defaultDatasetId;
-    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=${maxListings}`);
+    // Fetch up to 250 results — the actor may return more than maxListings
+    // We grab everything and let enrichListings filter/rank
+    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=250`);
     if (!resultsRes.ok) {
       return { success: false, listings: [], error: "Failed to fetch Apify results" };
     }
@@ -336,10 +339,11 @@ async function runApifyScrape(
           isSuperhost: item.host?.isSuperhost || false,
           source: "apify",
         };
-      })
-      .slice(0, maxListings); // Keep up to maxListings for enrichment to filter
+      });
+    // No cap — keep everything Apify returns (actor often returns more than maxListings)
+    // The enrichListings function handles filtering and ranking
 
-    console.log(`[Apify] Transformed ${listings.length} listings`);
+    console.log(`[Apify] Transformed ${listings.length} listings (from ${rawListings.length} raw)`);
     return { success: true, listings };
   } catch (error) {
     console.error("[Apify] Error:", error);
@@ -410,7 +414,7 @@ async function scrapeAirbnbByCity(
     }
 
     const datasetId = runData?.data?.defaultDatasetId;
-    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=50`);
+    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=250`);
     if (!resultsRes.ok) {
       return { success: false, listings: [], error: "Failed to fetch city search results" };
     }
@@ -451,8 +455,8 @@ async function scrapeAirbnbByCity(
           isSuperhost: item.host?.isSuperhost || false,
           source: "apify",
         };
-      })
-      .slice(0, 80);
+      });
+    // No cap — keep everything for enrichment
 
     console.log(`[Apify] City search transformed ${listings.length} listings`);
     return { success: true, listings };
@@ -462,19 +466,9 @@ async function scrapeAirbnbByCity(
   }
 }
 
-// Deduplicate listings by ID, keeping the first occurrence
-function deduplicateListings(listings: any[]): any[] {
-  const seen = new Map<string, boolean>();
-  return listings.filter((l) => {
-    const key = String(l.id || l.url || l.name);
-    if (seen.has(key)) return false;
-    seen.set(key, true);
-    return true;
-  });
-}
-
-// Main scraping function with progressive radius expansion and fallbacks
-// Key fix: ACCUMULATE listings across all radius steps instead of returning early
+// Main scraping function — COST-EFFICIENT: max 2 Apify runs per search
+// Strategy: One wide-radius scrape (~25mi) to get 30-50+ listings in a single call.
+// Only falls back to city-name search if the first scrape returns 0.
 async function scrapeAirbnbComps(
   lat: number,
   lng: number,
@@ -482,64 +476,30 @@ async function scrapeAirbnbComps(
   city?: string,
   state?: string,
 ): Promise<{ success: boolean; listings: any[]; error?: string }> {
-  const allListings: any[] = [];
-  const TARGET_MIN = 15; // Keep expanding until we have at least 15 unique listings
-
-  // Strategy 1: Progressive radius expansion WITHOUT bedroom filter
-  // ACCUMULATE results across all radii — don't stop early
-  const radiusSteps = [
-    { latDelta: 0.15, label: "~10mi" },   // ~10 mile radius
-    { latDelta: 0.30, label: "~20mi" },   // ~20 mile radius
-    { latDelta: 0.50, label: "~35mi" },   // ~35 mile radius
-  ];
-
-  for (const step of radiusSteps) {
-    const result = await runApifyScrape(lat, lng, step.latDelta, bedrooms, 80, false);
-    if (result.success && result.listings.length > 0) {
-      allListings.push(...result.listings);
-      const unique = deduplicateListings(allListings);
-      console.log(`[Apify] ${step.label}: got ${result.listings.length} listings, total unique: ${unique.length}`);
-      if (unique.length >= TARGET_MIN) {
-        // We have enough — return the accumulated set
-        return { success: true, listings: unique.slice(0, 80) };
-      }
-    } else {
-      console.log(`[Apify] ${step.label}: returned 0 listings, continuing...`);
-    }
+  // === Run 1: Single wide-radius bounding box (~25mi) ===
+  // 25mi is the sweet spot: covers enough area for most markets in one call
+  // The enrichListings function handles bedroom filtering and distance weighting
+  const result = await runApifyScrape(lat, lng, 0.36, bedrooms, 50, false);
+  if (result.success && result.listings.length > 0) {
+    console.log(`[Apify] Got ${result.listings.length} listings in single 25mi scrape`);
+    return result;
   }
 
-  // Strategy 2: City-name search (Airbnb's own search algorithm)
-  // This often finds listings that bounding-box search misses
+  // === Run 2 (fallback): City-name search if bounding box returned 0 ===
+  // This uses Airbnb's own search algorithm which sometimes works better
+  // for addresses where the bounding box coordinates don't match well
   if (city && state) {
-    console.log(`[Apify] Adding city-name search for ${city}, ${state}...`);
+    console.log(`[Apify] Bounding box returned 0, trying city-name fallback: ${city}, ${state}`);
     const cityResult = await scrapeAirbnbByCity(city, state, bedrooms);
     if (cityResult.success && cityResult.listings.length > 0) {
-      allListings.push(...cityResult.listings);
-      console.log(`[Apify] City search added ${cityResult.listings.length} listings`);
+      console.log(`[Apify] City fallback got ${cityResult.listings.length} listings`);
+      return cityResult;
     }
   }
 
-  // Check accumulated results so far
-  let unique = deduplicateListings(allListings);
-  if (unique.length >= 5) {
-    console.log(`[Apify] Accumulated ${unique.length} unique listings after city search`);
-    return { success: true, listings: unique.slice(0, 80) };
-  }
-
-  // Strategy 3: Very wide radius as last resort (~50mi)
-  console.log(`[Apify] Only ${unique.length} listings so far, trying 50mi radius...`);
-  const lastResort = await runApifyScrape(lat, lng, 0.72, bedrooms, 80, false);
-  if (lastResort.success && lastResort.listings.length > 0) {
-    allListings.push(...lastResort.listings);
-  }
-
-  unique = deduplicateListings(allListings);
-  if (unique.length > 0) {
-    console.log(`[Apify] Final accumulated total: ${unique.length} unique listings`);
-    return { success: true, listings: unique.slice(0, 80) };
-  }
-
-  return { success: false, listings: [], error: "No listings found after all search strategies" };
+  // Both strategies failed — no listings found
+  console.log(`[Apify] No listings found after 2 search strategies`);
+  return { success: false, listings: [], error: "No listings found in area" };
 }
 
 // ============================================================================

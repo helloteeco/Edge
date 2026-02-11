@@ -21,6 +21,21 @@
 
 
 ## Fix Low Comp Count — Apify Scraper Missing Listings (February 2026)
-- [ ] Investigate why Apify scraper returns only 4 comps when more exist on Airbnb
-- [ ] Fix scraping URL construction, filters, or result limits to capture more listings
-- [ ] Verify fix with Spartanburg area address
+- [x] Investigate why Apify scraper returns only 4 comps when more exist on Airbnb
+- [x] Fix scraping logic: accumulate across radius steps, increase maxListings to 80, deduplicate
+- [ ] Verify fix with Spartanburg area address (user needs to test with fresh search)
+
+
+## URGENT: Fix Apify Cost Overrun (February 2026)
+- [ ] Revert scrapeAirbnbComps to single-scrape approach (1 scrape, expand only on 0 results)
+- [ ] Restore old cache key compatibility so existing cached data is reused
+- [ ] Add cost guard: max 2 Apify runs per search
+- [ ] Reduce maxListings back to 50 to save credits per run
+
+
+## Optimize Apify Scraping — Cost Cap $0.30/search (February 2026)
+- [ ] Single scrape per search, grab max ~240 listings from Apify
+- [ ] Cap Apify cost at ~$0.30 per search
+- [ ] Extend cache TTL from 7 days to 30 days
+- [ ] City-name fallback only if first scrape returns 0 results (max 2 runs)
+- [ ] Don't break any existing features
