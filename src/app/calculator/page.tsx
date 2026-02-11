@@ -4236,7 +4236,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             </div>
 
             {/* Monthly Operating Expenses */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+            <div className="rounded-2xl p-6 mt-2" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
               <p className="text-sm text-gray-500 mb-4">Recurring costs to run your STR</p>
               
@@ -4380,7 +4380,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             </div>
 
             {/* Investment Calculator - Mode Conditional */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+            <div className="rounded-2xl p-6 mt-2" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               {analysisMode === "buying" ? (
                 <>
                   <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Investment Calculator</h3>
