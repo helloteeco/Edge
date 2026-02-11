@@ -80,19 +80,32 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 
 function getCacheKey(lat: number, lng: number, _bedrooms?: number): string {
-  const roundedLat = Math.round(lat * 100) / 100;
-  const roundedLng = Math.round(lng * 100) / 100;
+  // Round to 1 decimal place (~11km radius) for wider cache coverage
+  // This means any address within ~11km of a cached search will get a cache hit
+  // The enrichListings function recalculates distances from the exact address
+  const roundedLat = Math.round(lat * 10) / 10;
+  const roundedLng = Math.round(lng * 10) / 10;
   // Location-only key — bedroom filtering happens client-side
   return `${roundedLat}_${roundedLng}_all`;
 }
 
 // Generate old-format cache keys for backwards compatibility
 function getOldCacheKeys(lat: number, lng: number, bedrooms: number): string[] {
-  const roundedLat = Math.round(lat * 100) / 100;
-  const roundedLng = Math.round(lng * 100) / 100;
-  // Try the exact bedroom count first, then common alternatives
+  // Try both old (2 decimal) and new (1 decimal) rounding for backwards compatibility
+  const oldLat = Math.round(lat * 100) / 100;
+  const oldLng = Math.round(lng * 100) / 100;
+  const newLat = Math.round(lat * 10) / 10;
+  const newLng = Math.round(lng * 10) / 10;
   const bedroomVariants = [bedrooms, 3, 2, 4, 1, 5, 6];
-  return Array.from(new Set(bedroomVariants)).map(br => `${roundedLat}_${roundedLng}_${br}br`);
+  const keys: string[] = [];
+  // New format keys (wider radius)
+  keys.push(`${newLat}_${newLng}_all`);
+  // Old format keys (narrow radius, bedroom-specific)
+  for (const br of Array.from(new Set(bedroomVariants))) {
+    keys.push(`${oldLat}_${oldLng}_${br}br`);
+    keys.push(`${newLat}_${newLng}_${br}br`);
+  }
+  return keys;
 }
 
 async function getCachedMarketData(cacheKey: string, lat?: number, lng?: number, bedrooms?: number): Promise<any | null> {
@@ -163,7 +176,7 @@ async function saveMarketData(params: {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + CACHE_DURATION_DAYS);
 
-    await supabase.from("market_data").upsert(
+    const { error } = await supabase.from("market_data").upsert(
       {
         cache_key: params.cacheKey,
         latitude: params.lat,
@@ -188,7 +201,11 @@ async function saveMarketData(params: {
       },
       { onConflict: "cache_key" }
     );
-    console.log(`[Cache] SAVED ${params.listings.length} listings for ${params.cacheKey}`);
+    if (error) {
+      console.error(`[Cache] Supabase upsert error for ${params.cacheKey}:`, error.message, error.details, error.hint);
+    } else {
+      console.log(`[Cache] SAVED ${params.listings.length} listings for ${params.cacheKey}`);
+    }
   } catch (err) {
     console.error("[Cache] Failed to save:", err);
   }
@@ -199,7 +216,7 @@ async function saveLegacyCache(cacheKey: string, lat: number, lng: number, bedro
   try {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + CACHE_DURATION_DAYS);
-    await supabase.from("airbnb_comp_cache").upsert(
+    const { error } = await supabase.from("airbnb_comp_cache").upsert(
       {
         cache_key: cacheKey,
         latitude: lat,
@@ -211,8 +228,9 @@ async function saveLegacyCache(cacheKey: string, lat: number, lng: number, bedro
       },
       { onConflict: "cache_key" }
     );
-  } catch {
-    // Non-fatal
+    if (error) console.error(`[LegacyCache] Upsert error:`, error.message);
+  } catch (err) {
+    console.error("[LegacyCache] Failed:", err);
   }
 }
 
@@ -746,12 +764,60 @@ export async function POST(request: NextRequest) {
     const stateZip = addressParts[2] || "";
     const stateFromAddress = stateZip.split(" ")[0] || "";
 
+    const startTime = Date.now();
     console.log(`[Analyze] ${address} | ${bedrooms}br/${bathrooms}ba`);
 
     // =====================================================================
-    // STEP 1: Geocode the address
+    // STEP 0: Check property_cache for EXACT address match (instant, ~200ms)
+    // This is the fastest path — no geocoding needed
     // =====================================================================
-    const coords = await geocodeAddress(address);
+    try {
+      const { data: exactCache, error: exactErr } = await supabase
+        .from("property_cache")
+        .select("data, created_at")
+        .eq("address", address)
+        .gt("expires_at", new Date().toISOString())
+        .single();
+
+      if (!exactErr && exactCache?.data) {
+        const cachedData = exactCache.data as any;
+        // The property_cache stores the full API response shape
+        if (cachedData?.property || cachedData?.neighborhood) {
+          console.log(`[Analyze] INSTANT HIT from property_cache (${Date.now() - startTime}ms)`);
+          // Re-wrap in success response if needed
+          if (cachedData.success !== undefined) {
+            return NextResponse.json(cachedData);
+          }
+          // Legacy format: wrap the cached data
+          return NextResponse.json({ success: true, dataSource: "property_cache", ...cachedData });
+        }
+      }
+    } catch {
+      // Non-fatal — continue to geocode path
+    }
+
+    // =====================================================================
+    // STEP 1: Geocode + check market_data cache IN PARALLEL
+    // =====================================================================
+    // Start geocoding immediately, and also check nearby cache by city name
+    const [coords, nearbyCacheByCity] = await Promise.all([
+      geocodeAddress(address),
+      // Quick city-level cache check (doesn't need exact coords)
+      (async () => {
+        try {
+          const { data } = await supabase
+            .from("market_data")
+            .select("*")
+            .ilike("city", cityFromAddress || "__none__")
+            .ilike("state", stateFromAddress || "__none__")
+            .gt("expires_at", new Date().toISOString())
+            .limit(1)
+            .single();
+          return data;
+        } catch { return null; }
+      })(),
+    ]);
+
     if (!coords) {
       return NextResponse.json({
         success: false,
@@ -763,13 +829,20 @@ export async function POST(request: NextRequest) {
     const { lat: latitude, lng: longitude } = coords;
     const city = coords.city || cityFromAddress;
     const state = coords.state || stateFromAddress;
-    console.log(`[Analyze] Geocoded: ${latitude}, ${longitude} (${city}, ${state})`);
+    console.log(`[Analyze] Geocoded: ${latitude}, ${longitude} (${city}, ${state}) [${Date.now() - startTime}ms]`);
 
     // =====================================================================
     // STEP 2: Check Supabase cache (market_data table)
+    // Try exact cache key first, then nearby city cache from parallel fetch
     // =====================================================================
     const cacheKey = getCacheKey(latitude, longitude, bedrooms);
-    const cached = await getCachedMarketData(cacheKey, latitude, longitude, bedrooms);
+    let cached = await getCachedMarketData(cacheKey, latitude, longitude, bedrooms);
+
+    // If no exact coord match, use the city-level cache from parallel fetch
+    if (!cached && nearbyCacheByCity && nearbyCacheByCity.listings?.length > 0) {
+      console.log(`[Analyze] Using nearby city cache for ${city}, ${state}`);
+      cached = nearbyCacheByCity;
+    }
 
     if (cached && cached.listings && cached.listings.length > 0) {
       console.log(`[Analyze] Cache HIT — ${cached.listings_count} listings from ${cached.source}`);
@@ -904,7 +977,7 @@ export async function POST(request: NextRequest) {
       percentiles, seasonality: historical,
     });
 
-    console.log(`[Analyze] SUCCESS — ${enriched.length} comps, ADR $${avgAdr}, Occ ${avgOccupancy}%, Rev $${avgAnnualRevenue}/yr`);
+    console.log(`[Analyze] SUCCESS — ${enriched.length} comps, ADR $${avgAdr}, Occ ${avgOccupancy}%, Rev $${avgAnnualRevenue}/yr [${Date.now() - startTime}ms total]`);
 
     // Build allComps from the full raw listing set (before bedroom filtering)
     // This enriches ALL listings so the client can re-filter by bedroom locally
@@ -917,7 +990,7 @@ export async function POST(request: NextRequest) {
       return { ...listing, occupancy: occ, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(dist * 10) / 10 };
     });
 
-    return NextResponse.json(buildResponse({
+    const responseData = buildResponse({
       city: city || cityFromAddress,
       state: state || stateFromAddress,
       street,
@@ -935,7 +1008,23 @@ export async function POST(request: NextRequest) {
       totalListings: scrapeResult.listings.length,
       filteredListings: enriched.length,
       dataSource: "apify",
-    }));
+    });
+
+    // Save FULL response to property_cache for instant future lookups on this exact address
+    // This runs in background (don't await) to not delay the response
+    supabase.from("property_cache").upsert(
+      {
+        address,
+        data: responseData,
+        expires_at: new Date(Date.now() + CACHE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      { onConflict: "address" }
+    ).then(({ error }) => {
+      if (error) console.error("[PropertyCache] Save error:", error.message);
+      else console.log(`[PropertyCache] Saved full response for ${address}`);
+    });
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("[Analyze] Error:", error);
     return NextResponse.json(

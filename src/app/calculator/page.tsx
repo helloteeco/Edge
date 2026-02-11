@@ -170,6 +170,7 @@ class CalculatorErrorBoundary extends Component<
 export default function CalculatorPage() {
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isReportSaved, setIsReportSaved] = useState(false);
@@ -1308,34 +1309,70 @@ export default function CalculatorPage() {
     // Bedrooms/bathrooms default to 3/2 so they're always set
 
     setIsLoading(true);
+    setLoadingStep("Checking cache...");
     setError(null);
     setShowSuggestions(false);
 
     try {
-      // 4-minute client-side timeout to prevent infinite loading
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 240_000);
-
-      let response: Response;
+      // FAST PATH: Check server-side property_cache first (no credit used, ~200ms)
+      // If the exact address was analyzed before, we can skip the expensive Apify scrape
+      let data: any = null;
       try {
-        response = await fetch("/api/mashvisor/property", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || (bedrooms ?? 3) * 2 }),
-          signal: controller.signal,
-        });
-      } catch (fetchErr: any) {
-        clearTimeout(timeoutId);
-        if (fetchErr?.name === 'AbortError') {
-          setError("Analysis timed out. The server took too long to respond. Please try again — results are often cached after the first attempt.");
-          setIsLoading(false);
-          return;
+        const cacheCheck = await fetch(`/api/property-cache?address=${encodeURIComponent(addressToAnalyze)}`);
+        const cacheData = await cacheCheck.json();
+        if (cacheData?.success && cacheData?.cached && cacheData?.data) {
+          const cachedResult = cacheData.data;
+          if (cachedResult?.neighborhood) {
+            console.log('[Analyze] INSTANT from property_cache');
+            cachedResult.success = true;
+            cachedResult.dataSource = cachedResult.dataSource || 'property_cache';
+            data = cachedResult;
+            setLoadingStep("Found cached data!");
+          }
         }
-        throw fetchErr;
+      } catch {
+        console.log('[Analyze] property_cache check failed, continuing to full API');
       }
-      clearTimeout(timeoutId);
 
-      const data = await response.json();
+      // If no cache hit, do the full API call
+      if (!data) {
+        setLoadingStep("Finding nearby Airbnb listings...");
+        // Cycle through progress steps to show the user something is happening
+        const steps = [
+          { delay: 5000, text: "Scanning Airbnb listings in the area..." },
+          { delay: 12000, text: "Analyzing nightly rates & occupancy..." },
+          { delay: 20000, text: "Calculating revenue estimates..." },
+          { delay: 35000, text: "Comparing with nearby properties..." },
+          { delay: 55000, text: "Almost done, finalizing results..." },
+          { delay: 90000, text: "Taking longer than usual, please wait..." },
+        ];
+        const stepTimers = steps.map(s => setTimeout(() => setLoadingStep(s.text), s.delay));
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 240_000);
+
+        let response: Response;
+        try {
+          response = await fetch("/api/mashvisor/property", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: addressToAnalyze, bedrooms, bathrooms, accommodates: guestCount || (bedrooms ?? 3) * 2 }),
+            signal: controller.signal,
+          });
+        } catch (fetchErr: any) {
+          clearTimeout(timeoutId);
+          stepTimers.forEach(t => clearTimeout(t));
+          if (fetchErr?.name === 'AbortError') {
+            setError("Analysis timed out. The server took too long to respond. Please try again — results are often cached after the first attempt.");
+            setIsLoading(false);
+            return;
+          }
+          throw fetchErr;
+        }
+        clearTimeout(timeoutId);
+        stepTimers.forEach(t => clearTimeout(t));
+        setLoadingStep("Processing results...");
+        data = await response.json();
+      }
 
       if (!data.success) {
         setError(data.error || data.message || "Could not find data for this address. Try a different address.");
@@ -1515,18 +1552,21 @@ export default function CalculatorPage() {
       });
       
       // Cache the API response in Supabase (90-day TTL)
-      try {
-        await fetch('/api/property-cache', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            address: addressToAnalyze,
-            data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities },
-          }),
-        });
-        console.log("[Cache] Stored API response for 90 days");
-      } catch (cacheError) {
-        console.error("[Cache] Failed to cache:", cacheError);
+      // Skip if data already came from cache (no need to re-save)
+      if (data.dataSource !== 'property_cache') {
+        try {
+          await fetch('/api/property-cache', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              address: addressToAnalyze,
+              data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities },
+            }),
+          });
+          console.log("[Cache] Stored API response for 90 days");
+        } catch (cacheError) {
+          console.error("[Cache] Failed to cache:", cacheError);
+        }
       }
     } catch (err) {
       console.error("Analysis error:", err);
@@ -2620,7 +2660,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               style={{ backgroundColor: canAnalyze ? "#2b2823" : "#a0a0a0" }}
             >
               {isLoading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="text-sm">{loadingStep || "Analyzing..."}</span>
+                </div>
               ) : (
                 "Analyze Free"
               )}
