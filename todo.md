@@ -42,16 +42,25 @@
 
 
 ## BUG: Apify charged $2 but returned no results (February 2026)
-- [ ] Investigate why Apify charged $2 for a search that returned nothing
-- [ ] Check if scraping code has a bug causing expensive runs with no output
-- [ ] Add better error handling and timeout to prevent infinite spinner
-- [ ] Add cost guard to prevent expensive Apify runs
+- [x] Investigate why Apify charged $2 for a search that returned nothing
+- [x] Check if scraping code has a bug causing expensive runs with no output
+- [x] Add better error handling and timeout to prevent infinite spinner
+- [x] Add cost guard to prevent expensive Apify runs
 
 
 ## Speed Optimization — Make Search Near-Instant (February 2026)
-- [ ] Fix property_cache as first-line exact-address cache (check before geocoding)
-- [ ] Fix market_data cache save (0 rows = cache never populating)
-- [ ] Widen cache radius from 2 decimal places to 1 (11km instead of 1.1km)
-- [ ] Add client-side property_cache check BEFORE hitting /api/mashvisor/property
-- [ ] Parallel geocode + cache check instead of sequential
-- [ ] Add progress indicators with estimated time remaining
+- [x] Fix property_cache as first-line exact-address cache (check before geocoding)
+- [x] Fix market_data cache save (0 rows = cache never populating)
+- [x] Widen cache radius from 2 decimal places to 1 (11km instead of 1.1km)
+- [x] Add client-side property_cache check BEFORE hitting /api/mashvisor/property
+- [x] Parallel geocode + cache check instead of sequential
+- [x] Add progress indicators with estimated time remaining
+
+
+## BUG: Calculator dynamic recalculation + comp map (February 2026)
+- [ ] Bedroom/bath/guest changes must dynamically recalculate revenue, ADR, occupancy, next-30-day revenue from full comp pool
+- [ ] Comp list must actually filter by selected bedroom count (currently static)
+- [ ] User's own 40 Airbnbs in the area don't appear in comps
+- [ ] Add dynamic interactive comp map to calculator page (Rabbu/AirDNA style)
+- [ ] Map should show all comp pins, clickable to show listing details
+- [ ] One-button recalculation after changing bed/bath/guest count

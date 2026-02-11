@@ -453,6 +453,14 @@ export default function CalculatorPage() {
         const cachedSearch = recentSearches.find((s: { address: string }) => s.address === addressParam);
         if (cachedSearch?.cachedResult) {
           setResult(cachedSearch.cachedResult);
+          // Restore allComps and targetCoords for local bedroom re-filtering and comp map
+          if (cachedSearch.cachedResult.comparables && Array.isArray(cachedSearch.cachedResult.comparables)) {
+            setAllComps(cachedSearch.cachedResult.comparables as ComparableListing[]);
+          }
+          if (cachedSearch.cachedResult.targetCoordinates) {
+            setTargetCoords({ lat: cachedSearch.cachedResult.targetCoordinates.latitude, lng: cachedSearch.cachedResult.targetCoordinates.longitude });
+          }
+          setLastAnalyzedAddress(addressParam);
           // Check if this address is already saved
           const savedLocal = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
           const addr = cachedSearch.cachedResult.address || cachedSearch.cachedResult.neighborhood;
@@ -478,6 +486,8 @@ export default function CalculatorPage() {
                   comparables?: unknown[];
                   historical?: unknown[];
                   recommendedAmenities?: unknown[];
+                  targetCoordinates?: { latitude: number; longitude: number };
+                  allComps?: unknown[];
                 };
                 const parseNum = (val: unknown): number => {
                   if (typeof val === "number") return val;
@@ -526,8 +536,19 @@ export default function CalculatorPage() {
                   occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
                   historical: (data.historical as AnalysisResult["historical"]) || [],
                   recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
+                  targetCoordinates: data.targetCoordinates || undefined,
                 };
                 setResult(analysisResult);
+                // Restore allComps and targetCoords for local bedroom re-filtering and comp map
+                if (data.allComps && Array.isArray(data.allComps) && data.allComps.length > 0) {
+                  setAllComps(data.allComps as ComparableListing[]);
+                } else if (data.comparables && Array.isArray(data.comparables)) {
+                  setAllComps(data.comparables as ComparableListing[]);
+                }
+                if (data.targetCoordinates) {
+                  setTargetCoords({ lat: data.targetCoordinates.latitude, lng: data.targetCoordinates.longitude });
+                }
+                setLastAnalyzedAddress(addressParam);
                 if (analysisResult.listPrice > 0) {
                   setPurchasePrice(analysisResult.listPrice.toString());
                 }
@@ -888,6 +909,8 @@ export default function CalculatorPage() {
       comparables?: unknown[];
       historical?: unknown[];
       recommendedAmenities?: unknown[];
+      targetCoordinates?: { latitude: number; longitude: number };
+      allComps?: unknown[];
     };
     
     const parseNum = (val: unknown): number => {
@@ -942,11 +965,23 @@ export default function CalculatorPage() {
       occupancyChangePercent: parseNum(neighborhood?.occupancyChangePercent),
       historical: (data.historical as AnalysisResult["historical"]) || [],
       recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
+      targetCoordinates: data.targetCoordinates || undefined,
     };
     
     setResult(analysisResult);
     setIsReportSaved(false); // Reset saved state for new analysis
     setAddress(pendingAnalysis || address);
+    
+    // Restore allComps and targetCoords for local bedroom re-filtering and comp map
+    if (data.allComps && Array.isArray(data.allComps) && data.allComps.length > 0) {
+      setAllComps(data.allComps as ComparableListing[]);
+    } else if (data.comparables && Array.isArray(data.comparables)) {
+      setAllComps(data.comparables as ComparableListing[]);
+    }
+    if (data.targetCoordinates) {
+      setTargetCoords({ lat: data.targetCoordinates.latitude, lng: data.targetCoordinates.longitude });
+    }
+    setLastAnalyzedAddress(pendingAnalysis || address);
     
     if (analysisResult.listPrice > 0 && !purchasePrice) {
       setPurchasePrice(analysisResult.listPrice.toString());
@@ -1232,6 +1267,68 @@ export default function CalculatorPage() {
   // ========== LOCAL RE-FILTER (no API call) ==========
   // When user changes bedrooms/bathrooms/guests but NOT the address,
   // re-filter the stored allComps locally instead of burning an API credit.
+  // Auto-refilter triggered by bedroom/bath/guest button taps
+  // Takes explicit params because React state hasn't updated yet in the same tick
+  const handleLocalRefilterAuto = (newBedrooms?: number | null, newBathrooms?: number | null, newGuests?: number | null) => {
+    const br = newBedrooms ?? bedrooms ?? 3;
+    const ba = newBathrooms ?? bathrooms ?? 2;
+    const gc = newGuests ?? guestCount ?? br * 2;
+    
+    if (allComps.length > 0 && targetCoords && result) {
+      console.log(`[AutoRefilter] ${br}br/${ba}ba/${gc}guests from ${allComps.length} comps`);
+      
+      const filtered = refilterComps(
+        allComps as Comp[],
+        targetCoords.lat,
+        targetCoords.lng,
+        br,
+        ba,
+        gc,
+      );
+      
+      const newPercentiles = {
+        revenue: filtered.percentiles.revenue,
+        adr: filtered.percentiles.adr,
+        occupancy: filtered.percentiles.occupancy,
+        listingsAnalyzed: filtered.filteredListings,
+        totalListingsInArea: filtered.totalListings,
+      };
+      
+      let annualRevenue = 0;
+      if (filtered.percentiles.revenue.p50 > 0) {
+        annualRevenue = filtered.percentiles.revenue.p50;
+      } else if (filtered.avgAnnualRevenue > 0) {
+        annualRevenue = filtered.avgAnnualRevenue;
+      } else if (filtered.avgAdr > 0 && filtered.avgOccupancy > 0) {
+        annualRevenue = Math.round(filtered.avgAdr * (filtered.avgOccupancy / 100) * 365);
+      }
+      
+      const monthlyRevenue = Math.round(annualRevenue / 12);
+      const revPAN = filtered.avgAdr > 0 && filtered.avgOccupancy > 0 
+        ? Math.round(filtered.avgAdr * (filtered.avgOccupancy / 100)) : 0;
+      
+      setResult({
+        ...result,
+        annualRevenue,
+        monthlyRevenue,
+        adr: filtered.avgAdr,
+        occupancy: filtered.avgOccupancy,
+        revPAN,
+        bedrooms: br,
+        bathrooms: ba,
+        percentiles: newPercentiles,
+        comparables: filtered.comparables as ComparableListing[],
+        nearbyListings: filtered.totalListings,
+      });
+      
+      setExcludedCompIds(new Set());
+      setUseCustomIncome(false);
+      setCustomAnnualIncome("");
+      
+      console.log(`[AutoRefilter] Done: ${filtered.filteredListings} comps, ADR $${filtered.avgAdr}, Rev $${annualRevenue}/yr`);
+    }
+  };
+
   const handleLocalRefilter = () => {
     const currentAddress = address.trim();
     
@@ -1381,6 +1478,7 @@ export default function CalculatorPage() {
       }
 
       const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates, allComps: rawAllComps } = data;
+      // Note: rawAllComps = full unfiltered comp set for local bedroom re-filtering
 
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
@@ -1560,7 +1658,7 @@ export default function CalculatorPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               address: addressToAnalyze,
-              data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities },
+              data: { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates, allComps: rawAllComps },
             }),
           });
           console.log("[Cache] Stored API response for 90 days");
@@ -3227,7 +3325,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     {[1, 2, 3, 4, 5, 6].map((num) => (
                       <button
                         key={num}
-                        onClick={() => { setBedrooms(num); setGuestCount(num * 2); }}
+                        onClick={() => { setBedrooms(num); setGuestCount(num * 2); setTimeout(() => handleLocalRefilterAuto(num, bathrooms, num * 2), 50); }}
                         className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
                           bedrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
@@ -3244,7 +3342,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     {[1, 2, 3, 4, 5].map((num) => (
                       <button
                         key={num}
-                        onClick={() => setBathrooms(num)}
+                        onClick={() => { setBathrooms(num); setTimeout(() => handleLocalRefilterAuto(bedrooms, num, guestCount), 50); }}
                         className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
                           bathrooms === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
@@ -3262,7 +3360,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   {[2, 4, 6, 8, 10, 12, 14, 16].map((num) => (
                     <button
                       key={num}
-                      onClick={() => setGuestCount(num)}
+                        onClick={() => { setGuestCount(num); setTimeout(() => handleLocalRefilterAuto(bedrooms, bathrooms, num), 50); }}
                       className={`w-11 min-h-[44px] rounded-lg text-sm font-medium transition-all ${
                         guestCount === num ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
@@ -4981,6 +5079,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       if (search.cachedBedrooms) setBedrooms(search.cachedBedrooms);
                       if (search.cachedBathrooms) setBathrooms(search.cachedBathrooms);
                       if (search.cachedGuestCount) setGuestCount(search.cachedGuestCount);
+                      // Restore allComps and targetCoords for bedroom re-filtering and comp map
+                      if (search.cachedResult.comparables && Array.isArray(search.cachedResult.comparables)) {
+                        setAllComps(search.cachedResult.comparables as ComparableListing[]);
+                      }
+                      if (search.cachedResult.targetCoordinates) {
+                        setTargetCoords({ lat: search.cachedResult.targetCoordinates.latitude, lng: search.cachedResult.targetCoordinates.longitude });
+                      }
+                      setLastAnalyzedAddress(search.address);
                       // Auto-fill purchase price if available
                       if (search.cachedResult.listPrice > 0 && !purchasePrice) {
                         setPurchasePrice(search.cachedResult.listPrice.toString());
