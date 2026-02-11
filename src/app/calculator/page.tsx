@@ -4813,7 +4813,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
 
             {/* Deal Score Badge */}
             {((analysisMode === "buying" && !investment.needsPrice) || (analysisMode === "arbitrage" && !arbitrage.needsRent)) && (
-              <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <div className="rounded-2xl p-6 mt-4" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Deal Score</h3>
                   {(() => {
@@ -4897,7 +4897,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
 
             {/* AI Analysis CTA */}
             {((analysisMode === "buying" && !investment.needsPrice) || (analysisMode === "arbitrage" && !arbitrage.needsRent)) && (
-              <div className="rounded-2xl p-6" style={{ backgroundColor: "#2b2823" }}>
+              <div className="rounded-2xl p-6 mt-4" style={{ backgroundColor: "#2b2823" }}>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1 text-center sm:text-left">
                     <h3 className="text-lg font-semibold text-white mb-1">Get $500-Level Deal Analysis</h3>
@@ -5196,7 +5196,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             )}
 
             {/* Your Next Steps Checklist */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+            <div className="rounded-2xl p-6 mt-4" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Your Next Steps</h3>
               <p className="text-sm text-gray-500 mb-4">Follow this checklist to move forward with confidence</p>
               

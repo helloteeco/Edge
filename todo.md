@@ -95,3 +95,6 @@
 - [x] Fix the root cause and ensure map shows subject property + all comps (added fallback coord reconstruction in 4 code paths + API route backfill)
 - [x] Verify map is interactive (scrollable, zoomable, clickable pins) (CompMap component already supports this, was just hidden)
 - [x] Position comp map in the optimal spot in the page flow for best UX (moved from inside Revenue Estimate Card to after Comparable Listings, before Calendar Heatmap)
+
+## Quick fix: spacing between Deal Score, AI Analysis CTA, and Next Steps (February 2026)
+- [x] Add proper vertical spacing between Deal Score badge, AI Analysis CTA, and Your Next Steps sections (added mt-4 to each)
