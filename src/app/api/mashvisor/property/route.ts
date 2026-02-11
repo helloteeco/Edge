@@ -453,6 +453,105 @@ function transformAirbnbListings(rawItems: any[], defaultBedrooms: number): any[
 }
 
 // ============================================================================
+// PRICELABS REVENUE ESTIMATOR — Licensed, accurate STR data
+// Primary source for revenue, ADR, occupancy, and percentiles
+// Uses V2 API: returns 25th/50th/75th/90th percentile revenue + ADR + occupancy
+// ============================================================================
+
+const PRICELABS_API_KEY = process.env.PRICELABS_API_KEY || "";
+const PRICELABS_API_URL = "https://api.pricelabs.co/v1/revenue/estimator";
+
+interface PriceLabsResult {
+  success: boolean;
+  revenue50: number;       // Median annual revenue
+  revenue25: number;       // 25th percentile
+  revenue75: number;       // 75th percentile
+  revenue90: number;       // 90th percentile
+  adr50: number;           // Median ADR
+  adr25: number;
+  adr75: number;
+  adr90: number;
+  occupancy: number;       // Average adjusted occupancy %
+  listingsCount: number;   // Number of comparable listings analyzed
+  monthlyRevAvg: number;   // Average monthly revenue
+  error?: string;
+}
+
+async function fetchPriceLabs(
+  address: string,
+  bedrooms: number,
+): Promise<PriceLabsResult> {
+  if (!PRICELABS_API_KEY) {
+    return { success: false, revenue50: 0, revenue25: 0, revenue75: 0, revenue90: 0, adr50: 0, adr25: 0, adr75: 0, adr90: 0, occupancy: 0, listingsCount: 0, monthlyRevAvg: 0, error: "No PriceLabs API key" };
+  }
+
+  try {
+    const startMs = Date.now();
+    const url = new URL(PRICELABS_API_URL);
+    url.searchParams.set("address", address);
+    url.searchParams.set("currency", "USD");
+    url.searchParams.set("bedroom_category", String(bedrooms));
+    url.searchParams.set("version", "2");
+
+    console.log(`[PriceLabs] Fetching for "${address}" (${bedrooms}BR)...`);
+
+    const response = await fetch(url.toString(), {
+      headers: { "X-API-Key": PRICELABS_API_KEY },
+      signal: AbortSignal.timeout(15000), // 15s hard timeout
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      console.error(`[PriceLabs] HTTP ${response.status}: ${errText}`);
+      return { success: false, revenue50: 0, revenue25: 0, revenue75: 0, revenue90: 0, adr50: 0, adr25: 0, adr75: 0, adr90: 0, occupancy: 0, listingsCount: 0, monthlyRevAvg: 0, error: `HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+    const kpis = data?.KPIsByBedroomCategory?.[String(bedrooms)];
+
+    if (!kpis) {
+      // Try adjacent bedroom categories
+      const allCategories = data?.KPIsByBedroomCategory || {};
+      const closestKey = Object.keys(allCategories)
+        .map(k => ({ key: k, diff: Math.abs(parseInt(k) - bedrooms) }))
+        .sort((a, b) => a.diff - b.diff)[0]?.key;
+      
+      if (closestKey && allCategories[closestKey]) {
+        const fallbackKpis = allCategories[closestKey];
+        console.log(`[PriceLabs] No exact ${bedrooms}BR data, using ${closestKey}BR (${Date.now() - startMs}ms)`);
+        return extractPriceLabsKPIs(fallbackKpis, Date.now() - startMs);
+      }
+
+      console.warn(`[PriceLabs] No data for ${bedrooms}BR at this address`);
+      return { success: false, revenue50: 0, revenue25: 0, revenue75: 0, revenue90: 0, adr50: 0, adr25: 0, adr75: 0, adr90: 0, occupancy: 0, listingsCount: 0, monthlyRevAvg: 0, error: "No data for bedroom count" };
+    }
+
+    console.log(`[PriceLabs] Got data: ${kpis.NoOfListings} listings, Rev50=$${kpis.Revenue50PercentileSum} (${Date.now() - startMs}ms)`);
+    return extractPriceLabsKPIs(kpis, Date.now() - startMs);
+  } catch (error) {
+    console.error("[PriceLabs] Error:", error);
+    return { success: false, revenue50: 0, revenue25: 0, revenue75: 0, revenue90: 0, adr50: 0, adr25: 0, adr75: 0, adr90: 0, occupancy: 0, listingsCount: 0, monthlyRevAvg: 0, error: `${error}` };
+  }
+}
+
+function extractPriceLabsKPIs(kpis: any, elapsedMs: number): PriceLabsResult {
+  return {
+    success: true,
+    revenue50: kpis.Revenue50PercentileSum || 0,
+    revenue25: kpis.Revenue25PercentileSum || 0,
+    revenue75: kpis.Revenue75PercentileSum || 0,
+    revenue90: kpis.Revenue90PercentileSum || 0,
+    adr50: kpis.ADR50PercentileAvg || 0,
+    adr25: kpis.ADR25PercentileAvg || 0,
+    adr75: kpis.ADR75PercentileAvg || 0,
+    adr90: kpis.ADR90PercentileAvg || 0,
+    occupancy: kpis.AvgAdjustedOccupancy || kpis.AvgOccupancy || 55,
+    listingsCount: kpis.NoOfListings || 0,
+    monthlyRevAvg: kpis.RevenueMonthlyAvg || Math.round((kpis.Revenue50PercentileSum || 0) / 12),
+  };
+}
+
+// ============================================================================
 // MATH HELPERS — Calculate market metrics from scraped comps
 // ============================================================================
 
@@ -946,20 +1045,29 @@ export async function POST(request: NextRequest) {
     }
 
     // =====================================================================
-    // STEP 3: Fetch from Airbnb Direct API (PRIMARY — replaced Apify)
-    // 2-5 seconds vs 30-120s with Apify
+    // STEP 3: HYBRID FETCH — PriceLabs (revenue data) + Airbnb Direct (comp markers)
+    // Both run IN PARALLEL for 5-8 second total response time
+    // PriceLabs = PRIMARY for revenue, ADR, occupancy, percentiles (licensed, accurate)
+    // Airbnb Direct = comp map markers only (names, images, coordinates, prices)
     // =====================================================================
-    console.log(`[Analyze] Cache MISS — fetching via Airbnb Direct API... [${Date.now() - startTime}ms elapsed]`);
-    const scrapeResult = await fetchAirbnbDirect(
-      latitude,
-      longitude,
-      bedrooms,
-      city || cityFromAddress,
-      state || stateFromAddress,
-    );
+    console.log(`[Analyze] Cache MISS — fetching PriceLabs + Airbnb Direct in parallel... [${Date.now() - startTime}ms elapsed]`);
 
-    if (!scrapeResult.success || scrapeResult.listings.length === 0) {
-      console.warn(`[Analyze] All scraping strategies returned no results: ${scrapeResult.error}`);
+    const [priceLabsResult, scrapeResult] = await Promise.all([
+      fetchPriceLabs(address, bedrooms),
+      fetchAirbnbDirect(
+        latitude,
+        longitude,
+        bedrooms,
+        city || cityFromAddress,
+        state || stateFromAddress,
+      ),
+    ]);
+
+    console.log(`[Analyze] Parallel fetch done — PriceLabs: ${priceLabsResult.success ? 'OK' : priceLabsResult.error}, Airbnb: ${scrapeResult.success ? scrapeResult.listings.length + ' listings' : scrapeResult.error} [${Date.now() - startTime}ms elapsed]`);
+
+    // If BOTH fail, return error
+    if (!priceLabsResult.success && (!scrapeResult.success || scrapeResult.listings.length === 0)) {
+      console.warn(`[Analyze] Both data sources failed`);
       return NextResponse.json({
         success: false,
         error: "Unable to fetch rental data right now",
@@ -969,26 +1077,100 @@ export async function POST(request: NextRequest) {
     }
 
     // =====================================================================
-    // STEP 4: Enrich listings with revenue estimates
+    // STEP 4: Enrich Airbnb listings for comp map markers
+    // Then overlay PriceLabs data for the headline revenue/ADR/occupancy
     // =====================================================================
-    const { enriched, avgAdr, avgOccupancy, avgAnnualRevenue, percentiles } = enrichListings(
-      scrapeResult.listings,
-      latitude,
-      longitude,
-      bedrooms,
-      bathrooms,
-      accommodates,
-    );
+    let enriched: any[] = [];
+    let allEnrichedForClient: any[] = [];
+    let airbnbPercentiles: any = null;
+    let airbnbAvgAdr = 0;
+    let airbnbAvgOccupancy = 0;
+    let airbnbAvgAnnualRevenue = 0;
 
-    console.log(`[Analyze] Enrichment done — ${enriched.length} comps [${Date.now() - startTime}ms elapsed]`);
+    if (scrapeResult.success && scrapeResult.listings.length > 0) {
+      const enrichResult = enrichListings(
+        scrapeResult.listings,
+        latitude,
+        longitude,
+        bedrooms,
+        bathrooms,
+        accommodates,
+      );
+      enriched = enrichResult.enriched;
+      airbnbPercentiles = enrichResult.percentiles;
+      airbnbAvgAdr = enrichResult.avgAdr;
+      airbnbAvgOccupancy = enrichResult.avgOccupancy;
+      airbnbAvgAnnualRevenue = enrichResult.avgAnnualRevenue;
 
-    // Generate seasonality from market data
-    const historical = generateSeasonality(avgAdr, avgOccupancy, latitude, longitude);
+      // Build allComps from the full raw listing set (before bedroom filtering)
+      allEnrichedForClient = scrapeResult.listings.map((listing: any) => {
+        const nightPrice = listing.nightPrice || 150;
+        const occ = estimateOccupancy(listing.reviewsCount || 0);
+        const annualRev = Math.round(nightPrice * 365 * (occ / 100));
+        const monthlyRev = Math.round(annualRev / 12);
+        const dist = calcDistance(latitude, longitude, listing.latitude, listing.longitude);
+        return { ...listing, occupancy: occ, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(dist * 10) / 10 };
+      });
+    }
+
+    // =====================================================================
+    // STEP 4b: Determine final metrics — PriceLabs PRIMARY, Airbnb FALLBACK
+    // =====================================================================
+    let finalAdr: number;
+    let finalOccupancy: number;
+    let finalAnnualRevenue: number;
+    let finalPercentiles: any;
+    let dataSourceLabel: string;
+
+    if (priceLabsResult.success && priceLabsResult.revenue50 > 0) {
+      // PriceLabs is PRIMARY — use its licensed, accurate data
+      finalAdr = Math.round(priceLabsResult.adr50);
+      finalOccupancy = Math.round(priceLabsResult.occupancy);
+      finalAnnualRevenue = Math.round(priceLabsResult.revenue50);
+      finalPercentiles = {
+        revenue: {
+          p25: Math.round(priceLabsResult.revenue25),
+          p50: Math.round(priceLabsResult.revenue50),
+          p75: Math.round(priceLabsResult.revenue75),
+          p90: Math.round(priceLabsResult.revenue90),
+        },
+        adr: {
+          p25: Math.round(priceLabsResult.adr25),
+          p50: Math.round(priceLabsResult.adr50),
+          p75: Math.round(priceLabsResult.adr75),
+          p90: Math.round(priceLabsResult.adr90),
+        },
+        occupancy: {
+          p25: Math.round(priceLabsResult.occupancy * 0.7),
+          p50: Math.round(priceLabsResult.occupancy),
+          p75: Math.round(Math.min(95, priceLabsResult.occupancy * 1.2)),
+          p90: Math.round(Math.min(98, priceLabsResult.occupancy * 1.35)),
+        },
+      };
+      dataSourceLabel = `pricelabs (${priceLabsResult.listingsCount} listings)`;
+      console.log(`[Analyze] Using PriceLabs data: ADR $${finalAdr}, Occ ${finalOccupancy}%, Rev $${finalAnnualRevenue}/yr (${priceLabsResult.listingsCount} comps)`);
+    } else {
+      // Fallback to Airbnb-derived metrics
+      finalAdr = airbnbAvgAdr;
+      finalOccupancy = airbnbAvgOccupancy;
+      finalAnnualRevenue = airbnbAvgAnnualRevenue;
+      finalPercentiles = airbnbPercentiles || {
+        revenue: { p25: 0, p50: 0, p75: 0, p90: 0 },
+        adr: { p25: 0, p50: 0, p75: 0, p90: 0 },
+        occupancy: { p25: 0, p50: 0, p75: 0, p90: 0 },
+      };
+      dataSourceLabel = "airbnb-direct";
+      console.log(`[Analyze] PriceLabs unavailable, using Airbnb-derived data: ADR $${finalAdr}, Occ ${finalOccupancy}%, Rev $${finalAnnualRevenue}/yr`);
+    }
+
+    console.log(`[Analyze] Enrichment done — ${enriched.length} comp markers, source: ${dataSourceLabel} [${Date.now() - startTime}ms elapsed]`);
+
+    // Generate seasonality from final metrics
+    const historical = generateSeasonality(finalAdr, finalOccupancy, latitude, longitude);
 
     // =====================================================================
     // STEP 5: Save to Supabase IN BACKGROUND (don't block response)
     // =====================================================================
-    // Fire-and-forget: save to cache, legacy cache, and log — all in parallel background
     Promise.all([
       saveMarketData({
         cacheKey,
@@ -998,41 +1180,30 @@ export async function POST(request: NextRequest) {
         state: state || stateFromAddress,
         bedrooms,
         searchAddress: address,
-        avgAdr,
-        avgOccupancy,
-        avgAnnualRevenue,
-        avgMonthlyRevenue: Math.round(avgAnnualRevenue / 12),
-        percentiles,
+        avgAdr: finalAdr,
+        avgOccupancy: finalOccupancy,
+        avgAnnualRevenue: finalAnnualRevenue,
+        avgMonthlyRevenue: Math.round(finalAnnualRevenue / 12),
+        percentiles: finalPercentiles,
         listings: enriched,
         monthlyData: historical,
-        source: "airbnb-direct",
-        dataQuality: enriched.length >= 15 ? "high" : enriched.length >= 5 ? "standard" : "low",
+        source: dataSourceLabel,
+        dataQuality: priceLabsResult.success ? "high" : (enriched.length >= 15 ? "high" : enriched.length >= 5 ? "standard" : "low"),
       }),
       saveLegacyCache(cacheKey, latitude, longitude, bedrooms, enriched),
       logAnalysis({
         address, city: city || cityFromAddress, state: state || stateFromAddress,
         lat: latitude, lng: longitude,
         bedrooms, bathrooms, guestCount: accommodates,
-        annualRevenue: avgAnnualRevenue,
-        monthlyRevenue: Math.round(avgAnnualRevenue / 12),
-        adr: avgAdr, occupancy: avgOccupancy,
-        source: "airbnb-direct", compCount: enriched.length,
-        percentiles, seasonality: historical,
+        annualRevenue: finalAnnualRevenue,
+        monthlyRevenue: Math.round(finalAnnualRevenue / 12),
+        adr: finalAdr, occupancy: finalOccupancy,
+        source: dataSourceLabel, compCount: enriched.length,
+        percentiles: finalPercentiles, seasonality: historical,
       }),
     ]).catch(err => console.error("[Analyze] Background save error:", err));
 
-    console.log(`[Analyze] SUCCESS — ${enriched.length} comps, ADR $${avgAdr}, Occ ${avgOccupancy}%, Rev $${avgAnnualRevenue}/yr [${Date.now() - startTime}ms total]`);
-
-    // Build allComps from the full raw listing set (before bedroom filtering)
-    // This enriches ALL listings so the client can re-filter by bedroom locally
-    const allEnrichedForClient = scrapeResult.listings.map((listing: any) => {
-      const nightPrice = listing.nightPrice || 150;
-      const occ = estimateOccupancy(listing.reviewsCount || 0);
-      const annualRev = Math.round(nightPrice * 365 * (occ / 100));
-      const monthlyRev = Math.round(annualRev / 12);
-      const dist = calcDistance(latitude, longitude, listing.latitude, listing.longitude);
-      return { ...listing, occupancy: occ, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(dist * 10) / 10 };
-    });
+    console.log(`[Analyze] SUCCESS — ${enriched.length} comps, ADR $${finalAdr}, Occ ${finalOccupancy}%, Rev $${finalAnnualRevenue}/yr [${Date.now() - startTime}ms total]`);
 
     const responseData = buildResponse({
       city: city || cityFromAddress,
@@ -1042,20 +1213,19 @@ export async function POST(request: NextRequest) {
       longitude,
       bedrooms,
       bathrooms,
-      adr: avgAdr,
-      occupancy: avgOccupancy,
-      annualRevenue: avgAnnualRevenue,
-      percentiles,
+      adr: finalAdr,
+      occupancy: finalOccupancy,
+      annualRevenue: finalAnnualRevenue,
+      percentiles: finalPercentiles,
       comparables: enriched.slice(0, 30),
       allComps: allEnrichedForClient,
       historical,
-      totalListings: scrapeResult.listings.length,
-      filteredListings: enriched.length,
-      dataSource: "airbnb-direct",
+      totalListings: priceLabsResult.success ? priceLabsResult.listingsCount : scrapeResult.listings.length,
+      filteredListings: priceLabsResult.success ? priceLabsResult.listingsCount : enriched.length,
+      dataSource: dataSourceLabel,
     });
 
     // Save FULL response to property_cache for instant future lookups on this exact address
-    // This runs in background (don't await) to not delay the response
     supabase.from("property_cache").upsert(
       {
         address,

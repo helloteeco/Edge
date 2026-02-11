@@ -43,7 +43,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://api.openai.com https://api.stripe.com https://*.supabase.co https://*.google.com https://*.googleapis.com wss://*.supabase.co",
+              "connect-src 'self' https://api.openai.com https://api.stripe.com https://*.supabase.co https://*.google.com https://*.googleapis.com wss://*.supabase.co https://api.pricelabs.co https://nominatim.openstreetmap.org",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com",
               "frame-ancestors 'self'",
               "form-action 'self' https://checkout.stripe.com",
