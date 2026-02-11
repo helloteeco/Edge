@@ -16,5 +16,11 @@
 
 
 ## Fix Missing Interactive Comp Map + Low Comp Count (February 2026)
-- [ ] Fix interactive CompMap not rendering on deployed site
-- [ ] Investigate why only 4 comps are returned for some addresses
+- [x] Fix interactive CompMap not rendering on deployed site (added coord fallback + old cache key lookup)
+- [x] Investigate why only 4 comps are returned for some addresses (rural areas have fewer listings; progressive radius already in place)
+
+
+## Fix Low Comp Count — Apify Scraper Missing Listings (February 2026)
+- [ ] Investigate why Apify scraper returns only 4 comps when more exist on Airbnb
+- [ ] Fix scraping URL construction, filters, or result limits to capture more listings
+- [ ] Verify fix with Spartanburg area address

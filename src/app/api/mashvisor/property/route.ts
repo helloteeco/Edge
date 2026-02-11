@@ -215,7 +215,7 @@ async function runApifyScrape(
   lng: number,
   latDelta: number,
   bedrooms: number,
-  maxListings: number = 50,
+  maxListings: number = 80,
   filterBedrooms: boolean = false,
 ): Promise<{ success: boolean; listings: any[]; error?: string }> {
   if (!APIFY_API_TOKEN) {
@@ -337,7 +337,7 @@ async function runApifyScrape(
           source: "apify",
         };
       })
-      .slice(0, 50); // Keep up to 50 for enrichment to filter
+      .slice(0, maxListings); // Keep up to maxListings for enrichment to filter
 
     console.log(`[Apify] Transformed ${listings.length} listings`);
     return { success: true, listings };
@@ -452,7 +452,7 @@ async function scrapeAirbnbByCity(
           source: "apify",
         };
       })
-      .slice(0, 50);
+      .slice(0, 80);
 
     console.log(`[Apify] City search transformed ${listings.length} listings`);
     return { success: true, listings };
@@ -462,7 +462,19 @@ async function scrapeAirbnbByCity(
   }
 }
 
+// Deduplicate listings by ID, keeping the first occurrence
+function deduplicateListings(listings: any[]): any[] {
+  const seen = new Map<string, boolean>();
+  return listings.filter((l) => {
+    const key = String(l.id || l.url || l.name);
+    if (seen.has(key)) return false;
+    seen.set(key, true);
+    return true;
+  });
+}
+
 // Main scraping function with progressive radius expansion and fallbacks
+// Key fix: ACCUMULATE listings across all radius steps instead of returning early
 async function scrapeAirbnbComps(
   lat: number,
   lng: number,
@@ -470,8 +482,11 @@ async function scrapeAirbnbComps(
   city?: string,
   state?: string,
 ): Promise<{ success: boolean; listings: any[]; error?: string }> {
+  const allListings: any[] = [];
+  const TARGET_MIN = 15; // Keep expanding until we have at least 15 unique listings
+
   // Strategy 1: Progressive radius expansion WITHOUT bedroom filter
-  // This maximizes results — enrichListings handles bedroom weighting
+  // ACCUMULATE results across all radii — don't stop early
   const radiusSteps = [
     { latDelta: 0.15, label: "~10mi" },   // ~10 mile radius
     { latDelta: 0.30, label: "~20mi" },   // ~20 mile radius
@@ -479,38 +494,49 @@ async function scrapeAirbnbComps(
   ];
 
   for (const step of radiusSteps) {
-    const result = await runApifyScrape(lat, lng, step.latDelta, bedrooms, 50, false);
-    if (result.success && result.listings.length >= 5) {
-      console.log(`[Apify] Got ${result.listings.length} listings at ${step.label} radius`);
-      return result;
-    }
-    if (result.listings.length > 0 && result.listings.length < 5) {
-      console.log(`[Apify] Only ${result.listings.length} at ${step.label}, expanding...`);
-      // Keep these listings and try wider
-      const widerResult = await runApifyScrape(lat, lng, step.latDelta * 1.5, bedrooms, 50, false);
-      if (widerResult.success && widerResult.listings.length > result.listings.length) {
-        return widerResult;
+    const result = await runApifyScrape(lat, lng, step.latDelta, bedrooms, 80, false);
+    if (result.success && result.listings.length > 0) {
+      allListings.push(...result.listings);
+      const unique = deduplicateListings(allListings);
+      console.log(`[Apify] ${step.label}: got ${result.listings.length} listings, total unique: ${unique.length}`);
+      if (unique.length >= TARGET_MIN) {
+        // We have enough — return the accumulated set
+        return { success: true, listings: unique.slice(0, 80) };
       }
-      // If wider didn't help, use what we have
-      if (result.listings.length > 0) return result;
+    } else {
+      console.log(`[Apify] ${step.label}: returned 0 listings, continuing...`);
     }
-    console.log(`[Apify] ${step.label} returned ${result.listings.length} listings, trying wider...`);
   }
 
   // Strategy 2: City-name search (Airbnb's own search algorithm)
+  // This often finds listings that bounding-box search misses
   if (city && state) {
-    console.log(`[Apify] Bounding box searches failed, trying city-name search...`);
+    console.log(`[Apify] Adding city-name search for ${city}, ${state}...`);
     const cityResult = await scrapeAirbnbByCity(city, state, bedrooms);
     if (cityResult.success && cityResult.listings.length > 0) {
-      return cityResult;
+      allListings.push(...cityResult.listings);
+      console.log(`[Apify] City search added ${cityResult.listings.length} listings`);
     }
   }
 
+  // Check accumulated results so far
+  let unique = deduplicateListings(allListings);
+  if (unique.length >= 5) {
+    console.log(`[Apify] Accumulated ${unique.length} unique listings after city search`);
+    return { success: true, listings: unique.slice(0, 80) };
+  }
+
   // Strategy 3: Very wide radius as last resort (~50mi)
-  console.log(`[Apify] All strategies failed, trying 50mi radius as last resort...`);
-  const lastResort = await runApifyScrape(lat, lng, 0.72, bedrooms, 50, false);
+  console.log(`[Apify] Only ${unique.length} listings so far, trying 50mi radius...`);
+  const lastResort = await runApifyScrape(lat, lng, 0.72, bedrooms, 80, false);
   if (lastResort.success && lastResort.listings.length > 0) {
-    return lastResort;
+    allListings.push(...lastResort.listings);
+  }
+
+  unique = deduplicateListings(allListings);
+  if (unique.length > 0) {
+    console.log(`[Apify] Final accumulated total: ${unique.length} unique listings`);
+    return { success: true, listings: unique.slice(0, 80) };
   }
 
   return { success: false, listings: [], error: "No listings found after all search strategies" };
