@@ -302,13 +302,12 @@ export default function CalculatorPage() {
   // Geocode an address to get lat/lng (used as fallback when cached data lacks coordinates)
   const geocodeAddress = async (addr: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr + ', USA')}&format=json&limit=1`;
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'EdgeByTeeco/1.0 (contact@teeco.co)', 'Accept': 'application/json' },
-      });
+      const res = await fetch(`/api/geocode-latlng?address=${encodeURIComponent(addr)}`);
+      if (!res.ok) return null;
       const data = await res.json();
-      if (data && data.length > 0 && data[0].lat && data[0].lon) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      if (data && data.lat && data.lng) {
+        console.log('[Geocode Fallback] Resolved:', addr, '→', data.lat, data.lng);
+        return { lat: data.lat, lng: data.lng };
       }
     } catch (e) {
       console.error('[Geocode Fallback] Error:', e);
