@@ -1,4 +1,4 @@
-"use client";
+
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 
 // Types matching the calculator's ComparableListing
@@ -43,29 +43,422 @@ function formatNightPrice(value: number): string {
   return `$${Math.round(value)}`;
 }
 
-// ===== Ensure Leaflet CSS is loaded before map init =====
-function ensureLeafletCSS(): Promise<void> {
-  return new Promise((resolve) => {
-    if (document.getElementById("leaflet-css")) {
-      resolve();
-      return;
-    }
-    const link = document.createElement("link");
-    link.id = "leaflet-css";
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    link.onload = () => resolve();
-    link.onerror = () => resolve(); // proceed even if CSS fails
-    document.head.appendChild(link);
-  });
-}
-
-// ===== Inject custom marker styles =====
-function ensureCustomStyles(): void {
-  if (document.getElementById("comp-map-styles")) return;
+// ===== Inject ALL Leaflet + custom CSS inline (no CDN dependency) =====
+function ensureAllStyles(): void {
+  if (document.getElementById("comp-map-all-styles")) return;
   const style = document.createElement("style");
-  style.id = "comp-map-styles";
+  style.id = "comp-map-all-styles";
   style.textContent = `
+    /* ============================================================
+       LEAFLET CORE CSS (inlined from leaflet@1.9.4/dist/leaflet.css)
+       This eliminates the need for the external CDN stylesheet
+       which was being blocked/not applied in Next.js context.
+       ============================================================ */
+
+    /* Required styles — positioning */
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane > svg,
+    .leaflet-pane > canvas,
+    .leaflet-zoom-box,
+    .leaflet-image-layer,
+    .leaflet-layer {
+      position: absolute !important;
+      left: 0;
+      top: 0;
+    }
+    .leaflet-container {
+      overflow: hidden !important;
+    }
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .leaflet-tile::selection {
+      background: transparent;
+    }
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow {
+      display: block;
+    }
+
+    /* Prevent max-width from breaking tiles/images */
+    .leaflet-container .leaflet-overlay-pane svg {
+      max-width: none !important;
+      max-height: none !important;
+    }
+    .leaflet-container .leaflet-marker-pane img,
+    .leaflet-container .leaflet-shadow-pane img,
+    .leaflet-container .leaflet-tile-pane img,
+    .leaflet-container img.leaflet-image-layer,
+    .leaflet-container .leaflet-tile {
+      max-width: none !important;
+      max-height: none !important;
+      width: auto;
+      padding: 0;
+    }
+    .leaflet-container img.leaflet-tile {
+      mix-blend-mode: plus-lighter;
+    }
+
+    /* Touch handling */
+    .leaflet-container.leaflet-touch-zoom {
+      -ms-touch-action: pan-x pan-y;
+      touch-action: pan-x pan-y;
+    }
+    .leaflet-container.leaflet-touch-drag {
+      -ms-touch-action: pinch-zoom;
+      touch-action: none;
+      touch-action: pinch-zoom;
+    }
+    .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+      -ms-touch-action: none;
+      touch-action: none;
+    }
+    .leaflet-container {
+      -webkit-tap-highlight-color: transparent;
+    }
+    .leaflet-container a {
+      -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+    }
+
+    /* Tile visibility */
+    .leaflet-tile {
+      filter: inherit;
+      visibility: hidden;
+    }
+    .leaflet-tile-loaded {
+      visibility: inherit;
+    }
+
+    /* Zoom box */
+    .leaflet-zoom-box {
+      width: 0;
+      height: 0;
+      box-sizing: border-box;
+      z-index: 800;
+    }
+    .leaflet-overlay-pane svg {
+      -moz-user-select: none;
+    }
+
+    /* Z-index stacking */
+    .leaflet-pane         { z-index: 400; }
+    .leaflet-tile-pane    { z-index: 200; }
+    .leaflet-overlay-pane { z-index: 400; }
+    .leaflet-shadow-pane  { z-index: 500; }
+    .leaflet-marker-pane  { z-index: 600; }
+    .leaflet-tooltip-pane { z-index: 650; }
+    .leaflet-popup-pane   { z-index: 700; }
+    .leaflet-map-pane canvas { z-index: 100; }
+    .leaflet-map-pane svg    { z-index: 200; }
+
+    /* Control positioning */
+    .leaflet-control {
+      position: relative;
+      z-index: 800;
+      pointer-events: visiblePainted;
+      pointer-events: auto;
+    }
+    .leaflet-top,
+    .leaflet-bottom {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .leaflet-top    { top: 0; }
+    .leaflet-right  { right: 0; }
+    .leaflet-bottom { bottom: 0; }
+    .leaflet-left   { left: 0; }
+    .leaflet-control {
+      float: left;
+      clear: both;
+    }
+    .leaflet-right .leaflet-control {
+      float: right;
+    }
+    .leaflet-top .leaflet-control    { margin-top: 10px; }
+    .leaflet-bottom .leaflet-control { margin-bottom: 10px; }
+    .leaflet-left .leaflet-control   { margin-left: 10px; }
+    .leaflet-right .leaflet-control  { margin-right: 10px; }
+
+    /* Zoom and fade animations */
+    .leaflet-fade-anim .leaflet-popup {
+      opacity: 0;
+      transition: opacity 0.2s linear;
+    }
+    .leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+      opacity: 1;
+    }
+    .leaflet-zoom-animated {
+      transform-origin: 0 0;
+    }
+    svg.leaflet-zoom-animated {
+      will-change: transform;
+    }
+    .leaflet-zoom-anim .leaflet-zoom-animated {
+      transition: transform 0.25s cubic-bezier(0,0,0.25,1);
+    }
+    .leaflet-zoom-anim .leaflet-tile,
+    .leaflet-pan-anim .leaflet-tile {
+      transition: none;
+    }
+    .leaflet-zoom-anim .leaflet-zoom-hide {
+      visibility: hidden;
+    }
+
+    /* Cursors */
+    .leaflet-interactive { cursor: pointer; }
+    .leaflet-grab {
+      cursor: -webkit-grab;
+      cursor: -moz-grab;
+      cursor: grab;
+    }
+    .leaflet-crosshair,
+    .leaflet-crosshair .leaflet-interactive {
+      cursor: crosshair;
+    }
+    .leaflet-popup-pane,
+    .leaflet-control {
+      cursor: auto;
+    }
+    .leaflet-dragging .leaflet-grab,
+    .leaflet-dragging .leaflet-grab .leaflet-interactive,
+    .leaflet-dragging .leaflet-marker-draggable {
+      cursor: move;
+      cursor: -webkit-grabbing;
+      cursor: -moz-grabbing;
+      cursor: grabbing;
+    }
+
+    /* Marker & overlay interactivity */
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-image-layer,
+    .leaflet-pane > svg path,
+    .leaflet-tile-container {
+      pointer-events: none;
+    }
+    .leaflet-marker-icon.leaflet-interactive,
+    .leaflet-image-layer.leaflet-interactive,
+    .leaflet-pane > svg path.leaflet-interactive,
+    svg.leaflet-image-layer.leaflet-interactive path {
+      pointer-events: visiblePainted;
+      pointer-events: auto;
+    }
+
+    /* Visual tweaks */
+    .leaflet-container {
+      background: #ddd;
+      outline-offset: 1px;
+    }
+    .leaflet-container a {
+      color: #0078A8;
+    }
+    .leaflet-zoom-box {
+      border: 2px dotted #38f;
+      background: rgba(255,255,255,0.5);
+    }
+
+    /* Typography */
+    .leaflet-container {
+      font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* Toolbar / zoom bar */
+    .leaflet-bar {
+      box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+      border-radius: 4px;
+    }
+    .leaflet-bar a {
+      background-color: #fff;
+      border-bottom: 1px solid #ccc;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      color: black;
+    }
+    .leaflet-bar a,
+    .leaflet-control-layers-toggle {
+      background-position: 50% 50%;
+      background-repeat: no-repeat;
+      display: block;
+    }
+    .leaflet-bar a:hover,
+    .leaflet-bar a:focus {
+      background-color: #f4f4f4;
+    }
+    .leaflet-bar a:first-child {
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+    }
+    .leaflet-bar a:last-child {
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+      border-bottom: none;
+    }
+    .leaflet-bar a.leaflet-disabled {
+      cursor: default;
+      background-color: #f4f4f4;
+      color: #bbb;
+    }
+    .leaflet-touch .leaflet-bar a {
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+    }
+    .leaflet-touch .leaflet-bar a:first-child {
+      border-top-left-radius: 2px;
+      border-top-right-radius: 2px;
+    }
+    .leaflet-touch .leaflet-bar a:last-child {
+      border-bottom-left-radius: 2px;
+      border-bottom-right-radius: 2px;
+    }
+
+    /* Zoom control */
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out {
+      font: bold 18px 'Lucida Console', Monaco, monospace;
+      text-indent: 1px;
+    }
+    .leaflet-touch .leaflet-control-zoom-in,
+    .leaflet-touch .leaflet-control-zoom-out {
+      font-size: 22px;
+    }
+
+    /* Attribution */
+    .leaflet-container .leaflet-control-attribution {
+      background: rgba(255, 255, 255, 0.8);
+      margin: 0;
+    }
+    .leaflet-control-attribution,
+    .leaflet-control-scale-line {
+      padding: 0 5px;
+      color: #333;
+      line-height: 1.4;
+    }
+    .leaflet-control-attribution a {
+      text-decoration: none;
+    }
+
+    /* Popup */
+    .leaflet-popup {
+      position: absolute;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .leaflet-popup-content-wrapper {
+      padding: 1px;
+      text-align: left;
+      border-radius: 12px;
+    }
+    .leaflet-popup-content {
+      margin: 13px 24px 13px 20px;
+      line-height: 1.3;
+      font-size: 13px;
+      min-height: 1px;
+    }
+    .leaflet-popup-content p {
+      margin: 17px 0;
+    }
+    .leaflet-popup-tip-container {
+      width: 40px;
+      height: 20px;
+      position: absolute;
+      left: 50%;
+      margin-top: -1px;
+      margin-left: -20px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .leaflet-popup-tip {
+      width: 17px;
+      height: 17px;
+      padding: 1px;
+      margin: -10px auto 0;
+      pointer-events: auto;
+      transform: rotate(45deg);
+    }
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: white;
+      color: #333;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    }
+    .leaflet-container a.leaflet-popup-close-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      border: none;
+      text-align: center;
+      width: 24px;
+      height: 24px;
+      font: 16px/24px Tahoma, Verdana, sans-serif;
+      color: #757575;
+      text-decoration: none;
+      background: transparent;
+    }
+    .leaflet-container a.leaflet-popup-close-button:hover,
+    .leaflet-container a.leaflet-popup-close-button:focus {
+      color: #585858;
+    }
+    .leaflet-popup-scrolled {
+      overflow: auto;
+    }
+
+    /* Div icon */
+    .leaflet-div-icon {
+      background: #fff;
+      border: 1px solid #666;
+    }
+
+    /* Tooltip */
+    .leaflet-tooltip {
+      position: absolute;
+      padding: 6px;
+      background-color: #fff;
+      border: 1px solid #fff;
+      border-radius: 3px;
+      color: #222;
+      white-space: nowrap;
+      user-select: none;
+      pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .leaflet-tooltip.leaflet-interactive {
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    /* Touch styles */
+    .leaflet-touch .leaflet-control-attribution,
+    .leaflet-touch .leaflet-control-layers,
+    .leaflet-touch .leaflet-bar {
+      box-shadow: none;
+    }
+    .leaflet-touch .leaflet-control-layers,
+    .leaflet-touch .leaflet-bar {
+      border: 2px solid rgba(0,0,0,0.2);
+      background-clip: padding-box;
+    }
+
+    /* ============================================================
+       CUSTOM COMP MAP STYLES
+       ============================================================ */
+
     .comp-price-tag {
       background: #2b2823;
       color: white;
@@ -129,6 +522,8 @@ function ensureCustomStyles(): void {
       0%, 100% { box-shadow: 0 2px 10px rgba(239,68,68,0.4); }
       50% { box-shadow: 0 2px 20px rgba(239,68,68,0.6); }
     }
+
+    /* Popup card overrides */
     .leaflet-popup-content-wrapper {
       border-radius: 12px !important;
       padding: 0 !important;
@@ -217,34 +612,21 @@ function ensureCustomStyles(): void {
       justify-content: center;
       font-size: 32px;
     }
-    /* CRITICAL: Fix Leaflet rendering inside rounded/overflow containers */
+
+    /* Container-level overrides for isolation */
     .comp-map-container .leaflet-container {
       width: 100% !important;
       height: 100% !important;
       z-index: 1 !important;
     }
-    .comp-map-container .leaflet-pane {
-      position: absolute !important;
-      z-index: auto !important;
-    }
-    .comp-map-container .leaflet-tile-pane {
-      will-change: transform;
-      z-index: 1 !important;
-    }
-    .comp-map-container .leaflet-marker-pane {
-      z-index: 6 !important;
-    }
-    .comp-map-container .leaflet-popup-pane {
-      z-index: 7 !important;
-    }
-    .comp-map-container .leaflet-tile {
-      will-change: transform;
-    }
-    .comp-map-container .leaflet-control-container {
-      z-index: 8 !important;
-    }
   `;
   document.head.appendChild(style);
+
+  // Also remove any old partial style tags from previous versions
+  const oldStyles = document.getElementById("comp-map-styles");
+  if (oldStyles) oldStyles.remove();
+  const oldLeafletCss = document.getElementById("leaflet-css");
+  if (oldLeafletCss) oldLeafletCss.remove();
 }
 
 export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, excludedIds = new Set() }: CompMapProps) {
@@ -289,21 +671,19 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
     let resizeObserver: ResizeObserver | null = null;
 
     const initMap = async () => {
-      // 1. Load Leaflet CSS first (wait for it to actually load)
-      await ensureLeafletCSS();
-      ensureCustomStyles();
+      // 1. Inject ALL styles inline (Leaflet core + custom) — no CDN dependency
+      ensureAllStyles();
 
       // 2. Dynamically import leaflet (SSR-safe)
       L = (await import("leaflet")).default;
 
       // 3. Small delay to ensure CSS is applied to DOM
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // 4. Guard: container must still exist
       if (!mapRef.current) return;
 
-      // 4b. CRITICAL: Wait until container has actual dimensions
-      // In Next.js dynamic imports, the container may have 0 height initially
+      // 4b. Wait until container has actual dimensions
       const waitForDimensions = async (el: HTMLElement, maxWait = 2000): Promise<boolean> => {
         const start = Date.now();
         while (Date.now() - start < maxWait) {
@@ -341,12 +721,9 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         subdomains: "abcd",
       }).addTo(map);
 
-      // 8. CRITICAL: invalidateSize after tiles start loading to fix tile alignment
-      // This forces Leaflet to recalculate the container dimensions
+      // 8. invalidateSize after tiles start loading to fix tile alignment
       map.whenReady(() => {
-        // Immediate invalidateSize
         map.invalidateSize({ animate: false });
-        // Delayed invalidateSize to catch late layout shifts
         setTimeout(() => {
           if (map && mapRef.current) {
             map.invalidateSize({ animate: false });
@@ -498,7 +875,6 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
       };
 
       // Run fitBounds after map is ready and container is fully laid out
-      // Multiple attempts to handle dynamic layout timing
       doFitBounds();
       setTimeout(doFitBounds, 300);
       setTimeout(doFitBounds, 600);
