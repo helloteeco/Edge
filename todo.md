@@ -619,3 +619,21 @@ This prevents a few poor markets from unfairly penalizing an otherwise strong st
 - [x] Fix 20: Add "Supplies & Consumables" expense line (~$75/month default)
 - [x] Fix 21: Spell out "STR" as "Short-Term Rental" or "Airbnb" in user-facing labels
 - [x] Fix 22: Add disclaimer when percentile data falls back to hardcoded multipliers
+
+
+## Fix "No STR Data" Bug for Valid US Addresses (February 2026)
+- [ ] Fix Spartanburg, SC returning "No STR data found" when there are hundreds of Airbnbs
+- [ ] Expand search radius and add multi-bedroom scraping fallbacks
+- [ ] Ensure every valid US address returns comp data — never show "No STR data" for real cities
+- [ ] Add progressive radius expansion (5mi → 10mi → 25mi → 50mi) if initial search returns too few comps
+- [ ] Scrape multiple bedroom counts (1-6 BR) to maximize comp coverage
+
+
+## Local Bedroom Re-Filtering (February 2026)
+- [x] Create refilterComps.ts utility for client-side bedroom filtering
+- [x] Update API route to return allComps (full unfiltered listing set) alongside filtered comparables
+- [x] Make cache key location-only (remove bedroom from key) so all listings are cached together
+- [x] Add allComps state to calculator page
+- [x] Replace "Update Analysis" button with local re-filter (no API call when only bedrooms change)
+- [x] Write unit tests for refilterComps (8 tests passing)
+- [x] Verify TypeScript compilation passes with no errors

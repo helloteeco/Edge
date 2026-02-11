@@ -8,6 +8,7 @@ import AuthModal from "@/components/AuthModal";
 import { FloatingActionPill } from "@/components/DoubleTapSave";
 import dynamic from "next/dynamic";
 import { StuckHelper } from "@/components/StuckHelper";
+import { refilterComps, type Comp } from "@/lib/refilterComps";
 
 // Dynamic import for CompMap (Leaflet needs client-side only)
 const CompMap = dynamic(() => import("@/components/CompMap").then(mod => ({ default: mod.CompMap })), {
@@ -257,6 +258,13 @@ export default function CalculatorPage() {
   
   // Custom comp selection: track excluded comp IDs
   const [excludedCompIds, setExcludedCompIds] = useState<Set<number | string>>(new Set());
+  
+  // Full unfiltered comp set from API — used for local bedroom re-filtering
+  const [allComps, setAllComps] = useState<ComparableListing[]>([]);
+  // Track the last address that triggered an API call (to avoid re-fetching on bedroom change)
+  const [lastAnalyzedAddress, setLastAnalyzedAddress] = useState<string>("");
+  // Store target coordinates for local re-filtering
+  const [targetCoords, setTargetCoords] = useState<{ lat: number; lng: number } | null>(null);
   
   // Real occupancy data from calendar scraping
   const [realOccupancyData, setRealOccupancyData] = useState<Record<string, { occupancyRate: number; bookedDays: number; totalDays: number; peakMonths: string[]; lowMonths: string[]; source: string; dailyCalendar?: { date: string; available: boolean }[] }>>({});
@@ -1212,6 +1220,78 @@ export default function CalculatorPage() {
   // Check if form is valid for analysis
   const canAnalyze = address.trim().length > 0;
 
+  // ========== LOCAL RE-FILTER (no API call) ==========
+  // When user changes bedrooms/bathrooms/guests but NOT the address,
+  // re-filter the stored allComps locally instead of burning an API credit.
+  const handleLocalRefilter = () => {
+    const currentAddress = address.trim();
+    
+    // If we have allComps and the address hasn't changed, re-filter locally
+    if (allComps.length > 0 && targetCoords && lastAnalyzedAddress && 
+        currentAddress.toLowerCase() === lastAnalyzedAddress.toLowerCase() && result) {
+      console.log(`[Refilter] Local re-filter: ${bedrooms}br/${bathrooms}ba/${guestCount}guests from ${allComps.length} comps`);
+      
+      const filtered = refilterComps(
+        allComps as Comp[],
+        targetCoords.lat,
+        targetCoords.lng,
+        bedrooms ?? 3,
+        bathrooms ?? 2,
+        guestCount || (bedrooms ?? 3) * 2,
+      );
+      
+      // Build updated percentiles
+      const newPercentiles = {
+        revenue: filtered.percentiles.revenue,
+        adr: filtered.percentiles.adr,
+        occupancy: filtered.percentiles.occupancy,
+        listingsAnalyzed: filtered.filteredListings,
+        totalListingsInArea: filtered.totalListings,
+      };
+      
+      // Determine revenue from percentiles
+      let annualRevenue = 0;
+      if (filtered.percentiles.revenue.p50 > 0) {
+        annualRevenue = filtered.percentiles.revenue.p50;
+      } else if (filtered.avgAnnualRevenue > 0) {
+        annualRevenue = filtered.avgAnnualRevenue;
+      } else if (filtered.avgAdr > 0 && filtered.avgOccupancy > 0) {
+        annualRevenue = Math.round(filtered.avgAdr * (filtered.avgOccupancy / 100) * 365);
+      }
+      
+      const monthlyRevenue = Math.round(annualRevenue / 12);
+      const revPAN = filtered.avgAdr > 0 && filtered.avgOccupancy > 0 
+        ? Math.round(filtered.avgAdr * (filtered.avgOccupancy / 100)) : 0;
+      
+      // Update the result with re-filtered data
+      setResult({
+        ...result,
+        annualRevenue,
+        monthlyRevenue,
+        adr: filtered.avgAdr,
+        occupancy: filtered.avgOccupancy,
+        revPAN,
+        bedrooms: bedrooms ?? 3,
+        bathrooms: bathrooms ?? 2,
+        percentiles: newPercentiles,
+        comparables: filtered.comparables as ComparableListing[],
+        nearbyListings: filtered.totalListings,
+      });
+      
+      // Reset excluded comps for new bedroom selection
+      setExcludedCompIds(new Set());
+      setUseCustomIncome(false);
+      setCustomAnnualIncome("");
+      
+      console.log(`[Refilter] Done: ${filtered.filteredListings} comps, ADR $${filtered.avgAdr}, Rev $${annualRevenue}/yr`);
+      return;
+    }
+    
+    // Address changed or no allComps stored — fall back to full API call
+    console.log(`[Refilter] Address changed or no cached comps, making API call`);
+    handleAnalyze();
+  };
+
   // Analyze address
   const handleAnalyze = async (searchAddress?: string) => {
     const addressToAnalyze = searchAddress || address;
@@ -1238,7 +1318,7 @@ export default function CalculatorPage() {
         return;
       }
 
-      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates } = data;
+      const { property, neighborhood, percentiles, comparables, historical, recommendedAmenities, targetCoordinates, allComps: rawAllComps } = data;
 
       const parseNum = (val: unknown): number => {
         if (typeof val === "number") return val;
@@ -1308,6 +1388,18 @@ export default function CalculatorPage() {
 
       setResult(analysisResult);
       setAddress(addressToAnalyze);
+      
+      // Store full comp set for local bedroom re-filtering (no new API call needed)
+      if (rawAllComps && Array.isArray(rawAllComps) && rawAllComps.length > 0) {
+        setAllComps(rawAllComps as ComparableListing[]);
+      } else {
+        // Fallback: use the filtered comparables as allComps
+        setAllComps(comparables || []);
+      }
+      setLastAnalyzedAddress(addressToAnalyze);
+      if (targetCoordinates) {
+        setTargetCoords({ lat: targetCoordinates.latitude, lng: targetCoordinates.longitude });
+      }
       
       // ========== MARKET MISMATCH DETECTION ==========
       // Extract city from the searched address
@@ -3119,9 +3211,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
               </div>
               
-              {/* Re-analyze button */}
+              {/* Re-analyze button — uses local re-filtering if only bedrooms/bath/guests changed */}
               <button
-                onClick={() => handleAnalyze()}
+                onClick={() => handleLocalRefilter()}
                 disabled={isLoading}
                 className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
                 style={{ backgroundColor: "#2b2823" }}

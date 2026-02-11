@@ -68,10 +68,11 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
 // SUPABASE CACHE — Check market_data table for recent data
 // ============================================================================
 
-function getCacheKey(lat: number, lng: number, bedrooms: number): string {
+function getCacheKey(lat: number, lng: number, _bedrooms?: number): string {
   const roundedLat = Math.round(lat * 100) / 100;
   const roundedLng = Math.round(lng * 100) / 100;
-  return `${roundedLat}_${roundedLng}_${bedrooms}br`;
+  // Location-only key — bedroom filtering happens client-side
+  return `${roundedLat}_${roundedLng}_all`;
 }
 
 async function getCachedMarketData(cacheKey: string): Promise<any | null> {
@@ -177,27 +178,36 @@ async function saveLegacyCache(cacheKey: string, lat: number, lng: number, bedro
 // APIFY SCRAPER — Primary data source
 // ============================================================================
 
-async function scrapeAirbnbComps(
+// Single Apify scrape with a given bounding box and optional bedroom filter
+async function runApifyScrape(
   lat: number,
   lng: number,
+  latDelta: number,
   bedrooms: number,
+  maxListings: number = 50,
+  filterBedrooms: boolean = false,
 ): Promise<{ success: boolean; listings: any[]; error?: string }> {
   if (!APIFY_API_TOKEN) {
     return { success: false, listings: [], error: "APIFY_API_TOKEN not configured" };
   }
 
   try {
-    // Build bounding box (~10 mile radius)
-    const latDelta = 0.15;
-    const lngDelta = 0.15 / Math.cos((lat * Math.PI) / 180);
+    const lngDelta = latDelta / Math.cos((lat * Math.PI) / 180);
 
     const today = new Date();
     const checkIn = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const checkOut = new Date(today.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    const searchUrl = `https://www.airbnb.com/s/homes?ne_lat=${lat + latDelta}&ne_lng=${lng + lngDelta}&sw_lat=${lat - latDelta}&sw_lng=${lng - lngDelta}&search_type=filter_change&tab_id=home_tab&refinement_paths[]=/homes&checkin=${checkIn}&checkout=${checkOut}&adults=1&room_types[]=Entire%20home/apt&min_bedrooms=${Math.max(1, bedrooms - 1)}`;
+    // Build search URL — NO bedroom filter by default to maximize results
+    // The enrichListings function handles bedroom weighting/filtering
+    let searchUrl = `https://www.airbnb.com/s/homes?ne_lat=${lat + latDelta}&ne_lng=${lng + lngDelta}&sw_lat=${lat - latDelta}&sw_lng=${lng - lngDelta}&search_type=filter_change&tab_id=home_tab&refinement_paths[]=/homes&checkin=${checkIn}&checkout=${checkOut}&adults=1&room_types[]=Entire%20home/apt`;
+    
+    if (filterBedrooms) {
+      searchUrl += `&min_bedrooms=${Math.max(1, bedrooms - 1)}`;
+    }
 
-    console.log(`[Apify] Scraping ${lat},${lng} (${bedrooms}br)...`);
+    const radiusMiles = Math.round(latDelta * 69);
+    console.log(`[Apify] Scraping ${lat},${lng} (~${radiusMiles}mi radius, ${filterBedrooms ? bedrooms + 'br filter' : 'all bedrooms'})...`);
 
     // Start actor run
     const runResponse = await fetch(
@@ -207,7 +217,7 @@ async function scrapeAirbnbComps(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startUrls: [{ url: searchUrl }],
-          maxListings: 40, // Request 40 to ensure we get 30 after filtering
+          maxListings,
           includeReviews: false,
           maxReviews: 0,
           calendarMonths: 0,
@@ -253,7 +263,7 @@ async function scrapeAirbnbComps(
 
     // Fetch results
     const datasetId = runData?.data?.defaultDatasetId;
-    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=40`);
+    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=${maxListings}`);
     if (!resultsRes.ok) {
       return { success: false, listings: [], error: "Failed to fetch Apify results" };
     }
@@ -296,7 +306,7 @@ async function scrapeAirbnbComps(
           source: "apify",
         };
       })
-      .slice(0, 30); // Cap at 30
+      .slice(0, 50); // Keep up to 50 for enrichment to filter
 
     console.log(`[Apify] Transformed ${listings.length} listings`);
     return { success: true, listings };
@@ -304,6 +314,175 @@ async function scrapeAirbnbComps(
     console.error("[Apify] Error:", error);
     return { success: false, listings: [], error: `Scraping failed: ${error}` };
   }
+}
+
+// City-name based Apify search as a fallback
+async function scrapeAirbnbByCity(
+  city: string,
+  state: string,
+  bedrooms: number,
+): Promise<{ success: boolean; listings: any[]; error?: string }> {
+  if (!APIFY_API_TOKEN || !city) {
+    return { success: false, listings: [], error: "Missing API token or city" };
+  }
+
+  try {
+    const searchUrl = `https://www.airbnb.com/s/${encodeURIComponent(city + ', ' + state)}/homes?tab_id=home_tab&refinement_paths[]=/homes&room_types[]=Entire%20home/apt`;
+
+    console.log(`[Apify] City-name fallback: ${city}, ${state}...`);
+
+    const runResponse = await fetch(
+      `${APIFY_BASE_URL}/acts/${encodeURIComponent(APIFY_ACTOR_ID)}/runs?token=${APIFY_API_TOKEN}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          startUrls: [{ url: searchUrl }],
+          maxListings: 50,
+          includeReviews: false,
+          maxReviews: 0,
+          calendarMonths: 0,
+          proxyConfiguration: {
+            useApifyProxy: true,
+            apifyProxyGroups: ["RESIDENTIAL"],
+          },
+        }),
+      }
+    );
+
+    if (!runResponse.ok) {
+      return { success: false, listings: [], error: `Apify city search error: ${runResponse.status}` };
+    }
+
+    const runData = await runResponse.json();
+    const runId = runData?.data?.id;
+    if (!runId) {
+      return { success: false, listings: [], error: "No run ID from Apify city search" };
+    }
+
+    // Poll for completion
+    let attempts = 0;
+    const maxAttempts = 45;
+    let runStatus = "RUNNING";
+
+    while (runStatus === "RUNNING" && attempts < maxAttempts) {
+      await new Promise((r) => setTimeout(r, 2000));
+      attempts++;
+      const statusRes = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`);
+      const statusData = await statusRes.json();
+      runStatus = statusData?.data?.status || "UNKNOWN";
+      if (attempts % 5 === 0) console.log(`[Apify] City search status (${attempts}): ${runStatus}`);
+    }
+
+    if (runStatus !== "SUCCEEDED") {
+      return { success: false, listings: [], error: `City search ${runStatus}` };
+    }
+
+    const datasetId = runData?.data?.defaultDatasetId;
+    const resultsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${APIFY_API_TOKEN}&limit=50`);
+    if (!resultsRes.ok) {
+      return { success: false, listings: [], error: "Failed to fetch city search results" };
+    }
+
+    const rawListings = await resultsRes.json();
+    console.log(`[Apify] City search got ${rawListings.length} raw listings`);
+
+    const listings = rawListings
+      .filter((item: any) => item.name && (item.pricing?.rate?.amount || item.price))
+      .map((item: any, index: number) => {
+        const nightlyPrice = item.pricing?.rate?.amount || item.price || 0;
+        const rating = item.rating || item.stars || 0;
+        const reviewCount = item.reviewsCount || 0;
+        const listingBedrooms = item.bedrooms || bedrooms;
+        const listingBathrooms = item.bathrooms || 1;
+        const listingId = item.id || item.url?.match(/rooms\/(\d+)/)?.[1] || `apify_${index}`;
+        const image = item.images?.[0]?.url || item.images?.[0] || item.thumbnail || item.pictureUrl || null;
+        const compLat = item.location?.lat || item.lat || 0;
+        const compLng = item.location?.lng || item.lng || 0;
+
+        return {
+          id: listingId,
+          name: item.name || `${listingBedrooms} BR Listing`,
+          url: item.url || `https://www.airbnb.com/rooms/${listingId}`,
+          image,
+          bedrooms: listingBedrooms,
+          bathrooms: listingBathrooms,
+          accommodates: item.personCapacity || item.maxGuests || listingBedrooms * 2,
+          sqft: 0,
+          nightPrice: Math.round(nightlyPrice),
+          rating: typeof rating === "number" ? rating : parseFloat(rating) || 0,
+          reviewsCount: typeof reviewCount === "number" ? reviewCount : parseInt(reviewCount) || 0,
+          propertyType: item.roomType || item.type || "Entire home",
+          latitude: compLat,
+          longitude: compLng,
+          amenities: item.amenities || [],
+          hostName: item.host?.name || "",
+          isSuperhost: item.host?.isSuperhost || false,
+          source: "apify",
+        };
+      })
+      .slice(0, 50);
+
+    console.log(`[Apify] City search transformed ${listings.length} listings`);
+    return { success: true, listings };
+  } catch (error) {
+    console.error("[Apify] City search error:", error);
+    return { success: false, listings: [], error: `City search failed: ${error}` };
+  }
+}
+
+// Main scraping function with progressive radius expansion and fallbacks
+async function scrapeAirbnbComps(
+  lat: number,
+  lng: number,
+  bedrooms: number,
+  city?: string,
+  state?: string,
+): Promise<{ success: boolean; listings: any[]; error?: string }> {
+  // Strategy 1: Progressive radius expansion WITHOUT bedroom filter
+  // This maximizes results — enrichListings handles bedroom weighting
+  const radiusSteps = [
+    { latDelta: 0.15, label: "~10mi" },   // ~10 mile radius
+    { latDelta: 0.30, label: "~20mi" },   // ~20 mile radius
+    { latDelta: 0.50, label: "~35mi" },   // ~35 mile radius
+  ];
+
+  for (const step of radiusSteps) {
+    const result = await runApifyScrape(lat, lng, step.latDelta, bedrooms, 50, false);
+    if (result.success && result.listings.length >= 5) {
+      console.log(`[Apify] Got ${result.listings.length} listings at ${step.label} radius`);
+      return result;
+    }
+    if (result.listings.length > 0 && result.listings.length < 5) {
+      console.log(`[Apify] Only ${result.listings.length} at ${step.label}, expanding...`);
+      // Keep these listings and try wider
+      const widerResult = await runApifyScrape(lat, lng, step.latDelta * 1.5, bedrooms, 50, false);
+      if (widerResult.success && widerResult.listings.length > result.listings.length) {
+        return widerResult;
+      }
+      // If wider didn't help, use what we have
+      if (result.listings.length > 0) return result;
+    }
+    console.log(`[Apify] ${step.label} returned ${result.listings.length} listings, trying wider...`);
+  }
+
+  // Strategy 2: City-name search (Airbnb's own search algorithm)
+  if (city && state) {
+    console.log(`[Apify] Bounding box searches failed, trying city-name search...`);
+    const cityResult = await scrapeAirbnbByCity(city, state, bedrooms);
+    if (cityResult.success && cityResult.listings.length > 0) {
+      return cityResult;
+    }
+  }
+
+  // Strategy 3: Very wide radius as last resort (~50mi)
+  console.log(`[Apify] All strategies failed, trying 50mi radius as last resort...`);
+  const lastResort = await runApifyScrape(lat, lng, 0.72, bedrooms, 50, false);
+  if (lastResort.success && lastResort.listings.length > 0) {
+    return lastResort;
+  }
+
+  return { success: false, listings: [], error: "No listings found after all search strategies" };
 }
 
 // ============================================================================
@@ -683,6 +862,17 @@ export async function POST(request: NextRequest) {
         percentiles: finalPercentiles, seasonality: historical,
       });
 
+      // allComps = full cached listing set (before bedroom filtering)
+      // We enrich ALL listings (not just bedroom-filtered) so client can re-filter
+      const allEnriched = (cached.listings || []).map((listing: any) => {
+        const nightPrice = listing.nightPrice || 150;
+        const occupancy = listing.occupancy || estimateOccupancy(listing.reviewsCount || 0);
+        const annualRev = listing.annualRevenue || Math.round(nightPrice * 365 * (occupancy / 100));
+        const monthlyRev = listing.monthlyRevenue || Math.round(annualRev / 12);
+        const distance = listing.distance || calcDistance(latitude, longitude, listing.latitude, listing.longitude);
+        return { ...listing, occupancy, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(distance * 10) / 10 };
+      });
+
       return NextResponse.json(buildResponse({
         city, state, street, latitude, longitude, bedrooms, bathrooms,
         adr: finalAdr,
@@ -690,8 +880,9 @@ export async function POST(request: NextRequest) {
         annualRevenue: finalAnnualRevenue,
         percentiles: finalPercentiles,
         comparables: enriched.slice(0, 30),
+        allComps: allEnriched,
         historical,
-        totalListings: enriched.length,
+        totalListings: allEnriched.length,
         filteredListings: enriched.length,
         dataSource: `cache (${cached.source})`,
       }));
@@ -701,14 +892,20 @@ export async function POST(request: NextRequest) {
     // STEP 3: Scrape from Apify (PRIMARY)
     // =====================================================================
     console.log(`[Analyze] Cache MISS — scraping via Apify...`);
-    const scrapeResult = await scrapeAirbnbComps(latitude, longitude, bedrooms);
+    const scrapeResult = await scrapeAirbnbComps(
+      latitude,
+      longitude,
+      bedrooms,
+      city || cityFromAddress,
+      state || stateFromAddress,
+    );
 
     if (!scrapeResult.success || scrapeResult.listings.length === 0) {
-      console.warn(`[Analyze] Apify returned no results: ${scrapeResult.error}`);
+      console.warn(`[Analyze] All scraping strategies returned no results: ${scrapeResult.error}`);
       return NextResponse.json({
         success: false,
-        error: "No STR data found for this location",
-        message: `We couldn't find short-term rental data for ${city || cityFromAddress}, ${state || stateFromAddress}. This could mean there are very few Airbnb listings in this area. Try a nearby larger city.`,
+        error: "Unable to fetch rental data right now",
+        message: `We're having trouble fetching Airbnb data for ${city || cityFromAddress}, ${state || stateFromAddress} right now. This is usually a temporary issue. Please try again in a few minutes.`,
         suggestions: ["Nashville, TN", "Austin, TX", "Denver, CO", "Miami, FL", "Phoenix, AZ"],
       });
     }
@@ -767,6 +964,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Analyze] SUCCESS — ${enriched.length} comps, ADR $${avgAdr}, Occ ${avgOccupancy}%, Rev $${avgAnnualRevenue}/yr`);
 
+    // Build allComps from the full raw listing set (before bedroom filtering)
+    // This enriches ALL listings so the client can re-filter by bedroom locally
+    const allEnrichedForClient = scrapeResult.listings.map((listing: any) => {
+      const nightPrice = listing.nightPrice || 150;
+      const occ = estimateOccupancy(listing.reviewsCount || 0);
+      const annualRev = Math.round(nightPrice * 365 * (occ / 100));
+      const monthlyRev = Math.round(annualRev / 12);
+      const dist = calcDistance(latitude, longitude, listing.latitude, listing.longitude);
+      return { ...listing, occupancy: occ, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(dist * 10) / 10 };
+    });
+
     return NextResponse.json(buildResponse({
       city: city || cityFromAddress,
       state: state || stateFromAddress,
@@ -780,8 +988,9 @@ export async function POST(request: NextRequest) {
       annualRevenue: avgAnnualRevenue,
       percentiles,
       comparables: enriched.slice(0, 30),
+      allComps: allEnrichedForClient,
       historical,
-      totalListings: enriched.length,
+      totalListings: scrapeResult.listings.length,
       filteredListings: enriched.length,
       dataSource: "apify",
     }));
@@ -811,6 +1020,7 @@ function buildResponse(params: {
   annualRevenue: number;
   percentiles: any;
   comparables: any[];
+  allComps: any[];  // Full unfiltered listing set for client-side re-filtering
   historical: any[];
   totalListings: number;
   filteredListings: number;
@@ -913,5 +1123,33 @@ function buildResponse(params: {
     historical: params.historical,
 
     recommendedAmenities: getRecommendedAmenities(params.latitude, params.longitude),
+
+    // Full unfiltered comp set for client-side bedroom re-filtering
+    // This allows changing bedrooms without burning another API credit
+    allComps: params.allComps.map((c) => ({
+      id: c.id,
+      name: c.name,
+      url: c.url,
+      image: c.image,
+      bedrooms: c.bedrooms,
+      bathrooms: c.bathrooms,
+      accommodates: c.accommodates,
+      sqft: c.sqft || 0,
+      nightPrice: c.nightPrice,
+      occupancy: c.occupancy,
+      monthlyRevenue: c.monthlyRevenue,
+      annualRevenue: c.annualRevenue,
+      rating: c.rating,
+      reviewsCount: c.reviewsCount,
+      propertyType: c.propertyType,
+      distance: c.distance,
+      latitude: c.latitude || 0,
+      longitude: c.longitude || 0,
+      relevanceScore: c.relevanceScore || 0,
+      source: c.source || "apify",
+      amenities: c.amenities || [],
+      hostName: c.hostName || "",
+      isSuperhost: c.isSuperhost || false,
+    })),
   };
 }
