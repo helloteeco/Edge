@@ -385,14 +385,31 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
 
       markersRef.current = markers;
 
-      // Fit bounds to show all markers
+      // Fit bounds to show all markers — filter outliers and zoom to a useful level
       if (validComps.length > 0) {
+        // Only include comps within a reasonable distance of the target (< 1 degree ≈ ~69 miles)
+        // This prevents a single outlier from zooming the map to show the entire state
+        const nearbyComps = validComps.filter((c) => {
+          const latDiff = Math.abs(c.latitude - targetLat);
+          const lngDiff = Math.abs(c.longitude - targetLng);
+          return latDiff < 1 && lngDiff < 1 && c.latitude !== 0 && c.longitude !== 0;
+        });
+
+        const compsForBounds = nearbyComps.length > 0 ? nearbyComps : validComps;
         const allPoints = [
           [targetLat, targetLng],
-          ...validComps.map((c) => [c.latitude, c.longitude]),
+          ...compsForBounds.map((c) => [c.latitude, c.longitude]),
         ];
         const bounds = L.latLngBounds(allPoints as [number, number][]);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+        // maxZoom 15 for tight clusters, padding 40px for breathing room
+        // After fitBounds, ensure we're not too zoomed out (min zoom 10 = ~city level)
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+        // If fitBounds zoomed out too far (comps very spread), clamp to zoom 10
+        setTimeout(() => {
+          if (map.getZoom() < 10) {
+            map.setZoom(10);
+          }
+        }, 100);
       }
 
       setIsMapReady(true);

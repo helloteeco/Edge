@@ -103,3 +103,4 @@
 ## Full spacing audit — calculator page (February 2026)
 - [x] Audit and fix all spacing inconsistencies across every section of the calculator results page
 - [x] Fix spacing between Total Startup Costs bar, Monthly Operating Expenses card, and Investment Calculator section (added mt-2 to both cards)
+- [x] Fix comp map initial zoom — too zoomed out, should focus on subject property and comps area (filtered outliers, maxZoom 15, min clamp at 10)
