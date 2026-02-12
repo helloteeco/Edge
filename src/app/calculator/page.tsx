@@ -2065,9 +2065,10 @@ export default function CalculatorPage() {
     </div>
     <p style="font-size: 12px; color: #666; text-align: center; margin-top: 8px;"><span style="color:#22c55e;">&#9679;</span> Peak Season &nbsp; <span style="color:#eab308;">&#9679;</span> Low Season &nbsp; Annual Total: <strong>${formatCurrency(monthlyRevenues.reduce((sum, m) => sum + m.revenue, 0))}</strong></p>
     
-    <!-- Comparable Listings -->
+    <!-- Nearby Airbnb Listings -->
     ${result.comparables && result.comparables.length > 0 ? `
-    <h2>Top Performing Comparables</h2>
+    <h2>Nearby Airbnb Listings</h2>
+    <p style="font-size: 11px; color: #666; margin-bottom: 8px;">These are sample active Airbnb listings near this address, shown for reference. Revenue estimates above are based on a larger dataset.</p>
     <div>
       ${result.comparables.slice(0, 5).map(c => `
       <div class="comp-card">
@@ -3427,9 +3428,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <p className="text-[10px] mt-0.5" style={{ color: "#a0a0a0" }}>25th – 75th percentile from comparable listings</p>
                 )}
                 <p className="text-xs text-gray-400 mt-1">
-                  Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby listings
-                  {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') && (
-                    <span className="ml-1" style={{ color: '#2563eb' }}>• Powered by PriceLabs</span>
+                  {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') ? (
+                    <>Based on PriceLabs analysis of <strong style={{ color: '#2563eb' }}>{result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} comparable properties</strong> across multiple platforms</>
+                  ) : (
+                    <>Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby Airbnb listings</>
                   )}
                 </p>
                 {revenuePercentile !== "average" && (
@@ -3904,15 +3906,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
-                    Top Performing {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Listings in Area
+                    Nearby {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Airbnb Listings
                   </h3>
                   <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: `${confidenceColor}15`, color: confidenceColor }}>
                     {confidenceLabel} Confidence
                   </span>
                 </div>
                 <p className="text-xs mb-2" style={{ color: "#787060" }}>
-                  {activeComps.length}/{allComps.length} comps included • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
+                  {activeComps.length}/{allComps.length} listings shown • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
                 </p>
+                {/* Data source explanation */}
+                {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') && (
+                  <div className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: "#eff6ff", border: "1px solid #dbeafe" }}>
+                    <p className="text-[11px]" style={{ color: "#1e40af", lineHeight: "1.5" }}>
+                      Your revenue estimates above are powered by <strong>PriceLabs</strong> ({result.percentiles?.listingsAnalyzed?.toLocaleString() || result.percentiles?.totalListingsInArea?.toLocaleString() || '300+'} listings analyzed).
+                      These Airbnb listings below are shown for reference only &mdash; they are not the same dataset used for your revenue projections.
+                    </p>
+                  </div>
+                )}
                 
                 {/* Real Occupancy Data Banner */}
                 {Object.keys(realOccupancyData).length > 0 && (() => {
@@ -4107,6 +4118,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     targetLng={mapTargetLng}
                     targetAddress={result.address}
                     excludedIds={excludedCompIds}
+                    dataSource={result.dataSource}
+                    listingsAnalyzed={result.percentiles?.listingsAnalyzed || result.percentiles?.totalListingsInArea}
+                    searchRadiusMiles={(result as any).searchRadiusMiles}
                     onSelectComp={(comp) => {
                       const compEl = document.getElementById(`comp-card-${comp.id}`);
                       if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });

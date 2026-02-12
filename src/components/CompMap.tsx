@@ -32,6 +32,9 @@ interface CompMapProps {
   targetAddress?: string;
   onSelectComp?: (comp: CompListing) => void;
   excludedIds?: Set<number | string>;
+  dataSource?: string; // e.g. "pricelabs (366 listings)" or "airbnb-direct"
+  listingsAnalyzed?: number; // Number of listings PriceLabs analyzed
+  searchRadiusMiles?: number; // Radius used for Airbnb search
 }
 
 function formatCurrency(value: number): string {
@@ -629,7 +632,7 @@ function ensureAllStyles(): void {
   if (oldLeafletCss) oldLeafletCss.remove();
 }
 
-export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, excludedIds = new Set() }: CompMapProps) {
+export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, excludedIds = new Set(), dataSource, listingsAnalyzed, searchRadiusMiles }: CompMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -895,8 +898,31 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
     };
   }, [targetLat, targetLng, validComps, targetAddress, onSelectComp, excludedIds]);
 
+  const isPriceLabs = dataSource ? dataSource.toLowerCase().includes('pricelabs') : false;
+
   if (validComps.length === 0) {
-    return null;
+    return (
+      <div className="comp-map-container rounded-2xl overflow-hidden" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+        <div className="px-5 py-6">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-5 h-5" style={{ color: '#2b2823' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 className="text-base font-semibold" style={{ color: "#2b2823" }}>Nearby Airbnb Listings</h3>
+          </div>
+          <div className="rounded-xl p-4" style={{ backgroundColor: "#f8f7f4", border: "1px solid #e5e3da" }}>
+            <p className="text-sm font-medium" style={{ color: "#2b2823" }}>No active Airbnb listings found nearby</p>
+            <p className="text-xs mt-1.5" style={{ color: "#787060", lineHeight: "1.5" }}>
+              We searched within {searchRadiusMiles || 50} miles but didn&apos;t find active Airbnb listings to show on the map.
+              {isPriceLabs && listingsAnalyzed ? (
+                <> Your revenue estimates are still accurate &mdash; they&apos;re based on PriceLabs&apos; analysis of <strong>{listingsAnalyzed.toLocaleString()} comparable properties</strong> in this market, which includes listings from multiple platforms.</>  
+              ) : null}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -910,16 +936,26 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <h3 className="text-base font-semibold" style={{ color: "#2b2823" }}>
-              Property & Comparables
+              Nearby Airbnb Listings
             </h3>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: "#f5f4f0", color: "#787060" }}>
             {validComps.length} listings
           </span>
         </div>
-        <p className="text-xs mt-1.5" style={{ color: "#787060" }}>
-          Tap any price tag to see listing details, photo, and Airbnb link.
-        </p>
+        {/* Data source explanation */}
+        {isPriceLabs && listingsAnalyzed ? (
+          <div className="rounded-lg px-3 py-2 mt-2" style={{ backgroundColor: "#eff6ff", border: "1px solid #dbeafe" }}>
+            <p className="text-[11px]" style={{ color: "#1e40af", lineHeight: "1.5" }}>
+              <strong>Revenue estimates</strong> are based on PriceLabs&apos; analysis of <strong>{listingsAnalyzed.toLocaleString()} properties</strong>.
+              The map below shows <strong>{validComps.length} sample Airbnb listings</strong> near your address for reference.
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs mt-1.5" style={{ color: "#787060" }}>
+            Tap any price tag to see listing details, photo, and Airbnb link.
+          </p>
+        )}
         {/* Legend */}
         <div className="flex items-center gap-4 mt-2.5">
           <div className="flex items-center gap-1.5">
@@ -928,7 +964,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           </div>
           <div className="flex items-center gap-1.5">
             <div className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ backgroundColor: "#2b2823" }}>$</div>
-            <span className="text-xs" style={{ color: "#787060" }}>Comp Nightly Rate</span>
+            <span className="text-xs" style={{ color: "#787060" }}>Nightly Rate</span>
           </div>
         </div>
       </div>
