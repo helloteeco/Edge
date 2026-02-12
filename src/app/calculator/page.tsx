@@ -203,7 +203,7 @@ export default function CalculatorPage() {
   const [iownitMortgage, setIownitMortgage] = useState(""); // Optional monthly mortgage
   const [iownitPropertyTaxRate, setIownitPropertyTaxRate] = useState(1.2);
   const [iownitInsuranceAnnual, setIownitInsuranceAnnual] = useState(2400);
-  const [hudFmrData, setHudFmrData] = useState<{ byBedrooms: Record<number, number>; areaName: string; year: number } | null>(null);
+  const [hudFmrData, setHudFmrData] = useState<{ byBedrooms: Record<number, number>; areaName: string; year: number; source?: string } | null>(null);
   const [isLoadingFmr, setIsLoadingFmr] = useState(false);
   const [fmrError, setFmrError] = useState<string | null>(null);
   
@@ -348,7 +348,7 @@ export default function CalculatorPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setHudFmrData({ byBedrooms: data.byBedrooms, areaName: data.areaName, year: data.year });
+          setHudFmrData({ byBedrooms: data.byBedrooms, areaName: data.areaName, year: data.year, source: data.source || undefined });
         } else {
           setFmrError(data.error || "Could not fetch rent data");
         }
@@ -5060,7 +5060,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px] text-gray-400 mt-2">Source: U.S. Department of Housing and Urban Development</p>
+                      <p className="text-[10px] text-gray-400 mt-2">
+                        Source: U.S. Department of Housing and Urban Development
+                        {hudFmrData.source === 'state-average' && ' (state average — county-level data temporarily unavailable)'}
+                      </p>
                     </div>
                   ) : null}
                   

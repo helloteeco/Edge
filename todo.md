@@ -174,3 +174,9 @@
 - [x] Diagnosed: navigator.share() throws AbortError when user dismisses iOS share sheet, caught by generic error handler
 - [x] Fixed both green share buttons on calculator page to ignore AbortError (FloatingActionPill already handled it)
 - [x] No features removed
+
+## FIX: FMR data always failing — "Unable to fetch FMR data from any source" (February 2026)
+- [ ] Diagnose why both HUD API and RentData.org fallback are failing
+- [ ] Implement robust FMR solution that never shows error to users
+- [ ] Ensure STR vs LTR comparison always displays data
+- [ ] No existing features removed

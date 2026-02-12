@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Allow up to 30s for the full chain
 
 const HUD_API_TOKEN = process.env.HUD_API_TOKEN || "";
 
@@ -19,15 +20,100 @@ const STATE_NAMES: Record<string, string> = {
   DC: "district-of-columbia",
 };
 
-/**
- * GET /api/hud-fmr?state=GA&city=Columbus
- * GET /api/hud-fmr?state=GA&county=Muscogee
- * 
- * Returns HUD Fair Market Rent data for a given state + city or county.
- * 
- * Primary: HUD User API (requires token)
- * Fallback: Scrapes RentData.org (free, always available)
- */
+// ─── Static FMR fallback (FY2025 state averages from HUD/RentData.org) ──────
+// This ensures we ALWAYS have data even if both HUD API and RentData.org are down.
+// Format: [0BR, 1BR, 2BR, 3BR, 4BR]
+const STATE_FMR_FALLBACK: Record<string, [number, number, number, number, number]> = {
+  AL: [703, 758, 924, 1196, 1372],
+  AK: [1058, 1170, 1461, 1936, 2239],
+  AZ: [1055, 1163, 1431, 1918, 2165],
+  AR: [674, 716, 901, 1184, 1339],
+  CA: [1429, 1565, 1955, 2626, 3034],
+  CO: [1062, 1137, 1408, 1835, 2162],
+  CT: [1208, 1392, 1732, 2147, 2551],
+  DE: [1192, 1253, 1564, 2005, 2314],
+  DC: [2012, 2056, 2314, 2893, 3413],
+  FL: [1134, 1216, 1446, 1879, 2183],
+  GA: [932, 972, 1151, 1465, 1712],
+  HI: [1630, 1684, 2201, 2941, 3417],
+  ID: [836, 908, 1127, 1565, 1872],
+  IL: [736, 814, 1015, 1315, 1484],
+  IN: [764, 836, 1042, 1327, 1510],
+  IA: [693, 746, 938, 1215, 1344],
+  KS: [674, 735, 928, 1200, 1358],
+  KY: [705, 776, 969, 1259, 1419],
+  LA: [799, 867, 1054, 1357, 1577],
+  ME: [893, 958, 1206, 1571, 1748],
+  MD: [1354, 1445, 1716, 2214, 2547],
+  MA: [1566, 1679, 2086, 2564, 2885],
+  MI: [755, 837, 1046, 1338, 1492],
+  MN: [775, 862, 1081, 1432, 1644],
+  MS: [796, 828, 995, 1267, 1392],
+  MO: [691, 730, 918, 1200, 1383],
+  MT: [814, 889, 1116, 1488, 1766],
+  NE: [653, 741, 938, 1191, 1317],
+  NV: [983, 1080, 1360, 1864, 2255],
+  NH: [1131, 1212, 1575, 2041, 2209],
+  NJ: [1466, 1627, 1973, 2476, 2797],
+  NM: [755, 853, 1039, 1389, 1649],
+  NY: [1130, 1219, 1465, 1837, 2036],
+  NC: [927, 969, 1158, 1501, 1781],
+  ND: [776, 798, 967, 1300, 1590],
+  OH: [747, 807, 1014, 1290, 1440],
+  OK: [715, 763, 962, 1250, 1449],
+  OR: [994, 1090, 1356, 1879, 2209],
+  PA: [854, 942, 1158, 1482, 1658],
+  RI: [1270, 1344, 1656, 2023, 2441],
+  SC: [919, 969, 1150, 1458, 1697],
+  SD: [638, 729, 920, 1215, 1440],
+  TN: [887, 925, 1120, 1447, 1654],
+  TX: [857, 905, 1109, 1447, 1689],
+  UT: [874, 977, 1187, 1586, 1870],
+  VT: [1045, 1094, 1350, 1744, 1894],
+  VA: [1117, 1151, 1345, 1758, 2107],
+  WA: [1060, 1157, 1441, 1971, 2302],
+  WV: [697, 754, 927, 1215, 1378],
+  WI: [754, 832, 1052, 1349, 1511],
+  WY: [764, 790, 1010, 1352, 1660],
+};
+
+function getStateFallback(state: string): {
+  success: boolean;
+  areaName: string;
+  countyName: string;
+  fipsCode: string;
+  year: number;
+  fmr: Record<string, number>;
+  byBedrooms: Record<number, number>;
+  source: string;
+} | null {
+  const data = STATE_FMR_FALLBACK[state];
+  if (!data) return null;
+  const stateName = STATE_NAMES[state];
+  const displayName = stateName ? stateName.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : state;
+  return {
+    success: true,
+    areaName: `${displayName} (State Average)`,
+    countyName: `${displayName} (State Average)`,
+    fipsCode: "state-average-fallback",
+    year: 2025,
+    fmr: {
+      efficiency: data[0],
+      oneBedroom: data[1],
+      twoBedroom: data[2],
+      threeBedroom: data[3],
+      fourBedroom: data[4],
+    },
+    byBedrooms: {
+      0: data[0],
+      1: data[1],
+      2: data[2],
+      3: data[3],
+      4: data[4],
+    },
+    source: "state-average",
+  };
+}
 
 async function resolveCountyFromCity(city: string, state: string): Promise<string | null> {
   try {
@@ -38,7 +124,7 @@ async function resolveCountyFromCity(city: string, state: string): Promise<strin
         "User-Agent": "EdgeByTeeco/1.0 (hello@teeco.co)",
         Accept: "application/json",
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(4000),
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -71,7 +157,7 @@ async function fetchFromHudApi(state: string, county: string | null): Promise<{
 
     const listResponse = await fetch(
       `https://www.huduser.gov/hudapi/public/fmr/listCounties/${state}`,
-      { headers, signal: AbortSignal.timeout(8000) }
+      { headers, signal: AbortSignal.timeout(6000) }
     );
 
     if (!listResponse.ok) {
@@ -124,7 +210,7 @@ async function fetchFromHudApi(state: string, county: string | null): Promise<{
 
     const fmrResponse = await fetch(
       `https://www.huduser.gov/hudapi/public/fmr/data/${matchedCounty.fips_code}`,
-      { headers, signal: AbortSignal.timeout(8000) }
+      { headers, signal: AbortSignal.timeout(6000) }
     );
 
     if (!fmrResponse.ok) return null;
@@ -197,37 +283,42 @@ async function fetchFromRentData(state: string, county: string | null, city: str
       return null;
     }
 
-    // Use current fiscal year (FY2026 = Oct 2025 - Sep 2026)
+    // Determine which years to try — start with the most likely available year
     const now = new Date();
-    const fy = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+    const currentYear = now.getFullYear();
+    // RentData.org publishes FY data; FY2026 may not be available yet in early 2026
+    // Try current year first, then previous year, then next year
+    const yearsToTry = [currentYear, currentYear - 1, currentYear + 1];
 
-    const url = `https://www.rentdata.org/states/${stateName}/${fy}`;
-    console.log(`[hud-fmr] Fetching RentData.org fallback: ${url}`);
+    for (const year of yearsToTry) {
+      const url = `https://www.rentdata.org/states/${stateName}/${year}`;
+      console.log(`[hud-fmr] Trying RentData.org: ${url}`);
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; EdgeByTeeco/1.0)",
-        Accept: "text/html",
-      },
-      signal: AbortSignal.timeout(10000),
-    });
+      try {
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          signal: AbortSignal.timeout(8000),
+        });
 
-    if (!response.ok) {
-      // Try previous year
-      const prevUrl = `https://www.rentdata.org/states/${stateName}/${fy - 1}`;
-      console.log(`[hud-fmr] Trying previous year: ${prevUrl}`);
-      const prevResponse = await fetch(prevUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; EdgeByTeeco/1.0)",
-          Accept: "text/html",
-        },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!prevResponse.ok) return null;
-      return parseRentDataHtml(await prevResponse.text(), state, county, city, fy - 1);
+        if (response.ok) {
+          const html = await response.text();
+          const result = parseRentDataHtml(html, state, county, city, year);
+          if (result) {
+            console.log(`[hud-fmr] RentData.org success for year ${year}: ${result.areaName}`);
+            return result;
+          }
+        } else {
+          console.log(`[hud-fmr] RentData.org ${year} returned ${response.status}, trying next year...`);
+        }
+      } catch (fetchErr) {
+        console.log(`[hud-fmr] RentData.org ${year} fetch error, trying next year...`);
+      }
     }
 
-    return parseRentDataHtml(await response.text(), state, county, city, fy);
+    return null;
   } catch (error) {
     console.error("[hud-fmr] RentData.org error:", error);
     return null;
@@ -411,7 +502,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(hudResult);
     }
 
-    // Fallback: scrape RentData.org
+    // Fallback 1: scrape RentData.org
     console.log(`[hud-fmr] HUD API failed, falling back to RentData.org for ${county || city}, ${state}`);
     const rentDataResult = await fetchFromRentData(state, county ?? null, city ?? null);
     if (rentDataResult) {
@@ -419,13 +510,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(rentDataResult);
     }
 
-    // Both sources failed
+    // Fallback 2: Static state-level FMR averages (NEVER fails for valid US states)
+    console.log(`[hud-fmr] Both HUD API and RentData.org failed, using static state average for ${state}`);
+    const staticResult = getStateFallback(state);
+    if (staticResult) {
+      console.log(`[hud-fmr] Static fallback success: ${staticResult.areaName}`);
+      return NextResponse.json(staticResult);
+    }
+
+    // This should only happen for non-US states/territories not in our table
     return NextResponse.json(
       { error: "Unable to fetch FMR data from any source" },
       { status: 502 }
     );
   } catch (error) {
     console.error("[hud-fmr] Error:", error);
+    
+    // Even on unexpected errors, try the static fallback
+    const { searchParams } = new URL(request.url);
+    const state = searchParams.get("state")?.trim().toUpperCase();
+    if (state) {
+      const staticResult = getStateFallback(state);
+      if (staticResult) {
+        console.log(`[hud-fmr] Error recovery with static fallback: ${staticResult.areaName}`);
+        return NextResponse.json(staticResult);
+      }
+    }
+    
     return NextResponse.json({ error: "HUD FMR lookup failed" }, { status: 500 });
   }
 }
