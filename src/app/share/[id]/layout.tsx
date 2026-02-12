@@ -1,8 +1,10 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Use the same hardcoded fallback values as /api/share/route.ts
+// This ensures OG meta tags work even without env vars on Vercel
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
 
 type Props = {
   params: { id: string };
@@ -28,13 +30,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
-    // Check if expired or viewed
-    if (new Date(data.expires_at) < new Date() || data.view_count > 0) {
-      return {
-        title: 'Analysis Unavailable | Edge by Teeco',
-        description: 'This analysis link has expired or has already been viewed.',
-      };
-    }
+    // NOTE: Always generate custom OG tags even for viewed/expired links
+    // The preview card should always look beautiful when shared on social media
+    // The page itself handles the view-once / expiry logic
 
     const revenueK = Math.round(data.annual_revenue / 1000);
     const monthlyK = Math.round(data.annual_revenue / 12 / 1000);

@@ -134,3 +134,13 @@
 - [x] Re-sort filtered comps by relevance (bedroom match + distance) after filtering
 - [x] Backend enrichListings already had bedroom/guest relevance matching (was working correctly)
 - [x] Map and comp list now only show nearby, relevant comps
+
+## FIX: Share link preview cards showing generic OG tags instead of page-specific (February 2026)
+- [x] Audit all share buttons across the site to identify which pages have share functionality
+- [x] Fix share/[id]/layout.tsx: add hardcoded Supabase fallback (was crashing with ! assertion)
+- [x] Fix share/[id]/layout.tsx: always generate custom OG tags (was blocking for already-viewed links)
+- [x] Calculator share links already include address, revenue, metrics in OG tags via /api/og ✅
+- [x] City page share links already include city name, STR grade, metrics via /api/og/city ✅
+- [x] State page share links already include state name, metrics via /api/og/state ✅
+- [x] Verified all OG image routes work correctly
+- [x] No features removed — only fixed env var fallback and view-count OG blocking
