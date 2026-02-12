@@ -925,7 +925,7 @@ export default function SavedPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-4 pb-24">
+              <div className="space-y-4">
                 <p className="text-sm" style={{ color: '#787060' }}>
                   Last 5 analyses cached on this device. Tap &quot;View&quot; to pull up without using a credit.
                 </p>
