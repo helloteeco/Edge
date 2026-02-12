@@ -144,3 +144,9 @@
 - [x] State page share links already include state name, metrics via /api/og/state ✅
 - [x] Verified all OG image routes work correctly
 - [x] No features removed — only fixed env var fallback and view-count OG blocking
+
+## BUG: "Failed to fetch county list from HUD" in calculator STR vs LTR comparison (February 2026)
+- [x] Diagnosed: HUD API returns 403 Forbidden (token expired or government API down)
+- [x] Added RentData.org scraping fallback — parses county FMR tables from public pages
+- [x] Primary: tries HUD API first, falls back to RentData.org if HUD fails
+- [x] STR vs LTR comparison now works regardless of HUD API status
