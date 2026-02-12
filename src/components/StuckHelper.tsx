@@ -429,7 +429,7 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
 
   if (!isOpen) {
     return (
-      <div className="mt-8 mb-4">
+      <div className="mt-4 mb-4">
         <button
           onClick={() => {
             setIsOpen(true);

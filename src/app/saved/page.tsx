@@ -1024,6 +1024,9 @@ export default function SavedPage() {
             )}
           </>
         )}
+
+        {/* Stuck Helper */}
+        <StuckHelper tabName="saved" />
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -1120,11 +1123,6 @@ export default function SavedPage() {
         title="Sign in to Sync"
         subtitle="Sign in to sync your saved reports across all your devices. No password needed."
       />
-
-      {/* Stuck Helper */}
-      <div className="max-w-4xl mx-auto px-4">
-        <StuckHelper tabName="saved" />
-      </div>
     </div>
   );
 }

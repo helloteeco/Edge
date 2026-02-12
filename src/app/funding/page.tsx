@@ -1312,6 +1312,9 @@ export default function FundingPage() {
           )}
         </div>
 
+        {/* Stuck Helper - placed after quiz, before all methods */}
+        <StuckHelper tabName="funding" />
+
         {/* Browse All Methods */}
         <div className="mb-4">
           <h2 
@@ -1598,8 +1601,6 @@ export default function FundingPage() {
         </div>
 
         {/* Final Disclaimer */}
-        {/* Stuck Helper */}
-        <StuckHelper tabName="funding" />
 
         <div className="mt-6 p-4 rounded-xl text-center" style={{ backgroundColor: 'rgba(43, 40, 35, 0.04)' }}>
           <p className="text-xs" style={{ color: '#787060' }}>
