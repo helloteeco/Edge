@@ -119,6 +119,7 @@ interface AnalysisResult {
   recommendedAmenities?: { name: string; boost: number; priority: string; icon: string }[];
   targetCoordinates?: { latitude: number; longitude: number };
   marketType?: string;
+  dataSource?: string;
 }
 
 // ============================================================================
@@ -579,6 +580,7 @@ export default function CalculatorPage() {
                   recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
                   targetCoordinates: data.targetCoordinates || undefined,
                   marketType: (data.marketType as string) || undefined,
+                  dataSource: (data.dataSource as string) || undefined,
                 };
                 setResult(analysisResult);
                 // Restore allComps and targetCoords for local bedroom re-filtering and comp map
@@ -1019,6 +1021,7 @@ export default function CalculatorPage() {
       recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
       targetCoordinates: data.targetCoordinates || undefined,
       marketType: (data.marketType as string) || undefined,
+      dataSource: (data.dataSource as string) || undefined,
     };
     
     // Reconstruct targetCoordinates from comparables if missing
@@ -1642,10 +1645,10 @@ export default function CalculatorPage() {
         recommendedAmenities: recommendedAmenities || [],
         targetCoordinates: targetCoordinates || undefined,
         marketType: (data.marketType as string) || undefined,
+        dataSource: (data.dataSource as string) || undefined,
       };
-
       setResult(analysisResult);
-      setAddress(addressToAnalyze);
+      setAddress(addressToAnalyze);;
       
       // Store full comp set for local bedroom re-filtering (no new API call needed)
       if (rawAllComps && Array.isArray(rawAllComps) && rawAllComps.length > 0) {
@@ -3209,11 +3212,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold" style={{ color: "#2b2823" }}>{result.address || result.neighborhood}</h3>
                   <p className="text-xs sm:text-sm text-gray-500">{result.city}, {result.state} • {result.bedrooms} BR / {result.bathrooms} BA</p>
-                  {result.percentiles && (
-                    <p className="text-xs text-gray-400 mt-1 sm:hidden">
-                      Based on {result.percentiles.listingsAnalyzed} {result.bedrooms}BR listings
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#eef6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        PRICELABS DATA
+                      </span>
+                    )}
+                    {result.dataSource && !result.dataSource.toLowerCase().includes('pricelabs') && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f5f4f0', color: '#787060' }}>
+                        AIRBNB DATA
+                      </span>
+                    )}
+                    {result.percentiles && (
+                      <span className="text-xs text-gray-400 sm:hidden">
+                        {result.percentiles.listingsAnalyzed} listings analyzed
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
                   {result.percentiles && (
@@ -3411,6 +3427,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 )}
                 <p className="text-xs text-gray-400 mt-1">
                   Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby listings
+                  {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') && (
+                    <span className="ml-1" style={{ color: '#2563eb' }}>• Powered by PriceLabs</span>
+                  )}
                 </p>
                 {revenuePercentile !== "average" && (
                   <p className="text-xs text-gray-400 mt-2">
