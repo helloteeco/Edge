@@ -17,6 +17,9 @@ importers:
       '@vercel/og':
         specifier: ^0.8.6
         version: 0.8.6
+      google-trends-api:
+        specifier: ^4.9.2
+        version: 4.9.2
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -1350,6 +1353,9 @@ packages:
   globby@11.1.0:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
+
+  google-trends-api@4.9.2:
+    resolution: {integrity: sha512-gjVSHCM8B7LyAAUpXb4B0/TfnmpwQ2z1w/mQ2bL0AKpr2j3gLS1j2YOnifpfsGJRxAGXB/NoC+nGwC5qSnZIiA==}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -3641,6 +3647,8 @@ snapshots:
       ignore: 5.3.2
       merge2: 1.4.1
       slash: 3.0.0
+
+  google-trends-api@4.9.2: {}
 
   gopd@1.2.0: {}
 
