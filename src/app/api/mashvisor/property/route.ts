@@ -563,19 +563,6 @@ async function fetchPriceLabs(
     }
 
     console.log(`[PriceLabs] Got data: ${kpis.NoOfListings} listings, Rev50=$${kpis.Revenue50PercentileSum} (${Date.now() - startMs}ms)`);
-    // TEMP: Log all available keys to discover monthly data fields
-    console.log(`[PriceLabs] Top-level data keys: ${JSON.stringify(Object.keys(data))}`);
-    console.log(`[PriceLabs] KPI keys: ${JSON.stringify(Object.keys(kpis))}`);
-    // Check for monthly data in the response
-    if (data.MonthlyData || data.monthly_data || data.monthlyMetrics) {
-      console.log(`[PriceLabs] MONTHLY DATA FOUND at top level!`);
-    }
-    // Check for monthly fields in KPIs
-    const monthlyKeys = Object.keys(kpis).filter(k => k.toLowerCase().includes('month') || k.toLowerCase().includes('jan') || k.toLowerCase().includes('feb'));
-    if (monthlyKeys.length > 0) {
-      console.log(`[PriceLabs] Monthly KPI keys: ${JSON.stringify(monthlyKeys)}`);
-      monthlyKeys.forEach(k => console.log(`[PriceLabs] ${k}: ${JSON.stringify(kpis[k])}`.slice(0, 500)));
-    }
     return extractPriceLabsKPIs(kpis, Date.now() - startMs);
   } catch (error) {
     console.error("[PriceLabs] Error:", error);
@@ -749,15 +736,18 @@ function enrichListings(
 // ============================================================================
 
 function getMarketType(lat: number, lng: number): string {
-  // Mountain/outdoor tourism markets
-  if ((lat >= 35 && lat <= 37 && lng >= -84 && lng <= -82) ||   // Smoky Mountains TN/NC
-      (lat >= 37 && lat <= 40 && lng >= -82 && lng <= -79) ||   // WV/VA Appalachian (New River Gorge, Shenandoah)
-      (lat >= 38 && lat <= 41 && lng >= -107 && lng <= -104) || // Colorado Rockies
-      (lat >= 40 && lat <= 42 && lng >= -112 && lng <= -110) || // Utah mountains
-      (lat >= 43 && lat <= 48 && lng >= -115 && lng <= -110) || // Idaho/Montana
-      (lat >= 34 && lat <= 37 && lng >= -112 && lng <= -109) || // Arizona mountains (Sedona, Flagstaff)
-      (lat >= 35 && lat <= 37 && lng >= -79 && lng <= -76) ||   // NC Blue Ridge
-      (lat >= 34 && lat <= 36 && lng >= -84 && lng <= -83))     // North GA mountains
+  // Mountain-SUMMER markets (outdoor adventure, hiking, rafting — peak Jun-Aug)
+  if ((lat >= 37 && lat <= 40 && lng >= -82 && lng <= -79) ||   // WV/VA Appalachian (New River Gorge, Shenandoah)
+      (lat >= 35 && lat <= 37 && lng >= -79 && lng <= -76) ||   // NC Blue Ridge Parkway
+      (lat >= 34 && lat <= 36 && lng >= -84 && lng <= -83) ||   // North GA mountains (summer hiking)
+      (lat >= 35 && lat <= 37 && lng >= -94 && lng <= -91))     // Ozarks AR/MO
+    return "mountain-summer";
+  // Mountain-WINTER markets (ski resorts, winter tourism — peak Dec-Feb)
+  if ((lat >= 35 && lat <= 37 && lng >= -84 && lng <= -82) ||   // Smoky Mountains TN/NC (Gatlinburg, Pigeon Forge)
+      (lat >= 38 && lat <= 41 && lng >= -107 && lng <= -104) || // Colorado Rockies (ski)
+      (lat >= 40 && lat <= 42 && lng >= -112 && lng <= -110) || // Utah mountains (Park City, ski)
+      (lat >= 43 && lat <= 48 && lng >= -115 && lng <= -110) || // Idaho/Montana (ski)
+      (lat >= 34 && lat <= 37 && lng >= -112 && lng <= -109))   // Arizona mountains (Sedona, Flagstaff — winter escape)
     return "mountain";
   if ((lat >= 24 && lat <= 31 && lng >= -88 && lng <= -80) ||
       (lat >= 32 && lat <= 38 && lng >= -124 && lng <= -117)) return "beach";
@@ -783,6 +773,13 @@ function getRecommendedAmenities(lat: number, lng: number): any[] {
       { name: "Game Room", boost: 12, priority: "HIGH IMPACT", icon: "🎮" },
       { name: "Mountain Views", boost: 10, priority: "HIGH IMPACT", icon: "🏔️" },
       { name: "Fire Pit", boost: 8, priority: "NICE TO HAVE", icon: "🪵" },
+    ],
+    "mountain-summer": [
+      { name: "Hot Tub", boost: 22, priority: "MUST HAVE", icon: "♨️" },
+      { name: "Fire Pit", boost: 15, priority: "HIGH IMPACT", icon: "🪵" },
+      { name: "Outdoor Space", boost: 12, priority: "HIGH IMPACT", icon: "🌳" },
+      { name: "Game Room", boost: 10, priority: "HIGH IMPACT", icon: "🎮" },
+      { name: "Kayaks/Gear", boost: 8, priority: "NICE TO HAVE", icon: "🛶" },
     ],
     beach: [
       { name: "Pool", boost: 25, priority: "MUST HAVE", icon: "🏊" },
@@ -835,8 +832,15 @@ function generateSeasonality(avgAdr: number, avgOccupancy: number, lat: number, 
       adr: [0.80, 0.85, 0.90, 0.95, 1.10, 1.20, 1.30, 1.30, 1.05, 0.90, 0.75, 0.75],
     },
     mountain: {
+      // Winter-peak mountain (ski resorts: Smokies, Colorado, Utah, etc.)
       occ: [0.85, 0.90, 0.80, 0.55, 0.50, 0.70, 0.85, 0.80, 0.65, 0.75, 0.70, 0.90],
       adr: [1.20, 1.15, 1.00, 0.80, 0.75, 0.90, 1.10, 1.05, 0.85, 0.95, 0.90, 1.25],
+    },
+    "mountain-summer": {
+      // Summer-peak mountain (outdoor adventure: New River Gorge, Blue Ridge, Ozarks)
+      // Based on real Hospitable data from Oak Hill WV area
+      occ: [0.25, 0.30, 0.45, 0.60, 0.80, 0.90, 1.00, 1.00, 0.70, 0.55, 0.35, 0.30],
+      adr: [0.70, 0.75, 0.85, 0.90, 1.05, 1.15, 1.25, 1.25, 1.00, 0.90, 0.75, 0.75],
     },
     lake: {
       occ: [0.30, 0.35, 0.45, 0.55, 0.75, 0.90, 1.00, 1.00, 0.70, 0.50, 0.35, 0.30],
