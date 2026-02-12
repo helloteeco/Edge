@@ -74,9 +74,14 @@ const TOP_MARKETS = [
 const ADMIN_SECRET = process.env.PRECACHE_SECRET || process.env.ADMIN_API_KEY || "teeco-precache-2026";
 
 function isAuthorized(request: NextRequest): boolean {
+  // Vercel Cron jobs send Authorization: Bearer <CRON_SECRET>
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization");
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
+
   const secret = request.nextUrl.searchParams.get("secret")
     || request.headers.get("x-api-key")
-    || request.headers.get("authorization")?.replace("Bearer ", "");
+    || authHeader?.replace("Bearer ", "");
   
   if (!secret) return false;
   

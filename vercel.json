@@ -4,7 +4,7 @@
   "regions": ["iad1"],
   "crons": [
     {
-      "path": "/api/admin/precache?secret=teeco-precache-2024",
+      "path": "/api/admin/precache",
       "schedule": "0 6 * * 1"
     }
   ],
