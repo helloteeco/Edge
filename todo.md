@@ -163,3 +163,9 @@
 - [x] Add TrendingMarkets section to home page below TopMarkets
 - [x] Existing save/heart system still works — this is additive
 - [x] No core features changed
+
+## FEATURE: Extend auth session persistence (reduce magic link fatigue)
+- [x] Audit current auth/session configuration — found 24-hour expiry hardcoded in 2 files
+- [x] Extend session duration to 30 days (calculator/page.tsx + AuthHeader.tsx)
+- [x] localStorage already persists across visits and Vercel deploys — no cookie changes needed
+- [x] No changes to magic link flow or any existing features

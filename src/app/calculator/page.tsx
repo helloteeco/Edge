@@ -699,8 +699,8 @@ export default function CalculatorPage() {
       console.log("[Auth] Verification response:", data);
       
       if (data.success) {
-        // Store auth in localStorage (24-hour session)
-        const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
+        // Store auth in localStorage (30-day session)
+        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         const sessionToken = data.sessionToken || token;
         
         console.log("[Auth] Storing session:", { email: data.email, expiryTime });

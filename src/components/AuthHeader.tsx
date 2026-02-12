@@ -30,8 +30,8 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
       console.log("[AuthHeader] Verification response:", data);
       
       if (data.success) {
-        // Store auth in localStorage (24-hour session)
-        const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
+        // Store auth in localStorage (30-day session)
+        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         const sessionToken = data.sessionToken || token;
         
         localStorage.setItem("edge_auth_token", sessionToken);
