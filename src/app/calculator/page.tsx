@@ -2356,6 +2356,9 @@ export default function CalculatorPage() {
     const guestMultiplier = getGuestCountMultiplier();
     const adjustmentMultiplier = getRevenueAdjustmentMultiplier();
     
+    // Check if PriceLabs is the data source
+    const isPriceLabs = result.dataSource?.toLowerCase().includes('pricelabs');
+    
     // Use real percentile data if available
     // NOTE: percentiles.revenue values are ALREADY ANNUAL (not monthly)
     if (result.percentiles?.revenue) {
@@ -2370,10 +2373,16 @@ export default function CalculatorPage() {
         default:
           baseRevenue = result.percentiles.revenue.p50;
       }
+      // PriceLabs percentiles already reflect real host performance distribution
+      // Only apply guest multiplier (extra sleeping capacity is a real property feature)
+      // Skip adjustmentMultiplier (host performance, last-minute, amenities) — PriceLabs data already captures these
+      if (isPriceLabs) {
+        return Math.round(baseRevenue * guestMultiplier);
+      }
       return Math.round(baseRevenue * guestMultiplier * adjustmentMultiplier);
     }
     
-    // Fallback to calculated revenue with multipliers
+    // Fallback to calculated revenue with multipliers (Airbnb-only data)
     let baseRevenue = result.annualRevenue;
     switch (revenuePercentile) {
       case "75th":
@@ -2387,7 +2396,7 @@ export default function CalculatorPage() {
   };
 
   // Get base revenue WITHOUT Teeco Strategy (for comparison display)
-  // Still includes revenue adjustments (host performance, amenities, etc.)
+  // Still includes revenue adjustments for Airbnb data, but not for PriceLabs
   const getBaseRevenue = () => {
     if (useCustomIncome && customAnnualIncome) {
       return parseFloat(customAnnualIncome) || 0;
@@ -2395,12 +2404,17 @@ export default function CalculatorPage() {
     if (!result) return 0;
     const guestMultiplier = getGuestCountMultiplier();
     const adjustmentMultiplier = getRevenueAdjustmentMultiplier();
+    const isPriceLabs = result.dataSource?.toLowerCase().includes('pricelabs');
     if (result.percentiles?.revenue) {
       let baseRevenue = 0;
       switch (revenuePercentile) {
         case "75th": baseRevenue = result.percentiles.revenue.p75; break;
         case "90th": baseRevenue = result.percentiles.revenue.p90; break;
         default: baseRevenue = result.percentiles.revenue.p50;
+      }
+      // PriceLabs: use real percentiles directly (only guest capacity adjustment)
+      if (isPriceLabs) {
+        return Math.round(baseRevenue * guestMultiplier);
       }
       return Math.round(baseRevenue * guestMultiplier * adjustmentMultiplier);
     }
@@ -3045,7 +3059,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>Property Configuration</h3>
                   <p className="text-xs" style={{ color: '#787060' }}>Adjust to match your property — revenue updates instantly</p>
                 </div>
-                {getRevenueAdjustmentMultiplier() !== 1.0 && (
+                {getRevenueAdjustmentMultiplier() !== 1.0 && !(result?.dataSource?.toLowerCase().includes('pricelabs')) && (
                   <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: getRevenueAdjustmentMultiplier() > 1 ? '#f0fdf4' : '#fef2f2', color: getRevenueAdjustmentMultiplier() > 1 ? '#16a34a' : '#ef4444' }}>
                     {getRevenueAdjustmentMultiplier() > 1 ? '+' : ''}{Math.round((getRevenueAdjustmentMultiplier() - 1) * 100)}% adj
                   </span>
@@ -3119,7 +3133,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
               </div>
 
-              {/* Divider */}
+              {/* Divider — only show adjustment controls for non-PriceLabs data */}
+              {!(result?.dataSource?.toLowerCase().includes('pricelabs')) && (
+              <>
               <div className="border-t mb-3" style={{ borderColor: '#e5e2dc' }}></div>
 
               {/* Host Performance Level — compact */}
@@ -3203,6 +3219,18 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         {item.label}: {item.percent > 0 ? '+' : ''}{item.percent}%
                       </span>
                     ))}
+                  </div>
+                </div>
+              )}
+              </>
+              )}
+              {/* PriceLabs note — show when PriceLabs is source to explain why adjustments are hidden */}
+              {result?.dataSource?.toLowerCase().includes('pricelabs') && (
+                <div className="border-t mt-2 pt-3" style={{ borderColor: '#e5e2dc' }}>
+                  <div className="rounded-lg px-3 py-2" style={{ backgroundColor: '#f0f9ff', border: '1px solid #e0f2fe' }}>
+                    <p className="text-[11px]" style={{ color: '#0369a1', lineHeight: '1.5' }}>
+                      Revenue adjustments (host level, amenities) are disabled because PriceLabs percentiles already reflect real market performance across 300+ listings.
+                    </p>
                   </div>
                 </div>
               )}
@@ -3436,9 +3464,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </p>
                 {revenuePercentile !== "average" && (
                   <p className="text-xs text-gray-400 mt-2">
-                    {revenuePercentile === "75th" 
-                      ? "Top 25% performers with good amenities" 
-                      : "Top 10% performers with upgrades & premium design"}
+                    {result?.dataSource?.toLowerCase().includes('pricelabs')
+                      ? (revenuePercentile === "75th" 
+                          ? "Actual 75th percentile from PriceLabs market data" 
+                          : "Actual 90th percentile from PriceLabs market data")
+                      : (revenuePercentile === "75th" 
+                          ? "Top 25% performers with good amenities" 
+                          : "Top 10% performers with upgrades & premium design")}
                   </p>
                 )}
                 {guestCount && bedrooms && guestCount > bedrooms * 2 && (
