@@ -245,13 +245,30 @@ async function saveLegacyCache(cacheKey: string, lat: number, lng: number, bedro
 // ============================================================================
 
 // Fetch a single page of Airbnb listings via the explore_tabs API
+// Calculate bounding box from center point and radius in miles
+function getBoundingBox(lat: number, lng: number, radiusMiles: number): { neLat: number; neLng: number; swLat: number; swLng: number } {
+  const latDelta = radiusMiles / 69; // ~69 miles per degree latitude
+  const lngDelta = radiusMiles / (69 * Math.cos(lat * Math.PI / 180)); // Adjust for longitude at latitude
+  return {
+    neLat: lat + latDelta,
+    neLng: lng + lngDelta,
+    swLat: lat - latDelta,
+    swLng: lng - lngDelta,
+  };
+}
+
 async function fetchAirbnbPage(
   lat: number,
   lng: number,
   checkin: string,
   checkout: string,
   offset: number = 0,
+  radiusMiles: number = 15,
 ): Promise<any[]> {
+  // Use bounding box search (search_by_map=true) instead of query-based search
+  // This constrains results to a geographic area rather than Airbnb's market regions
+  const bbox = getBoundingBox(lat, lng, radiusMiles);
+  
   const params = new URLSearchParams({
     _format: "for_explore_search_web",
     currency: "USD",
@@ -260,7 +277,13 @@ async function fetchAirbnbPage(
     tab_id: "home_tab",
     "refinement_paths[]": "/homes",
     items_per_grid: "40",
-    query: `${lat.toFixed(4)},${lng.toFixed(4)}`,
+    // Geographic bounding box — forces Airbnb to return only listings within this area
+    ne_lat: bbox.neLat.toFixed(6),
+    ne_lng: bbox.neLng.toFixed(6),
+    sw_lat: bbox.swLat.toFixed(6),
+    sw_lng: bbox.swLng.toFixed(6),
+    search_by_map: "true",
+    zoom_level: "12",
     checkin,
     checkout,
     adults: "1",
@@ -307,7 +330,7 @@ async function fetchAirbnbDirect(
   bedrooms: number,
   city?: string,
   state?: string,
-): Promise<{ success: boolean; listings: any[]; error?: string }> {
+): Promise<{ success: boolean; listings: any[]; searchRadiusMiles: number; error?: string }> {
   try {
     const today = new Date();
     const checkin = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -316,36 +339,38 @@ async function fetchAirbnbDirect(
     console.log(`[Airbnb-Direct] Fetching listings near ${lat.toFixed(4)}, ${lng.toFixed(4)} (${city || "unknown"}, ${state || ""})...`);
     const startMs = Date.now();
 
-    // Fetch two pages in parallel for 40-80 listings
-    const [page1, page2] = await Promise.all([
-      fetchAirbnbPage(lat, lng, checkin, checkout, 0),
-      fetchAirbnbPage(lat, lng, checkin, checkout, 40),
-    ]);
+    // Progressive radius expansion: start tight (15mi), expand if too few results
+    // This ensures we always show geographically relevant comps
+    const RADIUS_STEPS = [15, 30, 50];
+    let allRaw: any[] = [];
+    let usedRadius = RADIUS_STEPS[0];
 
-    const allRaw = [...page1, ...page2];
-    console.log(`[Airbnb-Direct] Got ${allRaw.length} raw listings in ${Date.now() - startMs}ms`);
+    for (const radius of RADIUS_STEPS) {
+      usedRadius = radius;
+      // Fetch two pages in parallel for 40-80 listings within bounding box
+      const [page1, page2] = await Promise.all([
+        fetchAirbnbPage(lat, lng, checkin, checkout, 0, radius),
+        fetchAirbnbPage(lat, lng, checkin, checkout, 40, radius),
+      ]);
+      allRaw = [...page1, ...page2];
+      console.log(`[Airbnb-Direct] ${radius}mi radius: ${allRaw.length} raw listings (${Date.now() - startMs}ms)`);
+
+      // If we got enough listings, stop expanding
+      if (allRaw.length >= 10) break;
+    }
 
     if (allRaw.length === 0) {
-      // Fallback: try searching by city name instead of coordinates
-      if (city && state) {
-        console.log(`[Airbnb-Direct] Coordinate search returned 0, trying city name: ${city}, ${state}`);
-        const cityResult = await fetchAirbnbByCity(city, state, checkin, checkout);
-        if (cityResult.length > 0) {
-          const cityListings = transformAirbnbListings(cityResult, bedrooms);
-          console.log(`[Airbnb-Direct] City fallback got ${cityListings.length} listings`);
-          return { success: true, listings: cityListings };
-        }
-      }
-      return { success: false, listings: [], error: "No listings found in area" };
+      console.log(`[Airbnb-Direct] No listings found within ${usedRadius}mi radius`);
+      return { success: false, listings: [], searchRadiusMiles: usedRadius, error: "No listings found in area" };
     }
 
     // Transform to Edge format (same shape as old Apify output)
     const listings = transformAirbnbListings(allRaw, bedrooms);
-    console.log(`[Airbnb-Direct] Transformed ${listings.length} listings in ${Date.now() - startMs}ms total`);
-    return { success: true, listings };
+    console.log(`[Airbnb-Direct] Transformed ${listings.length} listings within ${usedRadius}mi radius in ${Date.now() - startMs}ms total`);
+    return { success: true, listings, searchRadiusMiles: usedRadius };
   } catch (error) {
     console.error("[Airbnb-Direct] Error:", error);
-    return { success: false, listings: [], error: `Direct API failed: ${error}` };
+    return { success: false, listings: [], searchRadiusMiles: 0, error: `Direct API failed: ${error}` };
   }
 }
 
@@ -612,19 +637,24 @@ function enrichListings(
   const tGuests = targetGuests || targetBedrooms * 2;
 
   // STEP 1: Filter out comps that are too far away (max 50 miles)
+  // With bounding-box search, most results should already be within range
   const MAX_COMP_DISTANCE_MILES = 50;
   const distanceFiltered = listings.filter((l) => {
-    if (!l.latitude || !l.longitude) return true; // Keep listings without coords (will get 999 distance later)
+    if (!l.latitude || !l.longitude) return false; // Skip listings without coords entirely
     const dist = calcDistance(targetLat, targetLng, l.latitude, l.longitude);
     return dist <= MAX_COMP_DISTANCE_MILES;
   });
-  // If distance filtering removed too many, fall back to closest 30 from original set
-  const proximityFiltered = distanceFiltered.length >= 5 ? distanceFiltered : 
-    [...listings].sort((a, b) => {
-      const dA = calcDistance(targetLat, targetLng, a.latitude || 0, a.longitude || 0);
-      const dB = calcDistance(targetLat, targetLng, b.latitude || 0, b.longitude || 0);
-      return dA - dB;
-    }).slice(0, 30);
+  // If distance filtering removed too many, use closest listings but NEVER show distant comps
+  // Sort by distance and take the closest ones available
+  const proximityFiltered = distanceFiltered.length >= 3 ? distanceFiltered : 
+    [...listings]
+      .filter((l) => l.latitude && l.longitude)
+      .sort((a, b) => {
+        const dA = calcDistance(targetLat, targetLng, a.latitude, a.longitude);
+        const dB = calcDistance(targetLat, targetLng, b.latitude, b.longitude);
+        return dA - dB;
+      })
+      .slice(0, 30);
 
   // STEP 2: Filter to similar bedroom count (within ±1)
   const bedroomFiltered = proximityFiltered.filter((l) => {
@@ -1058,6 +1088,7 @@ export async function POST(request: NextRequest) {
         totalListings: allEnriched.length,
         filteredListings: enriched.length,
         dataSource: `cache (${cached.source})`,
+        searchRadiusMiles: cached.searchRadiusMiles || 15,
       }));
     }
 
@@ -1080,7 +1111,7 @@ export async function POST(request: NextRequest) {
       ),
     ]);
 
-    console.log(`[Analyze] Parallel fetch done — PriceLabs: ${priceLabsResult.success ? 'OK' : priceLabsResult.error}, Airbnb: ${scrapeResult.success ? scrapeResult.listings.length + ' listings' : scrapeResult.error} [${Date.now() - startTime}ms elapsed]`);
+    console.log(`[Analyze] Parallel fetch done — PriceLabs: ${priceLabsResult.success ? 'OK' : priceLabsResult.error}, Airbnb: ${scrapeResult.success ? scrapeResult.listings.length + ' listings within ' + scrapeResult.searchRadiusMiles + 'mi' : scrapeResult.error} [${Date.now() - startTime}ms elapsed]`);
 
     // If BOTH fail, return error
     if (!priceLabsResult.success && (!scrapeResult.success || scrapeResult.listings.length === 0)) {
@@ -1242,6 +1273,7 @@ export async function POST(request: NextRequest) {
       totalListings: priceLabsResult.success ? priceLabsResult.listingsCount : scrapeResult.listings.length,
       filteredListings: priceLabsResult.success ? priceLabsResult.listingsCount : enriched.length,
       dataSource: dataSourceLabel,
+      searchRadiusMiles: scrapeResult.searchRadiusMiles || 15,
     });
 
     // Save FULL response to property_cache for instant future lookups on this exact address
@@ -1289,12 +1321,14 @@ function buildResponse(params: {
   totalListings: number;
   filteredListings: number;
   dataSource: string;
+  searchRadiusMiles: number;
 }) {
   const monthlyRevenue = Math.round(params.annualRevenue / 12);
 
   return {
     success: true,
     dataSource: params.dataSource,
+    searchRadiusMiles: params.searchRadiusMiles,
     bedroomsUsed: params.bedrooms,
     bathroomsUsed: params.bathrooms,
     bedroomMultiplier: 1.0,
