@@ -1035,6 +1035,8 @@ export async function POST(request: NextRequest) {
 
       // allComps = full cached listing set (before bedroom filtering)
       // We enrich ALL listings (not just bedroom-filtered) so client can re-filter
+      // Also filter out comps > 50 miles away to avoid showing irrelevant distant listings
+      const MAX_COMP_DISTANCE = 50;
       const allEnriched = (cached.listings || []).map((listing: any) => {
         const nightPrice = listing.nightPrice || 150;
         const occupancy = listing.occupancy || estimateOccupancy(listing.reviewsCount || 0);
@@ -1042,7 +1044,7 @@ export async function POST(request: NextRequest) {
         const monthlyRev = listing.monthlyRevenue || Math.round(annualRev / 12);
         const distance = listing.distance || calcDistance(latitude, longitude, listing.latitude, listing.longitude);
         return { ...listing, occupancy, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(distance * 10) / 10 };
-      });
+      }).filter((l: any) => l.distance <= MAX_COMP_DISTANCE);
 
       return NextResponse.json(buildResponse({
         city, state, street, latitude, longitude, bedrooms, bathrooms,
@@ -1118,6 +1120,8 @@ export async function POST(request: NextRequest) {
       airbnbAvgAnnualRevenue = enrichResult.avgAnnualRevenue;
 
       // Build allComps from the full raw listing set (before bedroom filtering)
+      // Filter out comps > 50 miles away to avoid showing irrelevant distant listings on the map
+      const MAX_COMP_DIST = 50;
       allEnrichedForClient = scrapeResult.listings.map((listing: any) => {
         const nightPrice = listing.nightPrice || 150;
         const occ = estimateOccupancy(listing.reviewsCount || 0);
@@ -1125,7 +1129,7 @@ export async function POST(request: NextRequest) {
         const monthlyRev = Math.round(annualRev / 12);
         const dist = calcDistance(latitude, longitude, listing.latitude, listing.longitude);
         return { ...listing, occupancy: occ, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(dist * 10) / 10 };
-      });
+      }).filter((l: any) => l.distance <= MAX_COMP_DIST);
     }
 
     // =====================================================================
