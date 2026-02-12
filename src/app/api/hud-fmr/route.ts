@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // Allow up to 30s for the full chain
@@ -77,7 +78,8 @@ const STATE_FMR_FALLBACK: Record<string, [number, number, number, number, number
   WY: [764, 790, 1010, 1352, 1660],
 };
 
-function getStateFallback(state: string): {
+// FMR result type used across all sources
+type FmrResult = {
   success: boolean;
   areaName: string;
   countyName: string;
@@ -85,8 +87,10 @@ function getStateFallback(state: string): {
   year: number;
   fmr: Record<string, number>;
   byBedrooms: Record<number, number>;
-  source: string;
-} | null {
+  source?: string;
+};
+
+function getStateFallback(state: string): FmrResult | null {
   const data = STATE_FMR_FALLBACK[state];
   if (!data) return null;
   const stateName = STATE_NAMES[state];
@@ -115,6 +119,82 @@ function getStateFallback(state: string): {
   };
 }
 
+// ─── Supabase FMR Cache ─────────────────────────────────────────────────────
+function buildCacheKey(state: string, county: string | null, city: string | null): string {
+  const parts = [state.toUpperCase()];
+  if (county) parts.push(county.toLowerCase().trim());
+  else if (city) parts.push(city.toLowerCase().trim());
+  return parts.join("::");
+}
+
+async function getCachedFmr(cacheKey: string): Promise<FmrResult | null> {
+  try {
+    const { data, error } = await supabase
+      .from("fmr_cache")
+      .select("*")
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .single();
+
+    if (error || !data) return null;
+
+    const fmrData = data.fmr_data as Record<string, number>;
+    return {
+      success: true,
+      areaName: data.area_name || `${data.state} FMR`,
+      countyName: data.county || data.city || data.state,
+      fipsCode: data.fips_code || "cached",
+      year: data.year || 2025,
+      fmr: fmrData,
+      byBedrooms: {
+        0: fmrData.efficiency || 0,
+        1: fmrData.oneBedroom || 0,
+        2: fmrData.twoBedroom || 0,
+        3: fmrData.threeBedroom || 0,
+        4: fmrData.fourBedroom || 0,
+      },
+      source: `cached-${data.source || "unknown"}`,
+    };
+  } catch (err) {
+    console.error("[fmr-cache] Read error:", err);
+    return null;
+  }
+}
+
+async function cacheFmrResult(
+  cacheKey: string,
+  state: string,
+  county: string | null,
+  city: string | null,
+  result: FmrResult,
+  source: string
+): Promise<void> {
+  try {
+    await supabase.from("fmr_cache").upsert(
+      {
+        cache_key: cacheKey,
+        state: state.toUpperCase(),
+        county: county || null,
+        city: city || null,
+        area_name: result.areaName,
+        fips_code: result.fipsCode,
+        year: result.year,
+        fmr_data: result.fmr,
+        source,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      { onConflict: "cache_key" }
+    );
+    console.log(`[fmr-cache] Cached FMR for ${cacheKey} (source: ${source})`);
+  } catch (err) {
+    console.error("[fmr-cache] Write error:", err);
+  }
+}
+
+// ─── External data sources ──────────────────────────────────────────────────
+
 async function resolveCountyFromCity(city: string, state: string): Promise<string | null> {
   try {
     const query = `${city}, ${state}, USA`;
@@ -137,16 +217,7 @@ async function resolveCountyFromCity(city: string, state: string): Promise<strin
   }
 }
 
-// ─── HUD API (primary) ─────────────────────────────────────────────────────
-async function fetchFromHudApi(state: string, county: string | null): Promise<{
-  success: boolean;
-  areaName?: string;
-  countyName?: string;
-  fipsCode?: string;
-  year?: number;
-  fmr?: Record<string, number>;
-  byBedrooms?: Record<number, number>;
-} | null> {
+async function fetchFromHudApi(state: string, county: string | null): Promise<FmrResult | null> {
   if (!HUD_API_TOKEN) return null;
 
   try {
@@ -267,15 +338,7 @@ function parseDollar(s: string): number {
   return parseInt(s.replace(/[$,\s]/g, ""), 10) || 0;
 }
 
-async function fetchFromRentData(state: string, county: string | null, city: string | null): Promise<{
-  success: boolean;
-  areaName?: string;
-  countyName?: string;
-  fipsCode?: string;
-  year?: number;
-  fmr?: Record<string, number>;
-  byBedrooms?: Record<number, number>;
-} | null> {
+async function fetchFromRentData(state: string, county: string | null, city: string | null): Promise<FmrResult | null> {
   try {
     const stateName = STATE_NAMES[state];
     if (!stateName) {
@@ -283,11 +346,8 @@ async function fetchFromRentData(state: string, county: string | null, city: str
       return null;
     }
 
-    // Determine which years to try — start with the most likely available year
     const now = new Date();
     const currentYear = now.getFullYear();
-    // RentData.org publishes FY data; FY2026 may not be available yet in early 2026
-    // Try current year first, then previous year, then next year
     const yearsToTry = [currentYear, currentYear - 1, currentYear + 1];
 
     for (const year of yearsToTry) {
@@ -331,20 +391,7 @@ function parseRentDataHtml(
   county: string | null,
   city: string | null,
   year: number
-): {
-  success: boolean;
-  areaName?: string;
-  countyName?: string;
-  fipsCode?: string;
-  year?: number;
-  fmr?: Record<string, number>;
-  byBedrooms?: Record<number, number>;
-} | null {
-  // Parse the HTML table - RentData.org has a county table with columns:
-  // County | 0 BR | 1 BR | 2 BR | 3 BR | 4 BR | Est. Population
-  // We use regex to extract table rows since we can't use DOM parser on the server easily
-
-  // Extract all table rows from the second table (county data)
+): FmrResult | null {
   const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
   const tables: string[] = [];
   let match;
@@ -352,18 +399,15 @@ function parseRentDataHtml(
     tables.push(match[1]);
   }
 
-  // The county data is in the second table (index 1)
   const countyTable = tables.length >= 2 ? tables[1] : tables[0];
   if (!countyTable) return null;
 
-  // Extract rows
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   const rows: string[] = [];
   while ((match = rowRegex.exec(countyTable)) !== null) {
     rows.push(match[1]);
   }
 
-  // Parse each row into county data
   type CountyFmr = {
     name: string;
     fmr0: number;
@@ -376,12 +420,10 @@ function parseRentDataHtml(
   const countyData: CountyFmr[] = [];
 
   for (const row of rows) {
-    // Extract cells
     const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
     const cells: string[] = [];
     let cellMatch;
     while ((cellMatch = cellRegex.exec(row)) !== null) {
-      // Strip HTML tags from cell content
       cells.push(cellMatch[1].replace(/<[^>]+>/g, "").trim());
     }
 
@@ -400,7 +442,6 @@ function parseRentDataHtml(
 
   if (countyData.length === 0) return null;
 
-  // Find the best match
   const searchTerms: string[] = [];
   if (county) {
     searchTerms.push(county.toLowerCase().replace(/\s*county\s*/gi, "").replace(/\s*parish\s*/gi, "").trim());
@@ -414,7 +455,6 @@ function parseRentDataHtml(
   for (const term of searchTerms) {
     if (bestMatch) break;
 
-    // Try exact county name match
     bestMatch = countyData.find((c) => {
       const normalized = c.name.toLowerCase()
         .replace(/\s*county\s*/gi, "")
@@ -426,7 +466,6 @@ function parseRentDataHtml(
       return normalized === term;
     }) || null;
 
-    // Try partial match (city name appears in the county/metro area name)
     if (!bestMatch) {
       bestMatch = countyData.find((c) => {
         const normalized = c.name.toLowerCase();
@@ -434,7 +473,6 @@ function parseRentDataHtml(
       }) || null;
     }
 
-    // Try matching just the first word of the city against county names
     if (!bestMatch && term.includes(" ")) {
       const firstWord = term.split(" ")[0];
       bestMatch = countyData.find((c) => {
@@ -444,7 +482,6 @@ function parseRentDataHtml(
     }
   }
 
-  // If no match found, use the first entry (usually the largest metro area)
   if (!bestMatch) {
     bestMatch = countyData[0];
   }
@@ -486,39 +523,63 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing state parameter" }, { status: 400 });
     }
 
+    // ── Step 0: Check Supabase cache first (instant) ──
+    const cacheKey = buildCacheKey(state, county || null, city || null);
+    const cached = await getCachedFmr(cacheKey);
+    if (cached) {
+      console.log(`[hud-fmr] Cache HIT for ${cacheKey} (source: ${cached.source})`);
+      return NextResponse.json(cached);
+    }
+    console.log(`[hud-fmr] Cache MISS for ${cacheKey}`);
+
     // If no county provided but city is available, resolve county from city
     if (!county && city) {
       const resolved = await resolveCountyFromCity(city, state);
       if (resolved) {
         county = resolved;
         console.log(`[hud-fmr] Resolved county from city: ${city}, ${state} → ${county}`);
+        
+        // Check cache again with resolved county
+        const countyKey = buildCacheKey(state, county, null);
+        const cachedCounty = await getCachedFmr(countyKey);
+        if (cachedCounty) {
+          console.log(`[hud-fmr] Cache HIT for resolved county ${countyKey}`);
+          // Also cache under the original key for next time
+          cacheFmrResult(cacheKey, state, county, city, cachedCounty, cachedCounty.source || "cached");
+          return NextResponse.json(cachedCounty);
+        }
       }
     }
 
-    // Try HUD API first (primary source)
+    // ── Step 1: Try HUD API (primary source) ──
     const hudResult = await fetchFromHudApi(state, county ?? null);
     if (hudResult) {
       console.log(`[hud-fmr] HUD API success for ${county || city}, ${state}`);
+      // Cache the result (fire-and-forget)
+      cacheFmrResult(cacheKey, state, county || null, city || null, hudResult, "hud-api");
+      if (county) cacheFmrResult(buildCacheKey(state, county, null), state, county, null, hudResult, "hud-api");
       return NextResponse.json(hudResult);
     }
 
-    // Fallback 1: scrape RentData.org
+    // ── Step 2: Fallback to RentData.org ──
     console.log(`[hud-fmr] HUD API failed, falling back to RentData.org for ${county || city}, ${state}`);
     const rentDataResult = await fetchFromRentData(state, county ?? null, city ?? null);
     if (rentDataResult) {
       console.log(`[hud-fmr] RentData.org success: ${rentDataResult.areaName}`);
+      cacheFmrResult(cacheKey, state, county || null, city || null, rentDataResult, "rentdata");
+      if (county) cacheFmrResult(buildCacheKey(state, county, null), state, county, null, rentDataResult, "rentdata");
       return NextResponse.json(rentDataResult);
     }
 
-    // Fallback 2: Static state-level FMR averages (NEVER fails for valid US states)
+    // ── Step 3: Static state-level FMR averages (NEVER fails for valid US states) ──
     console.log(`[hud-fmr] Both HUD API and RentData.org failed, using static state average for ${state}`);
     const staticResult = getStateFallback(state);
     if (staticResult) {
       console.log(`[hud-fmr] Static fallback success: ${staticResult.areaName}`);
+      // Don't cache state averages — we want to try for county-level data next time
       return NextResponse.json(staticResult);
     }
 
-    // This should only happen for non-US states/territories not in our table
     return NextResponse.json(
       { error: "Unable to fetch FMR data from any source" },
       { status: 502 }

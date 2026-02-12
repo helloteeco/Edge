@@ -176,7 +176,20 @@
 - [x] No features removed
 
 ## FIX: FMR data always failing — "Unable to fetch FMR data from any source" (February 2026)
-- [ ] Diagnose why both HUD API and RentData.org fallback are failing
-- [ ] Implement robust FMR solution that never shows error to users
-- [ ] Ensure STR vs LTR comparison always displays data
+- [x] Diagnose why both HUD API and RentData.org fallback are failing
+- [x] Implement robust FMR solution that never shows error to users
+- [x] Ensure STR vs LTR comparison always displays data
+- [x] No existing features removed
+
+## FEATURE: County-level FMR caching in Supabase (February 2026)
+- [ ] Create fmr_cache table in Supabase (state, county/city, bedroom data, timestamp)
+- [ ] Check cache before calling HUD API or RentData.org
+- [ ] Store successful FMR results in cache for instant repeat lookups
+- [ ] Cache TTL of 90 days (FMR data changes annually)
+- [ ] No existing features removed
+
+## FEATURE: Enhanced STR vs LTR comparison UI with bar chart (February 2026)
+- [ ] Add visual bar chart comparing STR vs LTR income side-by-side
+- [ ] Show revenue, expenses, and net cash flow bars for both strategies
+- [ ] Make chart mobile-friendly and visually polished
 - [ ] No existing features removed

@@ -5095,6 +5095,92 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         </p>
                       </div>
                       
+                      {/* ── STR vs LTR Visual Bar Chart ── */}
+                      {(() => {
+                        const maxVal = Math.max(
+                          iownit.grossRevenue,
+                          iownit.ltrGrossAnnual,
+                          iownit.totalAnnualExpenses,
+                          iownit.ltrTotalExpenses,
+                          Math.abs(iownit.strCashFlow),
+                          Math.abs(iownit.ltrCashFlow),
+                          1
+                        );
+                        const barPct = (val: number) => Math.max(3, Math.min(100, (Math.abs(val) / maxVal) * 100));
+                        
+                        const rows: { label: string; strVal: number; ltrVal: number; strColor: string; ltrColor: string; isCashFlow?: boolean }[] = [
+                          { label: "Revenue", strVal: iownit.grossRevenue, ltrVal: iownit.ltrGrossAnnual, strColor: "#22c55e", ltrColor: "#3b82f6" },
+                          { label: "Expenses", strVal: iownit.totalAnnualExpenses, ltrVal: iownit.ltrTotalExpenses, strColor: "#f87171", ltrColor: "#f87171" },
+                          { label: "Net Cash Flow", strVal: iownit.strCashFlow, ltrVal: iownit.ltrCashFlow, strColor: iownit.strCashFlow >= 0 ? "#16a34a" : "#ef4444", ltrColor: iownit.ltrCashFlow >= 0 ? "#2563eb" : "#ef4444", isCashFlow: true },
+                        ];
+                        
+                        return (
+                          <div className="p-4 rounded-xl mb-4" style={{ backgroundColor: "#ffffff", border: "1px solid #e5e7eb" }}>
+                            <h4 className="font-medium mb-4 text-sm" style={{ color: "#2b2823" }}>📊 Annual Comparison</h4>
+                            
+                            {/* Legend */}
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#22c55e" }}></div>
+                                <span className="text-xs text-gray-600">STR</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#3b82f6" }}></div>
+                                <span className="text-xs text-gray-600">LTR</span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              {rows.map((row) => (
+                                <div key={row.label}>
+                                  <div className="flex justify-between items-center mb-1.5">
+                                    <span className={`text-xs ${row.isCashFlow ? 'font-semibold' : ''} text-gray-600`}>{row.label}</span>
+                                  </div>
+                                  {/* STR bar */}
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[10px] text-gray-400 w-7 text-right">STR</span>
+                                    <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden relative">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${barPct(row.strVal)}%`, backgroundColor: row.strColor, opacity: 0.85 }}
+                                      ></div>
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium" style={{ color: barPct(row.strVal) > 60 ? '#fff' : '#374151' }}>
+                                        {row.strVal < 0 ? '-' : ''}{formatCurrency(Math.abs(row.strVal))}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {/* LTR bar */}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-gray-400 w-7 text-right">LTR</span>
+                                    <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden relative">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${barPct(row.ltrVal)}%`, backgroundColor: row.ltrColor, opacity: 0.85 }}
+                                      ></div>
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium" style={{ color: barPct(row.ltrVal) > 60 ? '#fff' : '#374151' }}>
+                                        {row.ltrVal < 0 ? '-' : ''}{formatCurrency(Math.abs(row.ltrVal))}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Monthly net comparison mini-cards */}
+                            <div className="grid grid-cols-2 gap-3 mt-4 pt-3" style={{ borderTop: "1px solid #f3f4f6" }}>
+                              <div className="text-center p-2 rounded-lg" style={{ backgroundColor: iownit.strMonthlyCashFlow >= 0 ? "#f0fdf4" : "#fef2f2" }}>
+                                <p className="text-[10px] text-gray-500">STR Monthly</p>
+                                <p className={`text-sm font-bold ${iownit.strMonthlyCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(iownit.strMonthlyCashFlow)}</p>
+                              </div>
+                              <div className="text-center p-2 rounded-lg" style={{ backgroundColor: iownit.ltrMonthlyCashFlow >= 0 ? "#eff6ff" : "#fef2f2" }}>
+                                <p className="text-[10px] text-gray-500">LTR Monthly</p>
+                                <p className={`text-sm font-bold ${iownit.ltrMonthlyCashFlow >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCurrency(iownit.ltrMonthlyCashFlow)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
                       {/* STR Expense Breakdown */}
                       <div className="p-4 rounded-xl mb-3" style={{ backgroundColor: "#f5f4f0" }}>
                         <h4 className="font-medium mb-3" style={{ color: "#2b2823" }}>🏠 STR Annual Breakdown</h4>
