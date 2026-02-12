@@ -956,7 +956,7 @@ export async function getAllCoachingLeads(): Promise<CoachingLead[]> {
 // ============================================================
 
 export async function getAdminDashboardData() {
-  // Parallel fetch all data
+  // Parallel fetch all data with richer queries
   const [
     usersRes,
     quizLeadsRes,
@@ -965,6 +965,10 @@ export async function getAdminDashboardData() {
     propertyCacheRes,
     analysisLogRes,
     marketDataRes,
+    creditPurchasesRes,
+    sharedAnalysesRes,
+    fundingQuizRes,
+    airbnbCacheRes,
   ] = await Promise.all([
     supabase.from('users').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
     supabase.from('quiz_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
@@ -973,33 +977,181 @@ export async function getAdminDashboardData() {
     supabase.from('property_cache').select('*', { count: 'exact' }),
     supabase.from('analysis_log').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
     supabase.from('market_data').select('*', { count: 'exact' }),
+    supabase.from('credit_purchases').select('*', { count: 'exact' }).order('purchased_at', { ascending: false }),
+    supabase.from('shared_analyses').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+    supabase.from('funding_quiz_submissions').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+    supabase.from('airbnb_comp_cache').select('id,cache_key,listings_count,created_at,expires_at', { count: 'exact' }),
   ]);
 
+  // ===== DERIVED ANALYTICS =====
+  const users = usersRes.data || [];
+  const analyses = analysisLogRes.data || [];
+  const purchases = creditPurchasesRes.data || [];
+  const marketDataRows = marketDataRes.data || [];
+
+  // --- Revenue & Credits ---
+  const totalRevenue = purchases.reduce((sum: number, p: Record<string, number>) => sum + (p.amount_paid || 0), 0);
+  const totalCreditsPurchased = purchases.reduce((sum: number, p: Record<string, number>) => sum + (p.credits_added || 0), 0);
+  const totalCreditsUsed = users.reduce((sum: number, u: Record<string, number>) => sum + (u.credits_used || 0), 0);
+  const totalCreditsLimit = users.reduce((sum: number, u: Record<string, number>) => sum + (u.credits_limit || 0), 0);
+  const unlimitedUsers = users.filter((u: Record<string, boolean>) => u.is_unlimited).length;
+
+  // --- Conversion Metrics ---
+  const usersWithAnalyses = new Set(analyses.filter((a: Record<string, string>) => a.user_email).map((a: Record<string, string>) => a.user_email));
+  const usersWhoPurchased = new Set(purchases.map((p: Record<string, string>) => p.user_email));
+  const freeToAnalysisRate = users.length > 0 ? Math.round((usersWithAnalyses.size / users.length) * 100) : 0;
+  const analysisToPurchaseRate = usersWithAnalyses.size > 0 ? Math.round((usersWhoPurchased.size / usersWithAnalyses.size) * 100) : 0;
+  const overallConversionRate = users.length > 0 ? Math.round((usersWhoPurchased.size / users.length) * 100) : 0;
+
+  // --- Data Source Breakdown ---
+  const priceLabsAnalyses = analyses.filter((a: Record<string, string>) =>
+    a.data_provider === 'pricelabs' || a.revenue_source === 'pricelabs'
+  ).length;
+  const airbnbAnalyses = analyses.filter((a: Record<string, string>) =>
+    a.data_provider === 'airbnb-direct' || a.revenue_source === 'airbnb-direct' || a.data_provider === 'airbnb'
+  ).length;
+  const cachedAnalyses = analyses.filter((a: Record<string, boolean>) => a.is_instant).length;
+
+  // --- Cost Estimates ---
+  const estimatedPriceLabsCost = priceLabsAnalyses * 0.50;
+  const cacheHitRate = analyses.length > 0 ? Math.round((cachedAnalyses / analyses.length) * 100) : 0;
+  const costSavedByCache = cachedAnalyses * 0.50;
+
+  // --- Popular Markets ---
+  const marketCounts: Record<string, { count: number; city: string; state: string }> = {};
+  analyses.forEach((a: Record<string, string>) => {
+    if (a.city && a.state) {
+      const key = `${a.city}, ${a.state}`;
+      if (!marketCounts[key]) marketCounts[key] = { count: 0, city: a.city, state: a.state };
+      marketCounts[key].count++;
+    }
+  });
+  const popularMarkets = Object.values(marketCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+
+  // --- Popular Bedroom Counts ---
+  const bedroomCounts: Record<number, number> = {};
+  analyses.forEach((a: Record<string, number>) => {
+    if (a.bedrooms) {
+      bedroomCounts[a.bedrooms] = (bedroomCounts[a.bedrooms] || 0) + 1;
+    }
+  });
+
+  // --- Daily Activity (last 30 days) ---
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const dailyAnalyses: Record<string, number> = {};
+  const dailySignups: Record<string, number> = {};
+
+  analyses.forEach((a: Record<string, string>) => {
+    if (a.created_at) {
+      const date = new Date(a.created_at);
+      if (date >= thirtyDaysAgo) {
+        const key = date.toISOString().split('T')[0];
+        dailyAnalyses[key] = (dailyAnalyses[key] || 0) + 1;
+      }
+    }
+  });
+
+  users.forEach((u: Record<string, string>) => {
+    if (u.created_at) {
+      const date = new Date(u.created_at);
+      if (date >= thirtyDaysAgo) {
+        const key = date.toISOString().split('T')[0];
+        dailySignups[key] = (dailySignups[key] || 0) + 1;
+      }
+    }
+  });
+
+  const dailyActivity = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().split('T')[0];
+    dailyActivity.push({
+      date: key,
+      analyses: dailyAnalyses[key] || 0,
+      signups: dailySignups[key] || 0,
+    });
+  }
+
+  // --- User Engagement ---
+  const usersWithSaved = new Set((savedPropsRes.data || []).map((s: Record<string, string>) => s.user_email));
+  const usersWhoShared = new Set(analyses.filter((a: Record<string, boolean>) => a.was_shared).map((a: Record<string, string>) => a.user_email));
+  const avgAnalysesPerUser = usersWithAnalyses.size > 0 ? Math.round(analyses.length / usersWithAnalyses.size * 10) / 10 : 0;
+  const avgRevenuePerPurchaser = usersWhoPurchased.size > 0 ? Math.round(totalRevenue / usersWhoPurchased.size) : 0;
+
+  // --- Market Data Cache Stats ---
+  const priceLabsMarkets = marketDataRows.filter((m: Record<string, string>) => m.source === 'pricelabs').length;
+  const airbnbMarkets = marketDataRows.filter((m: Record<string, string>) => m.source === 'airbnb-direct' || m.source === 'airbnb' || m.source === 'apify').length;
+  const expiredCache = marketDataRows.filter((m: Record<string, string>) => m.expires_at && new Date(m.expires_at) < now).length;
+
   return {
-    users: {
-      count: usersRes.count || 0,
-      data: usersRes.data || [],
-    },
-    quizLeads: {
-      count: quizLeadsRes.count || 0,
-      data: quizLeadsRes.data || [],
-    },
-    coachingLeads: {
-      count: coachingLeadsRes.count || 0,
-      data: coachingLeadsRes.data || [],
-    },
-    savedProperties: {
-      count: savedPropsRes.count || 0,
-    },
-    cachedResults: {
-      count: propertyCacheRes.count || 0,
-    },
-    analysisLog: {
-      count: analysisLogRes.count || 0,
-      data: analysisLogRes.data || [],
-    },
-    marketData: {
-      count: marketDataRes.count || 0,
+    // Original data (backward compatible)
+    users: { count: usersRes.count || 0, data: users },
+    quizLeads: { count: quizLeadsRes.count || 0, data: quizLeadsRes.data || [] },
+    coachingLeads: { count: coachingLeadsRes.count || 0, data: coachingLeadsRes.data || [] },
+    savedProperties: { count: savedPropsRes.count || 0 },
+    cachedResults: { count: propertyCacheRes.count || 0 },
+    analysisLog: { count: analysisLogRes.count || 0, data: analyses },
+    marketData: { count: marketDataRes.count || 0 },
+
+    // ===== NEW ANALYTICS =====
+    analytics: {
+      revenue: {
+        totalRevenue: totalRevenue / 100,
+        totalCreditsPurchased,
+        totalCreditsUsed,
+        totalCreditsRemaining: totalCreditsLimit - totalCreditsUsed,
+        purchaseCount: purchases.length,
+        avgRevenuePerPurchaser: avgRevenuePerPurchaser / 100,
+        recentPurchases: purchases.slice(0, 10),
+      },
+      conversion: {
+        totalUsers: users.length,
+        usersWhoAnalyzed: usersWithAnalyses.size,
+        usersWhoPurchased: usersWhoPurchased.size,
+        usersWhoSaved: usersWithSaved.size,
+        usersWhoShared: usersWhoShared.size,
+        unlimitedUsers,
+        freeToAnalysisRate,
+        analysisToPurchaseRate,
+        overallConversionRate,
+      },
+      dataSource: {
+        priceLabsAnalyses,
+        airbnbAnalyses,
+        cachedAnalyses,
+        totalAnalyses: analyses.length,
+        priceLabsPercent: analyses.length > 0 ? Math.round((priceLabsAnalyses / analyses.length) * 100) : 0,
+        cacheHitRate,
+        estimatedPriceLabsCost: Math.round(estimatedPriceLabsCost * 100) / 100,
+        estimatedTotalAPICost: Math.round(estimatedPriceLabsCost * 100) / 100,
+        costSavedByCache: Math.round(costSavedByCache * 100) / 100,
+      },
+      popularMarkets,
+      bedroomBreakdown: Object.entries(bedroomCounts)
+        .map(([br, count]) => ({ bedrooms: parseInt(br), count }))
+        .sort((a, b) => b.count - a.count),
+      dailyActivity,
+      engagement: {
+        avgAnalysesPerUser,
+        saveRate: usersWithAnalyses.size > 0 ? Math.round((usersWithSaved.size / usersWithAnalyses.size) * 100) : 0,
+        shareRate: usersWithAnalyses.size > 0 ? Math.round((usersWhoShared.size / usersWithAnalyses.size) * 100) : 0,
+      },
+      cacheHealth: {
+        propertyCacheCount: propertyCacheRes.count || 0,
+        marketDataCount: marketDataRes.count || 0,
+        airbnbCompCacheCount: airbnbCacheRes.count || 0,
+        priceLabsMarkets,
+        airbnbMarkets,
+        expiredCache,
+        totalSharedLinks: sharedAnalysesRes.count || 0,
+      },
+      fundingQuiz: {
+        count: fundingQuizRes.count || 0,
+        data: (fundingQuizRes.data || []).slice(0, 10),
+      },
     },
   };
 }
