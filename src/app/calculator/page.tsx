@@ -282,18 +282,6 @@ export default function CalculatorPage() {
   const [realOccupancyData, setRealOccupancyData] = useState<Record<string, { occupancyRate: number; bookedDays: number; totalDays: number; peakMonths: string[]; lowMonths: string[]; source: string; dailyCalendar?: { date: string; available: boolean }[] }>>({});
   const [isLoadingOccupancy, setIsLoadingOccupancy] = useState(false);
   
-  // Revenue Accuracy Adjustments
-  // Host performance level affects revenue multiplier
-  const [hostPerformance, setHostPerformance] = useState<"new" | "average" | "experienced" | "professional">("average");
-  // Last-minute booking uplift toggle — accounts for bookings not captured in scraped data
-  const [lastMinuteUplift, setLastMinuteUplift] = useState(false);
-  // Amenity premium checkboxes
-  const [amenityHotTub, setAmenityHotTub] = useState(false);
-  const [amenityPool, setAmenityPool] = useState(false);
-  const [amenityGameRoom, setAmenityGameRoom] = useState(false);
-  const [amenityEVCharger, setAmenityEVCharger] = useState(false);
-  const [amenityFirePit, setAmenityFirePit] = useState(false);
-  const [amenityPremiumDesign, setAmenityPremiumDesign] = useState(false);
   
   // Toggle a comp in/out of the selection
   const toggleCompExclusion = (compId: number | string) => {
@@ -2343,72 +2331,9 @@ export default function CalculatorPage() {
     };
   };
 
-  // Revenue Adjustment Multiplier — accounts for host quality, last-minute bookings, and amenity premiums
-  // These factors are well-documented in STR industry research but not captured by calendar scraping
-  const getRevenueAdjustmentMultiplier = () => {
-    let multiplier = 1.0;
-    
-    // Host Performance Level
-    // Based on AirDNA/Rabbu data: professional hosts earn 40-65% more than average
-    // New hosts typically earn 20-25% less while building reviews
-    switch (hostPerformance) {
-      case "new": multiplier *= 0.80; break;        // Below average (building reviews, no Superhost)
-      case "average": multiplier *= 1.0; break;      // Raw scraped data baseline
-      case "experienced": multiplier *= 1.25; break;  // Dynamic pricing, good reviews, Superhost
-      case "professional": multiplier *= 1.50; break;  // Multi-property operator, optimized everything
-    }
-    
-    // Last-Minute Booking Uplift
-    // Calendar scraping misses 15-25% of bookings that happen within 7 days of check-in
-    // Mountain/rural tourism markets have higher last-minute rates (weekend warriors)
-    if (lastMinuteUplift) {
-      const marketType = result?.marketType || "rural";
-      const upliftByMarket: Record<string, number> = {
-        mountain: 0.20,  // 20% — weekend warriors, weather-dependent
-        beach: 0.18,     // 18% — last-minute vacation decisions
-        lake: 0.18,
-        rural: 0.22,     // 22% — highest last-minute rate (spontaneous getaways)
-        urban: 0.12,     // 12% — more planned travel
-        desert: 0.15,
-      };
-      multiplier *= 1 + (upliftByMarket[marketType] || 0.15);
-    }
-    
-    // Amenity Premiums — based on Rabbu/AirDNA amenity revenue impact data
-    // These are conservative estimates (actual impact varies by market)
-    if (amenityHotTub) multiplier *= 1.12;        // +12% (hot tubs are #1 revenue driver in mountain markets)
-    if (amenityPool) multiplier *= 1.15;          // +15% (pools are huge in beach/warm markets)
-    if (amenityGameRoom) multiplier *= 1.08;      // +8% (game rooms boost family bookings)
-    if (amenityEVCharger) multiplier *= 1.05;     // +5% (growing demand, attracts higher-income guests)
-    if (amenityFirePit) multiplier *= 1.04;       // +4% (outdoor experience enhancement)
-    if (amenityPremiumDesign) multiplier *= 1.10; // +10% (professional interior design, Instagram-worthy)
-    
-    return multiplier;
-  };
-  
-  // Get the breakdown of adjustments for display
-  const getAdjustmentBreakdown = () => {
-    const items: { label: string; percent: number }[] = [];
-    switch (hostPerformance) {
-      case "new": items.push({ label: "New Host (building reviews)", percent: -20 }); break;
-      case "experienced": items.push({ label: "Experienced Host", percent: 25 }); break;
-      case "professional": items.push({ label: "Professional Operator", percent: 50 }); break;
-    }
-    if (lastMinuteUplift) {
-      const marketType = result?.marketType || "rural";
-      const upliftMap: Record<string, number> = { mountain: 20, beach: 18, lake: 18, rural: 22, urban: 12, desert: 15 };
-      items.push({ label: "Last-Minute Booking Uplift", percent: upliftMap[marketType] || 15 });
-    }
-    if (amenityHotTub) items.push({ label: "Hot Tub", percent: 12 });
-    if (amenityPool) items.push({ label: "Pool", percent: 15 });
-    if (amenityGameRoom) items.push({ label: "Game Room", percent: 8 });
-    if (amenityEVCharger) items.push({ label: "EV Charger", percent: 5 });
-    if (amenityFirePit) items.push({ label: "Fire Pit", percent: 4 });
-    if (amenityPremiumDesign) items.push({ label: "Premium Design", percent: 10 });
-    return items;
-  };
 
-  // Get display revenue based on percentile selection, custom income, AND revenue adjustments
+
+  // Get display revenue based on percentile selection, custom income, and guest capacity
   const getDisplayRevenue = () => {
     if (useCustomIncome && customAnnualIncome) {
       return parseFloat(customAnnualIncome) || 0;
@@ -2416,12 +2341,7 @@ export default function CalculatorPage() {
     
     if (!result) return 0;
     
-    // Get multipliers
     const guestMultiplier = getGuestCountMultiplier();
-    const adjustmentMultiplier = getRevenueAdjustmentMultiplier();
-    
-    // Check if PriceLabs is the data source
-    const isPriceLabs = result.dataSource?.toLowerCase().includes('pricelabs');
     
     // Use real percentile data if available
     // NOTE: percentiles.revenue values are ALREADY ANNUAL (not monthly)
@@ -2437,16 +2357,10 @@ export default function CalculatorPage() {
         default:
           baseRevenue = result.percentiles.revenue.p50;
       }
-      // PriceLabs percentiles already reflect real host performance distribution
-      // Only apply guest multiplier (extra sleeping capacity is a real property feature)
-      // Skip adjustmentMultiplier (host performance, last-minute, amenities) — PriceLabs data already captures these
-      if (isPriceLabs) {
-        return Math.round(baseRevenue * guestMultiplier);
-      }
-      return Math.round(baseRevenue * guestMultiplier * adjustmentMultiplier);
+      return Math.round(baseRevenue * guestMultiplier);
     }
     
-    // Fallback to calculated revenue with multipliers (Airbnb-only data)
+    // Fallback to calculated revenue (Airbnb-only data)
     let baseRevenue = result.annualRevenue;
     switch (revenuePercentile) {
       case "75th":
@@ -2456,19 +2370,16 @@ export default function CalculatorPage() {
         baseRevenue = Math.round(result.annualRevenue * 1.45);
         break;
     }
-    return Math.round(baseRevenue * guestMultiplier * adjustmentMultiplier);
+    return Math.round(baseRevenue * guestMultiplier);
   };
 
   // Get base revenue WITHOUT Teeco Strategy (for comparison display)
-  // Still includes revenue adjustments for Airbnb data, but not for PriceLabs
   const getBaseRevenue = () => {
     if (useCustomIncome && customAnnualIncome) {
       return parseFloat(customAnnualIncome) || 0;
     }
     if (!result) return 0;
     const guestMultiplier = getGuestCountMultiplier();
-    const adjustmentMultiplier = getRevenueAdjustmentMultiplier();
-    const isPriceLabs = result.dataSource?.toLowerCase().includes('pricelabs');
     if (result.percentiles?.revenue) {
       let baseRevenue = 0;
       switch (revenuePercentile) {
@@ -2476,18 +2387,14 @@ export default function CalculatorPage() {
         case "90th": baseRevenue = result.percentiles.revenue.p90; break;
         default: baseRevenue = result.percentiles.revenue.p50;
       }
-      // PriceLabs: use real percentiles directly (only guest capacity adjustment)
-      if (isPriceLabs) {
-        return Math.round(baseRevenue * guestMultiplier);
-      }
-      return Math.round(baseRevenue * guestMultiplier * adjustmentMultiplier);
+      return Math.round(baseRevenue * guestMultiplier);
     }
     let baseRevenue = result.annualRevenue;
     switch (revenuePercentile) {
       case "75th": baseRevenue = Math.round(result.annualRevenue * 1.25); break;
       case "90th": baseRevenue = Math.round(result.annualRevenue * 1.45); break;
     }
-    return Math.round(baseRevenue * guestMultiplier * adjustmentMultiplier);
+    return Math.round(baseRevenue * guestMultiplier);
   };
 
   // Calculate design cost ($7/sqft with optional 20% student discount)
@@ -3225,11 +3132,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <h3 className="text-base font-semibold" style={{ color: '#2b2823' }}>Property Configuration</h3>
                   <p className="text-xs" style={{ color: '#787060' }}>Adjust to match your property — revenue updates instantly</p>
                 </div>
-                {getRevenueAdjustmentMultiplier() !== 1.0 && !(result?.dataSource?.toLowerCase().includes('pricelabs')) && (
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: getRevenueAdjustmentMultiplier() > 1 ? '#f0fdf4' : '#fef2f2', color: getRevenueAdjustmentMultiplier() > 1 ? '#16a34a' : '#ef4444' }}>
-                    {getRevenueAdjustmentMultiplier() > 1 ? '+' : ''}{Math.round((getRevenueAdjustmentMultiplier() - 1) * 100)}% adj
-                  </span>
-                )}
+
               </div>
 
               {/* Strategy Toggle */}
@@ -3306,107 +3209,6 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
               </div>
 
-              {/* Divider — only show adjustment controls for non-PriceLabs data */}
-              {!(result?.dataSource?.toLowerCase().includes('pricelabs')) && (
-              <>
-              <div className="border-t mb-3" style={{ borderColor: '#e5e2dc' }}></div>
-
-              {/* Host Performance Level — compact */}
-              <div className="mb-3">
-                <p className="text-[11px] font-semibold mb-1.5" style={{ color: '#2b2823' }}>Host Performance Level</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {([
-                    { key: 'new' as const, label: 'New', desc: '-20%' },
-                    { key: 'average' as const, label: 'Average', desc: 'Baseline' },
-                    { key: 'experienced' as const, label: 'Experienced', desc: '+25%' },
-                    { key: 'professional' as const, label: 'Pro', desc: '+50%' },
-                  ]).map(({ key, label, desc }) => (
-                    <button
-                      key={key}
-                      onClick={() => setHostPerformance(key)}
-                      className={`py-1.5 px-1 rounded-lg text-center transition-all ${hostPerformance === key ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      style={hostPerformance === key ? { backgroundColor: '#2b2823' } : {}}
-                    >
-                      <span className="block text-[11px] font-medium">{label}</span>
-                      <span className="block text-[9px] opacity-75">{desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Last-Minute Booking Uplift — compact toggle */}
-              <div className="mb-3">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <div
-                    onClick={() => setLastMinuteUplift(!lastMinuteUplift)}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${lastMinuteUplift ? 'bg-green-500' : 'bg-gray-300'}`}
-                    style={{ minWidth: '40px' }}
-                  >
-                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${lastMinuteUplift ? 'translate-x-5' : ''}`} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold" style={{ color: '#2b2823' }}>Last-Minute Booking Uplift</p>
-                    <p className="text-[9px]" style={{ color: '#787060' }}>+{result?.marketType === 'mountain' ? '20' : result?.marketType === 'rural' ? '22' : result?.marketType === 'beach' ? '18' : '15'}% — bookings scrapers miss</p>
-                  </div>
-                </label>
-              </div>
-
-              {/* Amenity Premiums — compact 3-col grid */}
-              <div className="mb-3">
-                <p className="text-[11px] font-semibold mb-1.5" style={{ color: '#2b2823' }}>Amenity Premiums</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    { state: amenityHotTub, setter: setAmenityHotTub, label: 'Hot Tub', boost: '+12%', icon: '♨️' },
-                    { state: amenityPool, setter: setAmenityPool, label: 'Pool', boost: '+15%', icon: '🏊' },
-                    { state: amenityGameRoom, setter: setAmenityGameRoom, label: 'Game Room', boost: '+8%', icon: '🎮' },
-                    { state: amenityEVCharger, setter: setAmenityEVCharger, label: 'EV Charger', boost: '+5%', icon: '⚡' },
-                    { state: amenityFirePit, setter: setAmenityFirePit, label: 'Fire Pit', boost: '+4%', icon: '🔥' },
-                    { state: amenityPremiumDesign, setter: setAmenityPremiumDesign, label: 'Premium Design', boost: '+10%', icon: '✨' },
-                  ]).map(({ state, setter, label, boost, icon }) => (
-                    <button
-                      key={label}
-                      onClick={() => setter(!state)}
-                      className={`flex items-center gap-1.5 p-2 rounded-lg text-left transition-all border ${state ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'}`}
-                    >
-                      <span className="text-sm">{icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <span className="block text-[10px] font-medium leading-tight" style={{ color: state ? '#16a34a' : '#2b2823' }}>{label}</span>
-                        <span className="block text-[9px]" style={{ color: state ? '#16a34a' : '#787060' }}>{boost}</span>
-                      </div>
-                      {state && (
-                        <svg className="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Adjustment Summary Tags */}
-              {getAdjustmentBreakdown().length > 0 && (
-                <div className="pt-2" style={{ borderTop: '1px solid #e5e2dc' }}>
-                  <div className="flex flex-wrap gap-1.5">
-                    {getAdjustmentBreakdown().map((item, i) => (
-                      <span key={i} className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: item.percent > 0 ? '#f0fdf4' : '#fef2f2', color: item.percent > 0 ? '#16a34a' : '#ef4444' }}>
-                        {item.label}: {item.percent > 0 ? '+' : ''}{item.percent}%
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              </>
-              )}
-              {/* PriceLabs note — show when PriceLabs is source to explain why adjustments are hidden */}
-              {result?.dataSource?.toLowerCase().includes('pricelabs') && (
-                <div className="border-t mt-2 pt-3" style={{ borderColor: '#e5e2dc' }}>
-                  <div className="rounded-lg px-3 py-2" style={{ backgroundColor: '#f0f9ff', border: '1px solid #e0f2fe' }}>
-                    <p className="text-[11px]" style={{ color: '#0369a1', lineHeight: '1.5' }}>
-                      Revenue adjustments (host level, amenities) are disabled because PriceLabs percentiles already reflect real market performance across 300+ listings.
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
             
             {/* Revenue Estimate Card */}
@@ -3642,8 +3444,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           ? "Actual 75th percentile from PriceLabs market data" 
                           : "Actual 90th percentile from PriceLabs market data")
                       : (revenuePercentile === "75th" 
-                          ? "Top 25% performers with good amenities" 
-                          : "Top 10% performers with upgrades & premium design")}
+                          ? "Top 25% performers in this market" 
+                          : "Top 10% performers in this market")}
                   </p>
                 )}
                 {guestCount && bedrooms && guestCount > bedrooms * 2 && (
@@ -3919,7 +3721,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">Premium amenities (hot tub, game room), unique theme, exceptional reviews, dynamic pricing mastery. Top 10% of hosts.</p>
+                    <p className="text-xs text-gray-500">Unique theme, exceptional reviews, dynamic pricing mastery, premium amenities. Top 10% of hosts.</p>
                   </div>
                 </div>
                 
