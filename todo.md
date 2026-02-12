@@ -118,3 +118,11 @@
 ## BUG: Vercel build failed after map/comp fix (February 2026)
 - [x] Identify and fix Vercel build error from latest push
 - [x] Ensure no features are removed in the fix
+
+## BUG: CompMap showing no comps due to 50mi filter being too aggressive (February 2026)
+- [x] Remove 50mi distance filter from CompMap — show ALL comps returned by backend
+- [x] Ensure subject property pin always shows on map (median-of-comps fallback when geocode is slow)
+- [x] Remove comp-coordinate reconstruction in handleAnalyze cache path (always geocode instead)
+- [x] Remove comp-coordinate fallback in cache save (use geocoded targetCoords state)
+- [x] Remove zoom-10 clamp in CompMap bounds fitting (comps can span wide areas)
+- [x] Keep all existing features intact

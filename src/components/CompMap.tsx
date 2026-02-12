@@ -640,26 +640,16 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   const [isMapReady, setIsMapReady] = useState(false);
   const [imgErrors, setImgErrors] = useState<Set<number | string>>(new Set());
 
-  // Filter comps to only those with valid coordinates near the target property
-  // NEVER scatter comps with missing coords — they'd appear in random locations
+  // Filter comps to only those with valid (non-zero) coordinates
+  // Show ALL comps the backend returned — they are the ones used for the calculation
+  // Only reject comps with missing/zero coords (they'd appear at 0,0 in the ocean)
   const validComps = useMemo(() => {
-    // Helper: Haversine distance in miles
-    const haversineMiles = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-      const R = 3959;
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLng = ((lng2 - lng1) * Math.PI) / 180;
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-    const MAX_MAP_DISTANCE = 50; // miles — same as backend filter
     return comparables.filter((c) => {
       // Must have non-zero coordinates
       if (!c.latitude || !c.longitude || c.latitude === 0 || c.longitude === 0) return false;
-      // Must be within 50 miles of the target property
-      const dist = haversineMiles(targetLat, targetLng, c.latitude, c.longitude);
-      return dist <= MAX_MAP_DISTANCE;
+      return true;
     });
-  }, [comparables, targetLat, targetLng]);
+  }, [comparables]);
 
   // Track image load errors
   const handleImgError = useCallback((compId: number | string) => {
@@ -856,22 +846,18 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         if (!map || !mapRef.current) return;
         
         if (validComps.length > 0) {
-          // validComps is already filtered to ≤50mi with valid coords, use all of them
-          const compsForBounds = validComps;
+          // Show ALL comps the backend returned (only 0/0 coords filtered out)
           const allPoints = [
             [targetLat, targetLng],
-            ...compsForBounds.map((c) => [c.latitude, c.longitude]),
+            ...validComps.map((c) => [c.latitude, c.longitude]),
           ];
           const bounds = L.latLngBounds(allPoints as [number, number][]);
 
-          // fitBounds with maxZoom 15 for tight clusters
+          // fitBounds to show target + all comps; maxZoom 15 for tight clusters
           map.invalidateSize({ animate: false });
           map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15, animate: false });
           
-          // Clamp: don't zoom out further than zoom 10 (city level)
-          if (map.getZoom() < 10) {
-            map.setZoom(10);
-          }
+          // Don't clamp zoom — comps may span a wide area and that's OK
         }
       };
 

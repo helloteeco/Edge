@@ -1518,22 +1518,9 @@ export default function CalculatorPage() {
             cachedResult.success = true;
             cachedResult.dataSource = cachedResult.dataSource || 'property_cache';
             
-            // Reconstruct targetCoordinates from comparables if missing (legacy cache entries)
-            if (!cachedResult.targetCoordinates && cachedResult.comparables?.length > 0) {
-              const firstWithCoords = cachedResult.comparables.find(
-                (c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0
-              );
-              if (firstWithCoords) {
-                cachedResult.targetCoordinates = {
-                  latitude: firstWithCoords.latitude,
-                  longitude: firstWithCoords.longitude,
-                };
-                console.log('[Analyze] Reconstructed targetCoordinates from comp:', firstWithCoords.latitude, firstWithCoords.longitude);
-              }
-            }
-            
-            // If still no coordinates, geocode the address as final fallback
-            if (!cachedResult.targetCoordinates) {
+            // Always geocode the actual searched address for accurate map pin
+            // NEVER reconstruct from comp coordinates — they could be from a different market
+            if (!cachedResult.targetCoordinates || cachedResult.targetCoordinates.latitude === 0 || cachedResult.targetCoordinates.longitude === 0) {
               const geocoded = await geocodeAddress(addressToAnalyze);
               if (geocoded) {
                 cachedResult.targetCoordinates = { latitude: geocoded.lat, longitude: geocoded.lng };
@@ -1781,13 +1768,13 @@ export default function CalculatorPage() {
       // Skip if data already came from cache (no need to re-save)
       if ((data as any).dataSource !== 'property_cache') {
         try {
-          // Ensure targetCoordinates is always saved (fallback to first comp if undefined)
+          // Ensure targetCoordinates is always saved — geocode if missing, NEVER use comp coords
           let coordsToSave = targetCoordinates;
-          if (!coordsToSave && comparables?.length > 0) {
-            const firstWithCoords = comparables.find((c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0);
-            if (firstWithCoords) {
-              coordsToSave = { latitude: firstWithCoords.latitude, longitude: firstWithCoords.longitude };
-              console.log('[Cache] Using comp coords as targetCoordinates fallback:', coordsToSave);
+          if (!coordsToSave || coordsToSave.latitude === 0 || coordsToSave.longitude === 0) {
+            // Use the already-resolved targetCoords state (from geocode) if available
+            if (targetCoords && targetCoords.lat !== 0 && targetCoords.lng !== 0) {
+              coordsToSave = { latitude: targetCoords.lat, longitude: targetCoords.lng };
+              console.log('[Cache] Using geocoded targetCoords for cache:', coordsToSave);
             }
           }
           
@@ -4129,7 +4116,22 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 mapTargetLng = result.targetCoordinates.longitude;
               }
               
-              // NEVER fall back to comp coordinates — they could be from a different market
+              // Final fallback: compute center from comps with valid coords so the map still renders
+              // This ensures the map ALWAYS shows when there are comps, even if geocode is slow
+              if (mapTargetLat === 0 && mapTargetLng === 0) {
+                const validComps = result.comparables.filter(
+                  (c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0
+                );
+                if (validComps.length > 0) {
+                  // Use median of comp coordinates as approximate center
+                  const lats = validComps.map((c: any) => c.latitude).sort((a: number, b: number) => a - b);
+                  const lngs = validComps.map((c: any) => c.longitude).sort((a: number, b: number) => a - b);
+                  mapTargetLat = lats[Math.floor(lats.length / 2)];
+                  mapTargetLng = lngs[Math.floor(lngs.length / 2)];
+                }
+              }
+              
+              // If still no coordinates at all, don't render the map
               if (mapTargetLat === 0 && mapTargetLng === 0) return null;
               
               return (
