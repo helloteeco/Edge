@@ -182,14 +182,18 @@
 - [x] No existing features removed
 
 ## FEATURE: County-level FMR caching in Supabase (February 2026)
-- [ ] Create fmr_cache table in Supabase (state, county/city, bedroom data, timestamp)
-- [ ] Check cache before calling HUD API or RentData.org
-- [ ] Store successful FMR results in cache for instant repeat lookups
-- [ ] Cache TTL of 90 days (FMR data changes annually)
-- [ ] No existing features removed
+- [x] Create fmr_cache table in Supabase (state, county/city, bedroom data, timestamp)
+- [x] Check cache before calling HUD API or RentData.org
+- [x] Store successful FMR results in cache for instant repeat lookups
+- [x] Cache TTL of 90 days (FMR data changes annually)
+- [x] No existing features removed
 
 ## FEATURE: Enhanced STR vs LTR comparison UI with bar chart (February 2026)
-- [ ] Add visual bar chart comparing STR vs LTR income side-by-side
-- [ ] Show revenue, expenses, and net cash flow bars for both strategies
-- [ ] Make chart mobile-friendly and visually polished
+- [x] Add visual bar chart comparing STR vs LTR income side-by-side
+- [x] Show revenue, expenses, and net cash flow bars for both strategies
+- [x] Make chart mobile-friendly and visually polished
+- [x] No existing features removed
+
+## BUG: Bottom tab bar floats when mobile keyboard opens (February 2026)
+- [ ] Fix tab bar to stay fixed at viewport bottom when keyboard is open on mobile
 - [ ] No existing features removed

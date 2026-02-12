@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 // Clean SVG icons for premium feel
 const MapIcon = ({ active }: { active: boolean }) => (
@@ -56,6 +57,27 @@ const tabs = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    // Detect virtual keyboard on mobile by comparing visual viewport to window height
+    if (typeof window === "undefined" || !window.visualViewport) return;
+
+    const vv = window.visualViewport;
+    const THRESHOLD = 150; // keyboard is at least 150px tall
+
+    const onResize = () => {
+      const diff = window.innerHeight - (vv?.height ?? window.innerHeight);
+      setKeyboardOpen(diff > THRESHOLD);
+    };
+
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
 
   return (
     <nav 
@@ -63,7 +85,9 @@ export function Navigation() {
       style={{ 
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid #d8d6cd'
+        borderTop: '1px solid #d8d6cd',
+        transform: keyboardOpen ? 'translateY(100%)' : 'translateY(0)',
+        transition: 'transform 0.15s ease-out',
       }}
     >
       <div className="max-w-screen-xl mx-auto px-2">
