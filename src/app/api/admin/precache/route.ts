@@ -187,7 +187,10 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// GET - List available markets
+// GET - Trigger pre-caching (used by Vercel cron jobs)
+// Processes markets in batches of 5 to stay within Hobby plan 60s limit
+// Use ?batch=0 for first 5, ?batch=1 for next 5, etc.
+// Without batch param, processes first 5 markets (cron will cycle through all)
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json(
@@ -196,11 +199,88 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const batchParam = request.nextUrl.searchParams.get("batch");
+  const listOnly = request.nextUrl.searchParams.get("list");
+
+  // If ?list=true, just return the market list
+  if (listOnly === "true") {
+    return NextResponse.json({
+      totalMarkets: TOP_MARKETS.length,
+      markets: TOP_MARKETS.map((m) => ({
+        market: m.market,
+        address: m.address,
+      })),
+    });
+  }
+
+  // Determine which batch to process (5 markets per batch)
+  const BATCH_SIZE = 5;
+  const totalBatches = Math.ceil(TOP_MARKETS.length / BATCH_SIZE);
+  
+  // Auto-rotate through batches based on day of week + week number
+  // This ensures all markets get cached over time with weekly cron
+  const now = new Date();
+  const weekOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const autoBatch = (weekOfYear * 7 + now.getDay()) % totalBatches;
+  
+  const batch = batchParam !== null ? parseInt(batchParam, 10) : autoBatch;
+  const startIdx = batch * BATCH_SIZE;
+  const markets = TOP_MARKETS.slice(startIdx, startIdx + BATCH_SIZE);
+
+  if (markets.length === 0) {
+    return NextResponse.json({ success: true, message: "No markets in this batch", batch, totalBatches });
+  }
+
+  const baseUrl = request.nextUrl.origin;
+  const results: Array<{
+    market: string;
+    status: "success" | "cached" | "error";
+    dataSource?: string;
+    revenue?: number;
+    timeMs?: number;
+    error?: string;
+  }> = [];
+
+  for (const market of markets) {
+    const start = Date.now();
+    try {
+      const response = await fetch(`${baseUrl}/api/mashvisor/property`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: market.address,
+          bedrooms: 3,
+          bathrooms: 2,
+        }),
+      });
+      const data = await response.json();
+      results.push({
+        market: market.market,
+        status: data.cached ? "cached" : data.success ? "success" : "error",
+        dataSource: data.dataSource,
+        revenue: data.analysis?.annualRevenue,
+        timeMs: Date.now() - start,
+        error: data.success ? undefined : data.error,
+      });
+    } catch (error: any) {
+      results.push({
+        market: market.market,
+        status: "error",
+        error: error.message,
+        timeMs: Date.now() - start,
+      });
+    }
+    // Small delay between requests
+    if (markets.indexOf(market) < markets.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
+
   return NextResponse.json({
-    totalMarkets: TOP_MARKETS.length,
-    markets: TOP_MARKETS.map((m) => ({
-      market: m.market,
-      address: m.address,
-    })),
+    success: true,
+    batch,
+    totalBatches,
+    marketsProcessed: results.length,
+    results,
   });
 }

@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/admin/precache?secret=teeco-precache-2024",
+      "schedule": "0 6 * * 1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

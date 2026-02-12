@@ -1960,6 +1960,7 @@ export default function CalculatorPage() {
         <span>${result.bedrooms} Bed / ${result.bathrooms} Bath</span> &bull; 
         <span>Sleeps ${guestCount || baselineGuests}</span>
       </p>
+      ${result.dataSource && result.dataSource.includes('pricelabs') ? '<div style="display:inline-block;margin-top:12px;padding:4px 14px;background:#0ea5e9;color:#fff;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">&#9989; PRICELABS DATA &bull; Powered by PriceLabs</div>' : result.dataSource ? '<div style="display:inline-block;margin-top:12px;padding:4px 14px;background:#94a3b8;color:#fff;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">AIRBNB DATA</div>' : ''}
     </div>
     
     <!-- Executive Summary -->

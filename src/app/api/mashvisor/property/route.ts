@@ -611,14 +611,29 @@ function enrichListings(
   const tBath = targetBathrooms || Math.ceil(targetBedrooms / 2);
   const tGuests = targetGuests || targetBedrooms * 2;
 
-  // Filter to similar bedroom count (within ±1)
-  const bedroomFiltered = listings.filter((l) => {
+  // STEP 1: Filter out comps that are too far away (max 50 miles)
+  const MAX_COMP_DISTANCE_MILES = 50;
+  const distanceFiltered = listings.filter((l) => {
+    if (!l.latitude || !l.longitude) return true; // Keep listings without coords (will get 999 distance later)
+    const dist = calcDistance(targetLat, targetLng, l.latitude, l.longitude);
+    return dist <= MAX_COMP_DISTANCE_MILES;
+  });
+  // If distance filtering removed too many, fall back to closest 30 from original set
+  const proximityFiltered = distanceFiltered.length >= 5 ? distanceFiltered : 
+    [...listings].sort((a, b) => {
+      const dA = calcDistance(targetLat, targetLng, a.latitude || 0, a.longitude || 0);
+      const dB = calcDistance(targetLat, targetLng, b.latitude || 0, b.longitude || 0);
+      return dA - dB;
+    }).slice(0, 30);
+
+  // STEP 2: Filter to similar bedroom count (within ±1)
+  const bedroomFiltered = proximityFiltered.filter((l) => {
     const diff = Math.abs((l.bedrooms || targetBedrooms) - targetBedrooms);
     return targetBedrooms >= 6 ? (l.bedrooms || 0) >= 5 : diff <= 1;
   });
 
-  // Use bedroom-filtered if we have enough, otherwise use all
-  const compsForCalc = bedroomFiltered.length >= 5 ? bedroomFiltered : listings;
+  // Use bedroom-filtered if we have enough, otherwise use proximity-filtered
+  const compsForCalc = bedroomFiltered.length >= 5 ? bedroomFiltered : proximityFiltered;
 
   // Calculate occupancy and relevance score for each listing
   const enriched = compsForCalc.map((listing) => {
