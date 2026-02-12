@@ -580,7 +580,7 @@ export default function CalculatorPage() {
                   recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
                   targetCoordinates: data.targetCoordinates || undefined,
                   marketType: (data.marketType as string) || undefined,
-                  dataSource: (data.dataSource as string) || undefined,
+                  dataSource: ((data as any).dataSource as string) || undefined,
                 };
                 setResult(analysisResult);
                 // Restore allComps and targetCoords for local bedroom re-filtering and comp map
@@ -1021,7 +1021,7 @@ export default function CalculatorPage() {
       recommendedAmenities: (data.recommendedAmenities as AnalysisResult["recommendedAmenities"]) || [],
       targetCoordinates: data.targetCoordinates || undefined,
       marketType: (data.marketType as string) || undefined,
-      dataSource: (data.dataSource as string) || undefined,
+      dataSource: ((data as any).dataSource as string) || undefined,
     };
     
     // Reconstruct targetCoordinates from comparables if missing
@@ -1645,7 +1645,7 @@ export default function CalculatorPage() {
         recommendedAmenities: recommendedAmenities || [],
         targetCoordinates: targetCoordinates || undefined,
         marketType: (data.marketType as string) || undefined,
-        dataSource: (data.dataSource as string) || undefined,
+        dataSource: ((data as any).dataSource as string) || undefined,
       };
       setResult(analysisResult);
       setAddress(addressToAnalyze);;
@@ -1752,7 +1752,7 @@ export default function CalculatorPage() {
       
       // Cache the API response in Supabase (90-day TTL)
       // Skip if data already came from cache (no need to re-save)
-      if (data.dataSource !== 'property_cache') {
+      if ((data as any).dataSource !== 'property_cache') {
         try {
           // Ensure targetCoordinates is always saved (fallback to first comp if undefined)
           let coordsToSave = targetCoordinates;
