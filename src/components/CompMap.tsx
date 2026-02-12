@@ -640,20 +640,24 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   const [isMapReady, setIsMapReady] = useState(false);
   const [imgErrors, setImgErrors] = useState<Set<number | string>>(new Set());
 
-  // Ensure all comps have coordinates — assign approximate positions for those missing them
+  // Filter comps to only those with valid coordinates near the target property
+  // NEVER scatter comps with missing coords — they'd appear in random locations
   const validComps = useMemo(() => {
-    return comparables.map((c, i) => {
-      if (c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0) return c;
-      // Comp lacks coordinates — scatter around target based on distance
-      // Use golden angle distribution for even spacing
-      const angle = (i * 137.508) * (Math.PI / 180);
-      const distMiles = c.distance || (2 + i * 0.5); // Use reported distance or estimate
-      const distDeg = distMiles / 69; // ~69 miles per degree latitude
-      return {
-        ...c,
-        latitude: targetLat + distDeg * Math.cos(angle),
-        longitude: targetLng + distDeg * Math.sin(angle) / Math.cos(targetLat * Math.PI / 180),
-      };
+    // Helper: Haversine distance in miles
+    const haversineMiles = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+      const R = 3959;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+    const MAX_MAP_DISTANCE = 50; // miles — same as backend filter
+    return comparables.filter((c) => {
+      // Must have non-zero coordinates
+      if (!c.latitude || !c.longitude || c.latitude === 0 || c.longitude === 0) return false;
+      // Must be within 50 miles of the target property
+      const dist = haversineMiles(targetLat, targetLng, c.latitude, c.longitude);
+      return dist <= MAX_MAP_DISTANCE;
     });
   }, [comparables, targetLat, targetLng]);
 
@@ -852,14 +856,8 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         if (!map || !mapRef.current) return;
         
         if (validComps.length > 0) {
-          // Filter outliers: only include comps within ~69 miles of target
-          const nearbyComps = validComps.filter((c) => {
-            const latDiff = Math.abs(c.latitude - targetLat);
-            const lngDiff = Math.abs(c.longitude - targetLng);
-            return latDiff < 1 && lngDiff < 1 && c.latitude !== 0 && c.longitude !== 0;
-          });
-
-          const compsForBounds = nearbyComps.length > 0 ? nearbyComps : validComps;
+          // validComps is already filtered to ≤50mi with valid coords, use all of them
+          const compsForBounds = validComps;
           const allPoints = [
             [targetLat, targetLng],
             ...compsForBounds.map((c) => [c.latitude, c.longitude]),

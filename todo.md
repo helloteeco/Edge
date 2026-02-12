@@ -105,3 +105,12 @@
 - [x] Fix spacing between Total Startup Costs bar, Monthly Operating Expenses card, and Investment Calculator section (added mt-2 to both cards)
 - [x] Fix comp map initial zoom — too zoomed out, should focus on subject property and comps area (filtered outliers, maxZoom 15, min clamp at 10)
 - [x] DEFINITIVE FIX: CompMap tiles misaligned, pins not visible — fixed invalidateSize timing, CSS loading, verified locally with both static and dynamic import tests
+
+
+## FIX: Map showing scattered comps across US + expandable comp cards (February 2026)
+- [x] Backend: Remove comp-coordinate reconstruction, always geocode actual address for targetCoordinates
+- [x] Backend: Always recalculate distance from geocoded address (never trust cached distance from different center)
+- [x] Frontend: Always use geocoded address coords for map center pin, never fall back to comp coordinates
+- [x] CompMap: Add strict coordinate validation — reject comps with 0/0 coords or >50mi from target
+- [x] Expandable comp cards: Show 5 initially, "See All X Comps" button to expand to full 30
+- [ ] Test with multiple locations to verify map centers correctly and shows only nearby comps

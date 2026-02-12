@@ -1101,17 +1101,19 @@ export async function POST(request: NextRequest) {
         if (cachedData?.property || cachedData?.neighborhood) {
           console.log(`[Analyze] INSTANT HIT from property_cache (${Date.now() - startTime}ms)`);
           
-          // Reconstruct targetCoordinates if missing (legacy cache entries)
-          if (!cachedData.targetCoordinates && cachedData.comparables?.length > 0) {
-            const firstCompWithCoords = cachedData.comparables.find(
-              (c: any) => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0
-            );
-            if (firstCompWithCoords) {
+          // If targetCoordinates is missing or zero, geocode the actual address
+          // NEVER reconstruct from comp coordinates — they could be from a different market
+          const hasValidTarget = cachedData.targetCoordinates && 
+            cachedData.targetCoordinates.latitude !== 0 && 
+            cachedData.targetCoordinates.longitude !== 0;
+          if (!hasValidTarget) {
+            const geocoded = await geocodeAddress(address);
+            if (geocoded) {
               cachedData.targetCoordinates = {
-                latitude: firstCompWithCoords.latitude,
-                longitude: firstCompWithCoords.longitude,
+                latitude: geocoded.lat,
+                longitude: geocoded.lng,
               };
-              console.log(`[Analyze] Reconstructed targetCoordinates from comp: ${firstCompWithCoords.latitude}, ${firstCompWithCoords.longitude}`);
+              console.log(`[Analyze] Geocoded targetCoordinates for cached entry: ${geocoded.lat}, ${geocoded.lng}`);
               
               // Update cache entry in background so future hits have targetCoordinates
               supabase.from("property_cache").update({ data: cachedData }).eq("address", address)
@@ -1217,14 +1219,18 @@ export async function POST(request: NextRequest) {
 
       // allComps = full cached listing set (before bedroom filtering)
       // We enrich ALL listings (not just bedroom-filtered) so client can re-filter
-      // Also filter out comps > 50 miles away to avoid showing irrelevant distant listings
+      // ALWAYS recalculate distance from actual geocoded coordinates (never trust cached distance)
+      // This is critical when nearbyCacheByCity is used — cached distances are from a different center point
       const MAX_COMP_DISTANCE = 50;
       const allEnriched = (cached.listings || []).map((listing: any) => {
         const nightPrice = listing.nightPrice || 150;
         const occupancy = listing.occupancy || estimateOccupancy(listing.reviewsCount || 0);
         const annualRev = listing.annualRevenue || Math.round(nightPrice * 365 * (occupancy / 100));
         const monthlyRev = listing.monthlyRevenue || Math.round(annualRev / 12);
-        const distance = listing.distance || calcDistance(latitude, longitude, listing.latitude, listing.longitude);
+        // ALWAYS recalculate distance from THIS address's geocoded coordinates
+        const distance = (listing.latitude && listing.longitude && listing.latitude !== 0 && listing.longitude !== 0)
+          ? calcDistance(latitude, longitude, listing.latitude, listing.longitude)
+          : 999; // No valid coordinates = exclude
         return { ...listing, occupancy, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(distance * 10) / 10 };
       }).filter((l: any) => l.distance <= MAX_COMP_DISTANCE);
 

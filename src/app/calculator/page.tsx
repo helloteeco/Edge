@@ -270,6 +270,8 @@ export default function CalculatorPage() {
   
   // Custom comp selection: track excluded comp IDs
   const [excludedCompIds, setExcludedCompIds] = useState<Set<number | string>>(new Set());
+  // Expandable comp cards: show 5 initially, expand to all
+  const [showAllComps, setShowAllComps] = useState(false);
   
   // Full unfiltered comp set from API — used for local bedroom re-filtering
   const [allComps, setAllComps] = useState<ComparableListing[]>([]);
@@ -355,10 +357,11 @@ export default function CalculatorPage() {
       .finally(() => setIsLoadingFmr(false));
   }, [result?.state, result?.city]);
 
-  // Reset excluded comps when a new analysis is run
+  // Reset excluded comps and collapse comp list when a new analysis is run
   useEffect(() => {
     setExcludedCompIds(new Set());
     setRealOccupancyData({});
+    setShowAllComps(false);
   }, [result?.address]);
   
   // Fetch real occupancy data for comps after analysis completes
@@ -1038,14 +1041,8 @@ export default function CalculatorPage() {
       dataSource: ((data as any).dataSource as string) || undefined,
     };
     
-    // Reconstruct targetCoordinates from comparables if missing
-    if (!analysisResult.targetCoordinates && analysisResult.comparables?.length > 0) {
-      const firstWithCoords = analysisResult.comparables.find(c => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0);
-      if (firstWithCoords) {
-        analysisResult.targetCoordinates = { latitude: firstWithCoords.latitude, longitude: firstWithCoords.longitude };
-        console.log('[Cache Restore] Reconstructed targetCoordinates from comp:', firstWithCoords.latitude, firstWithCoords.longitude);
-      }
-    }
+    // NEVER reconstruct targetCoordinates from comp coordinates — they could be from a different market
+    // Instead, geocode the actual address if coordinates are missing
     
     setResult(analysisResult);
     setIsReportSaved(false); // Reset saved state for new analysis
@@ -1058,7 +1055,7 @@ export default function CalculatorPage() {
       setAllComps(data.comparables as ComparableListing[]);
     }
     const resolvedCoords = analysisResult.targetCoordinates || data.targetCoordinates;
-    if (resolvedCoords) {
+    if (resolvedCoords && resolvedCoords.latitude !== 0 && resolvedCoords.longitude !== 0) {
       setTargetCoords({ lat: resolvedCoords.latitude, lng: resolvedCoords.longitude });
     } else {
       // Geocode fallback for legacy cache entries missing all coordinates
@@ -1679,8 +1676,17 @@ export default function CalculatorPage() {
         setAllComps(comparables || []);
       }
       setLastAnalyzedAddress(addressToAnalyze);
-      if (targetCoordinates) {
+      if (targetCoordinates && targetCoordinates.latitude !== 0 && targetCoordinates.longitude !== 0) {
         setTargetCoords({ lat: targetCoordinates.latitude, lng: targetCoordinates.longitude });
+      } else {
+        // Always geocode the actual address as fallback — never rely on comp coordinates
+        geocodeAddress(addressToAnalyze).then(coords => {
+          if (coords) {
+            console.log('[Fresh Analysis] Geocoded address for CompMap:', coords);
+            setTargetCoords(coords);
+            setResult(prev => prev ? { ...prev, targetCoordinates: { latitude: coords.lat, longitude: coords.lng } } : prev);
+          }
+        });
       }
       
       // ========== MARKET MISMATCH DETECTION ==========
@@ -3991,7 +3997,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 )}
                 
                 <div className="space-y-4">
-                  {comps.slice(0, 10).map((listing, index) => {
+                  {comps.slice(0, showAllComps ? comps.length : 5).map((listing, index) => {
                     const isExcluded = excludedCompIds.has(listing.id);
                     return (
                     <div
@@ -4084,6 +4090,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     );
                   })}
                 </div>
+                
+                {/* See All / Collapse button */}
+                {comps.length > 5 && (
+                  <button
+                    onClick={() => setShowAllComps(!showAllComps)}
+                    className="w-full mt-4 py-3 rounded-xl text-sm font-semibold transition-all"
+                    style={{
+                      backgroundColor: showAllComps ? '#f5f4f0' : '#2b2823',
+                      color: showAllComps ? '#2b2823' : '#ffffff',
+                      border: showAllComps ? '1px solid #e5e3da' : 'none',
+                    }}
+                  >
+                    {showAllComps
+                      ? `Show Less`
+                      : `See All ${comps.length} Comps`
+                    }
+                  </button>
+                )}
+                
                 <p className="text-xs mt-3 text-center" style={{ color: '#a09880' }}>
                   Tap checkboxes to include/exclude listings • Revenue on each card is estimated from its nightly rate
                 </p>
@@ -4093,24 +4118,18 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
 
             {/* ===== Interactive Comp Map — right after comp cards for natural spatial context ===== */}
             {result.comparables && result.comparables.length > 0 && (() => {
-              const hasComps = true;
-              const hasValidCoords = result.targetCoordinates && result.targetCoordinates.latitude !== 0 && result.targetCoordinates.longitude !== 0;
+              // Use targetCoords (always geocoded from actual address) as the primary source
+              // This ensures the pin is ALWAYS on the searched property, never on a random comp
+              let mapTargetLat = targetCoords?.lat || 0;
+              let mapTargetLng = targetCoords?.lng || 0;
               
-              // Determine target coordinates: prefer result.targetCoordinates, fall back to first comp
-              let mapTargetLat = 0;
-              let mapTargetLng = 0;
-              
-              if (hasValidCoords) {
-                mapTargetLat = result.targetCoordinates!.latitude;
-                mapTargetLng = result.targetCoordinates!.longitude;
-              } else {
-                const firstCompWithCoords = result.comparables.find(c => c.latitude && c.longitude && c.latitude !== 0 && c.longitude !== 0);
-                if (firstCompWithCoords) {
-                  mapTargetLat = firstCompWithCoords.latitude;
-                  mapTargetLng = firstCompWithCoords.longitude;
-                }
+              // Fallback to result.targetCoordinates if targetCoords not yet resolved
+              if (mapTargetLat === 0 && mapTargetLng === 0 && result.targetCoordinates && result.targetCoordinates.latitude !== 0 && result.targetCoordinates.longitude !== 0) {
+                mapTargetLat = result.targetCoordinates.latitude;
+                mapTargetLng = result.targetCoordinates.longitude;
               }
               
+              // NEVER fall back to comp coordinates — they could be from a different market
               if (mapTargetLat === 0 && mapTargetLng === 0) return null;
               
               return (
