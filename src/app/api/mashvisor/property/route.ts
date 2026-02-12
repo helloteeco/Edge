@@ -887,7 +887,7 @@ async function logAnalysis(params: {
       adr: params.adr,
       occupancy_rate: params.occupancy,
       revenue_source: params.source,
-      data_provider: "airbnb-direct",
+      data_provider: params.source || "airbnb-direct",
       comp_count: params.compCount,
       revenue_p25: params.percentiles?.revenue?.p25 || 0,
       revenue_p50: params.percentiles?.revenue?.p50 || 0,

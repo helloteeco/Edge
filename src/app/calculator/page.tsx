@@ -4078,7 +4078,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   })}
                 </div>
                 <p className="text-xs mt-3 text-center" style={{ color: '#a09880' }}>
-                  Tap checkboxes to include/exclude comps • Revenue recalculates automatically
+                  Tap checkboxes to include/exclude listings • Revenue on each card is estimated from its nightly rate
                 </p>
               </div>
               );
