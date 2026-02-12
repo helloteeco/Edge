@@ -304,7 +304,15 @@ async function fetchAirbnbPage(
     throw new Error(`Airbnb API returned ${response.status}`);
   }
 
-  const data = await response.json();
+  // CRITICAL: Airbnb listing IDs (e.g. 1573491224895607862) exceed JavaScript's
+  // Number.MAX_SAFE_INTEGER (9007199254740991). Using response.json() would silently
+  // truncate these IDs, producing broken "View on Airbnb" links (404).
+  // Fix: read as text and convert large integers to strings before JSON.parse.
+  const rawText = await response.text();
+  // Regex: match any integer with 16+ digits (safely above MAX_SAFE_INTEGER territory)
+  // and wrap it in quotes so JSON.parse treats it as a string.
+  const safeText = rawText.replace(/(:\s*)(\d{16,})(\s*[,}\]])/g, '$1"$2"$3');
+  const data = JSON.parse(safeText);
   const sections = data?.explore_tabs?.[0]?.sections || [];
   const listings: any[] = [];
 
@@ -407,7 +415,10 @@ async function fetchAirbnbByCity(
 
   if (!response.ok) return [];
 
-  const data = await response.json();
+  // Same large-integer fix as fetchAirbnbPage — preserve listing IDs as strings
+  const rawText = await response.text();
+  const safeText = rawText.replace(/(:\s*)(\d{16,})(\s*[,}\]])/g, '$1"$2"$3');
+  const data = JSON.parse(safeText);
   const sections = data?.explore_tabs?.[0]?.sections || [];
   const listings: any[] = [];
 
