@@ -48,7 +48,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
     if (isSaved) {
       updated = saved.filter((cid: string) => cid !== city?.id);
     } else {
-      updated = [...saved, city?.id];
+      updated = [...saved, city?.id].filter((x): x is string => x !== undefined);
     }
     setSavedCities(updated, email);
     setIsSaved(!isSaved);

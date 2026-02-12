@@ -114,3 +114,7 @@
 - [x] CompMap: Add strict coordinate validation — reject comps with 0/0 coords or >50mi from target
 - [x] Expandable comp cards: Show 5 initially, "See All X Comps" button to expand to full 30
 - [x] Test with multiple locations to verify map centers correctly and shows only nearby comps
+
+## BUG: Vercel build failed after map/comp fix (February 2026)
+- [ ] Identify and fix Vercel build error from latest push
+- [ ] Ensure no features are removed in the fix
