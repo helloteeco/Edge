@@ -169,3 +169,8 @@
 - [x] Extend session duration to 30 days (calculator/page.tsx + AuthHeader.tsx)
 - [x] localStorage already persists across visits and Vercel deploys — no cookie changes needed
 - [x] No changes to magic link flow or any existing features
+
+## BUG: "Failed to create share link" error appears after successful share (February 2026)
+- [x] Diagnosed: navigator.share() throws AbortError when user dismisses iOS share sheet, caught by generic error handler
+- [x] Fixed both green share buttons on calculator page to ignore AbortError (FloatingActionPill already handled it)
+- [x] No features removed

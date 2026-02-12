@@ -3383,9 +3383,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                             await navigator.clipboard.writeText(shareUrl);
                             alert('Share link copied! This link can only be viewed once and expires in 90 days.');
                           }
-                        } catch (err) {
-                          console.error('Share error:', err);
-                          alert('Failed to create share link. Please try again.');
+                        } catch (err: any) {
+                          // Don't show error if user just dismissed the share sheet
+                          if (err?.name === 'AbortError' || err?.message?.includes('Share canceled') || err?.message?.includes('abort')) {
+                            console.log('Share dismissed by user');
+                          } else {
+                            console.error('Share error:', err);
+                            alert('Failed to create share link. Please try again.');
+                          }
                         } finally {
                           setIsCreatingShareLink(false);
                         }
@@ -5452,9 +5457,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     await navigator.clipboard.writeText(shareUrl);
                                     alert('Share link copied! This link can only be viewed once and expires in 90 days.');
                                   }
-                                } catch (err) {
-                                  console.error('Share error:', err);
-                                  alert('Failed to create share link. Please try again.');
+                                } catch (err: any) {
+                                  // Don't show error if user just dismissed the share sheet
+                                  if (err?.name === 'AbortError' || err?.message?.includes('Share canceled') || err?.message?.includes('abort')) {
+                                    console.log('Share dismissed by user');
+                                  } else {
+                                    console.error('Share error:', err);
+                                    alert('Failed to create share link. Please try again.');
+                                  }
                                 } finally {
                                   setIsCreatingShareLink(false);
                                 }
