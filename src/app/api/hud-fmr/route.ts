@@ -405,7 +405,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try HUD API first (primary source)
-    const hudResult = await fetchFromHudApi(state, county);
+    const hudResult = await fetchFromHudApi(state, county ?? null);
     if (hudResult) {
       console.log(`[hud-fmr] HUD API success for ${county || city}, ${state}`);
       return NextResponse.json(hudResult);
@@ -413,7 +413,7 @@ export async function GET(request: NextRequest) {
 
     // Fallback: scrape RentData.org
     console.log(`[hud-fmr] HUD API failed, falling back to RentData.org for ${county || city}, ${state}`);
-    const rentDataResult = await fetchFromRentData(state, county, city || null);
+    const rentDataResult = await fetchFromRentData(state, county ?? null, city ?? null);
     if (rentDataResult) {
       console.log(`[hud-fmr] RentData.org success: ${rentDataResult.areaName}`);
       return NextResponse.json(rentDataResult);
