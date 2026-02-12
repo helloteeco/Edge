@@ -71,20 +71,21 @@ const TOP_MARKETS = [
 ];
 
 // Simple auth check - use a secret key to prevent unauthorized access
+const ADMIN_SECRET = process.env.PRECACHE_SECRET || process.env.ADMIN_API_KEY || "teeco-precache-2026";
+
 function isAuthorized(request: NextRequest): boolean {
-  // Check Authorization header
-  const authHeader = request.headers.get("authorization");
-  const adminKey = process.env.ADMIN_API_KEY || process.env.PRICELABS_API_KEY;
+  const secret = request.nextUrl.searchParams.get("secret")
+    || request.headers.get("x-api-key")
+    || request.headers.get("authorization")?.replace("Bearer ", "");
   
-  if (adminKey && authHeader === `Bearer ${adminKey}`) return true;
+  if (!secret) return false;
   
-  // Also check query param for easier testing
-  const secretParam = request.nextUrl.searchParams.get("secret");
-  if (adminKey && secretParam === adminKey) return true;
+  // Check against admin secret
+  if (secret === ADMIN_SECRET) return true;
   
-  // Fallback: check x-api-key header (common pattern)
-  const apiKeyHeader = request.headers.get("x-api-key");
-  if (adminKey && apiKeyHeader === adminKey) return true;
+  // Also check against PRICELABS_API_KEY
+  const plKey = process.env.PRICELABS_API_KEY;
+  if (plKey && secret === plKey) return true;
   
   return false;
 }
