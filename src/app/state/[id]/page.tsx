@@ -85,7 +85,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
     if (isSaved) {
       updated = saved.filter((code: string) => code !== state?.abbreviation);
     } else {
-      updated = [...saved, state?.abbreviation];
+      updated = [...saved, state?.abbreviation].filter((x): x is string => x !== undefined);
     }
     setSavedStates(updated, email);
     setIsSaved(!isSaved);
