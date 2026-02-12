@@ -116,5 +116,5 @@
 - [x] Test with multiple locations to verify map centers correctly and shows only nearby comps
 
 ## BUG: Vercel build failed after map/comp fix (February 2026)
-- [ ] Identify and fix Vercel build error from latest push
-- [ ] Ensure no features are removed in the fix
+- [x] Identify and fix Vercel build error from latest push
+- [x] Ensure no features are removed in the fix
