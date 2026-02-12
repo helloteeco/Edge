@@ -5662,8 +5662,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
           </div>
         )}
 
-        {/* Recent Searches */}
-        {!result && recentSearches.length > 0 && (
+        {/* Recent Searches — only visible when signed in */}
+        {!result && recentSearches.length > 0 && isAuthenticated && (
           <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
             <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Recent Searches</h3>
             <div className="space-y-2">

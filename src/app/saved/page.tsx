@@ -410,7 +410,7 @@ export default function SavedPage() {
               }
             >
               <HeartIcon className="w-4 h-4" color={activeTab === 'markets' ? '#ffffff' : '#787060'} />
-              Markets ({savedCityData.length + savedStateData.length}/10)
+              Markets {isAuthenticated ? `(${savedCityData.length + savedStateData.length}/10)` : ''}
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -427,7 +427,7 @@ export default function SavedPage() {
               <svg className="w-4 h-4" fill="none" stroke={activeTab === 'history' ? '#ffffff' : '#787060'} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              History ({analysisHistory.length}/10)
+              History {isAuthenticated ? `(${analysisHistory.length}/10)` : ''}
             </button>
           </div>
         </div>
@@ -625,7 +625,40 @@ export default function SavedPage() {
         {/* Markets Tab */}
         {activeTab === 'markets' && (
           <>
-            {isMarketsEmpty ? (
+            {!isAuthenticated ? (
+              <div 
+                className="rounded-2xl p-8 text-center"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+              >
+                <div 
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ backgroundColor: '#f5f5f0', border: '1px solid #e5e3da' }}
+                >
+                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 
+                  className="text-xl font-semibold mb-2"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Sign in to view saved markets
+                </h3>
+                <p className="mb-6 max-w-sm mx-auto" style={{ color: '#787060' }}>
+                  Your bookmarked states and cities are kept private to your account.
+                </p>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundColor: '#2b2823', color: '#ffffff', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.3)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Sign In
+                </button>
+              </div>
+            ) : isMarketsEmpty ? (
               <div 
                 className="rounded-2xl p-8 text-center"
                 style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
@@ -822,7 +855,40 @@ export default function SavedPage() {
         {/* History Tab */}
         {activeTab === 'history' && (
           <>
-            {analysisHistory.length === 0 ? (
+            {!isAuthenticated ? (
+              <div 
+                className="rounded-2xl p-8 text-center"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+              >
+                <div 
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ backgroundColor: '#f5f5f0', border: '1px solid #e5e3da' }}
+                >
+                  <svg className="w-10 h-10" fill="none" stroke="#787060" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 
+                  className="text-xl font-semibold mb-2"
+                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Sign in to view search history
+                </h3>
+                <p className="mb-6 max-w-sm mx-auto" style={{ color: '#787060' }}>
+                  Your analysis history is kept private to your account.
+                </p>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundColor: '#2b2823', color: '#ffffff', boxShadow: '0 4px 12px -2px rgba(43, 40, 35, 0.3)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Sign In
+                </button>
+              </div>
+            ) : analysisHistory.length === 0 ? (
               <div 
                 className="rounded-2xl p-8 text-center"
                 style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
