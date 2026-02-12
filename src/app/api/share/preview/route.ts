@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, supabaseKey);
-}
+// Use the same hardcoded fallback values as src/lib/supabase.ts
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // GET - Get preview data for Open Graph (doesn't mark as viewed)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(request.url);
     const shareId = searchParams.get('id');
 

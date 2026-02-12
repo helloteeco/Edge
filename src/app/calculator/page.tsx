@@ -3461,11 +3461,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 const guestMult = getGuestCountMultiplier();
                 const baseOcc = result.occupancy || 55;
                 
+                // Calculate percentile scaling ratio so monthly data reflects selected percentile
+                // Raw historical total = sum of all monthly revenues from API (before percentile/guest adjustments)
+                const rawHistoricalTotal = seasonalData.reduce((sum, m) => sum + (m.revenue || 0), 0);
+                const percentileScale = (rawHistoricalTotal > 0 && annualRev > 0) ? (annualRev / rawHistoricalTotal) : 1;
+                
                 // Calculate revenue for current month
                 const currentMonthData = seasonalData.find(m => m.month === currentMonth + 1);
                 let currentMonthRev = baseMonthlyRev;
                 if (currentMonthData?.revenue && currentMonthData.revenue > 0) {
-                  currentMonthRev = Math.round(currentMonthData.revenue * guestMult);
+                  // Scale raw monthly revenue by percentile ratio (already includes guest/percentile adjustments)
+                  currentMonthRev = Math.round(currentMonthData.revenue * percentileScale);
                 } else if (currentMonthData) {
                   const mult = baseOcc > 0 ? (currentMonthData.occupancy / baseOcc) : 1;
                   currentMonthRev = Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5));
@@ -3476,7 +3482,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 const nextMonthData = seasonalData.find(m => m.month === nextMonthIdx + 1);
                 let nextMonthRev = baseMonthlyRev;
                 if (nextMonthData?.revenue && nextMonthData.revenue > 0) {
-                  nextMonthRev = Math.round(nextMonthData.revenue * guestMult);
+                  nextMonthRev = Math.round(nextMonthData.revenue * percentileScale);
                 } else if (nextMonthData) {
                   const mult = baseOcc > 0 ? (nextMonthData.occupancy / baseOcc) : 1;
                   nextMonthRev = Math.round(baseMonthlyRev * Math.min(Math.max(mult, 0.5), 1.5));
@@ -3729,12 +3735,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {(() => {
                 const annualRev = getDisplayRevenue() || 0;
                 const baseMonthlyRev = annualRev / 12;
-                const guestMultiplier = getGuestCountMultiplier();
+                const seasonData = getSeasonalityData();
+                
+                // Calculate percentile scaling ratio so chart reflects selected percentile + bed/bath
+                const rawTotal = seasonData.reduce((sum, m) => sum + (m.revenue || 0), 0);
+                const pScale = (rawTotal > 0 && annualRev > 0) ? (annualRev / rawTotal) : 1;
                 
                 // Calculate all monthly revenues first
-                const monthlyRevenues = getSeasonalityData().map(month => {
+                const monthlyRevenues = seasonData.map(month => {
                   if (month.revenue && month.revenue > 0) {
-                    return Math.round(month.revenue * guestMultiplier);
+                    return Math.round(month.revenue * pScale);
                   } else {
                     const baseOccupancy = result.occupancy || 55;
                     const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;
@@ -3826,15 +3836,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <p className="text-sm text-gray-500 mb-4">Estimated revenue based on seasonal occupancy</p>
               
               <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-                {getSeasonalityData().map((month, index) => {
+                {(() => {
+                  const annRevGrid = getDisplayRevenue() || 0;
+                  const baseMonthlyRevGrid = annRevGrid / 12;
+                  const sDataGrid = getSeasonalityData();
+                  const rawTotalGrid = sDataGrid.reduce((s, m) => s + (m.revenue || 0), 0);
+                  const pScaleGrid = (rawTotalGrid > 0 && annRevGrid > 0) ? (annRevGrid / rawTotalGrid) : 1;
+                  return sDataGrid;
+                })().map((month, index) => {
                   const annualRev = getDisplayRevenue() || 0;
                   const baseMonthlyRev = annualRev / 12;
-                  const guestMultiplier = getGuestCountMultiplier();
+                  const sDataAll = getSeasonalityData();
+                  const rawTotalAll = sDataAll.reduce((s, m) => s + (m.revenue || 0), 0);
+                  const pScaleAll = (rawTotalAll > 0 && annualRev > 0) ? (annualRev / rawTotalAll) : 1;
                   // Use actual revenue from historical data if available
                   let monthlyRev = 0;
                   if (month.revenue && month.revenue > 0) {
-                    // Apply guest multiplier to historical revenue
-                    monthlyRev = Math.round(month.revenue * guestMultiplier);
+                    // Scale by percentile ratio to reflect bed/bath/percentile selection
+                    monthlyRev = Math.round(month.revenue * pScaleAll);
                   } else {
                     const baseOccupancy = result.occupancy || 55;
                     const seasonalMultiplier = baseOccupancy > 0 ? (month.occupancy / baseOccupancy) : 1;

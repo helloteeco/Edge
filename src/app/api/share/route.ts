@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, supabaseKey);
-}
+// Use the same hardcoded fallback values as src/lib/supabase.ts
+// This ensures the share API works even without env vars on Vercel
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Generate a short unique ID for sharing
 function generateShareId(): string {
@@ -20,7 +20,6 @@ function generateShareId(): string {
 // POST - Create a new shared analysis
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase();
     const body = await request.json();
     const {
       address,
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating shared analysis:', error);
-      return NextResponse.json({ error: 'Failed to create share link' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create share link', details: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ 
@@ -86,7 +85,6 @@ export async function POST(request: NextRequest) {
 // GET - Retrieve a shared analysis (and mark as viewed)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(request.url);
     const shareId = searchParams.get('id');
 
