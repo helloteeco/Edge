@@ -563,6 +563,19 @@ async function fetchPriceLabs(
     }
 
     console.log(`[PriceLabs] Got data: ${kpis.NoOfListings} listings, Rev50=$${kpis.Revenue50PercentileSum} (${Date.now() - startMs}ms)`);
+    // TEMP: Log all available keys to discover monthly data fields
+    console.log(`[PriceLabs] Top-level data keys: ${JSON.stringify(Object.keys(data))}`);
+    console.log(`[PriceLabs] KPI keys: ${JSON.stringify(Object.keys(kpis))}`);
+    // Check for monthly data in the response
+    if (data.MonthlyData || data.monthly_data || data.monthlyMetrics) {
+      console.log(`[PriceLabs] MONTHLY DATA FOUND at top level!`);
+    }
+    // Check for monthly fields in KPIs
+    const monthlyKeys = Object.keys(kpis).filter(k => k.toLowerCase().includes('month') || k.toLowerCase().includes('jan') || k.toLowerCase().includes('feb'));
+    if (monthlyKeys.length > 0) {
+      console.log(`[PriceLabs] Monthly KPI keys: ${JSON.stringify(monthlyKeys)}`);
+      monthlyKeys.forEach(k => console.log(`[PriceLabs] ${k}: ${JSON.stringify(kpis[k])}`.slice(0, 500)));
+    }
     return extractPriceLabsKPIs(kpis, Date.now() - startMs);
   } catch (error) {
     console.error("[PriceLabs] Error:", error);
