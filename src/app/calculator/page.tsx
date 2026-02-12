@@ -196,8 +196,16 @@ export default function CalculatorPage() {
   // Revenue percentile selector
   const [revenuePercentile, setRevenuePercentile] = useState<"average" | "75th" | "90th">("average");
   
-  // Analysis Mode: "buying" or "arbitrage"
-  const [analysisMode, setAnalysisMode] = useState<"buying" | "arbitrage">("buying");
+  // Analysis Mode: "buying", "arbitrage", or "iownit"
+  const [analysisMode, setAnalysisMode] = useState<"buying" | "arbitrage" | "iownit">("buying");
+
+  // I Own It mode fields
+  const [iownitMortgage, setIownitMortgage] = useState(""); // Optional monthly mortgage
+  const [iownitPropertyTaxRate, setIownitPropertyTaxRate] = useState(1.2);
+  const [iownitInsuranceAnnual, setIownitInsuranceAnnual] = useState(2400);
+  const [hudFmrData, setHudFmrData] = useState<{ byBedrooms: Record<number, number>; areaName: string; year: number } | null>(null);
+  const [isLoadingFmr, setIsLoadingFmr] = useState(false);
+  const [fmrError, setFmrError] = useState<string | null>(null);
   
   // Arbitrage-specific fields
   const [monthlyRent, setMonthlyRent] = useState("");
@@ -340,6 +348,24 @@ export default function CalculatorPage() {
     nearestMarket: string;
     distanceMiles: number | null;
   } | null>(null);
+
+  // Fetch HUD FMR data when result changes (for I Own It mode)
+  useEffect(() => {
+    if (!result?.state || !result?.city) return;
+    setIsLoadingFmr(true);
+    setFmrError(null);
+    fetch(`/api/hud-fmr?state=${encodeURIComponent(result.state)}&city=${encodeURIComponent(result.city)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setHudFmrData({ byBedrooms: data.byBedrooms, areaName: data.areaName, year: data.year });
+        } else {
+          setFmrError(data.error || "Could not fetch rent data");
+        }
+      })
+      .catch(() => setFmrError("Failed to fetch rent data"))
+      .finally(() => setIsLoadingFmr(false));
+  }, [result?.state, result?.city]);
 
   // Reset excluded comps when a new analysis is run
   useEffect(() => {
@@ -1234,12 +1260,19 @@ export default function CalculatorPage() {
       const inv = calculateInvestment();
       const arb = calculateArbitrage();
       const displayRevenue = getDisplayRevenue();
+      const own = calculateIownit();
       const activeCalc = analysisMode === "buying" ? inv : arb;
       
-      const strategyLabel = analysisMode === "arbitrage" ? "Rental Arbitrage" : "Investment";
+      const strategyLabel = analysisMode === "iownit" ? "I Own It (STR vs LTR)" : analysisMode === "arbitrage" ? "Rental Arbitrage" : "Investment";
       const subject = encodeURIComponent(`STR ${strategyLabel} Analysis - ${result.address}`);
       
-      const returnsSection = analysisMode === "buying" 
+      const returnsSection = analysisMode === "iownit"
+        ? `STR vs LTR COMPARISON\n` +
+          `• STR Monthly Net: $${Math.round(own.strMonthlyCashFlow).toLocaleString()}\n` +
+          `• LTR Monthly Net (HUD FMR): $${Math.round(own.ltrMonthlyCashFlow).toLocaleString()}\n` +
+          `• Monthly Difference: $${Math.round(own.monthlyDifference).toLocaleString()}\n` +
+          `• Winner: ${own.strWins ? 'STR' : 'LTR'}\n`
+        : analysisMode === "buying" 
         ? `INVESTMENT RETURNS\n` +
           `• Cash-on-Cash Return: ${inv.cashOnCashReturn.toFixed(1)}%\n` +
           `• Annual Cash Flow: $${inv.cashFlow.toLocaleString()}\n` +
@@ -1840,7 +1873,7 @@ export default function CalculatorPage() {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>${analysisMode === 'arbitrage' ? 'Airbnb Arbitrage' : 'Investment'} Analysis - ${result.address || result.neighborhood}</title>
+  <title>${analysisMode === 'iownit' ? 'I Own It (STR vs LTR)' : analysisMode === 'arbitrage' ? 'Airbnb Arbitrage' : 'Investment'} Analysis - ${result.address || result.neighborhood}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2049,6 +2082,37 @@ export default function CalculatorPage() {
       <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(displayRevenue)}</td></tr>
       <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${arbitrage.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(arbitrage.cashFlow)}</strong></td></tr>
     </table>
+    ` : ''}
+    ${analysisMode === "iownit" && hudFmrData ? `
+    <h2>I Own It Analysis (STR vs LTR)</h2>
+    <table class="table">
+      <tr><td>Monthly Mortgage</td><td class="right">${iownitMortgage ? formatCurrency(parseFloat(iownitMortgage)) : 'Paid off'}</td></tr>
+      <tr><td>HUD Fair Market Rent (${bedrooms || 3}BR)</td><td class="right">${formatCurrency(iownit.fmrMonthly)}/mo</td></tr>
+    </table>
+    <h2>STR Income</h2>
+    <table class="table">
+      <tr><td>Gross Revenue</td><td class="right positive">${formatCurrency(iownit.grossRevenue)}</td></tr>
+      ${iownit.annualMortgage > 0 ? `<tr><td>Mortgage</td><td class="right">${formatCurrency(iownit.annualMortgage)}</td></tr>` : ''}
+      <tr><td>STR Insurance</td><td class="right">${formatCurrency(iownit.annualInsurance)}</td></tr>
+      <tr><td>Management (${managementFeePercent}%)</td><td class="right">${formatCurrency(iownit.annualManagement)}</td></tr>
+      <tr><td>Platform Fee (${platformFeePercent}%)</td><td class="right">${formatCurrency(iownit.annualPlatformFee)}</td></tr>
+      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(iownit.monthlyOperating * 12)}</td></tr>
+      <tr class="total"><td><strong>STR Net Cash Flow</strong></td><td class="right ${iownit.strCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(iownit.strCashFlow)}</strong></td></tr>
+    </table>
+    <h2>LTR Income (HUD Fair Market Rent)</h2>
+    <table class="table">
+      <tr><td>Gross Rent (${bedrooms || 3}BR FMR)</td><td class="right positive">${formatCurrency(iownit.ltrGrossAnnual)}</td></tr>
+      ${iownit.annualMortgage > 0 ? `<tr><td>Mortgage</td><td class="right">${formatCurrency(iownit.annualMortgage)}</td></tr>` : ''}
+      <tr><td>Landlord Insurance</td><td class="right">${formatCurrency(iownit.ltrInsurance)}</td></tr>
+      <tr><td>Vacancy (5%)</td><td class="right">${formatCurrency(iownit.ltrVacancy)}</td></tr>
+      <tr><td>Management (8%)</td><td class="right">${formatCurrency(iownit.ltrManagement)}</td></tr>
+      <tr><td>Maintenance (5%)</td><td class="right">${formatCurrency(iownit.ltrMaintenance)}</td></tr>
+      <tr class="total"><td><strong>LTR Net Cash Flow</strong></td><td class="right ${iownit.ltrCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(iownit.ltrCashFlow)}</strong></td></tr>
+    </table>
+    <div style="background: ${iownit.strWins ? '#ecfdf5' : '#eff6ff'}; padding: 16px; border-radius: 12px; text-align: center; margin: 16px 0;">
+      <p style="font-size: 18px; font-weight: bold; color: ${iownit.strWins ? '#16a34a' : '#2563eb'};">${iownit.strWins ? '🚀 STR wins' : '🏢 LTR wins'} by ${formatCurrency(Math.abs(iownit.monthlyDifference))}/mo</p>
+      <p style="font-size: 12px; color: #666; margin-top: 4px;">That's ${formatCurrency(Math.abs(iownit.annualDifference))} more per year</p>
+    </div>
     ` : ''}
     
     <!-- Monthly Revenue Forecast -->
@@ -2599,6 +2663,70 @@ export default function CalculatorPage() {
     };
   };
 
+  // Calculate I Own It returns (homeowner converting to STR)
+  const calculateIownit = () => {
+    const grossRevenue = getDisplayRevenue();
+    const mortgage = parseFloat(iownitMortgage) || 0;
+    const annualMortgage = mortgage * 12;
+    const annualPropertyTax = mortgage > 0 ? (mortgage * 12 * 10) * (iownitPropertyTaxRate / 100) : 0; // Rough estimate: mortgage * 10 ≈ home value
+    const annualInsurance = iownitInsuranceAnnual;
+    const annualManagement = grossRevenue * (managementFeePercent / 100);
+    const annualPlatformFee = grossRevenue * (platformFeePercent / 100);
+    const monthlyOperating = calculateMonthlyExpenses();
+    const annualOperating = monthlyOperating * 12;
+    const startupCosts = calculateStartupCosts();
+    
+    const totalAnnualExpenses = annualMortgage + annualPropertyTax + annualInsurance + annualManagement + annualPlatformFee + annualOperating;
+    const strCashFlow = grossRevenue - totalAnnualExpenses;
+    const strMonthlyCashFlow = strCashFlow / 12;
+    
+    // HUD FMR-based LTR comparison
+    const br = bedrooms || 3;
+    const fmrMonthly = hudFmrData?.byBedrooms?.[Math.min(br, 4)] || 0;
+    const ltrGrossAnnual = fmrMonthly * 12;
+    const ltrVacancy = ltrGrossAnnual * 0.05; // 5% vacancy
+    const ltrManagement = ltrGrossAnnual * 0.08; // 8% management
+    const ltrMaintenance = ltrGrossAnnual * 0.05; // 5% maintenance
+    const ltrInsurance = 1800; // Typical landlord insurance
+    const ltrPropertyTax = annualPropertyTax; // Same property tax
+    const ltrTotalExpenses = annualMortgage + ltrPropertyTax + ltrInsurance + ltrVacancy + ltrManagement + ltrMaintenance;
+    const ltrCashFlow = ltrGrossAnnual - ltrTotalExpenses;
+    const ltrMonthlyCashFlow = ltrCashFlow / 12;
+    
+    const monthlyDifference = strMonthlyCashFlow - ltrMonthlyCashFlow;
+    const annualDifference = strCashFlow - ltrCashFlow;
+    
+    return {
+      // STR side
+      grossRevenue,
+      annualMortgage,
+      annualPropertyTax,
+      annualInsurance,
+      annualManagement,
+      annualPlatformFee,
+      monthlyOperating,
+      totalAnnualExpenses,
+      strCashFlow,
+      strMonthlyCashFlow,
+      startupCosts,
+      // LTR side
+      fmrMonthly,
+      ltrGrossAnnual,
+      ltrVacancy,
+      ltrManagement,
+      ltrMaintenance,
+      ltrInsurance,
+      ltrPropertyTax,
+      ltrTotalExpenses,
+      ltrCashFlow,
+      ltrMonthlyCashFlow,
+      // Comparison
+      monthlyDifference,
+      annualDifference,
+      strWins: strCashFlow > ltrCashFlow,
+    };
+  };
+
   // Memoize expensive calculations to avoid recalculating on every render
   const investment = useMemo(() => calculateInvestment(), [
     purchasePrice, downPaymentPercent, interestRate, loanTerm, propertyTaxRate,
@@ -2622,12 +2750,24 @@ export default function CalculatorPage() {
     includeFurnishings, includeAmenities, furnishingsCost, amenitiesCost, propertySqft,
     studentDiscount, excludedCompIds,
   ]);
+  const iownit = useMemo(() => calculateIownit(), [
+    iownitMortgage, iownitPropertyTaxRate, iownitInsuranceAnnual,
+    managementFeePercent, platformFeePercent,
+    result, revenuePercentile, guestCount, bedrooms, useCustomIncome, customAnnualIncome,
+    electricMonthly, waterMonthly, internetMonthly, trashMonthly,
+    lawnCareMonthly, pestControlMonthly, maintenanceMonthly, houseSuppliesMonthly,
+    rentalSoftwareMonthly, cleaningMonthly, suppliesConsumablesMonthly,
+    includeDesignServices, includeSetupServices,
+    includeFurnishings, includeAmenities, furnishingsCost, amenitiesCost, propertySqft,
+    studentDiscount, excludedCompIds, hudFmrData,
+  ]);
 
   // Get AI Analysis of the deal
   const getAiAnalysis = async () => {
     if (!result) return;
     if (analysisMode === "buying" && investment.needsPrice) return;
     if (analysisMode === "arbitrage" && arbitrage.needsRent) return;
+    if (analysisMode === "iownit" && !hudFmrData) return;
     
     setIsLoadingAiAnalysis(true);
     setShowAiAnalysis(true);
@@ -2641,7 +2781,30 @@ export default function CalculatorPage() {
           ? result.percentiles.revenue.p90
           : result.annualRevenue;
     
-    const investmentSection = analysisMode === "buying" ? `
+    const investmentSection = analysisMode === "iownit" ? `
+## I OWN IT ANALYSIS (Homeowner Converting to STR)
+- **Monthly Mortgage:** ${iownitMortgage ? '$' + parseFloat(iownitMortgage).toLocaleString() : 'Not provided (paid off)'}
+- **Property Tax Rate:** ${iownitPropertyTaxRate}%
+- **STR Insurance:** $${iownitInsuranceAnnual.toLocaleString()}/year
+- **STR Setup Costs:** $${iownit.startupCosts.toLocaleString()}
+
+## STR INCOME (Short-Term Rental)
+- **Gross Annual Revenue:** $${iownit.grossRevenue.toLocaleString()}
+- **Total Annual Expenses:** $${iownit.totalAnnualExpenses.toLocaleString()}
+- **Net Annual Cash Flow:** $${iownit.strCashFlow.toLocaleString()}
+- **Net Monthly Cash Flow:** $${Math.round(iownit.strMonthlyCashFlow).toLocaleString()}
+
+## LTR INCOME (Long-Term Rental - HUD Fair Market Rent)
+- **HUD FMR Monthly Rent (${bedrooms || 3}BR):** $${iownit.fmrMonthly.toLocaleString()}
+- **Gross Annual Revenue:** $${iownit.ltrGrossAnnual.toLocaleString()}
+- **Total Annual Expenses:** $${iownit.ltrTotalExpenses.toLocaleString()}
+- **Net Annual Cash Flow:** $${iownit.ltrCashFlow.toLocaleString()}
+- **Net Monthly Cash Flow:** $${Math.round(iownit.ltrMonthlyCashFlow).toLocaleString()}
+
+## COMPARISON
+- **Monthly Difference (STR - LTR):** $${Math.round(iownit.monthlyDifference).toLocaleString()}
+- **Annual Difference:** $${iownit.annualDifference.toLocaleString()}
+- **Winner:** ${iownit.strWins ? 'STR' : 'LTR'}` : analysisMode === "buying" ? `
 ## INVESTMENT STRUCTURE (Buying to Own)
 - **Purchase Price:** $${parseInt(purchasePrice).toLocaleString()}
 - **Down Payment:** ${downPaymentPercent}% ($${investment.downPayment.toLocaleString()})
@@ -2684,14 +2847,17 @@ export default function CalculatorPage() {
 - **Cash-on-Cash Return:** ${arbitrage.cashOnCashReturn.toFixed(1)}%
 - **Payback Period:** ${arbitrage.monthlyCashFlow > 0 ? Math.ceil(arbitrage.totalCashNeeded / arbitrage.monthlyCashFlow) + ' months' : 'N/A'}`;
 
-    const arbitrageQuestions = analysisMode === "arbitrage" ? `
+    const arbitrageQuestions = analysisMode === "iownit" ? `
+6. **STR vs LTR Deep Dive** - Given the HUD Fair Market Rent data, which strategy truly makes more sense for this specific market?
+7. **Transition Considerations** - What are the practical steps and costs of converting from a primary residence or LTR to an STR?
+8. **Risk Assessment** - What are the risks of STR (regulation, seasonality, management burden) vs the stability of LTR?` : analysisMode === "arbitrage" ? `
 6. **Landlord Risk** - What are the risks of the landlord finding out and terminating the lease?
 7. **Lease Negotiation Tips** - What should they look for in a lease to protect their arbitrage business?
 8. **Exit Strategy** - What happens if they need to exit? How to minimize losses.` : `
 6. **Questions to Ask** - 3-5 specific questions they should investigate before buying.
 7. **The Wealth-Building Perspective** - Help them see how this fits into building long-term wealth.`;
     
-    const analysisPrompt = `I need a comprehensive $500-level consulting analysis of this STR ${analysisMode === "arbitrage" ? "rental arbitrage" : "investment"} deal. Please analyze every aspect and help me think like a sophisticated investor.
+    const analysisPrompt = `I need a comprehensive $500-level consulting analysis of this STR ${analysisMode === "iownit" ? "homeowner conversion (I already own this property and want to know: STR or LTR?)" : analysisMode === "arbitrage" ? "rental arbitrage" : "investment"} deal. Please analyze every aspect and help me think like a sophisticated investor.
 
 ## PROPERTY DATA
 - **Location:** ${result.address || result.neighborhood}, ${result.city}, ${result.state}
@@ -2699,7 +2865,7 @@ export default function CalculatorPage() {
 - **Bedrooms:** ${result.bedrooms} | **Bathrooms:** ${result.bathrooms}
 - **Square Feet:** ${result.sqft || propertySqft}
 - **Nearby STR Listings:** ${result.nearbyListings || 'Unknown'}
-- **Strategy:** ${analysisMode === "arbitrage" ? "Rental Arbitrage (leasing property to sublease on Airbnb)" : "Buying to Own"}
+- **Strategy:** ${analysisMode === "iownit" ? "I Own It (homeowner evaluating STR vs LTR)" : analysisMode === "arbitrage" ? "Rental Arbitrage (leasing property to sublease on Airbnb)" : "Buying to Own"}
 
 ## REVENUE PROJECTIONS
 - **Projected Annual Revenue:** $${displayRevenue.toLocaleString()}
@@ -2719,7 +2885,7 @@ Please provide:
 ${arbitrageQuestions}
 8. **Bottom Line Recommendation** - Your honest assessment and suggested next steps.
 
-Be specific, use the actual numbers, and help them think like a sophisticated ${analysisMode === "arbitrage" ? "arbitrage operator" : "investor"} who's done this many times.`;
+Be specific, use the actual numbers, and help them think like a sophisticated ${analysisMode === "iownit" ? "property owner maximizing their asset" : analysisMode === "arbitrage" ? "arbitrage operator" : "investor"} who's done this many times.`;
 
     try {
       const response = await fetch("/api/chat", {
@@ -3081,6 +3247,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   style={analysisMode === 'arbitrage' ? { backgroundColor: '#2b2823' } : { backgroundColor: '#f5f4f0' }}
                 >
                   🔑 Arbitrage
+                </button>
+                <button
+                  onClick={() => setAnalysisMode('iownit')}
+                  className={`flex-1 py-2 px-3 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-1.5 ${analysisMode === 'iownit' ? 'text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  style={analysisMode === 'iownit' ? { backgroundColor: '#2b2823' } : { backgroundColor: '#f5f4f0' }}
+                >
+                  🏡 I Own It
                 </button>
               </div>
 
@@ -4729,7 +4902,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </>
                   )}
                 </>
-              ) : (
+              ) : analysisMode === "arbitrage" ? (
                 /* ========== ARBITRAGE MODE ========== */
                 <>
                   <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>🔑 Arbitrage Calculator</h3>
@@ -4941,35 +5114,223 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </>
                   )}
                 </>
+              ) : (
+                /* ========== I OWN IT MODE ========== */
+                <>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>🏡 I Own It Calculator</h3>
+                  <p className="text-sm text-gray-500 mb-4">Compare STR income vs Long-Term Rental (HUD Fair Market Rent)</p>
+                  
+                  {/* Monthly Mortgage (optional) */}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>Monthly Mortgage Payment <span className="text-gray-400 font-normal">(optional — leave blank if paid off)</span></label>
+                    <input
+                      type="number"
+                      value={iownitMortgage}
+                      onChange={(e) => setIownitMortgage(e.target.value)}
+                      placeholder="Enter monthly mortgage..."
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
+                    />
+                  </div>
+                  
+                  {/* Property Tax & Insurance */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Property Tax Rate</span>
+                        <span className="font-medium">{iownitPropertyTaxRate.toFixed(1)}%</span>
+                      </div>
+                      <input type="range" min="0.5" max="3" step="0.1" value={iownitPropertyTaxRate} onChange={(e) => setIownitPropertyTaxRate(parseFloat(e.target.value))} className="w-full" />
+                    </div>
+                    <div>
+                      <label className="text-sm block mb-1" style={{ color: "#787060" }}>STR Insurance (Annual)</label>
+                      <input type="number" value={iownitInsuranceAnnual} onChange={(e) => setIownitInsuranceAnnual(parseInt(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Management Fee</span>
+                        <span className="font-medium">{managementFeePercent}%</span>
+                      </div>
+                      <input type="range" min="0" max="35" value={managementFeePercent} onChange={(e) => setManagementFeePercent(parseInt(e.target.value))} className="w-full" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: "#787060" }}>Platform Fee (Airbnb)</span>
+                        <span className="font-medium">{platformFeePercent}%</span>
+                      </div>
+                      <input type="range" min="0" max="15" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseInt(e.target.value))} className="w-full" />
+                    </div>
+                  </div>
+                  
+                  {/* HUD FMR Data Display */}
+                  {isLoadingFmr ? (
+                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 mb-4">
+                      <div className="flex items-center gap-2">
+                        <svg className="animate-spin w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p className="text-blue-700 text-sm">Loading HUD Fair Market Rent data...</p>
+                      </div>
+                    </div>
+                  ) : fmrError ? (
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-4">
+                      <p className="text-amber-700 text-sm">⚠️ {fmrError}</p>
+                    </div>
+                  ) : hudFmrData ? (
+                    <div className="p-4 rounded-xl mb-4" style={{ backgroundColor: "#f0f7ff", border: "1px solid #bfdbfe" }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium" style={{ color: "#1e40af" }}>🏢 HUD Fair Market Rent — {hudFmrData.areaName}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{hudFmrData.year}</span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-2 text-center">
+                        {[0, 1, 2, 3, 4].map(br => (
+                          <div key={br} className={`p-2 rounded-lg ${br === (bedrooms || 3) ? 'bg-blue-100 ring-2 ring-blue-400' : 'bg-white'}`}>
+                            <p className="text-[10px] text-gray-500">{br === 0 ? 'Studio' : `${br}BR`}</p>
+                            <p className={`text-sm font-bold ${br === (bedrooms || 3) ? 'text-blue-700' : 'text-gray-700'}`}>${(hudFmrData.byBedrooms[br] || 0).toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-2">Source: U.S. Department of Housing and Urban Development</p>
+                    </div>
+                  ) : null}
+                  
+                  {/* STR vs LTR Comparison Results */}
+                  {hudFmrData ? (
+                    <>
+                      {/* Head-to-Head Comparison */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className={`text-center p-4 rounded-xl ${iownit.strWins ? 'ring-2 ring-green-400' : ''}`} style={{ backgroundColor: iownit.strMonthlyCashFlow >= 0 ? "#ecfdf5" : "#fef2f2" }}>
+                          <p className="text-xs text-gray-500 mb-1">🏠 STR Monthly Net</p>
+                          <p className={`text-2xl font-bold ${iownit.strMonthlyCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(iownit.strMonthlyCashFlow)}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{formatCurrency(iownit.grossRevenue)}/yr gross</p>
+                        </div>
+                        <div className={`text-center p-4 rounded-xl ${!iownit.strWins ? 'ring-2 ring-blue-400' : ''}`} style={{ backgroundColor: iownit.ltrMonthlyCashFlow >= 0 ? "#eff6ff" : "#fef2f2" }}>
+                          <p className="text-xs text-gray-500 mb-1">🏢 LTR Monthly Net</p>
+                          <p className={`text-2xl font-bold ${iownit.ltrMonthlyCashFlow >= 0 ? "text-blue-600" : "text-red-600"}`}>{formatCurrency(iownit.ltrMonthlyCashFlow)}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{formatCurrency(iownit.fmrMonthly)}/mo HUD FMR</p>
+                        </div>
+                      </div>
+                      
+                      {/* Verdict Banner */}
+                      <div className={`p-4 rounded-xl mb-4 text-center ${iownit.strWins ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}>
+                        <p className={`text-lg font-bold ${iownit.strWins ? 'text-green-700' : 'text-blue-700'}`}>
+                          {iownit.strWins ? '🚀 STR wins by ' : '🏢 LTR wins by '}
+                          {formatCurrency(Math.abs(iownit.monthlyDifference))}/mo
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          That&apos;s {formatCurrency(Math.abs(iownit.annualDifference))} more per year with {iownit.strWins ? 'Short-Term Rental' : 'Long-Term Rental'}
+                        </p>
+                      </div>
+                      
+                      {/* STR Expense Breakdown */}
+                      <div className="p-4 rounded-xl mb-3" style={{ backgroundColor: "#f5f4f0" }}>
+                        <h4 className="font-medium mb-3" style={{ color: "#2b2823" }}>🏠 STR Annual Breakdown</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between"><span className="text-gray-600">Gross Revenue</span><span className="font-medium text-green-600">{formatCurrency(iownit.grossRevenue)}</span></div>
+                          {iownit.annualMortgage > 0 && <div className="flex justify-between"><span className="text-gray-600">Mortgage</span><span className="font-medium">-{formatCurrency(iownit.annualMortgage)}</span></div>}
+                          {iownit.annualPropertyTax > 0 && <div className="flex justify-between"><span className="text-gray-600">Property Tax ({iownitPropertyTaxRate}%)</span><span className="font-medium">-{formatCurrency(iownit.annualPropertyTax)}</span></div>}
+                          <div className="flex justify-between"><span className="text-gray-600">STR Insurance</span><span className="font-medium">-{formatCurrency(iownit.annualInsurance)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Management ({managementFeePercent}%)</span><span className="font-medium">-{formatCurrency(iownit.annualManagement)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Platform Fee ({platformFeePercent}%)</span><span className="font-medium">-{formatCurrency(iownit.annualPlatformFee)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Operating Expenses</span><span className="font-medium">-{formatCurrency(iownit.monthlyOperating * 12)}</span></div>
+                          <div className="border-t border-gray-300 pt-2 mt-2"><div className="flex justify-between font-bold text-lg"><span>Net Cash Flow</span><span className={iownit.strCashFlow >= 0 ? "text-green-600" : "text-red-600"}>{formatCurrency(iownit.strCashFlow)}</span></div></div>
+                        </div>
+                      </div>
+                      
+                      {/* LTR Expense Breakdown */}
+                      <div className="p-4 rounded-xl" style={{ backgroundColor: "#eff6ff" }}>
+                        <h4 className="font-medium mb-3" style={{ color: "#1e3a5f" }}>🏢 LTR Annual Breakdown (HUD FMR)</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between"><span className="text-gray-600">Gross Rent ({bedrooms || 3}BR FMR)</span><span className="font-medium text-blue-600">{formatCurrency(iownit.ltrGrossAnnual)}</span></div>
+                          {iownit.annualMortgage > 0 && <div className="flex justify-between"><span className="text-gray-600">Mortgage</span><span className="font-medium">-{formatCurrency(iownit.annualMortgage)}</span></div>}
+                          {iownit.ltrPropertyTax > 0 && <div className="flex justify-between"><span className="text-gray-600">Property Tax</span><span className="font-medium">-{formatCurrency(iownit.ltrPropertyTax)}</span></div>}
+                          <div className="flex justify-between"><span className="text-gray-600">Landlord Insurance</span><span className="font-medium">-{formatCurrency(iownit.ltrInsurance)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Vacancy (5%)</span><span className="font-medium">-{formatCurrency(iownit.ltrVacancy)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Management (8%)</span><span className="font-medium">-{formatCurrency(iownit.ltrManagement)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-600">Maintenance (5%)</span><span className="font-medium">-{formatCurrency(iownit.ltrMaintenance)}</span></div>
+                          <div className="border-t border-blue-200 pt-2 mt-2"><div className="flex justify-between font-bold text-lg"><span>Net Cash Flow</span><span className={iownit.ltrCashFlow >= 0 ? "text-blue-600" : "text-red-600"}>{formatCurrency(iownit.ltrCashFlow)}</span></div></div>
+                        </div>
+                      </div>
+                      
+                      {/* Startup costs reminder */}
+                      {iownit.startupCosts > 0 && (
+                        <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                          <p className="text-xs text-amber-700">💡 STR setup costs: {formatCurrency(iownit.startupCosts)} (one-time). At {formatCurrency(Math.abs(iownit.monthlyDifference))}/mo difference, {iownit.strWins ? `STR pays back setup in ~${Math.ceil(iownit.startupCosts / Math.max(iownit.monthlyDifference, 1))} months` : 'LTR avoids this upfront cost'}.</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                      <p className="text-gray-500 text-sm text-center">Analyze a property above to see STR vs LTR comparison</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             {/* Deal Score Badge */}
-            {((analysisMode === "buying" && !investment.needsPrice) || (analysisMode === "arbitrage" && !arbitrage.needsRent)) && (
+            {((analysisMode === "buying" && !investment.needsPrice) || (analysisMode === "arbitrage" && !arbitrage.needsRent) || (analysisMode === "iownit" && hudFmrData)) && (
               <div className="rounded-2xl p-6 mt-4" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-4" style={{ color: "#2b2823" }}>Deal Score</h3>
                   {(() => {
                     // Calculate deal score based on multiple factors - use appropriate mode
-                    const activeCalc = analysisMode === "buying" ? investment : arbitrage;
-                    const cocScore = Math.min(40, Math.max(0, activeCalc.cashOnCashReturn * 4)); // 0-40 points (10% CoC = 40 pts)
-                    const cashFlowScore = Math.min(30, Math.max(0, (activeCalc.monthlyCashFlow / 500) * 30)); // 0-30 points ($500/mo = 30 pts)
-                    const occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20)); // 0-20 points (70% occ = 20 pts)
-                    const dataScore = result.percentiles ? 10 : 5; // 10 points for good data, 5 for limited
-                    const totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+                    let totalScore = 0;
+                    let cocScore = 0, cashFlowScore = 0, occupancyScore = 0, dataScore = 0;
+                    let cocPct = "0", monthlyNet = "$0", paybackMonths = 0;
+                    let paybackYears: string | null = null;
+                    
+                    if (analysisMode === "iownit") {
+                      // I Own It scoring: based on STR vs LTR advantage
+                      const advantageScore = Math.min(40, Math.max(0, (iownit.monthlyDifference / 500) * 40)); // $500/mo advantage = 40 pts
+                      cashFlowScore = Math.min(30, Math.max(0, (iownit.strMonthlyCashFlow / 500) * 30)); // STR cash flow
+                      occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20));
+                      dataScore = (result.percentiles ? 5 : 2.5) + (hudFmrData ? 5 : 2.5);
+                      cocScore = advantageScore;
+                      totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+                      monthlyNet = formatCurrency(iownit.strMonthlyCashFlow);
+                      cocPct = iownit.fmrMonthly > 0 ? ((iownit.grossRevenue / (iownit.fmrMonthly * 12)) * 100 - 100).toFixed(0) : "0";
+                    } else {
+                      const activeCalc = analysisMode === "buying" ? investment : arbitrage;
+                      cocScore = Math.min(40, Math.max(0, activeCalc.cashOnCashReturn * 4)); // 0-40 points (10% CoC = 40 pts)
+                      cashFlowScore = Math.min(30, Math.max(0, (activeCalc.monthlyCashFlow / 500) * 30)); // 0-30 points ($500/mo = 30 pts)
+                      occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20)); // 0-20 points (70% occ = 20 pts)
+                      dataScore = result.percentiles ? 10 : 5; // 10 points for good data, 5 for limited
+                      totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+                      paybackMonths = activeCalc.monthlyCashFlow > 0 ? Math.ceil(activeCalc.totalCashNeeded / activeCalc.monthlyCashFlow) : 0;
+                      paybackYears = paybackMonths > 0 ? (paybackMonths / 12).toFixed(1) : null;
+                      cocPct = activeCalc.cashOnCashReturn.toFixed(1);
+                      monthlyNet = formatCurrency(activeCalc.monthlyCashFlow);
+                    }
                     
                     let verdict = "PASS";
                     let verdictColor = "#f59e0b";
                     let verdictBg = "#fef3c7";
                     let explanation = "This deal may work but requires careful consideration.";
                     
-                    // Personalized metrics for explanations
-                    const paybackMonths = activeCalc.monthlyCashFlow > 0 ? Math.ceil(activeCalc.totalCashNeeded / activeCalc.monthlyCashFlow) : 0;
-                    const paybackYears = paybackMonths > 0 ? (paybackMonths / 12).toFixed(1) : null;
-                    const cocPct = activeCalc.cashOnCashReturn.toFixed(1);
-                    const monthlyNet = formatCurrency(activeCalc.monthlyCashFlow);
-                    
-                    if (totalScore >= 75) {
+                    if (analysisMode === "iownit") {
+                      if (totalScore >= 75) {
+                        verdict = "GO STR";
+                        verdictColor = "#16a34a";
+                        verdictBg = "#dcfce7";
+                        explanation = `STR nets ${monthlyNet}/mo — ${formatCurrency(Math.abs(iownit.monthlyDifference))} more than LTR. Strong case for short-term rental.`;
+                      } else if (totalScore >= 60) {
+                        verdict = "STR FAVORED";
+                        verdictColor = "#22c55e";
+                        verdictBg = "#ecfdf5";
+                        explanation = `STR nets ${monthlyNet}/mo. The numbers favor STR, but consider the extra work involved.`;
+                      } else if (totalScore >= 45) {
+                        verdict = "CLOSE CALL";
+                        verdictColor = "#eab308";
+                        verdictBg = "#fefce8";
+                        explanation = `STR and LTR are close. STR nets ${monthlyNet}/mo. Consider your time, effort, and risk tolerance.`;
+                      } else {
+                        verdict = iownit.strWins ? "MARGINAL STR" : "LTR BETTER";
+                        verdictColor = "#ef4444";
+                        verdictBg = "#fef2f2";
+                        explanation = iownit.strWins ? `STR barely edges out LTR. The extra effort may not be worth ${formatCurrency(Math.abs(iownit.monthlyDifference))}/mo.` : `LTR wins by ${formatCurrency(Math.abs(iownit.monthlyDifference))}/mo with far less hassle. Stick with long-term rental.`;
+                      }
+                    } else if (totalScore >= 75) {
                       verdict = "STRONG BUY";
                       verdictColor = "#16a34a";
                       verdictBg = "#dcfce7";
@@ -4983,12 +5344,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       verdict = "CONSIDER";
                       verdictColor = "#eab308";
                       verdictBg = "#fefce8";
-                      explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. ${activeCalc.cashOnCashReturn < 8 ? 'Returns are below the 8% target — consider negotiating price.' : 'Moderate returns — a value-add strategy could improve this.'}`;
+                      explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. Moderate returns — a value-add strategy could improve this.`;
                     } else {
                       verdict = "CAUTION";
                       verdictColor = "#ef4444";
                       verdictBg = "#fef2f2";
-                      explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. ${activeCalc.monthlyCashFlow < 0 ? 'This property loses money monthly at current assumptions.' : 'Returns are too thin to justify the risk — negotiate or pass.'}`;
+                      explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. Returns are too thin to justify the risk — negotiate or pass.`;
                     }
                     
                     return (
@@ -5005,7 +5366,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         {/* Score Breakdown */}
                         <div className="grid grid-cols-4 gap-3 text-xs">
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
-                            <p className="text-gray-500">Cash-on-Cash</p>
+                            <p className="text-gray-500">{analysisMode === "iownit" ? "STR Advantage" : "Cash-on-Cash"}</p>
                             <p className="font-bold" style={{ color: "#2b2823" }}>{Math.round(cocScore)}/40</p>
                           </div>
                           <div className="p-2 rounded-lg" style={{ backgroundColor: "#f5f4f0" }}>
@@ -5029,7 +5390,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             )}
 
             {/* AI Analysis CTA */}
-            {((analysisMode === "buying" && !investment.needsPrice) || (analysisMode === "arbitrage" && !arbitrage.needsRent)) && (
+            {((analysisMode === "buying" && !investment.needsPrice) || (analysisMode === "arbitrage" && !arbitrage.needsRent) || (analysisMode === "iownit" && hudFmrData)) && (
               <div className="rounded-2xl p-6 mt-4" style={{ backgroundColor: "#2b2823" }}>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1 text-center sm:text-left">
