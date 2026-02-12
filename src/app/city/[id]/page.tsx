@@ -14,8 +14,10 @@ export default function CityPage({ params }: { params: { id: string } }) {
   const city = getCityById(id);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("savedCities") || "[]");
-    setIsSaved(saved.includes(city?.id));
+    import('@/lib/account-storage').then(({ getSavedCities }) => {
+      const saved = getSavedCities();
+      setIsSaved(saved.includes(city?.id || ''));
+    });
     
     // Fetch save count from API
     if (city?.id) {
@@ -36,7 +38,10 @@ export default function CityPage({ params }: { params: { id: string } }) {
   }, [city?.id, city]);
 
   const toggleSave = async () => {
-    const saved = JSON.parse(localStorage.getItem("savedCities") || "[]");
+    const { getSavedCities, setSavedCities, getAuthEmail } = await import('@/lib/account-storage');
+    const email = getAuthEmail();
+    if (!email) return; // Must be logged in to save
+    const saved = getSavedCities(email);
     let updated;
     const wasSaved = isSaved;
     
@@ -45,7 +50,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
     } else {
       updated = [...saved, city?.id];
     }
-    localStorage.setItem("savedCities", JSON.stringify(updated));
+    setSavedCities(updated, email);
     setIsSaved(!isSaved);
     
     // Update save count in backend

@@ -7,11 +7,17 @@ import AuthModal from "./AuthModal";
 // Save limit constant - can be easily changed
 export const SAVE_LIMIT = 10;
 
-// Helper to get total saved count
+// Helper to get total saved count (account-specific)
 export function getTotalSavedCount(): number {
   if (typeof window === 'undefined') return 0;
-  const savedCities = JSON.parse(localStorage.getItem("savedCities") || "[]");
-  const savedStates = JSON.parse(localStorage.getItem("savedStates") || "[]");
+  // Dynamic import not available in sync context, so inline the logic
+  const authEmail = localStorage.getItem("edge_auth_email");
+  const authToken = localStorage.getItem("edge_auth_token");
+  const authExpiry = localStorage.getItem("edge_auth_expiry");
+  const email = (authEmail && authToken && authExpiry && Date.now() < parseInt(authExpiry, 10)) ? authEmail : null;
+  if (!email) return 0;
+  const savedCities = JSON.parse(localStorage.getItem(`savedCities__${email}`) || "[]");
+  const savedStates = JSON.parse(localStorage.getItem(`savedStates__${email}`) || "[]");
   return savedCities.length + savedStates.length;
 }
 

@@ -53,8 +53,8 @@ interface AnalysisHistory {
 }
 
 export default function SavedPage() {
-  const [savedCities, setSavedCities] = useState<string[]>([]);
-  const [savedStates, setSavedStates] = useState<string[]>([]);
+  const [savedCities, setSavedCitiesState] = useState<string[]>([]);
+  const [savedStates, setSavedStatesState] = useState<string[]>([]);
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistory[]>([]);
   const [activeTab, setActiveTab] = useState<'reports' | 'markets' | 'history'>('reports');
@@ -88,9 +88,13 @@ export default function SavedPage() {
 
   // Load saved data
   const loadSavedData = useCallback(async () => {
-    // Load local market data (cities/states) - these are not user-specific
-    const cities = JSON.parse(localStorage.getItem("savedCities") || "[]");
-    const states = JSON.parse(localStorage.getItem("savedStates") || "[]");
+    // Load account-specific market data (cities/states)
+    const { getSavedCities, getSavedStates, migrateOldSavedData } = await import('@/lib/account-storage');
+    if (isAuthenticated && userEmail) {
+      migrateOldSavedData(userEmail);
+    }
+    const cities = getSavedCities(userEmail);
+    const states = getSavedStates(userEmail);
     
     // Load analysis history from calculator recent searches
     const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
@@ -107,8 +111,8 @@ export default function SavedPage() {
     }));
     setAnalysisHistory(historyData);
     
-    setSavedCities(cities);
-    setSavedStates(states);
+    setSavedCitiesState(cities);
+    setSavedStatesState(states);
     
     // Only load property reports if authenticated (user-specific data)
     if (!isAuthenticated || !userEmail) {
@@ -158,14 +162,14 @@ export default function SavedPage() {
 
   const removeSavedCity = (cityId: string) => {
     const updated = savedCities.filter(id => id !== cityId);
-    setSavedCities(updated);
-    localStorage.setItem("savedCities", JSON.stringify(updated));
+    setSavedCitiesState(updated);
+    import('@/lib/account-storage').then(({ setSavedCities }) => setSavedCities(updated, userEmail));
   };
 
   const removeSavedState = (stateCode: string) => {
     const updated = savedStates.filter(code => code !== stateCode);
-    setSavedStates(updated);
-    localStorage.setItem("savedStates", JSON.stringify(updated));
+    setSavedStatesState(updated);
+    import('@/lib/account-storage').then(({ setSavedStates }) => setSavedStates(updated, userEmail));
   };
 
   const removeSavedReport = async (reportId: string) => {

@@ -56,8 +56,10 @@ export default function StatePage({ params }: { params: { id: string } }) {
   const cities = getCitiesByState(id);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("savedStates") || "[]");
-    setIsSaved(saved.includes(state?.abbreviation));
+    import('@/lib/account-storage').then(({ getSavedStates }) => {
+      const saved = getSavedStates();
+      setIsSaved(saved.includes(state?.abbreviation || ''));
+    });
     
     // Fetch save count from API
     if (state?.abbreviation) {
@@ -73,7 +75,10 @@ export default function StatePage({ params }: { params: { id: string } }) {
   }, [state?.abbreviation]);
 
   const toggleSave = async () => {
-    const saved = JSON.parse(localStorage.getItem("savedStates") || "[]");
+    const { getSavedStates, setSavedStates, getAuthEmail } = await import('@/lib/account-storage');
+    const email = getAuthEmail();
+    if (!email) return; // Must be logged in to save
+    const saved = getSavedStates(email);
     let updated;
     const wasSaved = isSaved;
     
@@ -82,7 +87,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
     } else {
       updated = [...saved, state?.abbreviation];
     }
-    localStorage.setItem("savedStates", JSON.stringify(updated));
+    setSavedStates(updated, email);
     setIsSaved(!isSaved);
     
     // Update save count in backend
