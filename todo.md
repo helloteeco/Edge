@@ -126,3 +126,11 @@
 - [x] Remove comp-coordinate fallback in cache save (use geocoded targetCoords state)
 - [x] Remove zoom-10 clamp in CompMap bounds fitting (comps can span wide areas)
 - [x] Keep all existing features intact
+
+## FIX: Backend returning distant comps instead of nearby ones (February 2026)
+- [x] Diagnose: Airbnb API already uses bounding box (15-50mi), but CACHED data from property_cache had stale distant comps
+- [x] Added distance filtering (50mi) to property_cache STEP 0 in backend API route
+- [x] Added distance filtering (50mi) to frontend property_cache hit path (the primary cache path)
+- [x] Re-sort filtered comps by relevance (bedroom match + distance) after filtering
+- [x] Backend enrichListings already had bedroom/guest relevance matching (was working correctly)
+- [x] Map and comp list now only show nearby, relevant comps

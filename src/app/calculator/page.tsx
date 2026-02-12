@@ -1520,12 +1520,54 @@ export default function CalculatorPage() {
             
             // Always geocode the actual searched address for accurate map pin
             // NEVER reconstruct from comp coordinates — they could be from a different market
-            if (!cachedResult.targetCoordinates || cachedResult.targetCoordinates.latitude === 0 || cachedResult.targetCoordinates.longitude === 0) {
+            let cacheTargetLat = cachedResult.targetCoordinates?.latitude || 0;
+            let cacheTargetLng = cachedResult.targetCoordinates?.longitude || 0;
+            if (!cacheTargetLat || !cacheTargetLng) {
               const geocoded = await geocodeAddress(addressToAnalyze);
               if (geocoded) {
-                cachedResult.targetCoordinates = { latitude: geocoded.lat, longitude: geocoded.lng };
+                cacheTargetLat = geocoded.lat;
+                cacheTargetLng = geocoded.lng;
+                cachedResult.targetCoordinates = { latitude: cacheTargetLat, longitude: cacheTargetLng };
                 console.log('[Analyze] Geocoded address for CompMap:', geocoded);
               }
+            }
+            
+            // CRITICAL: Filter cached comps by distance from actual address
+            // Old cache entries may contain distant comps from before bounding-box search
+            const MAX_COMP_DIST_MI = 50;
+            const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+              if (!lat2 || !lon2) return 999;
+              const R = 3959;
+              const dLat = ((lat2 - lat1) * Math.PI) / 180;
+              const dLon = ((lon2 - lon1) * Math.PI) / 180;
+              const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+              return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            };
+            if (cacheTargetLat && cacheTargetLng && cachedResult.comparables?.length) {
+              const before = cachedResult.comparables.length;
+              cachedResult.comparables = cachedResult.comparables.filter((c: any) => {
+                if (!c.latitude || !c.longitude) return false;
+                const d = haversine(cacheTargetLat, cacheTargetLng, c.latitude, c.longitude);
+                c.distance = Math.round(d * 10) / 10;
+                return d <= MAX_COMP_DIST_MI;
+              });
+              // Re-sort by relevance: bedroom match + distance
+              const reqBr = bedrooms ?? 3;
+              cachedResult.comparables.sort((a: any, b: any) => {
+                const sA = Math.abs((a.bedrooms || reqBr) - reqBr) * 40 + Math.min(a.distance / 15, 1) * 25;
+                const sB = Math.abs((b.bedrooms || reqBr) - reqBr) * 40 + Math.min(b.distance / 15, 1) * 25;
+                return sA - sB;
+              });
+              cachedResult.comparables = cachedResult.comparables.slice(0, 30);
+              console.log(`[Analyze] Distance-filtered cached comps: ${before} → ${cachedResult.comparables.length}`);
+            }
+            if (cacheTargetLat && cacheTargetLng && cachedResult.allComps?.length) {
+              cachedResult.allComps = cachedResult.allComps.filter((c: any) => {
+                if (!c.latitude || !c.longitude) return false;
+                const d = haversine(cacheTargetLat, cacheTargetLng, c.latitude, c.longitude);
+                c.distance = Math.round(d * 10) / 10;
+                return d <= MAX_COMP_DIST_MI;
+              });
             }
             
             data = cachedResult;

@@ -1101,26 +1101,62 @@ export async function POST(request: NextRequest) {
         if (cachedData?.property || cachedData?.neighborhood) {
           console.log(`[Analyze] INSTANT HIT from property_cache (${Date.now() - startTime}ms)`);
           
-          // If targetCoordinates is missing or zero, geocode the actual address
-          // NEVER reconstruct from comp coordinates — they could be from a different market
+          // Ensure we have valid target coordinates — geocode if missing
           const hasValidTarget = cachedData.targetCoordinates && 
             cachedData.targetCoordinates.latitude !== 0 && 
             cachedData.targetCoordinates.longitude !== 0;
+          
+          let targetLat = hasValidTarget ? cachedData.targetCoordinates.latitude : 0;
+          let targetLng = hasValidTarget ? cachedData.targetCoordinates.longitude : 0;
+          
           if (!hasValidTarget) {
             const geocoded = await geocodeAddress(address);
             if (geocoded) {
-              cachedData.targetCoordinates = {
-                latitude: geocoded.lat,
-                longitude: geocoded.lng,
-              };
-              console.log(`[Analyze] Geocoded targetCoordinates for cached entry: ${geocoded.lat}, ${geocoded.lng}`);
+              targetLat = geocoded.lat;
+              targetLng = geocoded.lng;
+              cachedData.targetCoordinates = { latitude: targetLat, longitude: targetLng };
+              console.log(`[Analyze] Geocoded targetCoordinates for cached entry: ${targetLat}, ${targetLng}`);
               
-              // Update cache entry in background so future hits have targetCoordinates
+              // Update cache entry in background
               supabase.from("property_cache").update({ data: cachedData }).eq("address", address)
                 .then(({ error: updateErr }) => {
                   if (updateErr) console.error("[PropertyCache] Failed to backfill targetCoordinates:", updateErr.message);
                   else console.log(`[PropertyCache] Backfilled targetCoordinates for ${address}`);
                 });
+            }
+          }
+          
+          // CRITICAL: Filter cached comps by distance from the actual address
+          // Old cache entries may contain distant comps from before bounding-box search was implemented
+          const MAX_CACHE_COMP_DIST = 50; // miles
+          if (targetLat !== 0 && targetLng !== 0) {
+            if (cachedData.comparables && Array.isArray(cachedData.comparables)) {
+              const beforeCount = cachedData.comparables.length;
+              cachedData.comparables = cachedData.comparables.filter((c: any) => {
+                if (!c.latitude || !c.longitude || c.latitude === 0 || c.longitude === 0) return false;
+                const dist = calcDistance(targetLat, targetLng, c.latitude, c.longitude);
+                c.distance = Math.round(dist * 10) / 10; // Recalculate distance from actual address
+                return dist <= MAX_CACHE_COMP_DIST;
+              });
+              // Re-sort by relevance (distance + bedroom match)
+              const reqBedrooms = cachedData.bedroomsUsed || 3;
+              cachedData.comparables.sort((a: any, b: any) => {
+                const bedDiffA = Math.abs((a.bedrooms || reqBedrooms) - reqBedrooms);
+                const bedDiffB = Math.abs((b.bedrooms || reqBedrooms) - reqBedrooms);
+                const scoreA = (bedDiffA * 40) + (Math.min(a.distance / 15, 1) * 25);
+                const scoreB = (bedDiffB * 40) + (Math.min(b.distance / 15, 1) * 25);
+                return scoreA - scoreB;
+              });
+              cachedData.comparables = cachedData.comparables.slice(0, 30);
+              console.log(`[PropertyCache] Distance-filtered comps: ${beforeCount} → ${cachedData.comparables.length} (within ${MAX_CACHE_COMP_DIST}mi)`);
+            }
+            if (cachedData.allComps && Array.isArray(cachedData.allComps)) {
+              cachedData.allComps = cachedData.allComps.filter((c: any) => {
+                if (!c.latitude || !c.longitude || c.latitude === 0 || c.longitude === 0) return false;
+                const dist = calcDistance(targetLat, targetLng, c.latitude, c.longitude);
+                c.distance = Math.round(dist * 10) / 10;
+                return dist <= MAX_CACHE_COMP_DIST;
+              });
             }
           }
           
