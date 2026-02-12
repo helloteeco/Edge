@@ -56,41 +56,59 @@ export default function StatePage({ params }: { params: { id: string } }) {
   const cities = getCitiesByState(id);
 
   useEffect(() => {
-    import('@/lib/account-storage').then(({ getSavedStates }) => {
+    const loadLikeStatus = async () => {
+      const { getAuthEmail, getSavedStates } = await import('@/lib/account-storage');
+      const email = getAuthEmail();
+      
+      // Legacy local save check
       const saved = getSavedStates();
       setIsSaved(saved.includes(state?.abbreviation || ''));
-    });
-    
-    // Fetch save count from API
-    if (state?.abbreviation) {
-      fetch(`/api/market-saves?marketId=${state.abbreviation}&marketType=state`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setSaveCount(data.count);
-          }
-        })
-        .catch(console.error);
-    }
+      
+      // Fetch save count + user-specific like status from API
+      if (state?.abbreviation) {
+        const params = new URLSearchParams({ marketId: state.abbreviation, marketType: 'state' });
+        if (email) params.set('email', email);
+        
+        fetch(`/api/market-saves?${params}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setSaveCount(data.count);
+              if (email && data.liked !== undefined) {
+                setIsSaved(data.liked);
+              }
+            }
+          })
+          .catch(console.error);
+      }
+    };
+    loadLikeStatus();
   }, [state?.abbreviation]);
 
   const toggleSave = async () => {
     const { getSavedStates, setSavedStates, getAuthEmail } = await import('@/lib/account-storage');
     const email = getAuthEmail();
-    if (!email) return; // Must be logged in to save
+    if (!email) {
+      alert('Sign in to like markets and track your favorites!');
+      return;
+    }
+    
+    // Optimistic UI update
+    const wasSaved = isSaved;
+    setIsSaved(!isSaved);
+    setSaveCount(prev => (prev ?? 0) + (wasSaved ? -1 : 1));
+    
+    // Also update local storage for backward compatibility
     const saved = getSavedStates(email);
     let updated;
-    const wasSaved = isSaved;
-    
-    if (isSaved) {
+    if (wasSaved) {
       updated = saved.filter((code: string) => code !== state?.abbreviation);
     } else {
       updated = [...saved, state?.abbreviation].filter((x): x is string => x !== undefined);
     }
     setSavedStates(updated, email);
-    setIsSaved(!isSaved);
     
-    // Update save count in backend
+    // Toggle like on server (user-specific)
     try {
       const res = await fetch('/api/market-saves', {
         method: 'POST',
@@ -98,15 +116,23 @@ export default function StatePage({ params }: { params: { id: string } }) {
         body: JSON.stringify({
           marketId: state?.abbreviation,
           marketType: 'state',
-          action: wasSaved ? 'decrement' : 'increment'
+          action: 'toggle',
+          email,
         })
       });
       const data = await res.json();
       if (data.success) {
         setSaveCount(data.count);
+        setIsSaved(data.liked);
+      } else if (data.error?.includes('limit')) {
+        setIsSaved(wasSaved);
+        setSaveCount(prev => (prev ?? 0) + (wasSaved ? 1 : -1));
+        alert(data.error);
       }
     } catch (error) {
-      console.error('Error updating save count:', error);
+      console.error('Error toggling like:', error);
+      setIsSaved(wasSaved);
+      setSaveCount(prev => (prev ?? 0) + (wasSaved ? 1 : -1));
     }
   };
 
@@ -683,7 +709,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
     </div>
     
     {/* Floating Action Pill - Heart + Share */}
-    <FloatingActionPill isSaved={isSaved} onToggleSave={toggleSave} />
+    <FloatingActionPill isSaved={isSaved} onToggleSave={toggleSave} marketLikeCount={saveCount} />
     </DoubleTapSave>
   );
 }

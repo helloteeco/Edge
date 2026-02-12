@@ -4,19 +4,24 @@ import {
   decrementMarketSaveCount, 
   getMarketSaveCount,
   getMarketSaveCounts,
-  getTopSavedMarkets 
+  getTopSavedMarkets,
+  toggleUserLike,
+  getUserLikedMarkets,
+  getUserLikeCount,
+  hasUserLiked,
 } from "@/lib/supabase";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
 
-// GET - Retrieve save counts
+// GET - Retrieve save counts + user-specific like status
 export async function GET(request: NextRequest) {
   try {
     const marketId = request.nextUrl.searchParams.get("marketId");
     const marketType = request.nextUrl.searchParams.get("marketType") as 'city' | 'state';
     const marketIds = request.nextUrl.searchParams.get("marketIds"); // comma-separated
     const top = request.nextUrl.searchParams.get("top");
+    const email = request.nextUrl.searchParams.get("email"); // for user-specific like status
 
     // Get top saved markets
     if (top) {
@@ -30,26 +35,43 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get counts for multiple markets (batch)
+    // Get counts for multiple markets (batch) + user's liked status
     if (marketIds && marketType) {
       const ids = marketIds.split(',').map(id => id.trim());
       const counts = await getMarketSaveCounts(ids, marketType);
       
+      // If email provided, also return which ones the user has liked
+      let userLiked: string[] = [];
+      if (email) {
+        const likedSet = await getUserLikedMarkets(email, ids, marketType);
+        userLiked = Array.from(likedSet);
+      }
+      
       return NextResponse.json({
         success: true,
-        counts
+        counts,
+        userLiked,
       });
     }
 
-    // Get count for single market
+    // Get count for single market + user's like status
     if (marketId && marketType) {
       const count = await getMarketSaveCount(marketId, marketType);
+      
+      let liked = false;
+      let userLikeCount = 0;
+      if (email) {
+        liked = await hasUserLiked(email, marketId, marketType);
+        userLikeCount = await getUserLikeCount(email);
+      }
       
       return NextResponse.json({
         success: true,
         marketId,
         marketType,
-        count
+        count,
+        liked,
+        userLikeCount,
       });
     }
 
@@ -67,15 +89,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Increment or decrement save count
+// POST - Toggle like (requires email) or legacy increment/decrement
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { marketId, marketType, action } = body;
+    const { marketId, marketType, action, email } = body;
 
-    if (!marketId || !marketType || !action) {
+    if (!marketId || !marketType) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: marketId, marketType, action" },
+        { success: false, error: "Missing required fields: marketId, marketType" },
         { status: 400 }
       );
     }
@@ -87,9 +109,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // New: user-specific toggle like (requires email)
+    if (action === 'toggle' && email) {
+      const result = await toggleUserLike(email, marketId, marketType);
+      
+      if (result.error) {
+        return NextResponse.json({
+          success: false,
+          error: result.error,
+          liked: result.liked,
+          count: result.totalLikes,
+          userLikeCount: result.userLikeCount,
+        }, { status: result.error.includes('limit') ? 429 : 500 });
+      }
+      
+      return NextResponse.json({
+        success: true,
+        marketId,
+        marketType,
+        liked: result.liked,
+        count: result.totalLikes,
+        userLikeCount: result.userLikeCount,
+      });
+    }
+
+    // Legacy: anonymous increment/decrement (backward compatible)
     if (action !== 'increment' && action !== 'decrement') {
       return NextResponse.json(
-        { success: false, error: "action must be 'increment' or 'decrement'" },
+        { success: false, error: "action must be 'toggle', 'increment', or 'decrement'" },
         { status: 400 }
       );
     }

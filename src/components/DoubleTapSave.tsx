@@ -293,11 +293,14 @@ interface FloatingSaveButtonProps {
   isSaved: boolean;
   onToggleSave: () => void;
   hideCount?: boolean;
+  marketLikeCount?: number | null; // Server-side like count for this specific market
 }
 
-export function FloatingSaveButton({ isSaved, onToggleSave, hideCount = false }: FloatingSaveButtonProps) {
+export function FloatingSaveButton({ isSaved, onToggleSave, hideCount = false, marketLikeCount }: FloatingSaveButtonProps) {
   const [saveCount, setSaveCount] = useState(0);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const touchFiredRef = useRef(false);
 
   useEffect(() => {
@@ -305,6 +308,10 @@ export function FloatingSaveButton({ isSaved, onToggleSave, hideCount = false }:
   }, [isSaved]);
 
   const doToggle = () => {
+    if (!isUserLoggedIn()) {
+      setShowLoginPrompt(true);
+      return;
+    }
     if (!isSaved && isAtSaveLimit()) {
       setShowLimitWarning(true);
       setTimeout(() => setShowLimitWarning(false), 2500);
@@ -359,10 +366,99 @@ export function FloatingSaveButton({ isSaved, onToggleSave, hideCount = false }:
             className="text-[10px] font-medium mt-0.5"
             style={{ color: isSaved ? '#ef4444' : '#787060' }}
           >
-            {saveCount}/{SAVE_LIMIT}
+            {marketLikeCount != null && marketLikeCount > 0 ? marketLikeCount : `${saveCount}/${SAVE_LIMIT}`}
           </span>
         )}
       </button>
+
+      {/* Login Required Prompt */}
+      {showLoginPrompt && typeof document !== 'undefined' && createPortal(
+        <div 
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 99999,
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setShowLoginPrompt(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '340px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center relative">
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="absolute -top-2 -right-2 p-2 rounded-full hover:bg-gray-100 transition-all"
+                style={{ color: '#787060' }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fef2f2' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="#ef4444">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: '#2b2823' }}>Sign in to Like</h3>
+              <p className="text-sm mb-6" style={{ color: '#787060' }}>
+                Sign in to like markets, track your favorites, and see what other investors are watching.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setShowLoginPrompt(false);
+                    setShowAuthModal(true);
+                  }}
+                  className="w-full py-3 rounded-xl font-medium text-white transition-all hover:opacity-90 active:scale-98"
+                  style={{ backgroundColor: '#2b2823' }}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setShowLoginPrompt(false)}
+                  className="w-full py-3 rounded-xl font-medium transition-all hover:opacity-80"
+                  style={{ color: '#787060' }}
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          // After login, try the save action again
+          if (!isSaved && !isAtSaveLimit()) {
+            onToggleSave();
+          }
+        }}
+        title="Sign in to Edge"
+        subtitle="Sign in to like your favorite markets and sync across all your devices."
+      />
 
       {/* Limit Warning Toast */}
       {showLimitWarning && (
@@ -528,9 +624,10 @@ interface FloatingActionPillProps {
   shareText?: string;
   shareData?: ShareData;
   hideCount?: boolean;
+  marketLikeCount?: number | null;
 }
 
-export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData, hideCount = false }: FloatingActionPillProps) {
+export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData, hideCount = false, marketLikeCount }: FloatingActionPillProps) {
   return (
     <div 
       className="fixed right-4 z-40 flex flex-col items-center overflow-hidden"
@@ -543,7 +640,7 @@ export function FloatingActionPill({ isSaved, onToggleSave, shareText, shareData
         width: '56px',
       }}
     >
-      <FloatingSaveButton isSaved={isSaved} onToggleSave={onToggleSave} hideCount={hideCount} />
+      <FloatingSaveButton isSaved={isSaved} onToggleSave={onToggleSave} hideCount={hideCount} marketLikeCount={marketLikeCount} />
       <div style={{ width: '36px', height: '1px', backgroundColor: '#e5e3da' }} />
       <FloatingShareButton shareText={shareText} shareData={shareData} />
     </div>

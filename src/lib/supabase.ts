@@ -633,6 +633,157 @@ export async function getTopSavedMarkets(
 }
 
 // ============================================
+// USER LIKES - Per-user like tracking with cap
+// ============================================
+
+export interface UserLike {
+  id: string;
+  user_email: string;
+  market_id: string;
+  market_type: 'city' | 'state';
+  created_at: string;
+}
+
+const USER_LIKE_LIMIT = 10;
+
+// Check if a user has liked a specific market
+export async function hasUserLiked(
+  email: string,
+  marketId: string,
+  marketType: 'city' | 'state'
+): Promise<boolean> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedId = marketId.toLowerCase().trim();
+
+  const { data } = await supabase
+    .from('user_likes')
+    .select('id')
+    .eq('user_email', normalizedEmail)
+    .eq('market_id', normalizedId)
+    .eq('market_type', marketType)
+    .single();
+
+  return !!data;
+}
+
+// Get all markets a user has liked
+export async function getUserLikes(email: string): Promise<UserLike[]> {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const { data, error } = await supabase
+    .from('user_likes')
+    .select('*')
+    .eq('user_email', normalizedEmail)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return [];
+  return data;
+}
+
+// Get count of user's total likes
+export async function getUserLikeCount(email: string): Promise<number> {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const { count, error } = await supabase
+    .from('user_likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_email', normalizedEmail);
+
+  if (error) return 0;
+  return count || 0;
+}
+
+// Toggle like: returns { liked, totalLikes, userLikeCount }
+export async function toggleUserLike(
+  email: string,
+  marketId: string,
+  marketType: 'city' | 'state'
+): Promise<{ liked: boolean; totalLikes: number; userLikeCount: number; error?: string }> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedId = marketId.toLowerCase().trim();
+
+  // Check if already liked
+  const { data: existing } = await supabase
+    .from('user_likes')
+    .select('id')
+    .eq('user_email', normalizedEmail)
+    .eq('market_id', normalizedId)
+    .eq('market_type', marketType)
+    .single();
+
+  if (existing) {
+    // Unlike: remove from user_likes and decrement market_save_counts
+    await supabase
+      .from('user_likes')
+      .delete()
+      .eq('id', existing.id);
+
+    await decrementMarketSaveCount(normalizedId, marketType);
+
+    const totalLikes = await getMarketSaveCount(normalizedId, marketType);
+    const userLikeCount = await getUserLikeCount(normalizedEmail);
+
+    console.log(`[UserLike] Unliked: ${normalizedEmail} -> ${marketType}/${normalizedId}`);
+    return { liked: false, totalLikes, userLikeCount };
+  } else {
+    // Check like limit
+    const currentCount = await getUserLikeCount(normalizedEmail);
+    if (currentCount >= USER_LIKE_LIMIT) {
+      const totalLikes = await getMarketSaveCount(normalizedId, marketType);
+      return {
+        liked: false,
+        totalLikes,
+        userLikeCount: currentCount,
+        error: `You can only like up to ${USER_LIKE_LIMIT} markets. Unlike one to like another.`,
+      };
+    }
+
+    // Like: insert into user_likes and increment market_save_counts
+    const { error } = await supabase
+      .from('user_likes')
+      .insert({
+        user_email: normalizedEmail,
+        market_id: normalizedId,
+        market_type: marketType,
+      });
+
+    if (error) {
+      console.error('Error inserting user like:', error);
+      const totalLikes = await getMarketSaveCount(normalizedId, marketType);
+      return { liked: false, totalLikes, userLikeCount: currentCount, error: 'Failed to save like' };
+    }
+
+    await incrementMarketSaveCount(normalizedId, marketType);
+
+    const totalLikes = await getMarketSaveCount(normalizedId, marketType);
+    const userLikeCount = currentCount + 1;
+
+    console.log(`[UserLike] Liked: ${normalizedEmail} -> ${marketType}/${normalizedId} (${userLikeCount}/${USER_LIKE_LIMIT})`);
+    return { liked: true, totalLikes, userLikeCount };
+  }
+}
+
+// Check which markets from a list the user has liked (batch)
+export async function getUserLikedMarkets(
+  email: string,
+  marketIds: string[],
+  marketType: 'city' | 'state'
+): Promise<Set<string>> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedIds = marketIds.map(id => id.toLowerCase().trim());
+
+  const { data, error } = await supabase
+    .from('user_likes')
+    .select('market_id')
+    .eq('user_email', normalizedEmail)
+    .eq('market_type', marketType)
+    .in('market_id', normalizedIds);
+
+  if (error || !data) return new Set();
+  return new Set(data.map(d => d.market_id));
+}
+
+// ============================================
 // LIMITED DATA LOCATIONS - Informed choice system
 // ============================================
 

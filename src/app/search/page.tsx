@@ -61,6 +61,9 @@ export default function SearchPage() {
   // Get market counts for display
   const marketCounts = useMemo(() => getMarketCounts(), []);
 
+  // Like counts for city cards
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+
   // Debounced server search for allCities filter
   const searchServerCities = useCallback(async (searchQuery: string, page: number, append: boolean = false) => {
     setServerLoading(true);
@@ -168,6 +171,20 @@ export default function SearchPage() {
   const totalResults = filter === "allCities" 
     ? serverTotal 
     : results.cities.length + results.states.length;
+
+  // Batch fetch like counts for visible city cards
+  useEffect(() => {
+    const cityIds = results.cities.map(c => c.id);
+    if (cityIds.length === 0) return;
+    fetch(`/api/market-saves?action=batch&marketIds=${cityIds.join(',')}&marketType=city`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.counts) {
+          setLikeCounts(prev => ({ ...prev, ...data.counts }));
+        }
+      })
+      .catch(console.error);
+  }, [results.cities]);
 
   const getVerdictStyle = (score: number) => {
     if (score >= 80) return { text: "STRONG BUY", bg: '#2b2823', color: '#ffffff' };
@@ -484,8 +501,20 @@ export default function SearchPage() {
                   </div>
                 </div>
 
-                {/* Arrow */}
-                <ChevronRightIcon className="w-5 h-5" color="#d8d6cd" />
+                {/* Like Count + Arrow */}
+                <div className="flex items-center gap-2">
+                  {(likeCounts[city.id] || 0) > 0 && (
+                    <div className="flex items-center gap-0.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                      <span className="text-xs font-semibold" style={{ color: '#ef4444' }}>
+                        {likeCounts[city.id]}
+                      </span>
+                    </div>
+                  )}
+                  <ChevronRightIcon className="w-5 h-5" color="#d8d6cd" />
+                </div>
               </div>
             </Link>
           ))}

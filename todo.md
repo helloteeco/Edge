@@ -150,3 +150,16 @@
 - [x] Added RentData.org scraping fallback — parses county FMR tables from public pages
 - [x] Primary: tries HUD API first, falls back to RentData.org if HUD fails
 - [x] STR vs LTR comparison now works regardless of HUD API status
+
+## FEATURE: Authenticated Like System with Counts and Trending (February 2026)
+- [x] Create user_likes database table (user_email, market_id, market_type, unique constraint)
+- [x] Update /api/market-saves with toggle endpoint, user-specific tracking, 10-like cap
+- [x] Enforce 10-like cap per user — returns error if limit reached
+- [x] Require sign-in to like — shows sign-in prompt modal if not authenticated
+- [x] Show like count on city cards in search results
+- [x] Show like count on TopMarkets city cards
+- [x] Show like count on FloatingActionPill (city/state detail pages)
+- [x] Create TrendingMarkets component (most liked markets)
+- [x] Add TrendingMarkets section to home page below TopMarkets
+- [x] Existing save/heart system still works — this is additive
+- [x] No core features changed

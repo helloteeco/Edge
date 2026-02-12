@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cityData } from "@/data/helpers";
 
@@ -7,6 +8,21 @@ export function TopMarkets() {
   const topCities = [...cityData]
     .sort((a, b) => b.marketScore - a.marketScore)
     .slice(0, 10);
+
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    // Batch fetch like counts for all top cities
+    const ids = topCities.map(c => c.id);
+    fetch(`/api/market-saves?action=batch&marketIds=${ids.join(',')}&marketType=city`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.counts) {
+          setLikeCounts(data.counts);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Grade colors using Teeco brand palette
   const getGradeStyle = (grade: string) => {
@@ -56,90 +72,105 @@ export function TopMarkets() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {topCities.map((city, index) => (
-          <Link
-            key={city.id}
-            href={`/city/${city.id}`}
-            className="group rounded-xl p-4 transition-all duration-300"
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #d8d6cd',
-              boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(43, 40, 35, 0.12)';
-              e.currentTarget.style.borderColor = '#787060';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(43, 40, 35, 0.04)';
-              e.currentTarget.style.borderColor = '#d8d6cd';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            {/* Rank Badge */}
-            <div className="flex items-center justify-between mb-3">
-              <span 
-                className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
-                style={{ 
-                  backgroundColor: index < 3 ? '#2b2823' : '#e5e3da',
-                  color: index < 3 ? '#ffffff' : '#787060'
-                }}
-              >
-                {index + 1}
-              </span>
-              <span 
-                className="px-2 py-0.5 rounded-md text-xs font-bold"
-                style={getGradeStyle(city.grade)}
-              >
-                {city.grade}
-              </span>
-            </div>
-            
-            {/* City Info */}
-            <div className="mb-3">
-              <div 
-                className="font-semibold text-sm truncate transition-colors"
-                style={{ color: '#2b2823' }}
-              >
-                {city.name}
-              </div>
-              <div className="text-xs truncate" style={{ color: '#787060' }}>
-                {city.county}, {city.stateCode}
-              </div>
-            </div>
-            
-            {/* Score */}
-            <div className="flex items-end justify-between">
-              <div>
-                <div 
-                  className="text-2xl font-bold"
-                  style={{ 
-                    ...getScoreStyle(city.marketScore),
-                    fontFamily: 'Source Serif Pro, Georgia, serif'
-                  }}
-                >
-                  {city.marketScore}
+        {topCities.map((city, index) => {
+          const likeCount = likeCounts[city.id] || 0;
+          return (
+            <Link
+              key={city.id}
+              href={`/city/${city.id}`}
+              className="group rounded-xl p-4 transition-all duration-300"
+              style={{ 
+                backgroundColor: '#ffffff',
+                border: '1px solid #d8d6cd',
+                boxShadow: '0 1px 2px 0 rgba(43, 40, 35, 0.04)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(43, 40, 35, 0.12)';
+                e.currentTarget.style.borderColor = '#787060';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(43, 40, 35, 0.04)';
+                e.currentTarget.style.borderColor = '#d8d6cd';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              {/* Rank Badge + Grade + Like Count */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                  <span 
+                    className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                    style={{ 
+                      backgroundColor: index < 3 ? '#2b2823' : '#e5e3da',
+                      color: index < 3 ? '#ffffff' : '#787060'
+                    }}
+                  >
+                    {index + 1}
+                  </span>
+                  <span 
+                    className="px-2 py-0.5 rounded-md text-xs font-bold"
+                    style={getGradeStyle(city.grade)}
+                  >
+                    {city.grade}
+                  </span>
                 </div>
+                {likeCount > 0 && (
+                  <div className="flex items-center gap-0.5">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#ef4444">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span className="text-[10px] font-semibold" style={{ color: '#ef4444' }}>
+                      {likeCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* City Info */}
+              <div className="mb-3">
                 <div 
-                  className="text-[10px] uppercase tracking-wider"
-                  style={{ color: '#787060' }}
+                  className="font-semibold text-sm truncate transition-colors"
+                  style={{ color: '#2b2823' }}
                 >
-                  Score
+                  {city.name}
+                </div>
+                <div className="text-xs truncate" style={{ color: '#787060' }}>
+                  {city.county}, {city.stateCode}
                 </div>
               </div>
-              <svg 
-                className="w-5 h-5 transition-colors" 
-                style={{ color: '#d8d6cd' }}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-        ))}
+              
+              {/* Score */}
+              <div className="flex items-end justify-between">
+                <div>
+                  <div 
+                    className="text-2xl font-bold"
+                    style={{ 
+                      ...getScoreStyle(city.marketScore),
+                      fontFamily: 'Source Serif Pro, Georgia, serif'
+                    }}
+                  >
+                    {city.marketScore}
+                  </div>
+                  <div 
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ color: '#787060' }}
+                  >
+                    Score
+                  </div>
+                </div>
+                <svg 
+                  className="w-5 h-5 transition-colors" 
+                  style={{ color: '#d8d6cd' }}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          );
+        })}
       </div>
       
       {/* How We Score Markets - Legend */}

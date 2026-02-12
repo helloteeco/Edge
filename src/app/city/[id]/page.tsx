@@ -14,22 +14,33 @@ export default function CityPage({ params }: { params: { id: string } }) {
   const city = getCityById(id);
 
   useEffect(() => {
-    import('@/lib/account-storage').then(({ getSavedCities }) => {
+    const loadLikeStatus = async () => {
+      const { getAuthEmail, getSavedCities } = await import('@/lib/account-storage');
+      const email = getAuthEmail();
+      
+      // Legacy local save check
       const saved = getSavedCities();
       setIsSaved(saved.includes(city?.id || ''));
-    });
-    
-    // Fetch save count from API
-    if (city?.id) {
-      fetch(`/api/market-saves?marketId=${city.id}&marketType=city`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setSaveCount(data.count);
-          }
-        })
-        .catch(console.error);
-    }
+      
+      // Fetch save count + user-specific like status from API
+      if (city?.id) {
+        const params = new URLSearchParams({ marketId: city.id, marketType: 'city' });
+        if (email) params.set('email', email);
+        
+        fetch(`/api/market-saves?${params}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setSaveCount(data.count);
+              if (email && data.liked !== undefined) {
+                setIsSaved(data.liked);
+              }
+            }
+          })
+          .catch(console.error);
+      }
+    };
+    loadLikeStatus();
     
     // Update document title for tab display (OG meta tags are now handled server-side in layout.tsx)
     if (city) {
@@ -40,20 +51,28 @@ export default function CityPage({ params }: { params: { id: string } }) {
   const toggleSave = async () => {
     const { getSavedCities, setSavedCities, getAuthEmail } = await import('@/lib/account-storage');
     const email = getAuthEmail();
-    if (!email) return; // Must be logged in to save
+    if (!email) {
+      // Prompt sign-in
+      alert('Sign in to like markets and track your favorites!');
+      return;
+    }
+    
+    // Optimistic UI update
+    const wasSaved = isSaved;
+    setIsSaved(!isSaved);
+    setSaveCount(prev => (prev ?? 0) + (wasSaved ? -1 : 1));
+    
+    // Also update local storage for backward compatibility
     const saved = getSavedCities(email);
     let updated;
-    const wasSaved = isSaved;
-    
-    if (isSaved) {
+    if (wasSaved) {
       updated = saved.filter((cid: string) => cid !== city?.id);
     } else {
       updated = [...saved, city?.id].filter((x): x is string => x !== undefined);
     }
     setSavedCities(updated, email);
-    setIsSaved(!isSaved);
     
-    // Update save count in backend
+    // Toggle like on server (user-specific)
     try {
       const res = await fetch('/api/market-saves', {
         method: 'POST',
@@ -61,15 +80,25 @@ export default function CityPage({ params }: { params: { id: string } }) {
         body: JSON.stringify({
           marketId: city?.id,
           marketType: 'city',
-          action: wasSaved ? 'decrement' : 'increment'
+          action: 'toggle',
+          email,
         })
       });
       const data = await res.json();
       if (data.success) {
         setSaveCount(data.count);
+        setIsSaved(data.liked);
+      } else if (data.error?.includes('limit')) {
+        // Revert optimistic update
+        setIsSaved(wasSaved);
+        setSaveCount(prev => (prev ?? 0) + (wasSaved ? 1 : -1));
+        alert(data.error);
       }
     } catch (error) {
-      console.error('Error updating save count:', error);
+      console.error('Error toggling like:', error);
+      // Revert on network error
+      setIsSaved(wasSaved);
+      setSaveCount(prev => (prev ?? 0) + (wasSaved ? 1 : -1));
     }
   };
 
@@ -858,6 +887,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
       isSaved={isSaved} 
       onToggleSave={toggleSave}
       shareText={city ? `Check out ${city.name}, ${city.stateCode} — $${city.strMonthlyRevenue.toLocaleString()}/mo STR market:` : undefined}
+      marketLikeCount={saveCount}
     />
     </DoubleTapSave>
   );

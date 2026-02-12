@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { USMap } from "@/components/USMap";
 import { TopMarkets } from "@/components/TopMarkets";
+import { TrendingMarkets } from "@/components/TrendingMarkets";
 import AuthHeader from "@/components/AuthHeader";
 import { StuckHelper } from "@/components/StuckHelper";
 import { cityData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
@@ -566,6 +567,18 @@ export default function HomePage() {
           }}
         >
           <TopMarkets />
+        </div>
+
+        {/* Trending Markets - Most Liked by Investors */}
+        <div 
+          className="mt-8 rounded-2xl p-5 sm:p-6"
+          style={{ 
+            backgroundColor: '#ffffff', 
+            border: '1px solid #d8d6cd',
+            boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+          }}
+        >
+          <TrendingMarkets />
         </div>
 
         {/* Social Proof Section - Badges & Testimonials */}
