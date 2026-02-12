@@ -18,9 +18,9 @@ export const maxDuration = 60;
 const AIRBNB_API_KEY = "d306zoyjsyarp7ifhu67rjxn52tv0t20"; // Public Airbnb web client key
 const AIRBNB_API_BASE = "https://www.airbnb.com/api/v2/explore_tabs";
 
-// Cache duration: 30 days — aggressive caching to minimize API calls
-// Most STR markets don't shift dramatically month-to-month
-const CACHE_DURATION_DAYS = 30;
+// Cache duration: 60 days — aggressive caching to minimize API calls
+// STR markets don't shift dramatically month-to-month; 60 days cuts repeat PriceLabs calls in half
+const CACHE_DURATION_DAYS = 60;
 
 // ============================================================================
 // GEOCODING
