@@ -21,6 +21,29 @@ const STATE_NAMES: Record<string, string> = {
   DC: "district-of-columbia",
 };
 
+// Reverse mapping: full state name → abbreviation (for when geocoding returns full names)
+const STATE_NAME_TO_ABBR: Record<string, string> = Object.fromEntries(
+  Object.entries(STATE_NAMES).map(([abbr, name]) => [name.replace(/-/g, " ").toLowerCase(), abbr])
+);
+
+/** Normalize a state param to a 2-letter abbreviation. Handles both "CA" and "California". */
+function normalizeState(raw: string): string | null {
+  const upper = raw.toUpperCase();
+  // Already a valid 2-letter abbreviation
+  if (upper.length === 2 && STATE_NAMES[upper]) return upper;
+  // Try full name lookup
+  const lower = raw.toLowerCase().trim();
+  const abbr = STATE_NAME_TO_ABBR[lower];
+  if (abbr) return abbr;
+  // Try partial match (e.g., "New York" → "new york")
+  for (const [name, code] of Object.entries(STATE_NAME_TO_ABBR)) {
+    if (name === lower || lower.includes(name) || name.includes(lower)) return code;
+  }
+  // If it's 2 chars, assume abbreviation even if not in our map
+  if (upper.length === 2) return upper;
+  return null;
+}
+
 // ─── Static FMR fallback (FY2025 state averages from HUD/RentData.org) ──────
 // This ensures we ALWAYS have data even if both HUD API and RentData.org are down.
 // Format: [0BR, 1BR, 2BR, 3BR, 4BR]
@@ -515,12 +538,22 @@ function parseRentDataHtml(
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const state = searchParams.get("state")?.trim().toUpperCase();
+    const rawState = searchParams.get("state")?.trim();
     const city = searchParams.get("city")?.trim();
     let county = searchParams.get("county")?.trim();
 
-    if (!state) {
+    if (!rawState) {
       return NextResponse.json({ error: "Missing state parameter" }, { status: 400 });
+    }
+
+    // Normalize state: handles both "CA" and "California" (Nominatim returns full names)
+    const state = normalizeState(rawState);
+    if (!state) {
+      console.error(`[hud-fmr] Could not normalize state: "${rawState}", falling back to static`);
+      // Try static fallback with the raw value uppercased (last resort)
+      const fallback = getStateFallback(rawState.toUpperCase().slice(0, 2));
+      if (fallback) return NextResponse.json(fallback);
+      return NextResponse.json({ error: `Unknown state: ${rawState}` }, { status: 400 });
     }
 
     // ── Step 0: Check Supabase cache first (instant) ──

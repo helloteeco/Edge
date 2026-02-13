@@ -247,3 +247,7 @@
 - [x] Fix PDF export: now derives effective ADR from adjusted revenue, shows correct values in highlights and AI prompt
 - [x] Fix share cards: all 3 share call sites now derive ADR from adjusted revenue
 - [x] Fix saved reports: customInputs now passed as JSON in URL params and restored on calculator page load
+
+## AUDIT: API cost safety + FMR long-term rental fix (February 2026)
+- [ ] Audit all external API calls (Mashvisor/PriceLabs) to confirm they only fire on Analyze, not on instant/history/saved views
+- [ ] Fix FMR (Fair Market Rent) data fetch — "Unable to fetch FMR data from any source" error on calculator page
