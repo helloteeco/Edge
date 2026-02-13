@@ -234,5 +234,5 @@
 - [x] No existing features removed
 
 ## BUG FIXES: Calculator/Analysis page (February 2026)
-- [ ] Fix double-tap to save/unsave not working on analysis sheets
-- [ ] Fix "Numbers not making sense?" section spacing — card is touching the white footer area
+- [x] Fix double-tap to save/unsave not working on analysis sheets (wrapped calculator page in DoubleTapSave)
+- [x] Fix "Numbers not making sense?" section spacing — added pb-16 to StuckHelper wrapper
