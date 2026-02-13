@@ -195,5 +195,17 @@
 - [x] No existing features removed
 
 ## BUG: Bottom tab bar floats when mobile keyboard opens (February 2026)
-- [ ] Fix tab bar to stay fixed at viewport bottom when keyboard is open on mobile
+- [x] Fix tab bar to stay fixed at viewport bottom when keyboard is open on mobile
+- [x] No existing features removed
+
+## FEATURE: Dynamic STR Regulation Risk System (February 2026)
+- [ ] Create str_regulations table in Supabase (legality status, permit difficulty, details, last_verified)
+- [ ] Build AI-powered regulation research API using web search for current STR rules
+- [ ] Classify each city: legality (Legal, Restricted, Banned) + permit difficulty (Easy, Moderate, Hard, Very Hard)
+- [ ] Integrate regulation penalties into scoring algorithm (cap grades for banned/hostile)
+- [ ] Seed regulation data for all 629 existing researched cities via parallel AI research
+- [ ] Add regulation warning banner + permit difficulty info on city detail pages
+- [ ] Wire auto-research into city data pipeline for new markets
+- [ ] Auto-refresh stale regulation data (90-day TTL)
+- [ ] Show "last verified" date so users know data freshness
 - [ ] No existing features removed

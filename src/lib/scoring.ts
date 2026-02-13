@@ -36,6 +36,17 @@
  * - Cash-on-Cash Return: $10,632 / $46,000 = 23.1%
  */
 
+export interface RegulationInfo {
+  legality_status: 'legal' | 'restricted' | 'banned' | 'unknown';
+  permit_difficulty: 'easy' | 'moderate' | 'hard' | 'very_hard' | 'unknown';
+  max_nights_per_year: number | null;
+  owner_occupied_required: boolean;
+  permit_cap: boolean;
+  summary: string;
+  details: string;
+  last_verified?: string;
+}
+
 export interface ScoringBreakdown {
   cashOnCash: { score: number; maxScore: 35; value: number; rating: string };
   affordability: { score: number; maxScore: 25; value: number; rating: string };
@@ -45,6 +56,16 @@ export interface ScoringBreakdown {
   totalScore: number;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
   verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
+  // Regulation overlay (applied after base scoring)
+  regulationPenalty?: {
+    applied: boolean;
+    originalGrade: string;
+    originalVerdict: string;
+    reason: string;
+    legality: string;
+    permitDifficulty: string;
+  };
+  regulation?: RegulationInfo;
 }
 
 /**
@@ -343,4 +364,80 @@ export function scoreLegality(status: string, permitRequired: boolean): { score:
   if (status === 'varies') return { score: 8, rating: 'Varies by Area' };
   if (status === 'legal' && permitRequired) return { score: 12, rating: 'Legal (Permit Required)' };
   return { score: 15, rating: 'Fully Legal' };
+}
+
+/**
+ * Apply regulation penalty overlay to a scoring breakdown.
+ * This does NOT change the base score - it caps the grade and verdict.
+ * 
+ * Penalty rules:
+ * - Banned: Grade capped at D, verdict forced to "avoid"
+ * - Restricted: Grade capped at C, verdict capped at "caution"
+ * - Very Hard permit: Grade capped at B, verdict capped at "hold"
+ * - Hard permit: No grade cap, but warning shown
+ * - Legal + Easy/Moderate: No penalty
+ */
+export function applyRegulationPenalty(
+  scoring: ScoringBreakdown,
+  regulation: RegulationInfo
+): ScoringBreakdown {
+  const result = { ...scoring };
+  const originalGrade = scoring.grade;
+  const originalVerdict = scoring.verdict;
+
+  const gradeOrder: Array<ScoringBreakdown['grade']> = ['F', 'D', 'C', 'B', 'B+', 'A', 'A+'];
+  const verdictOrder: Array<ScoringBreakdown['verdict']> = ['avoid', 'caution', 'hold', 'buy', 'strong-buy'];
+
+  function capGrade(maxGrade: ScoringBreakdown['grade']) {
+    const currentIdx = gradeOrder.indexOf(result.grade);
+    const maxIdx = gradeOrder.indexOf(maxGrade);
+    if (currentIdx > maxIdx) {
+      result.grade = maxGrade;
+    }
+  }
+
+  function capVerdict(maxVerdict: ScoringBreakdown['verdict']) {
+    const currentIdx = verdictOrder.indexOf(result.verdict);
+    const maxIdx = verdictOrder.indexOf(maxVerdict);
+    if (currentIdx > maxIdx) {
+      result.verdict = maxVerdict;
+    }
+  }
+
+  let reason = '';
+  let penaltyApplied = false;
+
+  // Apply legality penalties
+  if (regulation.legality_status === 'banned') {
+    capGrade('D');
+    capVerdict('avoid');
+    reason = 'STRs are effectively banned in this market';
+    penaltyApplied = true;
+  } else if (regulation.legality_status === 'restricted') {
+    capGrade('C');
+    capVerdict('caution');
+    reason = 'STRs face significant restrictions in this market';
+    penaltyApplied = true;
+  }
+
+  // Apply permit difficulty penalties (only if not already penalized harder)
+  if (!penaltyApplied && regulation.permit_difficulty === 'very_hard') {
+    capGrade('B');
+    capVerdict('hold');
+    reason = 'STR permits are extremely difficult to obtain';
+    penaltyApplied = true;
+  }
+
+  // Always attach regulation info
+  result.regulation = regulation;
+  result.regulationPenalty = {
+    applied: penaltyApplied,
+    originalGrade,
+    originalVerdict,
+    reason,
+    legality: regulation.legality_status,
+    permitDifficulty: regulation.permit_difficulty,
+  };
+
+  return result;
 }
