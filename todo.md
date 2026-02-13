@@ -232,3 +232,7 @@
 - [x] Verify all 50 states have correct dynamically-calculated grades
 - [x] Stability tested: adding 50 F-cities to KY drops only 2pts, adding 100 F-cities to CA drops 0pts
 - [x] No existing features removed
+
+## BUG FIXES: Calculator/Analysis page (February 2026)
+- [ ] Fix double-tap to save/unsave not working on analysis sheets
+- [ ] Fix "Numbers not making sense?" section spacing — card is touching the white footer area

@@ -1,0 +1,15 @@
+DEPLOYMENT VERIFIED SUCCESSFULLY
+
+CA state page: Now shows B (62/100) - was C (46/100). FIXED.
+Explanation text: "State grade is based on the top-performing cities in the state. Adding more markets won't lower the grade — it only improves when quality cities are added."
+
+Interactive Map (STR Grade tab):
+- CA now shows green/teal (B grade) instead of yellow (C grade)
+- TX shows green (A grade)
+- FL shows green (A grade)
+- KY/OH show dark green (A+ grade)
+- Map colors are dynamically correct
+
+Top 10 Markets: All A+ grade, legal cities (Millersburg, Berlin, Port Arthur, etc.)
+
+Build ID changed from eyguPbMqU3F8Y4DkBY4vv to kjpY5ZOhaFKDoHnpy5mVy confirming new deployment.

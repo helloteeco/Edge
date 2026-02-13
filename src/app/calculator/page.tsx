@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
 import AuthModal from "@/components/AuthModal";
-import { FloatingActionPill } from "@/components/DoubleTapSave";
+import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 import dynamic from "next/dynamic";
 import { StuckHelper } from "@/components/StuckHelper";
 import { refilterComps, type Comp } from "@/lib/refilterComps";
@@ -2873,6 +2873,36 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
+    <DoubleTapSave isSaved={isReportSaved} onToggleSave={async () => {
+      if (!result) return;
+      if (isReportSaved) {
+        const addr = result.address || result.neighborhood;
+        const saved = JSON.parse(localStorage.getItem('edge_saved_reports') || '[]');
+        const matchEntry = saved.find((r: any) => r.address === addr);
+        const exists = saved.findIndex((r: any) => r.address === addr);
+        if (exists >= 0) {
+          saved.splice(exists, 1);
+          localStorage.setItem('edge_saved_reports', JSON.stringify(saved));
+        }
+        setIsReportSaved(false);
+        const authEmail = localStorage.getItem('edge_auth_email');
+        const authToken = localStorage.getItem('edge_auth_token');
+        const authExpiry = localStorage.getItem('edge_auth_expiry');
+        if (authEmail && authToken && authExpiry && Date.now() < parseInt(authExpiry, 10)) {
+          try {
+            await fetch('/api/saved-properties', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: authEmail, propertyId: matchEntry?.id || addr })
+            });
+          } catch (err) {
+            console.log('Server unsave failed:', err);
+          }
+        }
+      } else {
+        saveReport();
+      }
+    }}>
     <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: "#f5f4f0" }}>
       {/* Header */}
       <header className="sticky top-0 z-50 px-4 py-3" style={{ backgroundColor: "#2b2823" }}>
@@ -6364,10 +6394,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
 
       {/* Stuck Helper - shown below results when analysis is complete */}
       {result && (
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-4xl mx-auto px-4 pb-16">
           <StuckHelper tabName="calculator" />
         </div>
       )}
     </div>
+    </DoubleTapSave>
   );
 }
