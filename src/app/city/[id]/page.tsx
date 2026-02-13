@@ -13,6 +13,27 @@ export default function CityPage({ params }: { params: { id: string } }) {
 
   const city = getCityById(id);
 
+  // On-demand AI regulation enrichment for cities with default data
+  const [enrichedRegulation, setEnrichedRegulation] = useState<any>(null);
+  useEffect(() => {
+    if (!city || city.regulationSource !== 'default') return;
+    // Check Supabase cache first, then trigger AI research if needed
+    const enrichRegulation = async () => {
+      try {
+        const res = await fetch(`/api/str-regulations?city=${encodeURIComponent(city.name)}&state=${encodeURIComponent(city.stateCode)}&cityId=${encodeURIComponent(city.id)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.legality_status && data.legality_status !== 'legal') {
+            setEnrichedRegulation(data);
+          }
+        }
+      } catch (e) {
+        // Silently fail - default data is shown
+      }
+    };
+    enrichRegulation();
+  }, [city?.id, city?.regulationSource]);
+
   useEffect(() => {
     const loadLikeStatus = async () => {
       const { getAuthEmail, getSavedCities } = await import('@/lib/account-storage');
@@ -526,6 +547,61 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
+        {/* AI-Enriched Regulation Warning (for cities with default data that AI found to be restricted/banned) */}
+        {enrichedRegulation && !city.regulationInfo?.legality_status?.match(/banned|restricted/) && (
+          <div 
+            className="rounded-2xl p-5 mb-4"
+            style={{ 
+              backgroundColor: enrichedRegulation.legality_status === 'banned' ? '#fef2f2' : '#fffbeb',
+              border: `1px solid ${enrichedRegulation.legality_status === 'banned' ? '#fca5a5' : '#fcd34d'}`,
+              boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">
+                {enrichedRegulation.legality_status === 'banned' ? '🚫' : '⚠️'}
+              </span>
+              <div className="flex-1">
+                <h3 
+                  className="font-semibold mb-1"
+                  style={{ 
+                    color: enrichedRegulation.legality_status === 'banned' ? '#991b1b' : '#92400e',
+                    fontFamily: 'Source Serif Pro, Georgia, serif'
+                  }}
+                >
+                  {enrichedRegulation.legality_status === 'banned' 
+                    ? 'STRs Effectively Banned' 
+                    : 'STR Restrictions Apply'}
+                </h3>
+                <p className="text-sm mb-2" style={{ color: enrichedRegulation.legality_status === 'banned' ? '#b91c1c' : '#a16207' }}>
+                  {enrichedRegulation.summary}
+                </p>
+                {enrichedRegulation.details && (
+                  <p className="text-sm mb-2" style={{ color: enrichedRegulation.legality_status === 'banned' ? '#dc2626' : '#ca8a04', lineHeight: 1.5 }}>
+                    {enrichedRegulation.details}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {enrichedRegulation.permit_difficulty && enrichedRegulation.permit_difficulty !== 'unknown' && enrichedRegulation.permit_difficulty !== 'moderate' && (
+                    <span 
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ 
+                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                        color: '#dc2626'
+                      }}
+                    >
+                      Permit: {enrichedRegulation.permit_difficulty.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs mt-2" style={{ color: '#9ca3af' }}>
+                  AI-verified regulation data
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Regulation Info for Legal Cities with Hard Permits */}
         {city.regulationInfo && city.regulationInfo.legality_status === 'legal' && 
          (city.regulationInfo.permit_difficulty === 'hard' || city.regulationInfo.permit_difficulty === 'very_hard') && (
@@ -813,6 +889,45 @@ export default function CityPage({ params }: { params: { id: string } }) {
           >
             📋 Regulation Status
           </h3>
+          {/* Show actual regulation data */}
+          {city.regulationInfo && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span 
+                className="px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ 
+                  backgroundColor: city.regulationInfo.legality_status === 'banned' ? '#fef2f2' 
+                    : city.regulationInfo.legality_status === 'restricted' ? '#fffbeb' : '#f0fdf4',
+                  color: city.regulationInfo.legality_status === 'banned' ? '#dc2626' 
+                    : city.regulationInfo.legality_status === 'restricted' ? '#ca8a04' : '#16a34a',
+                  border: `1px solid ${city.regulationInfo.legality_status === 'banned' ? '#fca5a5' 
+                    : city.regulationInfo.legality_status === 'restricted' ? '#fcd34d' : '#86efac'}`
+                }}
+              >
+                {city.regulationInfo.legality_status === 'banned' ? 'Banned' 
+                  : city.regulationInfo.legality_status === 'restricted' ? 'Restricted' : 'Legal'}
+              </span>
+              {city.regulationInfo.permit_difficulty && city.regulationInfo.permit_difficulty !== 'unknown' && (
+                <span 
+                  className="px-3 py-1.5 rounded-full text-xs font-semibold"
+                  style={{ 
+                    backgroundColor: city.regulationInfo.permit_difficulty === 'very_hard' || city.regulationInfo.permit_difficulty === 'hard'
+                      ? '#fef2f2' : city.regulationInfo.permit_difficulty === 'moderate' ? '#fffbeb' : '#f0fdf4',
+                    color: city.regulationInfo.permit_difficulty === 'very_hard' || city.regulationInfo.permit_difficulty === 'hard'
+                      ? '#dc2626' : city.regulationInfo.permit_difficulty === 'moderate' ? '#ca8a04' : '#16a34a',
+                    border: `1px solid ${city.regulationInfo.permit_difficulty === 'very_hard' || city.regulationInfo.permit_difficulty === 'hard'
+                      ? '#fca5a5' : city.regulationInfo.permit_difficulty === 'moderate' ? '#fcd34d' : '#86efac'}`
+                  }}
+                >
+                  Permit: {city.regulationInfo.permit_difficulty.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                </span>
+              )}
+              {city.regulationSource === 'curated' && (
+                <span className="px-3 py-1.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#f5f0e8', color: '#787060', border: '1px solid #d8d6cd' }}>
+                  Verified Data
+                </span>
+              )}
+            </div>
+          )}
           <p className="text-sm mb-4" style={{ color: '#787060' }}>
             Regulations vary by city and county. Always verify local STR ordinances, permit requirements, and zoning laws before purchasing.
           </p>
