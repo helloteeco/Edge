@@ -1147,40 +1147,55 @@ export default function CalculatorPage() {
     }
     setLastAnalyzedAddress(pendingAnalysis || address);
     
-    if (analysisResult.listPrice > 0 && !purchasePrice) {
+    // Auto-fill purchase price from analysis data (always on fresh analysis)
+    if (analysisResult.listPrice > 0) {
       setPurchasePrice(analysisResult.listPrice.toString());
     }
     
+    // Auto-fill sqft from analysis data
     if (analysisResult.sqft > 0) {
       setPropertySqft(analysisResult.sqft);
       setFurnishingsCost(Math.round(analysisResult.sqft * 15));
     }
     
-    // Fetch property details (sqft + estimated value) from Zillow in background
-    // This enriches the analysis with actual property data when available
+    // Fetch property details (sqft + estimated value) from Redfin/Zillow in background
+    // This enriches the analysis with actual property data when the primary source has no sqft/price
     const addrForDetails = pendingAnalysis || address;
     fetch(`/api/property-details?address=${encodeURIComponent(addrForDetails)}&bedrooms=${analysisResult.bedrooms}`)
       .then(res => res.json())
       .then(details => {
         if (details.success) {
-          // Auto-fill sqft if we got real data and current value is still default/0
-          if (details.sqft > 0) {
+          // Auto-fill sqft — prefer real data over bedroom estimate
+          if (details.sqft > 0 && !details.isEstimate) {
             setPropertySqft(prev => {
-              // Only auto-fill if user hasn't manually changed it (still 0 or default 1500)
-              if (prev === 0 || prev === 1500) {
+              // Only auto-fill if analysis didn't already provide real sqft
+              if (prev === 0 || prev === 1500 || analysisResult.sqft === 0) {
                 setFurnishingsCost(Math.round(details.sqft * 15));
                 return details.sqft;
               }
               return prev;
             });
-            // Update result object with real sqft
             setResult(prev => prev ? { ...prev, sqft: details.sqft } : prev);
+          } else if (details.sqft > 0 && details.isEstimate && analysisResult.sqft === 0) {
+            // Use bedroom-based estimate only if we have nothing else
+            setPropertySqft(prev => {
+              if (prev === 0) {
+                setFurnishingsCost(Math.round(details.sqft * 15));
+                return details.sqft;
+              }
+              return prev;
+            });
           }
-          // Auto-fill purchase price if we got an estimate and user hasn't entered one
-          if (details.estimatedValue > 0 && !purchasePrice && analysisResult.listPrice === 0) {
-            setPurchasePrice(details.estimatedValue.toString());
+          // Auto-fill purchase price if analysis had no listPrice
+          if (details.estimatedValue > 0 && analysisResult.listPrice === 0) {
+            setPurchasePrice(prev => {
+              if (!prev || prev === "" || prev === "0") {
+                return details.estimatedValue.toString();
+              }
+              return prev;
+            });
           }
-          console.log('[PropertyDetails]', details.source, '- sqft:', details.sqft, 'value:', details.estimatedValue);
+          console.log('[PropertyDetails]', details.source, '- sqft:', details.sqft, '(est:', details.isEstimate, ') value:', details.estimatedValue);
         }
       })
       .catch(err => console.warn('[PropertyDetails] fetch failed (non-blocking):', err));
@@ -4557,8 +4572,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 {result?.sqft > 0 && propertySqft === result.sqft && (
                   <p className="text-xs mt-1" style={{ color: '#22c55e' }}>✓ Auto-filled from property records ({result.sqft.toLocaleString()} sqft)</p>
                 )}
-                {propertySqft === 0 && (
+                {result && propertySqft > 0 && propertySqft !== result?.sqft && (
+                  <p className="text-xs mt-1" style={{ color: '#6b7280' }}>~{propertySqft.toLocaleString()} sqft (estimated from {bedrooms || 3} bedrooms — adjust if needed)</p>
+                )}
+                {propertySqft === 0 && !result && (
                   <p className="text-xs text-gray-400 mt-1">Will be auto-filled when you analyze an address</p>
+                )}
+                {propertySqft === 0 && result && (
+                  <p className="text-xs text-gray-400 mt-1">Enter square footage for accurate startup cost estimates</p>
                 )}
               </div>
               
@@ -4866,6 +4887,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     />
                     {purchasePrice && result?.listPrice > 0 && purchasePrice === result.listPrice.toString() && (
                       <p className="text-xs mt-1" style={{ color: '#22c55e' }}>✓ Estimated from property records</p>
+                    )}
+                    {!purchasePrice && result && (
+                      <p className="text-xs text-gray-400 mt-1">Enter the purchase price or listing price for this property</p>
                     )}
                   </div>
                   

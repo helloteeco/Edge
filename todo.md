@@ -278,3 +278,13 @@
 - [x] Auto-fill estimated property value from Zillow when analysis runs
 - [x] Both fields remain fully editable after auto-fill
 - [x] No other features changed
+
+## BUG: Sqft and Purchase Price not auto-filling from analysis data (February 2026)
+- [x] Fix: listPrice from analysis result should always populate Purchase Price when > 0
+- [x] Fix: sqft from analysis result should always populate Property Square Footage when > 0
+- [x] Zillow lookup should be fallback only when analysis data has no sqft/price
+- [x] Added Redfin as primary property details source (more reliable than Zillow from server)
+- [x] Added OSM/Nominatim as tertiary fallback for sqft
+- [x] Bedroom-based estimate shown with label when no real data available
+- [x] Ensure existing auto-fill from analysis result still works
+- [x] No features removed
