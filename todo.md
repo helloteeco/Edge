@@ -220,5 +220,5 @@
 - [x] Fix regulation field in FlatCity to use curated data (was using old strStatus)
 - [x] Add adjustedScore to ScoringBreakdown that caps numeric score to match grade cap
 - [x] Create /api/admin/sync-scores endpoint to update Supabase market_score values
-- [ ] Run sync-scores to update Supabase after deployment
+- [x] Run sync-scores to update Supabase after deployment
 - [x] No existing features removed
