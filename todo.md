@@ -199,11 +199,12 @@
 - [x] No existing features removed
 
 ## FEATURE: Hybrid STR Regulation Risk System (February 2026)
-- [ ] Build curated static dataset of ~200 known restricted/banned cities (zero API cost)
-- [ ] Default all other cities to legal/moderate (statistically accurate)
-- [ ] On-demand AI enrichment when users visit city pages (cached in Supabase)
-- [ ] Integrate regulation penalties into scoring (cap grades for banned/hostile)
-- [ ] Add regulation warning banner + permit difficulty info on city detail pages
-- [ ] Auto-refresh stale data after 90 days
-- [ ] Show last verified date for data freshness
-- [ ] No existing features removed
+- [x] Build curated static dataset of ~65 known restricted/banned cities (zero API cost)
+- [x] Default all other cities to legal/moderate (statistically accurate)
+- [x] On-demand AI enrichment when users visit city pages (cached in Supabase)
+- [x] Integrate regulation penalties into scoring (cap grades for banned/hostile)
+- [x] Add regulation warning banner + permit difficulty info on city detail pages
+- [x] Auto-refresh stale data after 90 days
+- [x] Show last verified date for data freshness
+- [x] Enhanced Regulation Status section with legality/permit badges
+- [x] No existing features removed
