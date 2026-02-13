@@ -240,4 +240,10 @@
 ## FEATURE: Founder intro trust section on calculator page (February 2026)
 - [x] Add founder photo to public directory
 - [x] Add personal founder intro section (Jeff Chheuy) to calculator page
-- [ ] Rewrite founder intro copy — remove pricing/competitor references, make it welcoming to newcomers and experienced investors alike
+- [x] Rewrite founder intro copy — remove pricing/competitor references, make it welcoming to newcomers and experienced investors alike
+
+## FIX: Adjusted inputs must persist across PDF export, share cards, and saved reports (February 2026)
+- [x] Audit which adjustable inputs exist on the calculator page
+- [x] Fix PDF export: now derives effective ADR from adjusted revenue, shows correct values in highlights and AI prompt
+- [x] Fix share cards: all 3 share call sites now derive ADR from adjusted revenue
+- [x] Fix saved reports: customInputs now passed as JSON in URL params and restored on calculator page load

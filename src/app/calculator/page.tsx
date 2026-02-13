@@ -496,6 +496,28 @@ export default function CalculatorPage() {
       
       // If cached=true or fromSaved=true, load from localStorage cache first, then try Supabase cache
       const fromSavedParam = urlParams.get("fromSaved");
+      
+      // Restore custom inputs from saved report (passed as JSON in ci param)
+      const ciParam = urlParams.get("ci");
+      if (ciParam) {
+        try {
+          const ci = JSON.parse(decodeURIComponent(ciParam));
+          if (ci.purchasePrice) setPurchasePrice(ci.purchasePrice);
+          if (ci.downPaymentPercent !== undefined) setDownPaymentPercent(ci.downPaymentPercent);
+          if (ci.interestRate !== undefined) setInterestRate(ci.interestRate);
+          if (ci.managementFeePercent !== undefined) setManagementFeePercent(ci.managementFeePercent);
+          if (ci.cleaningCostPerStay !== undefined) setCleaningMonthly(ci.cleaningCostPerStay);
+          if (ci.revenuePercentile) setRevenuePercentile(ci.revenuePercentile as "average" | "75th" | "90th");
+          if (ci.useCustomIncome !== undefined) setUseCustomIncome(ci.useCustomIncome);
+          if (ci.customAnnualIncome) setCustomAnnualIncome(ci.customAnnualIncome);
+          if (ci.monthlyRent) setMonthlyRent(ci.monthlyRent);
+          if (ci.securityDeposit) setSecurityDeposit(ci.securityDeposit);
+          console.log('[FromSaved] Restored custom inputs:', ci);
+        } catch (e) {
+          console.warn('[FromSaved] Failed to parse custom inputs:', e);
+        }
+      }
+      
       if (cachedParam === "true" || fromSavedParam === "true") {
         const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
         const cachedSearch = recentSearches.find((s: { address: string }) => s.address === addressParam);
@@ -1860,6 +1882,9 @@ export default function CalculatorPage() {
     const guestMultiplier = getGuestCountMultiplier();
     const guestBonus = Math.round((guestMultiplier - 1) * 100);
     const baselineGuests = (bedrooms || 3) * 2;
+    // Derive effective ADR and occupancy from adjusted revenue
+    const effectiveOccupancy = result.occupancy || 55;
+    const effectiveAdr = effectiveOccupancy > 0 ? Math.round(displayRevenue / (365 * effectiveOccupancy / 100)) : result.adr;
     
     // Get seasonal data from the same function used in UI
     const seasonalData = getSeasonalityData();
@@ -2043,11 +2068,11 @@ export default function CalculatorPage() {
     <!-- Investment Highlights -->
     <div class="highlights">
       <div class="highlight-card">
-        <div class="highlight-value">${formatCurrency(result.adr)}</div>
+        <div class="highlight-value">${formatCurrency(effectiveAdr)}</div>
         <div class="highlight-label">Avg Daily Rate</div>
       </div>
       <div class="highlight-card">
-        <div class="highlight-value">${result.occupancy}%</div>
+        <div class="highlight-value">${effectiveOccupancy}%</div>
         <div class="highlight-label">Occupancy Rate</div>
       </div>
       <div class="highlight-card positive">
@@ -2811,7 +2836,7 @@ export default function CalculatorPage() {
 
 ## REVENUE PROJECTIONS
 - **Projected Annual Revenue:** $${displayRevenue.toLocaleString()}
-- **Average Daily Rate (ADR):** $${result.adr}
+- **Average Daily Rate (ADR):** $${Math.round(displayRevenue / (365 * (result.occupancy || 55) / 100))}
 - **Occupancy Rate:** ${result.occupancy}%
 - **Monthly Average:** $${Math.round(displayRevenue / 12).toLocaleString()}
 ${result.percentiles ? `- **Market 75th Percentile Revenue:** $${result.percentiles.revenue.p75.toLocaleString()}
@@ -3383,7 +3408,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                               purchasePrice: purchasePrice ? parseFloat(purchasePrice.replace(/,/g, '')) : 0,
                               annualRevenue: displayRevenue,
                               occupancyRate: result.occupancy,
-                              adr: result.adr,
+                              adr: (result.occupancy || 55) > 0 ? Math.round(displayRevenue / (365 * (result.occupancy || 55) / 100)) : result.adr,
                               cashFlow: investment.cashFlow,
                               cashOnCash: investment.cashOnCashReturn,
                               analysisData: {
@@ -5546,7 +5571,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                       purchasePrice: purchasePrice ? parseFloat(purchasePrice.replace(/,/g, '')) : 0,
                                       annualRevenue: displayRevenue,
                                       occupancyRate: result.occupancy,
-                                      adr: result.adr,
+                                      adr: (result.occupancy || 55) > 0 ? Math.round(displayRevenue / (365 * (result.occupancy || 55) / 100)) : result.adr,
                                       cashFlow: investment.cashFlow,
                                       cashOnCash: investment.cashOnCashReturn,
                                       analysisData: {
@@ -6396,7 +6421,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             purchasePrice: purchasePrice ? parseFloat(purchasePrice.replace(/,/g, '')) : 0,
             annualRevenue: getDisplayRevenue(),
             occupancyRate: result.occupancy,
-            adr: result.adr,
+            adr: (result.occupancy || 55) > 0 ? Math.round(getDisplayRevenue() / (365 * (result.occupancy || 55) / 100)) : result.adr,
             cashFlow: investment.cashFlow,
             cashOnCash: investment.cashOnCashReturn,
             analysisData: {

@@ -37,6 +37,20 @@ interface SavedReport {
   purchasePrice: number;
   notes: string;
   savedAt: number;
+  customInputs?: {
+    purchasePrice?: string;
+    downPaymentPercent?: number;
+    interestRate?: number;
+    managementFeePercent?: number;
+    cleaningCostPerStay?: number;
+    revenuePercentile?: string;
+    useCustomIncome?: boolean;
+    customAnnualIncome?: string;
+    monthlyRent?: string;
+    securityDeposit?: string;
+    firstLastMonth?: boolean;
+    startupBudget?: number;
+  };
 }
 
 // Type for analysis history (from calculator recent searches)
@@ -128,7 +142,7 @@ export default function SavedPage() {
       
       if (data.success && data.properties) {
         // Use server data directly (user-specific)
-        const serverReports = data.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number } }) => ({
+        const serverReports = data.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number }; customInputs?: Record<string, unknown> }) => ({
           id: p.id,
           address: p.address,
           city: p.address.split(',')[1]?.trim() || '',
@@ -142,6 +156,7 @@ export default function SavedPage() {
           purchasePrice: 0,
           notes: p.notes || '',
           savedAt: p.savedAt,
+          customInputs: p.customInputs || undefined,
         }));
         
         setSavedReports(serverReports);
@@ -534,7 +549,7 @@ export default function SavedPage() {
                       
                       <div className="flex gap-2 shrink-0">
                         <Link
-                          href={`/calculator?address=${encodeURIComponent(report.address)}&bedrooms=${report.bedrooms}&bathrooms=${report.bathrooms}&guests=${report.guestCount}&fromSaved=true`}
+                          href={`/calculator?address=${encodeURIComponent(report.address)}&bedrooms=${report.bedrooms}&bathrooms=${report.bathrooms}&guests=${report.guestCount}&fromSaved=true${report.customInputs ? `&ci=${encodeURIComponent(JSON.stringify(report.customInputs))}` : ''}`}
                           className="p-2 rounded-lg transition-all hover:bg-gray-100"
                           style={{ color: '#787060' }}
                           title="Open Analysis (no credit used)"
