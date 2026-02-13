@@ -249,5 +249,5 @@
 - [x] Fix saved reports: customInputs now passed as JSON in URL params and restored on calculator page load
 
 ## AUDIT: API cost safety + FMR long-term rental fix (February 2026)
-- [ ] Audit all external API calls (Mashvisor/PriceLabs) to confirm they only fire on Analyze, not on instant/history/saved views
-- [ ] Fix FMR (Fair Market Rent) data fetch — "Unable to fetch FMR data from any source" error on calculator page
+- [x] Audit all external API calls (Mashvisor/PriceLabs) — confirmed: only fires on Analyze button, never on instant/history/saved views
+- [x] Fix FMR (Fair Market Rent) data fetch — root cause: Nominatim returns full state names ("California") but FMR API expected abbreviations ("CA"). Added normalizeState() converter.
