@@ -554,6 +554,22 @@ export default function CalculatorPage() {
             setPropertySqft(cachedSearch.cachedResult.sqft);
             setFurnishingsCost(Math.round(cachedSearch.cachedResult.sqft * 15));
           }
+          // Enrich with Zillow property details (sqft + estimated value) in background
+          if (!cachedSearch.cachedResult.sqft || cachedSearch.cachedResult.sqft === 0) {
+            fetch(`/api/property-details?address=${encodeURIComponent(addressParam)}&bedrooms=${cachedSearch.cachedResult.bedrooms || 3}`)
+              .then(res => res.json())
+              .then(details => {
+                if (details.success && details.sqft > 0) {
+                  setPropertySqft(details.sqft);
+                  setFurnishingsCost(Math.round(details.sqft * 15));
+                  setResult(prev => prev ? { ...prev, sqft: details.sqft } : prev);
+                }
+                if (details.success && details.estimatedValue > 0 && !cachedSearch.cachedResult.listPrice) {
+                  setPurchasePrice(details.estimatedValue.toString());
+                }
+              })
+              .catch(() => {});
+          }
         } else {
           // No local cache — try Supabase property-cache API (no credit used)
           fetch(`/api/property-cache?address=${encodeURIComponent(addressParam)}`)
@@ -649,6 +665,22 @@ export default function CalculatorPage() {
                 if (analysisResult.sqft > 0) {
                   setPropertySqft(analysisResult.sqft);
                   setFurnishingsCost(Math.round(analysisResult.sqft * 15));
+                }
+                // Enrich with Zillow property details in background
+                if (!analysisResult.sqft || analysisResult.sqft === 0) {
+                  fetch(`/api/property-details?address=${encodeURIComponent(addressParam)}&bedrooms=${analysisResult.bedrooms || 3}`)
+                    .then(res => res.json())
+                    .then(details => {
+                      if (details.success && details.sqft > 0) {
+                        setPropertySqft(details.sqft);
+                        setFurnishingsCost(Math.round(details.sqft * 15));
+                        setResult(prev => prev ? { ...prev, sqft: details.sqft } : prev);
+                      }
+                      if (details.success && details.estimatedValue > 0 && !analysisResult.listPrice) {
+                        setPurchasePrice(details.estimatedValue.toString());
+                      }
+                    })
+                    .catch(() => {});
                 }
               }
             })
@@ -1123,6 +1155,35 @@ export default function CalculatorPage() {
       setPropertySqft(analysisResult.sqft);
       setFurnishingsCost(Math.round(analysisResult.sqft * 15));
     }
+    
+    // Fetch property details (sqft + estimated value) from Zillow in background
+    // This enriches the analysis with actual property data when available
+    const addrForDetails = pendingAnalysis || address;
+    fetch(`/api/property-details?address=${encodeURIComponent(addrForDetails)}&bedrooms=${analysisResult.bedrooms}`)
+      .then(res => res.json())
+      .then(details => {
+        if (details.success) {
+          // Auto-fill sqft if we got real data and current value is still default/0
+          if (details.sqft > 0) {
+            setPropertySqft(prev => {
+              // Only auto-fill if user hasn't manually changed it (still 0 or default 1500)
+              if (prev === 0 || prev === 1500) {
+                setFurnishingsCost(Math.round(details.sqft * 15));
+                return details.sqft;
+              }
+              return prev;
+            });
+            // Update result object with real sqft
+            setResult(prev => prev ? { ...prev, sqft: details.sqft } : prev);
+          }
+          // Auto-fill purchase price if we got an estimate and user hasn't entered one
+          if (details.estimatedValue > 0 && !purchasePrice && analysisResult.listPrice === 0) {
+            setPurchasePrice(details.estimatedValue.toString());
+          }
+          console.log('[PropertyDetails]', details.source, '- sqft:', details.sqft, 'value:', details.estimatedValue);
+        }
+      })
+      .catch(err => console.warn('[PropertyDetails] fetch failed (non-blocking):', err));
     
     setUseCustomIncome(false);
     setCustomAnnualIncome("");
@@ -1929,7 +1990,7 @@ export default function CalculatorPage() {
   const handleNumericChange = (setter: (v: number) => void, fallback = 0) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     if (raw === '' || raw === '-') {
-      setter(fallback);
+      setter(0); // Always set to 0 when empty — let numDisplay show empty string
       return;
     }
     // Strip leading zeros: "060" → 60, "0" stays 0
@@ -4489,12 +4550,15 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={numDisplay(propertySqft)}
-                  onChange={handleNumericChange(setPropertySqft, 1500)}
+                  onChange={handleNumericChange(setPropertySqft)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200"
-                  placeholder="Enter sqft..."
+                  placeholder="Auto-filled from property data"
                 />
-                {result.sqft > 0 && (
-                  <p className="text-xs text-gray-400 mt-1">Market data: {result.sqft} sqft</p>
+                {result?.sqft > 0 && propertySqft === result.sqft && (
+                  <p className="text-xs mt-1" style={{ color: '#22c55e' }}>✓ Auto-filled from property records ({result.sqft.toLocaleString()} sqft)</p>
+                )}
+                {propertySqft === 0 && (
+                  <p className="text-xs text-gray-400 mt-1">Will be auto-filled when you analyze an address</p>
                 )}
               </div>
               
@@ -4797,9 +4861,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       pattern="[0-9]*"
                       value={purchasePrice}
                       onChange={(e) => setPurchasePrice(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="Enter purchase price..."
+                      placeholder="Auto-filled from property data"
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
                     />
+                    {purchasePrice && result?.listPrice > 0 && purchasePrice === result.listPrice.toString() && (
+                      <p className="text-xs mt-1" style={{ color: '#22c55e' }}>✓ Estimated from property records</p>
+                    )}
                   </div>
                   
                   {/* Sliders */}

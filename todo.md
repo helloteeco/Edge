@@ -270,3 +270,11 @@
 - [x] Implement service worker for caching analysis results
 - [x] App works with cached data even without connectivity
 - [x] Graceful fallback when offline
+
+## UX FIX: Sqft and Price inputs auto-populating on clear (February 2026)
+- [x] Fix sqft input: allow fully clearing the field without fallback to 1500
+- [x] Fix price input: allow fully clearing the field without auto-populating
+- [x] Auto-fill sqft from API data (Zillow property details) when analysis runs
+- [x] Auto-fill estimated property value from Zillow when analysis runs
+- [x] Both fields remain fully editable after auto-fill
+- [x] No other features changed
