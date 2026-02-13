@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
@@ -11,14 +11,13 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  interactiveWidget: "resizes-visual",
-};
-
 export const metadata: Metadata = {
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    interactiveWidget: "resizes-visual",
+  },
   title: "Edge by Teeco - STR Investment Analysis",
   description: "Find high cash flow short-term rental markets with AI-powered analysis. 671 markets tracked, instant deal analysis, and expert resources.",
   icons: {

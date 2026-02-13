@@ -203,7 +203,7 @@
 - [ ] Build AI-powered regulation research API using web search for current STR rules
 - [ ] Classify each city: legality (Legal, Restricted, Banned) + permit difficulty (Easy, Moderate, Hard, Very Hard)
 - [ ] Integrate regulation penalties into scoring algorithm (cap grades for banned/hostile)
-- [ ] Seed regulation data for all 629 existing researched cities via parallel AI research
+- [ ] Seed regulation data for ALL 1,472 markets with data via parallel AI research
 - [ ] Add regulation warning banner + permit difficulty info on city detail pages
 - [ ] Wire auto-research into city data pipeline for new markets
 - [ ] Auto-refresh stale regulation data (90-day TTL)
