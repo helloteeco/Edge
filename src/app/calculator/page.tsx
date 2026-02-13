@@ -5968,7 +5968,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Jeff Chheuy</p>
               <p className="text-xs mt-0.5" style={{ color: '#a09880' }}>Founder, Edge by Teeco</p>
               <p className="text-sm mt-3 leading-relaxed" style={{ color: '#4a4640' }}>
-                I built Edge because I was tired of guessing. When I started investing in short-term rentals, every tool I found either gave me raw data with no context or charged $50/mo just to see basic comps. I wanted something that actually told me whether a deal was worth it — so I built it. Edge is the tool I wish I had on my first deal.
+                I built Edge because when I started investing in short-term rentals, I had no idea if the deals I was looking at were actually good. I just wanted a straight answer — is this property worth it or not? So I built the tool I wish I had on my first deal. Whether you&apos;re exploring your first investment or analyzing your next one, I hope Edge gives you the confidence to move forward.
               </p>
             </div>
           </div>

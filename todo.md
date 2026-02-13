@@ -239,4 +239,5 @@
 
 ## FEATURE: Founder intro trust section on calculator page (February 2026)
 - [x] Add founder photo to public directory
-- [ ] Add personal founder intro section (Jeff Chheuy) to calculator page
+- [x] Add personal founder intro section (Jeff Chheuy) to calculator page
+- [ ] Rewrite founder intro copy — remove pricing/competitor references, make it welcoming to newcomers and experienced investors alike
