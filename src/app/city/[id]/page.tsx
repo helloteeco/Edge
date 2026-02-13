@@ -533,8 +533,8 @@ export default function CityPage({ params }: { params: { id: string } }) {
                       color: city.regulationInfo.legality_status === 'banned' ? '#991b1b' : '#92400e'
                     }}
                   >
-                    <strong>Grade Impact:</strong> Base score of {city.marketScore}/100 would be grade {city.scoring.regulationPenalty.originalGrade}, 
-                    but capped at <strong>{city.grade}</strong> due to regulation risk.
+                    <strong>Grade Impact:</strong> Base score of {city.scoring.regulationPenalty.originalScore}/100 would be grade {city.scoring.regulationPenalty.originalGrade}, 
+                    but capped at <strong>{city.grade}</strong> ({city.marketScore}/100) due to regulation risk.
                   </div>
                 )}
                 {city.regulationInfo.last_verified && (

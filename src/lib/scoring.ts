@@ -54,6 +54,8 @@ export interface ScoringBreakdown {
   landlordFriendly: { score: number; maxScore: 10; rating: string };
   roomToGrow: { score: number; maxScore: 15; value: number; rating: string };
   totalScore: number;
+  /** Regulation-adjusted score. Same as totalScore if no penalty, otherwise capped to match the capped grade range. */
+  adjustedScore: number;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
   verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
   // Regulation overlay (applied after base scoring)
@@ -61,6 +63,7 @@ export interface ScoringBreakdown {
     applied: boolean;
     originalGrade: string;
     originalVerdict: string;
+    originalScore: number;
     reason: string;
     legality: string;
     permitDifficulty: string;
@@ -315,6 +318,7 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
     landlordFriendly: { score: landlordFriendly.score, maxScore: 10, rating: landlordFriendly.rating },
     roomToGrow: { score: roomToGrow.score, maxScore: 15, value: data.listingsPerThousand, rating: roomToGrow.rating },
     totalScore,
+    adjustedScore: totalScore, // Same as totalScore until regulation penalty is applied
     grade,
     verdict,
   };
@@ -367,13 +371,30 @@ export function scoreLegality(status: string, permitRequired: boolean): { score:
 }
 
 /**
+ * Grade-to-max-score mapping.
+ * When a regulation penalty caps the grade, we also cap the numeric score
+ * so that sorting by score correctly reflects the grade penalty.
+ * 
+ * Grade ranges: A+ (85-100), A (75-84), B+ (65-74), B (55-64), C (45-54), D (35-44), F (0-34)
+ */
+const GRADE_MAX_SCORE: Record<string, number> = {
+  'F': 34,
+  'D': 44,
+  'C': 54,
+  'B': 64,
+  'B+': 74,
+  'A': 84,
+  'A+': 100,
+};
+
+/**
  * Apply regulation penalty overlay to a scoring breakdown.
- * This does NOT change the base score - it caps the grade and verdict.
+ * This caps BOTH the grade/verdict AND the numeric adjustedScore.
  * 
  * Penalty rules:
- * - Banned: Grade capped at D, verdict forced to "avoid"
- * - Restricted: Grade capped at C, verdict capped at "caution"
- * - Very Hard permit: Grade capped at B, verdict capped at "hold"
+ * - Banned: Grade capped at D, verdict forced to "avoid", score capped at 44
+ * - Restricted: Grade capped at C, verdict capped at "caution", score capped at 54
+ * - Very Hard permit: Grade capped at B, verdict capped at "hold", score capped at 64
  * - Hard permit: No grade cap, but warning shown
  * - Legal + Easy/Moderate: No penalty
  */
@@ -384,15 +405,19 @@ export function applyRegulationPenalty(
   const result = { ...scoring };
   const originalGrade = scoring.grade;
   const originalVerdict = scoring.verdict;
+  const originalScore = scoring.totalScore;
 
   const gradeOrder: Array<ScoringBreakdown['grade']> = ['F', 'D', 'C', 'B', 'B+', 'A', 'A+'];
   const verdictOrder: Array<ScoringBreakdown['verdict']> = ['avoid', 'caution', 'hold', 'buy', 'strong-buy'];
+
+  let maxGradeApplied: ScoringBreakdown['grade'] | null = null;
 
   function capGrade(maxGrade: ScoringBreakdown['grade']) {
     const currentIdx = gradeOrder.indexOf(result.grade);
     const maxIdx = gradeOrder.indexOf(maxGrade);
     if (currentIdx > maxIdx) {
       result.grade = maxGrade;
+      maxGradeApplied = maxGrade;
     }
   }
 
@@ -428,12 +453,19 @@ export function applyRegulationPenalty(
     penaltyApplied = true;
   }
 
+  // Cap the numeric adjustedScore to match the capped grade range
+  if (maxGradeApplied) {
+    const maxScore = GRADE_MAX_SCORE[maxGradeApplied] ?? result.totalScore;
+    result.adjustedScore = Math.min(result.totalScore, maxScore);
+  }
+
   // Always attach regulation info
   result.regulation = regulation;
   result.regulationPenalty = {
     applied: penaltyApplied,
     originalGrade,
     originalVerdict,
+    originalScore,
     reason,
     legality: regulation.legality_status,
     permitDifficulty: regulation.permit_difficulty,

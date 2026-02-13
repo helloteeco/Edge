@@ -208,3 +208,17 @@
 - [x] Show last verified date for data freshness
 - [x] Enhanced Regulation Status section with legality/permit badges
 - [x] No existing features removed
+
+## AUDIT: Ensure all sorting, grades, and maps use regulation-adjusted data (February 2026)
+- [x] Audit all places where cities are sorted/ranked (search, state pages, top markets, trending)
+- [x] Fix sorting to use regulation-penalized scores so banned cities sort to bottom
+- [x] Verify search results sort by adjusted grade (best first, banned last)
+- [x] Verify state detail pages sort cities by adjusted grade
+- [x] Verify Top Markets / homepage rankings use adjusted grades
+- [x] Ensure interactive maps (STR grade tab) reflect adjusted grades dynamically
+- [x] Ensure map colors/weights use regulation-adjusted scores
+- [x] Fix regulation field in FlatCity to use curated data (was using old strStatus)
+- [x] Add adjustedScore to ScoringBreakdown that caps numeric score to match grade cap
+- [x] Create /api/admin/sync-scores endpoint to update Supabase market_score values
+- [ ] Run sync-scores to update Supabase after deployment
+- [x] No existing features removed

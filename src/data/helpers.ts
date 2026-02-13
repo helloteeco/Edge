@@ -107,12 +107,12 @@ export function getAllCities(): FlatCity[] {
         population: city.population,
         cashOnCash, // Use Cash-on-Cash instead of RPR
         dsi: city.dsi,
-        marketScore: scoring.totalScore, // Use new score
+        marketScore: scoring.adjustedScore, // Use regulation-adjusted score for sorting
         avgADR: city.rental.avgADR,
         occupancy: city.rental.occupancyRate,
         strMonthlyRevenue: city.rental.monthlyRevenue,
         medianHomeValue: city.rental.medianHomePrice,
-        regulation: city.strStatus === "legal" ? "Legal" : "Restricted",
+        regulation: regulationInfo.legality_status === 'legal' ? 'Legal' : regulationInfo.legality_status === 'banned' ? 'Banned' : 'Restricted',
         marketHeadroom: scoring.roomToGrow.score, // Use new scoring (15 = excellent, 3 = crowded)
         listingsPerThousand: city.saturationRisk.listingsPerThousand,
         scores: {
