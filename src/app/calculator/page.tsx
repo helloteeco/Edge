@@ -9,6 +9,8 @@ import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 import dynamic from "next/dynamic";
 import { StuckHelper } from "@/components/StuckHelper";
 import { refilterComps, type Comp } from "@/lib/refilterComps";
+import { addCreditEvent, getCreditLog, formatCreditEventTime, type CreditEvent } from "@/lib/creditLog";
+import { cacheAnalysisResult } from "@/lib/serviceWorker";
 
 // Dynamic import for CompMap (Leaflet needs client-side only)
 const CompMap = dynamic(() => import("@/components/CompMap").then(mod => ({ default: mod.CompMap })), {
@@ -824,6 +826,7 @@ export default function CalculatorPage() {
         setCreditsRemaining(data.credits.remaining);
         setCreditsLimit(data.credits.limit);
         setCreditsUsed(data.credits.used);
+        setCreditLog(getCreditLog());
         console.log("[Credits] Loaded:", data.credits);
       }
     } catch (error) {
@@ -944,6 +947,14 @@ export default function CalculatorPage() {
         
         if (cacheData.success && cacheData.cached && cacheData.data) {
           console.log("[Cache] Using cached data - no credit deducted");
+          // Log the free cache hit
+          addCreditEvent({
+            type: 'free',
+            address: pendingAnalysis || address,
+            creditsAfter: creditsRemaining ?? 0,
+            note: 'Loaded from cache (no credit used)',
+          });
+          setCreditLog(getCreditLog());
           // Use cached data directly
           handleAnalyzeWithCache(cacheData.data);
           setPendingAnalysis(null);
@@ -979,6 +990,15 @@ export default function CalculatorPage() {
       
       // Update credits display
       setCreditsRemaining(creditData.remaining);
+      
+      // Log the credit deduction
+      addCreditEvent({
+        type: 'deduct',
+        address: pendingAnalysis || address,
+        creditsAfter: creditData.remaining,
+        note: 'New analysis',
+      });
+      setCreditLog(getCreditLog());
       
       // Now proceed with analysis
       handleAnalyze(pendingAnalysis || undefined);
@@ -1069,6 +1089,9 @@ export default function CalculatorPage() {
     setResult(analysisResult);
     setIsReportSaved(false); // Reset saved state for new analysis
     setAddress(pendingAnalysis || address);
+    
+    // Cache in service worker for offline access
+    cacheAnalysisResult(pendingAnalysis || address, data);
     
     // Restore allComps and targetCoords for local bedroom re-filtering and comp map
     if (data.allComps && Array.isArray(data.allComps) && data.allComps.length > 0) {
@@ -1245,6 +1268,8 @@ export default function CalculatorPage() {
   const [showCreditConfirm, setShowCreditConfirm] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
+  const [showCreditLog, setShowCreditLog] = useState(false);
+  const [creditLog, setCreditLog] = useState<CreditEvent[]>([]);
   
   // Calculate free vs purchased credits (free credits = first 3)
   const FREE_CREDITS_TOTAL = 3;
@@ -1609,6 +1634,13 @@ export default function CalculatorPage() {
                 if (refundData.success) {
                   console.log('[Credits] Refunded credit — data came from cache, not paid API');
                   setCreditsRemaining(refundData.remaining);
+                  addCreditEvent({
+                    type: 'refund',
+                    address: addressToAnalyze,
+                    creditsAfter: refundData.remaining,
+                    note: 'Auto-refund: data found in cache',
+                  });
+                  setCreditLog(getCreditLog());
                 }
               } catch (refundErr) {
                 console.error('[Credits] Refund failed:', refundErr);
@@ -1892,6 +1924,23 @@ export default function CalculatorPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Helper: handle numeric input changes — strips leading zeros, allows empty field
+  const handleNumericChange = (setter: (v: number) => void, fallback = 0) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (raw === '' || raw === '-') {
+      setter(fallback);
+      return;
+    }
+    // Strip leading zeros: "060" → 60, "0" stays 0
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed)) {
+      setter(parsed);
+    }
+  };
+
+  // Helper: display value for numeric inputs — show empty string when 0 so user can type freely
+  const numDisplay = (val: number): string => val === 0 ? '' : String(val);
 
   // Generate and download PDF report
   const downloadPDFReport = async () => {
@@ -3000,14 +3049,74 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 }
               </span>
             </div>
-            <button
-              onClick={() => setShowPaywall(true)}
-              className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
-              style={{ backgroundColor: creditsRemaining === 0 ? '#2b2823' : '#e5e3da', color: creditsRemaining === 0 ? 'white' : '#2b2823' }}
-            >
-              {creditsRemaining === 0 ? 'Get More Credits' : 'Buy More'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setShowCreditLog(!showCreditLog); setCreditLog(getCreditLog()); }}
+                className="text-xs font-medium px-2.5 py-1 rounded-lg transition-all hover:opacity-80"
+                style={{ backgroundColor: showCreditLog ? '#2b2823' : 'transparent', color: showCreditLog ? 'white' : '#787060' }}
+                title="View credit activity"
+              >
+                Activity
+              </button>
+              <button
+                onClick={() => setShowPaywall(true)}
+                className="text-sm font-medium px-3 py-1 rounded-lg transition-all hover:opacity-80"
+                style={{ backgroundColor: creditsRemaining === 0 ? '#2b2823' : '#e5e3da', color: creditsRemaining === 0 ? 'white' : '#2b2823' }}
+              >
+                {creditsRemaining === 0 ? 'Get More Credits' : 'Buy More'}
+              </button>
+            </div>
           </div>
+          
+          {/* Credit Activity Log */}
+          {showCreditLog && (
+            <div className="max-w-6xl mx-auto mt-2 pb-2">
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#ffffff', border: '1px solid #e5e3da' }}>
+                <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: '1px solid #f0efe8' }}>
+                  <span className="text-xs font-semibold" style={{ color: '#2b2823' }}>Credit Activity</span>
+                  <button onClick={() => setShowCreditLog(false)} className="text-xs" style={{ color: '#787060' }}>Close</button>
+                </div>
+                {creditLog.length === 0 ? (
+                  <div className="px-4 py-6 text-center">
+                    <p className="text-sm" style={{ color: '#787060' }}>No credit activity yet. Analyze a property to get started.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y" style={{ borderColor: '#f0efe8' }}>
+                    {creditLog.slice(0, 15).map((event) => (
+                      <div key={event.id} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{
+                              backgroundColor: event.type === 'deduct' ? '#fef2f2' : event.type === 'refund' ? '#f0fdf4' : event.type === 'purchase' ? '#eff6ff' : '#f5f4f0',
+                            }}
+                          >
+                            <span className="text-xs">
+                              {event.type === 'deduct' ? '−' : event.type === 'refund' ? '+' : event.type === 'purchase' ? '$' : '✓'}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: '#2b2823' }}>
+                              {event.address.length > 40 ? event.address.slice(0, 40) + '...' : event.address}
+                            </p>
+                            <p className="text-xs" style={{ color: '#787060' }}>
+                              {event.note || (event.type === 'deduct' ? 'Credit used' : event.type === 'refund' ? 'Credit refunded' : event.type === 'free' ? 'From cache' : 'Credits added')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-medium" style={{ color: event.type === 'deduct' ? '#ef4444' : event.type === 'refund' ? '#22c55e' : '#787060' }}>
+                            {event.type === 'deduct' ? '-1' : event.type === 'refund' ? '+1' : event.type === 'purchase' ? `+${event.creditsAfter}` : '0'}
+                          </p>
+                          <p className="text-xs" style={{ color: '#a09888' }}>{formatCreditEventTime(event.timestamp)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -3718,9 +3827,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <div>
                         <label className="text-xs font-medium text-gray-600 block mb-1">Annual Revenue ($)</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={customAnnualIncome}
-                          onChange={(e) => setCustomAnnualIncome(e.target.value)}
+                          onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); setCustomAnnualIncome(v); }}
                           placeholder="e.g. 85000"
                           className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
                         />
@@ -3728,7 +3839,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <div>
                         <label className="text-xs font-medium text-gray-600 block mb-1">Avg Nightly Rate ($)</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           id="customAdr"
                           placeholder={`Current: $${result.adr}`}
                           className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
@@ -3737,11 +3850,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <div>
                         <label className="text-xs font-medium text-gray-600 block mb-1">Occupancy (%)</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           id="customOccupancy"
                           placeholder={`Current: ${result.occupancy}%`}
                           className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
-                          max="100"
                         />
                       </div>
                     </div>
@@ -4371,9 +4485,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   Property Square Footage (for cost calculation)
                 </label>
                 <input
-                  type="number"
-                  value={propertySqft}
-                  onChange={(e) => setPropertySqft(parseInt(e.target.value) || 1500)}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={numDisplay(propertySqft)}
+                  onChange={handleNumericChange(setPropertySqft, 1500)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200"
                   placeholder="Enter sqft..."
                 />
@@ -4436,9 +4552,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                   </div>
                   <input
-                    type="number"
-                    value={furnishingsCost}
-                    onChange={(e) => setFurnishingsCost(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(furnishingsCost)}
+                    onChange={handleNumericChange(setFurnishingsCost)}
+                    placeholder="0"
                     className="w-28 px-3 py-2 rounded-lg text-right font-semibold"
                     style={{ 
                       backgroundColor: includeFurnishings ? "#dcfce7" : "#e5e3da",
@@ -4464,9 +4583,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                   </div>
                   <input
-                    type="number"
-                    value={amenitiesCost}
-                    onChange={(e) => setAmenitiesCost(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(amenitiesCost)}
+                    onChange={handleNumericChange(setAmenitiesCost)}
+                    placeholder="0"
                     className="w-28 px-3 py-2 rounded-lg text-right font-semibold"
                     style={{ 
                       backgroundColor: includeAmenities ? "#dcfce7" : "#e5e3da",
@@ -4496,18 +4618,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Electric</label>
                   <input
-                    type="number"
-                    value={electricMonthly}
-                    onChange={(e) => setElectricMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(electricMonthly)}
+                    onChange={handleNumericChange(setElectricMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Water</label>
                   <input
-                    type="number"
-                    value={waterMonthly}
-                    onChange={(e) => setWaterMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(waterMonthly)}
+                    onChange={handleNumericChange(setWaterMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
@@ -4516,18 +4644,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Internet</label>
                   <input
-                    type="number"
-                    value={internetMonthly}
-                    onChange={(e) => setInternetMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(internetMonthly)}
+                    onChange={handleNumericChange(setInternetMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Trash</label>
                   <input
-                    type="number"
-                    value={trashMonthly}
-                    onChange={(e) => setTrashMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(trashMonthly)}
+                    onChange={handleNumericChange(setTrashMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
@@ -4536,18 +4670,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Lawn Care</label>
                   <input
-                    type="number"
-                    value={lawnCareMonthly}
-                    onChange={(e) => setLawnCareMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(lawnCareMonthly)}
+                    onChange={handleNumericChange(setLawnCareMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Pest Control</label>
                   <input
-                    type="number"
-                    value={pestControlMonthly}
-                    onChange={(e) => setPestControlMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(pestControlMonthly)}
+                    onChange={handleNumericChange(setPestControlMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
@@ -4559,9 +4699,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">House Supplies</label>
                   <input
-                    type="number"
-                    value={houseSuppliesMonthly}
-                    onChange={(e) => setHouseSuppliesMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(houseSuppliesMonthly)}
+                    onChange={handleNumericChange(setHouseSuppliesMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
@@ -4570,11 +4713,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Supplies & Consumables</label>
                   <input
-                    type="number"
-                    value={suppliesConsumablesMonthly}
-                    onChange={(e) => setSuppliesConsumablesMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(suppliesConsumablesMonthly)}
+                    onChange={handleNumericChange(setSuppliesConsumablesMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
-                    placeholder="Toiletries, linens, kitchen"
                   />
                 </div>
                 
@@ -4582,18 +4727,24 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Maintenance/Repair</label>
                   <input
-                    type="number"
-                    value={maintenanceMonthly}
-                    onChange={(e) => setMaintenanceMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(maintenanceMonthly)}
+                    onChange={handleNumericChange(setMaintenanceMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Rental Software</label>
                   <input
-                    type="number"
-                    value={rentalSoftwareMonthly}
-                    onChange={(e) => setRentalSoftwareMonthly(parseInt(e.target.value) || 0)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={numDisplay(rentalSoftwareMonthly)}
+                    onChange={handleNumericChange(setRentalSoftwareMonthly)}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
                 </div>
@@ -4641,9 +4792,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div className="mb-4">
                     <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>Purchase Price</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={purchasePrice}
-                      onChange={(e) => setPurchasePrice(e.target.value)}
+                      onChange={(e) => setPurchasePrice(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="Enter purchase price..."
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
                     />
@@ -4692,7 +4845,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                     <div>
                       <label className="text-sm block mb-1" style={{ color: "#787060" }}>STR Insurance (Annual)</label>
-                      <input type="number" value={insuranceAnnual} onChange={(e) => setInsuranceAnnual(parseInt(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" value={numDisplay(insuranceAnnual)} onChange={handleNumericChange(setInsuranceAnnual)} placeholder="0" className="w-full px-3 py-2 rounded-lg border border-gray-200" />
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-1">
@@ -4857,9 +5010,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div className="mb-4">
                     <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>Monthly Rent to Landlord</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={monthlyRent}
-                      onChange={(e) => setMonthlyRent(e.target.value)}
+                      onChange={(e) => setMonthlyRent(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="Enter monthly rent..."
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
                     />
@@ -4870,9 +5025,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     <div>
                       <label className="text-sm block mb-1" style={{ color: "#787060" }}>Security Deposit</label>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={securityDeposit}
-                        onChange={(e) => setSecurityDeposit(e.target.value)}
+                        onChange={(e) => setSecurityDeposit(e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder={monthlyRent ? `Default: ${formatCurrency(parseFloat(monthlyRent) || 0)}` : "Enter deposit..."}
                         className="w-full px-3 py-2 rounded-lg border border-gray-200"
                       />
@@ -4908,9 +5065,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     <div>
                       <label className="text-sm block mb-1" style={{ color: "#787060" }}>Monthly Liability Insurance</label>
                       <input
-                        type="number"
-                        value={landlordInsuranceMonthly}
-                        onChange={(e) => setLandlordInsuranceMonthly(parseInt(e.target.value) || 0)}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={numDisplay(landlordInsuranceMonthly)}
+                        onChange={handleNumericChange(setLandlordInsuranceMonthly)}
+                        placeholder="0"
                         className="w-full px-3 py-2 rounded-lg border border-gray-200"
                       />
                       <p className="text-xs text-gray-400 mt-1">Renter&apos;s / STR liability insurance</p>
@@ -5069,9 +5229,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div className="mb-4">
                     <label className="text-sm font-medium block mb-2" style={{ color: "#787060" }}>Monthly Mortgage Payment <span className="text-gray-400 font-normal">(optional — leave blank if paid off)</span></label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={iownitMortgage}
-                      onChange={(e) => setIownitMortgage(e.target.value)}
+                      onChange={(e) => setIownitMortgage(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="Enter monthly mortgage..."
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
                     />
@@ -5088,7 +5250,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                     <div>
                       <label className="text-sm block mb-1" style={{ color: "#787060" }}>STR Insurance (Annual)</label>
-                      <input type="number" value={iownitInsuranceAnnual} onChange={(e) => setIownitInsuranceAnnual(parseInt(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" value={numDisplay(iownitInsuranceAnnual)} onChange={handleNumericChange(setIownitInsuranceAnnual)} placeholder="0" className="w-full px-3 py-2 rounded-lg border border-gray-200" />
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-1">

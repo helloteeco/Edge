@@ -253,6 +253,20 @@
 - [x] Fix FMR (Fair Market Rent) data fetch — root cause: Nominatim returns full state names ("California") but FMR API expected abbreviations ("CA"). Added normalizeState() converter.
 
 ## BUG: Re-analyzing saved/history deals uses another credit (February 2026)
-- [ ] Audit the flow when user opens a saved/history report to find where the extra API call happens
-- [ ] Fix so saved/history re-analysis reads from cache, not paid APIs
-- [ ] No existing features changed
+- [x] Audit the flow when user opens a saved/history report to find where the extra API call happens
+- [x] Fix so saved/history re-analysis reads from cache, not paid APIs
+- [x] No existing features changed
+
+## UX BUG: Leading zero in expense inputs (February 2026)
+- [x] Fix leading zero issue in Monthly Operating Expenses inputs (Electric shows "0100" instead of "100")
+- [x] Ensure all numeric inputs strip leading zeros on change and on blur
+- [x] No existing features changed
+## FEATURE: Credits activity log (February 2026)
+- [x] Add credits usage history showing when credits were spent vs refunded
+- [x] Store credit events in localStorage or Supabase
+- [x] Show activity log in credits banner UIthe credits UI
+
+## FEATURE: Offline-first caching with service worker (February 2026)
+- [x] Implement service worker for caching analysis results
+- [x] App works with cached data even without connectivity
+- [x] Graceful fallback when offline
