@@ -251,3 +251,8 @@
 ## AUDIT: API cost safety + FMR long-term rental fix (February 2026)
 - [x] Audit all external API calls (Mashvisor/PriceLabs) — confirmed: only fires on Analyze button, never on instant/history/saved views
 - [x] Fix FMR (Fair Market Rent) data fetch — root cause: Nominatim returns full state names ("California") but FMR API expected abbreviations ("CA"). Added normalizeState() converter.
+
+## BUG: Re-analyzing saved/history deals uses another credit (February 2026)
+- [ ] Audit the flow when user opens a saved/history report to find where the extra API call happens
+- [ ] Fix so saved/history re-analysis reads from cache, not paid APIs
+- [ ] No existing features changed

@@ -1017,12 +1017,12 @@ export default function SavedPage() {
                         </>
                       ) : (
                         <Link
-                          href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}&force=true`}
+                          href={`/calculator?address=${encodeURIComponent(item.address)}${item.bedrooms ? `&bedrooms=${item.bedrooms}` : ''}${item.bathrooms ? `&bathrooms=${item.bathrooms}` : ''}${item.guestCount ? `&guests=${item.guestCount}` : ''}&cached=true`}
                           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
                           style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                         >
-                          <RefreshIcon className="w-4 h-4" color="#ffffff" />
-                          Re-analyze
+                          <DocumentIcon className="w-4 h-4" color="#ffffff" />
+                          View Analysis
                         </Link>
                       )}
                       <button

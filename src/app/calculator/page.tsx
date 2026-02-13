@@ -1594,6 +1594,26 @@ export default function CalculatorPage() {
             
             data = cachedResult;
             setLoadingStep("Found cached data!");
+            
+            // If a credit was deducted before reaching here (via confirmAnalysis),
+            // refund it since we got the data from cache, not a paid API call
+            const savedEmail = localStorage.getItem("edge_auth_email");
+            if (savedEmail) {
+              try {
+                const refundRes = await fetch('/api/credits', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: savedEmail, action: 'refund' }),
+                });
+                const refundData = await refundRes.json();
+                if (refundData.success) {
+                  console.log('[Credits] Refunded credit — data came from cache, not paid API');
+                  setCreditsRemaining(refundData.remaining);
+                }
+              } catch (refundErr) {
+                console.error('[Credits] Refund failed:', refundErr);
+              }
+            }
           }
         }
       } catch {
