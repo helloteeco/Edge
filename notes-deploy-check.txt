@@ -1,0 +1,10 @@
+CA state page on live site still shows:
+- Grade: C
+- Score: 46/100
+- Old explanation text: "State grade is calculated as the average of the top 50% performing cities"
+
+This means the latest deployment hasn't completed yet on Vercel, or there's a build cache issue.
+The git push was at commit 39919a9 (about 5 minutes ago).
+Vercel typically takes 2-5 minutes to deploy.
+
+Need to wait and check again, or verify the Vercel build status.

@@ -1,0 +1,7 @@
+Vercel Dashboard observations:
+- Project: edge (edge.teeco.co)
+- Latest commit shown: "chore: mark audit items complete in todo.md" - 25m ago on main
+- This is commit 45ef801, NOT the latest 39919a9 (state scoring redesign)
+- The latest push (39919a9) was about 5 minutes ago
+- There's a "Recent Previews" section showing "masterfix: Use @vercel/og for Next.js 13.5.6 compatibility" with "Error" status
+- Need to check if the latest deployment is building or failed

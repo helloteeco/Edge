@@ -424,7 +424,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
               style={{ backgroundColor: '#e5e3da', color: '#787060' }}
             >
               State grade is based on the top-performing cities in the state. 
-              Adding more markets won't lower the grade — it only improves when quality cities are added.
+              Adding more markets won&apos;t lower the grade — it only improves when quality cities are added.
             </p>
           </div>
         </div>

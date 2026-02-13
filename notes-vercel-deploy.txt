@@ -1,0 +1,5 @@
+Vercel deployment status:
+- Production: Ready, commit 45ef801 (chore: mark audit items complete in todo.md) - 25m ago
+- LATEST PUSH: "Update todo.md: mark state scoring redesign as complete" - 8m ago - shows ERROR status with red dot
+- The state scoring redesign commit (e2f93d4) is part of this deployment that ERRORED
+- Need to check build logs to see what failed
