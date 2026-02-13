@@ -222,3 +222,11 @@
 - [x] Create /api/admin/sync-scores endpoint to update Supabase market_score values
 - [x] Run sync-scores to update Supabase after deployment
 - [x] No existing features removed
+
+## SYSTEM: Future-proof state scoring + auto-updating maps (February 2026)
+- [ ] Audit why California shows grade C (46/100) — explain the math
+- [ ] Ensure all state scores dynamically recalculate when cities are added/changed
+- [ ] Ensure interactive maps auto-update colors/grades when new markets are added
+- [ ] Build Supabase auto-sync so database market_score stays in sync with static data on every build/deploy
+- [ ] Verify all 50 states have correct dynamically-calculated grades
+- [ ] No existing features removed

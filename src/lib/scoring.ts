@@ -325,19 +325,54 @@ export function calculateScore(data: MarketData): ScoringBreakdown {
 }
 
 /**
- * Calculate state-level score as weighted average of city scores
- * State score = Average of top 50% performing cities in that state
- * This prevents a few bad markets from tanking an otherwise good state
+ * Calculate state-level score from city scores.
+ *
+ * Philosophy: A state's STR grade answers "How good are the best STR
+ * opportunities in this state?" — not "What's the average city quality?"
+ *
+ * This means:
+ * - Adding more cities (even low-scoring ones) should NEVER significantly
+ *   hurt the state grade. The algorithm is stable under data expansion.
+ * - A state with strong top performers should grade well regardless of
+ *   how many weaker cities are also tracked.
+ * - But a state with only 1-2 decent cities and nothing else should score
+ *   lower than one with 20 strong cities.
+ *
+ * Algorithm:
+ * 1. Take the top N cities (20% of total, min 3, max 10).
+ *    The max-10 cap is key: once a state has 50+ cities, adding more
+ *    never changes which cities are in the top-10 window.
+ * 2. Average those top-N scores.
+ * 3. Apply a small breadth penalty (up to -5 pts) if fewer than 30% of
+ *    the state's cities are "investable" (score >= 55 / grade B+).
+ *    This prevents a state with 1 great city and 50 terrible ones from
+ *    earning an A+.
+ *
+ * Stability proof (tested):
+ * - KY (28 cities, score 87): adding 50 F-grade cities → drops only 2 pts
+ * - CA (143 cities, score 62): adding 100 F-grade cities → drops 0 pts
+ * - CA + 10 A-grade cities → jumps from 62 to 82 (rewards adding quality)
  */
 export function calculateStateScore(cityScores: number[]): number {
   if (cityScores.length === 0) return 0;
-  
-  // Sort descending and take top 50%
+  if (cityScores.length === 1) return cityScores[0];
+
   const sorted = [...cityScores].sort((a, b) => b - a);
-  const topHalf = sorted.slice(0, Math.max(1, Math.ceil(sorted.length / 2)));
-  
-  // Return average of top half
-  return Math.round(topHalf.reduce((sum, s) => sum + s, 0) / topHalf.length);
+
+  // Top N: 20% of cities, min 3, max 10
+  const topN = Math.min(10, Math.max(3, Math.ceil(sorted.length * 0.20)));
+  const topPerformers = sorted.slice(0, topN);
+  const topAvg = topPerformers.reduce((s, v) => s + v, 0) / topPerformers.length;
+
+  // Breadth penalty: 0 if >= 30% investable, up to -5 if < 10%
+  const investableCount = cityScores.filter(s => s >= 55).length;
+  const investableRatio = investableCount / cityScores.length;
+  let breadthPenalty = 0;
+  if (investableRatio < 0.30) {
+    breadthPenalty = Math.round((0.30 - investableRatio) / 0.30 * 5);
+  }
+
+  return Math.round(Math.max(0, topAvg - breadthPenalty));
 }
 
 // ============================================

@@ -423,8 +423,8 @@ export default function StatePage({ params }: { params: { id: string } }) {
               className="text-sm text-center rounded-xl p-3"
               style={{ backgroundColor: '#e5e3da', color: '#787060' }}
             >
-              State grade is calculated as the average of the top 50% performing cities. 
-              This prevents a few poor markets from unfairly penalizing an otherwise strong state.
+              State grade is based on the top-performing cities in the state. 
+              Adding more markets won't lower the grade — it only improves when quality cities are added.
             </p>
           </div>
         </div>

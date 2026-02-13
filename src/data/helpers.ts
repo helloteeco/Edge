@@ -186,7 +186,7 @@ export function getAllStates(): FlatState[] {
     const citiesInState = allCities.filter(c => c.stateCode === code);
     const cityScores = citiesInState.map(c => c.marketScore);
     
-    // Calculate state score as average of top 50% cities
+    // Calculate state score from top performers (stable under data expansion)
     const stateScore = calculateStateScore(cityScores);
     const grade = getGradeFromScore(stateScore);
     const verdict = getVerdictFromGrade(grade);

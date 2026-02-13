@@ -6,15 +6,16 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 /**
- * POST /api/admin/sync-scores
- * 
  * Syncs regulation-adjusted market scores from static data to Supabase.
  * This ensures the Supabase `market_score` column reflects regulation penalties
  * (banned cities capped at 44, restricted at 54, etc.)
  * 
- * Protected by CRON_SECRET.
+ * Runs automatically via Vercel cron (daily at 7am UTC) and can also be
+ * triggered manually via POST.
+ * 
+ * Protected by CRON_SECRET when set.
  */
-export async function POST(request: NextRequest) {
+async function syncScores(request: NextRequest) {
   try {
     // Auth check
     const authHeader = request.headers.get('authorization');
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
       for (const city of batch) {
         const currentScore = existingMap.get(city.id);
-        const newScore = city.marketScore; // This is now the adjustedScore
+        const newScore = city.marketScore; // This is the adjustedScore (regulation-penalized)
         
         // Only update if the score has changed
         if (currentScore === newScore) {
@@ -95,4 +96,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// GET handler for Vercel cron jobs (cron sends GET requests)
+export async function GET(request: NextRequest) {
+  return syncScores(request);
+}
+
+// POST handler for manual triggers
+export async function POST(request: NextRequest) {
+  return syncScores(request);
 }
