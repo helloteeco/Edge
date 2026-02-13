@@ -224,9 +224,11 @@
 - [x] No existing features removed
 
 ## SYSTEM: Future-proof state scoring + auto-updating maps (February 2026)
-- [ ] Audit why California shows grade C (46/100) — explain the math
-- [ ] Ensure all state scores dynamically recalculate when cities are added/changed
-- [ ] Ensure interactive maps auto-update colors/grades when new markets are added
-- [ ] Build Supabase auto-sync so database market_score stays in sync with static data on every build/deploy
-- [ ] Verify all 50 states have correct dynamically-calculated grades
-- [ ] No existing features removed
+- [x] Audit why California shows grade C (46/100) — old algo averaged top 50% of 143 cities, pulling in D/F cities
+- [x] Redesign state scoring: top-N performer algorithm (top 20%, min 3, max 10) with breadth penalty
+- [x] Ensure all state scores dynamically recalculate when cities are added/changed
+- [x] Ensure interactive maps auto-update colors/grades when new markets are added
+- [x] Build Supabase auto-sync: daily Vercel cron at 7am UTC calls /api/admin/sync-scores
+- [x] Verify all 50 states have correct dynamically-calculated grades
+- [x] Stability tested: adding 50 F-cities to KY drops only 2pts, adding 100 F-cities to CA drops 0pts
+- [x] No existing features removed
