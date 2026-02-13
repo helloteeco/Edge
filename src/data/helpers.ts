@@ -1,7 +1,8 @@
 import { cityData as cityDataByState, CityData } from "./city-data";
 import { stateData as stateDataByCode, StateData } from "./state-data";
 import { basicCityData, BasicCityData } from "./basic-city-data";
-import { calculateScore, calculateStateScore, calculateCashOnCash, ScoringBreakdown } from "@/lib/scoring";
+import { calculateScore, calculateStateScore, calculateCashOnCash, ScoringBreakdown, applyRegulationPenalty, RegulationInfo } from "@/lib/scoring";
+import { getStaticRegulation, toRegulationInfo } from "@/data/str-regulations";
 
 // Flatten city data into array with state code
 export interface FlatCity {
@@ -37,6 +38,9 @@ export interface FlatCity {
   scoring: ScoringBreakdown;
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
   verdict: 'strong-buy' | 'buy' | 'hold' | 'caution' | 'avoid';
+  // Regulation info
+  regulationInfo?: RegulationInfo;
+  regulationSource?: 'curated' | 'default';
 }
 
 export interface FlatState {
@@ -85,7 +89,12 @@ export function getAllCities(): FlatCity[] {
   
   for (const [stateCode, stateCities] of Object.entries(cityDataByState)) {
     for (const city of stateCities) {
-      const scoring = calculateCityScore(city, stateCode);
+      const baseScoring = calculateCityScore(city, stateCode);
+      
+      // Apply regulation penalty
+      const regEntry = getStaticRegulation(city.id);
+      const regulationInfo = toRegulationInfo(regEntry);
+      const scoring = applyRegulationPenalty(baseScoring, regulationInfo);
       
       // Calculate Cash-on-Cash return
       const cashOnCash = calculateCashOnCash(city.rental.monthlyRevenue, city.rental.medianHomePrice);
@@ -134,6 +143,9 @@ export function getAllCities(): FlatCity[] {
         scoring,
         grade: scoring.grade,
         verdict: scoring.verdict,
+        // Regulation info
+        regulationInfo,
+        regulationSource: regEntry.source,
       });
     }
   }

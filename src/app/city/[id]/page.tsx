@@ -433,6 +433,132 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
+        {/* STR Regulation Warning */}
+        {city.regulationInfo && city.regulationInfo.legality_status !== 'legal' && (
+          <div 
+            className="rounded-2xl p-5 mb-4"
+            style={{ 
+              backgroundColor: city.regulationInfo.legality_status === 'banned' ? '#fef2f2' : '#fffbeb',
+              border: `1px solid ${city.regulationInfo.legality_status === 'banned' ? '#fca5a5' : '#fcd34d'}`,
+              boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">
+                {city.regulationInfo.legality_status === 'banned' ? '🚫' : '⚠️'}
+              </span>
+              <div className="flex-1">
+                <h3 
+                  className="font-semibold mb-1"
+                  style={{ 
+                    color: city.regulationInfo.legality_status === 'banned' ? '#991b1b' : '#92400e',
+                    fontFamily: 'Source Serif Pro, Georgia, serif'
+                  }}
+                >
+                  {city.regulationInfo.legality_status === 'banned' 
+                    ? 'STRs Effectively Banned' 
+                    : 'STR Restrictions Apply'}
+                </h3>
+                <p className="text-sm mb-3" style={{ color: city.regulationInfo.legality_status === 'banned' ? '#b91c1c' : '#a16207' }}>
+                  {city.regulationInfo.summary}
+                </p>
+                <p className="text-sm mb-3" style={{ color: city.regulationInfo.legality_status === 'banned' ? '#dc2626' : '#ca8a04', lineHeight: 1.5 }}>
+                  {city.regulationInfo.details}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {city.regulationInfo.permit_difficulty && city.regulationInfo.permit_difficulty !== 'unknown' && (
+                    <span 
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ 
+                        backgroundColor: city.regulationInfo.permit_difficulty === 'very_hard' || city.regulationInfo.permit_difficulty === 'hard'
+                          ? 'rgba(220, 38, 38, 0.1)' : 'rgba(202, 138, 4, 0.1)',
+                        color: city.regulationInfo.permit_difficulty === 'very_hard' || city.regulationInfo.permit_difficulty === 'hard'
+                          ? '#dc2626' : '#ca8a04'
+                      }}
+                    >
+                      Permit: {city.regulationInfo.permit_difficulty.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </span>
+                  )}
+                  {city.regulationInfo.owner_occupied_required && (
+                    <span 
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#dc2626' }}
+                    >
+                      Owner-Occupied Only
+                    </span>
+                  )}
+                  {city.regulationInfo.permit_cap && (
+                    <span 
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#dc2626' }}
+                    >
+                      Permit Cap in Effect
+                    </span>
+                  )}
+                  {city.regulationInfo.max_nights_per_year && (
+                    <span 
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: 'rgba(202, 138, 4, 0.1)', color: '#ca8a04' }}
+                    >
+                      Max {city.regulationInfo.max_nights_per_year} nights/year
+                    </span>
+                  )}
+                </div>
+                {city.scoring.regulationPenalty?.applied && (
+                  <div 
+                    className="rounded-lg p-3 text-xs"
+                    style={{ 
+                      backgroundColor: city.regulationInfo.legality_status === 'banned' ? 'rgba(153, 27, 27, 0.08)' : 'rgba(146, 64, 14, 0.08)',
+                      color: city.regulationInfo.legality_status === 'banned' ? '#991b1b' : '#92400e'
+                    }}
+                  >
+                    <strong>Grade Impact:</strong> Base score of {city.marketScore}/100 would be grade {city.scoring.regulationPenalty.originalGrade}, 
+                    but capped at <strong>{city.grade}</strong> due to regulation risk.
+                  </div>
+                )}
+                {city.regulationInfo.last_verified && (
+                  <div className="text-xs mt-2" style={{ color: '#9ca3af' }}>
+                    Last verified: {city.regulationInfo.last_verified}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Regulation Info for Legal Cities with Hard Permits */}
+        {city.regulationInfo && city.regulationInfo.legality_status === 'legal' && 
+         (city.regulationInfo.permit_difficulty === 'hard' || city.regulationInfo.permit_difficulty === 'very_hard') && (
+          <div 
+            className="rounded-2xl p-5 mb-4"
+            style={{ 
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fcd34d',
+              boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">📋</span>
+              <div>
+                <h3 
+                  className="font-semibold mb-1"
+                  style={{ color: '#92400e', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+                >
+                  Permit Difficulty: {city.regulationInfo.permit_difficulty.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                </h3>
+                <p className="text-sm" style={{ color: '#a16207' }}>
+                  {city.regulationInfo.summary}
+                </p>
+                {city.regulationInfo.last_verified && (
+                  <div className="text-xs mt-2" style={{ color: '#9ca3af' }}>
+                    Last verified: {city.regulationInfo.last_verified}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Why [City]? */}
         <div 
           className="rounded-2xl p-5 mb-4"
@@ -528,7 +654,11 @@ export default function CityPage({ params }: { params: { id: string } }) {
           >
             <div className="font-semibold mb-1" style={{ color: '#2b2823' }}>THE BOTTOM LINE {verdictInfo.emoji}</div>
             <p className="text-sm" style={{ color: '#787060' }}>
-              {city.grade === 'A+' || city.grade === 'A'
+              {city.scoring.regulationPenalty?.applied && city.regulationInfo?.legality_status === 'banned'
+                ? "Not recommended. STRs are effectively banned in this market — investing here carries significant legal and financial risk."
+                : city.scoring.regulationPenalty?.applied && city.regulationInfo?.legality_status === 'restricted'
+                ? "Proceed with extreme caution. Significant STR restrictions limit your ability to operate profitably. Research local ordinances thoroughly before committing."
+                : city.grade === 'A+' || city.grade === 'A'
                 ? "Excellent opportunity! Strong cash flow potential with favorable market conditions."
                 : city.grade === 'B+' || city.grade === 'B'
                 ? "Good opportunity. Solid fundamentals but may require careful property selection."
