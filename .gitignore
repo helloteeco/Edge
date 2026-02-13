@@ -36,4 +36,5 @@ next-env.d.ts
 
 # User data (do not commit)
 data/
+!src/data/
 .env.local
