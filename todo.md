@@ -236,3 +236,7 @@
 ## BUG FIXES: Calculator/Analysis page (February 2026)
 - [x] Fix double-tap to save/unsave not working on analysis sheets (wrapped calculator page in DoubleTapSave)
 - [x] Fix "Numbers not making sense?" section spacing — added pb-16 to StuckHelper wrapper
+
+## FEATURE: Founder intro trust section on calculator page (February 2026)
+- [x] Add founder photo to public directory
+- [ ] Add personal founder intro section (Jeff Chheuy) to calculator page

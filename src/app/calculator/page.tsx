@@ -5952,6 +5952,27 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             </p>
           </div>
         </div>
+
+        {/* Founder Intro - Trust Builder */}
+        <div className="mt-10 pt-8" style={{ borderTop: '1px solid #e5e3da' }}>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+            <Image
+              src="/founder-team.jpg"
+              alt="Jeff Chheuy, founder of Edge by Teeco"
+              width={80}
+              height={80}
+              className="rounded-full flex-shrink-0"
+              style={{ objectFit: 'cover', width: '80px', height: '80px', border: '3px solid #e5e3da' }}
+            />
+            <div className="text-center sm:text-left">
+              <p className="text-sm font-semibold" style={{ color: '#2b2823' }}>Jeff Chheuy</p>
+              <p className="text-xs mt-0.5" style={{ color: '#a09880' }}>Founder, Edge by Teeco</p>
+              <p className="text-sm mt-3 leading-relaxed" style={{ color: '#4a4640' }}>
+                I built Edge because I was tired of guessing. When I started investing in short-term rentals, every tool I found either gave me raw data with no context or charged $50/mo just to see basic comps. I wanted something that actually told me whether a deal was worth it — so I built it. Edge is the tool I wish I had on my first deal.
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
       
       {/* Email Modal */}
