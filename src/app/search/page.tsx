@@ -462,19 +462,18 @@ export default function SearchPage() {
           {/* Smart Filters Panel (collapsible) */}
           {showFilters && (
             <div 
-              className="pb-4 space-y-4"
-              style={{ borderTop: '1px solid #e5e3da' }}
+              style={{ borderTop: '1px solid #e5e3da', maxHeight: '45vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
             >
-              <div className="pt-4">
+              <div className="py-3 px-1">
                 {/* Header with Clear All */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-semibold" style={{ color: '#2b2823' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold" style={{ color: '#2b2823' }}>
                     Smart Filters
                   </span>
                   {activeFilterCount > 0 && (
                     <button 
                       onClick={clearAllFilters}
-                      className="text-xs font-medium px-2 py-1 rounded-lg transition-all hover:opacity-70"
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-md transition-all hover:opacity-70"
                       style={{ color: '#0284c7', backgroundColor: '#f0f9ff' }}
                     >
                       Clear All
@@ -482,169 +481,171 @@ export default function SearchPage() {
                   )}
                 </div>
 
-                {/* Min Score Slider */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium" style={{ color: '#787060' }}>Minimum Score</span>
-                    <span className="text-xs font-bold" style={{ color: minScore > 0 ? '#2b2823' : '#9a9488' }}>
-                      {minScore > 0 ? `${minScore}+` : 'Any'}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="90"
-                    step="5"
-                    value={minScore}
-                    onChange={(e) => setMinScore(Number(e.target.value))}
-                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-                    style={{ 
-                      background: `linear-gradient(to right, #2b2823 ${(minScore / 90) * 100}%, #e5e3da ${(minScore / 90) * 100}%)`,
-                      accentColor: '#2b2823'
-                    }}
-                  />
-                  <div className="flex justify-between mt-1">
-                    <span className="text-[10px]" style={{ color: '#9a9488' }}>0</span>
-                    <span className="text-[10px]" style={{ color: '#9a9488' }}>45</span>
-                    <span className="text-[10px]" style={{ color: '#9a9488' }}>90</span>
-                  </div>
-                </div>
-
-                {/* Home Value Brackets */}
-                <div className="mb-4">
-                  <span className="text-xs font-medium block mb-2" style={{ color: '#787060' }}>Home Value</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {HOME_VALUE_BRACKETS.map((bracket, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setHomeValueIdx(idx)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                        style={{
-                          backgroundColor: homeValueIdx === idx ? '#2b2823' : '#f5f5f0',
-                          color: homeValueIdx === idx ? '#ffffff' : '#787060',
-                          border: homeValueIdx === idx ? 'none' : '1px solid #e5e3da',
-                        }}
-                      >
-                        {bracket.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ADR Brackets */}
-                <div className="mb-4">
-                  <span className="text-xs font-medium block mb-2" style={{ color: '#787060' }}>Nightly Rate (ADR)</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ADR_BRACKETS.map((bracket, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setAdrIdx(idx)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                        style={{
-                          backgroundColor: adrIdx === idx ? '#2b2823' : '#f5f5f0',
-                          color: adrIdx === idx ? '#ffffff' : '#787060',
-                          border: adrIdx === idx ? 'none' : '1px solid #e5e3da',
-                        }}
-                      >
-                        {bracket.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Monthly Revenue Brackets */}
-                <div className="mb-4">
-                  <span className="text-xs font-medium block mb-2" style={{ color: '#787060' }}>Monthly Revenue</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {REVENUE_BRACKETS.map((bracket, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setRevenueIdx(idx)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                        style={{
-                          backgroundColor: revenueIdx === idx ? '#2b2823' : '#f5f5f0',
-                          color: revenueIdx === idx ? '#ffffff' : '#787060',
-                          border: revenueIdx === idx ? 'none' : '1px solid #e5e3da',
-                        }}
-                      >
-                        {bracket.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Regulation Status */}
-                <div className="mb-4">
-                  <span className="text-xs font-medium block mb-2" style={{ color: '#787060' }}>STR Regulation</span>
-                  <div className="flex gap-1.5">
-                    {([
-                      { key: "all", label: "All" },
-                      { key: "legal", label: "Legal Only" },
-                      { key: "restricted", label: "Restricted" },
-                    ] as const).map((opt) => (
-                      <button
-                        key={opt.key}
-                        onClick={() => setRegulationFilter(opt.key)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-1"
-                        style={{
-                          backgroundColor: regulationFilter === opt.key ? '#2b2823' : '#f5f5f0',
-                          color: regulationFilter === opt.key ? '#ffffff' : '#787060',
-                          border: regulationFilter === opt.key ? 'none' : '1px solid #e5e3da',
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sort By */}
-                <div>
-                  <span className="text-xs font-medium block mb-2" style={{ color: '#787060' }}>Sort By</span>
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowSortDropdown(!showSortDropdown)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all"
-                      style={{
-                        backgroundColor: '#f5f5f0',
-                        border: '1px solid #e5e3da',
-                        color: '#2b2823',
+                {/* Two-column grid for compact layout */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  {/* Min Score Slider - full width */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-medium" style={{ color: '#787060' }}>Min Score</span>
+                      <span className="text-[11px] font-bold" style={{ color: minScore > 0 ? '#2b2823' : '#9a9488' }}>
+                        {minScore > 0 ? `${minScore}+` : 'Any'}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="90"
+                      step="5"
+                      value={minScore}
+                      onChange={(e) => setMinScore(Number(e.target.value))}
+                      className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                      style={{ 
+                        background: `linear-gradient(to right, #2b2823 ${(minScore / 90) * 100}%, #e5e3da ${(minScore / 90) * 100}%)`,
+                        accentColor: '#2b2823'
                       }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <SortIcon className="w-4 h-4" color="#787060" />
-                        <span>{SORT_OPTIONS.find(o => o.value === sortBy)?.label}</span>
-                      </div>
-                      <ChevronDownIcon 
-                        className="w-4 h-4 transition-transform" 
-                        color="#787060"
-                      />
-                    </button>
-                    {showSortDropdown && (
-                      <div 
-                        className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden z-20"
-                        style={{ 
-                          backgroundColor: '#ffffff', 
-                          border: '1px solid #d8d6cd',
-                          boxShadow: '0 8px 24px -4px rgba(43, 40, 35, 0.15)'
+                    />
+                    <div className="flex justify-between">
+                      <span className="text-[9px]" style={{ color: '#9a9488' }}>0</span>
+                      <span className="text-[9px]" style={{ color: '#9a9488' }}>45</span>
+                      <span className="text-[9px]" style={{ color: '#9a9488' }}>90</span>
+                    </div>
+                  </div>
+
+                  {/* Home Value Brackets */}
+                  <div>
+                    <span className="text-[11px] font-medium block mb-1" style={{ color: '#787060' }}>Home Value</span>
+                    <div className="flex flex-wrap gap-1">
+                      {HOME_VALUE_BRACKETS.map((bracket, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setHomeValueIdx(idx)}
+                          className="px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: homeValueIdx === idx ? '#2b2823' : '#f5f5f0',
+                            color: homeValueIdx === idx ? '#ffffff' : '#787060',
+                            border: homeValueIdx === idx ? 'none' : '1px solid #e5e3da',
+                          }}
+                        >
+                          {bracket.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ADR Brackets */}
+                  <div>
+                    <span className="text-[11px] font-medium block mb-1" style={{ color: '#787060' }}>Nightly Rate</span>
+                    <div className="flex flex-wrap gap-1">
+                      {ADR_BRACKETS.map((bracket, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setAdrIdx(idx)}
+                          className="px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: adrIdx === idx ? '#2b2823' : '#f5f5f0',
+                            color: adrIdx === idx ? '#ffffff' : '#787060',
+                            border: adrIdx === idx ? 'none' : '1px solid #e5e3da',
+                          }}
+                        >
+                          {bracket.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Monthly Revenue Brackets */}
+                  <div>
+                    <span className="text-[11px] font-medium block mb-1" style={{ color: '#787060' }}>Revenue</span>
+                    <div className="flex flex-wrap gap-1">
+                      {REVENUE_BRACKETS.map((bracket, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setRevenueIdx(idx)}
+                          className="px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: revenueIdx === idx ? '#2b2823' : '#f5f5f0',
+                            color: revenueIdx === idx ? '#ffffff' : '#787060',
+                            border: revenueIdx === idx ? 'none' : '1px solid #e5e3da',
+                          }}
+                        >
+                          {bracket.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Regulation Status */}
+                  <div>
+                    <span className="text-[11px] font-medium block mb-1" style={{ color: '#787060' }}>Regulation</span>
+                    <div className="flex gap-1">
+                      {([
+                        { key: "all", label: "All" },
+                        { key: "legal", label: "Legal" },
+                        { key: "restricted", label: "Restricted" },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.key}
+                          onClick={() => setRegulationFilter(opt.key)}
+                          className="px-2 py-1 rounded-md text-[10px] font-medium transition-all flex-1"
+                          style={{
+                            backgroundColor: regulationFilter === opt.key ? '#2b2823' : '#f5f5f0',
+                            color: regulationFilter === opt.key ? '#ffffff' : '#787060',
+                            border: regulationFilter === opt.key ? 'none' : '1px solid #e5e3da',
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Sort By - full width */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <span className="text-[11px] font-medium block mb-1" style={{ color: '#787060' }}>Sort By</span>
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowSortDropdown(!showSortDropdown)}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] transition-all"
+                        style={{
+                          backgroundColor: '#f5f5f0',
+                          border: '1px solid #e5e3da',
+                          color: '#2b2823',
                         }}
                       >
-                        {SORT_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            onClick={() => { setSortBy(opt.value); setShowSortDropdown(false); }}
-                            className="w-full text-left px-3 py-2.5 text-sm transition-all hover:bg-gray-50"
-                            style={{
-                              color: sortBy === opt.value ? '#2b2823' : '#787060',
-                              fontWeight: sortBy === opt.value ? 600 : 400,
-                              backgroundColor: sortBy === opt.value ? 'rgba(43, 40, 35, 0.04)' : 'transparent',
-                            }}
-                          >
-                            {sortBy === opt.value && '✓ '}{opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                        <div className="flex items-center gap-1.5">
+                          <SortIcon className="w-3 h-3" color="#787060" />
+                          <span>{SORT_OPTIONS.find(o => o.value === sortBy)?.label}</span>
+                        </div>
+                        <ChevronDownIcon 
+                          className="w-3 h-3 transition-transform" 
+                          color="#787060"
+                        />
+                      </button>
+                      {showSortDropdown && (
+                        <div 
+                          className="absolute top-full left-0 right-0 mt-1 rounded-md overflow-hidden z-20"
+                          style={{ 
+                            backgroundColor: '#ffffff', 
+                            border: '1px solid #d8d6cd',
+                            boxShadow: '0 8px 24px -4px rgba(43, 40, 35, 0.15)'
+                          }}
+                        >
+                          {SORT_OPTIONS.map((opt) => (
+                            <button
+                              key={opt.value}
+                              onClick={() => { setSortBy(opt.value); setShowSortDropdown(false); }}
+                              className="w-full text-left px-2.5 py-2 text-[11px] transition-all hover:bg-gray-50"
+                              style={{
+                                color: sortBy === opt.value ? '#2b2823' : '#787060',
+                                fontWeight: sortBy === opt.value ? 600 : 400,
+                                backgroundColor: sortBy === opt.value ? 'rgba(43, 40, 35, 0.04)' : 'transparent',
+                              }}
+                            >
+                              {sortBy === opt.value && '✓ '}{opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

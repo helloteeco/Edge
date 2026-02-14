@@ -290,13 +290,19 @@
 - [x] No features removed
 
 ## FEATURE: Smart Search Filters (February 2026)
-- [ ] Add collapsible Smart Filters panel to search page
-- [ ] Score range filter (dual-thumb slider, 0-100)
-- [ ] Home value range filter (price bracket presets)
-- [ ] ADR range filter (nightly rate bracket presets)
-- [ ] Regulation status filter (Legal / Restricted / All)
-- [ ] Sort by dropdown (Score, Home Value, ADR, Revenue, Cash-on-Cash)
-- [ ] Show active filter count badge
-- [ ] Show key metrics (ADR, Home Value, Revenue) on city cards
-- [ ] Keep existing filter tabs (Featured, All Cities, States, etc.) untouched
+- [x] Add collapsible Smart Filters panel to search page
+- [x] Score range filter (slider, 0-90)
+- [x] Home value range filter (price bracket presets: Under 200K to 750K+)
+- [x] ADR range filter (nightly rate bracket presets: Under 150 to 400+)
+- [x] Monthly revenue range filter (Under 3K to 8K+)
+- [x] Regulation status filter (Legal / Restricted / All)
+- [x] Sort by dropdown (Score, Home Value High/Low, ADR, Revenue, Cash-on-Cash)
+- [x] Show active filter count badge
+- [x] Show key metrics (Home Value, ADR, Revenue, CoC) on city cards
+- [x] Keep existing filter tabs (Featured, All Cities, States, etc.) untouched
+- [x] No existing features changed
+
+## UX FIX: Smart Filters panel too large on mobile (February 2026)
+- [ ] Make filter panel compact — reduce vertical space
+- [ ] Ensure page scrolls so users can reach results below filters
 - [ ] No existing features changed
