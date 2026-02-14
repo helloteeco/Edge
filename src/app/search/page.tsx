@@ -356,7 +356,7 @@ export default function SearchPage() {
     });
 
     return { cities: cityResults, states: stateResults, serverCities: [] as ServerCity[] };
-  }, [query, filter, serverCities, minScore, homeValueIdx, adrIdx, revenueIdx, regulationFilter, sortBy]);
+  }, [query, filter, serverCities, minScore, homeValueIdx, adrIdx, revenueIdx, regulationFilter, sortBy, HOME_VALUE_BRACKETS, ADR_BRACKETS, REVENUE_BRACKETS]);
 
   const totalResults = filter === "allCities" 
     ? results.serverCities.length 
