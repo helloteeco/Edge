@@ -331,3 +331,8 @@
 - [ ] Fix: Sort must work across all tabs
 - [ ] Make filters fully dynamic — auto-adjust when new cities added
 - [ ] No other features changed
+
+## BUG: Filter panel takes full screen on mobile, blocks scrolling and tapping (February 2026)
+- [ ] Make filter panel collapsible — auto-collapse after selecting a filter so results are visible
+- [ ] Ensure bottom elements (Sort By) are accessible above the tab bar
+- [ ] No other features changed

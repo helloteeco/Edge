@@ -583,7 +583,7 @@ export default function SearchPage() {
                       {HOME_VALUE_BRACKETS.map((bracket, idx) => (
                         <button
                           key={idx}
-                          onClick={() => setHomeValueIdx(idx)}
+                          onClick={() => { setHomeValueIdx(idx); if (idx > 0) setShowFilters(false); }}
                           className="px-2 py-1 rounded-md text-[10px] font-medium transition-all"
                           style={{
                             backgroundColor: homeValueIdx === idx ? '#2b2823' : '#f5f5f0',
@@ -604,7 +604,7 @@ export default function SearchPage() {
                       {ADR_BRACKETS.map((bracket, idx) => (
                         <button
                           key={idx}
-                          onClick={() => setAdrIdx(idx)}
+                          onClick={() => { setAdrIdx(idx); if (idx > 0) setShowFilters(false); }}
                           className="px-2 py-1 rounded-md text-[10px] font-medium transition-all"
                           style={{
                             backgroundColor: adrIdx === idx ? '#2b2823' : '#f5f5f0',
@@ -625,7 +625,7 @@ export default function SearchPage() {
                       {REVENUE_BRACKETS.map((bracket, idx) => (
                         <button
                           key={idx}
-                          onClick={() => setRevenueIdx(idx)}
+                          onClick={() => { setRevenueIdx(idx); if (idx > 0) setShowFilters(false); }}
                           className="px-2 py-1 rounded-md text-[10px] font-medium transition-all"
                           style={{
                             backgroundColor: revenueIdx === idx ? '#2b2823' : '#f5f5f0',
@@ -650,7 +650,7 @@ export default function SearchPage() {
                       ] as const).map((opt) => (
                         <button
                           key={opt.key}
-                          onClick={() => setRegulationFilter(opt.key)}
+                          onClick={() => { setRegulationFilter(opt.key); if (opt.key !== 'all') setShowFilters(false); }}
                           className="px-2 py-1 rounded-md text-[10px] font-medium transition-all flex-1"
                           style={{
                             backgroundColor: regulationFilter === opt.key ? '#2b2823' : '#f5f5f0',
@@ -664,7 +664,7 @@ export default function SearchPage() {
                     </div>
                   </div>
                   {/* Sort By - full width */}
-                  <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ gridColumn: '1 / -1', paddingBottom: '16px' }}>
                     <span className="text-[11px] font-medium block mb-1" style={{ color: '#787060' }}>Sort By</span>
                     <div className="relative">
                       <button
@@ -697,7 +697,7 @@ export default function SearchPage() {
                           {SORT_OPTIONS.map((opt) => (
                             <button
                               key={opt.value}
-                              onClick={() => { setSortBy(opt.value); setShowSortDropdown(false); }}
+                              onClick={() => { setSortBy(opt.value); setShowSortDropdown(false); setShowFilters(false); }}
                               className="w-full text-left px-2.5 py-2 text-[11px] transition-all hover:bg-gray-50"
                               style={{
                                 color: sortBy === opt.value ? '#2b2823' : '#787060',
@@ -716,6 +716,75 @@ export default function SearchPage() {
               </div>
             </div>
           )}
+
+          {/* Active Filter Chips (shown when panel is collapsed and filters are active) */}
+          {!showFilters && activeFilterCount > 0 && (
+            <div className="px-1 py-2" style={{ borderTop: '1px solid #e5e3da' }}>
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {minScore > 0 && (
+                  <button
+                    onClick={() => setMinScore(0)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  >
+                    Score {minScore}+ <span className="ml-0.5 opacity-70">✕</span>
+                  </button>
+                )}
+                {homeValueIdx > 0 && (
+                  <button
+                    onClick={() => setHomeValueIdx(0)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  >
+                    {HOME_VALUE_BRACKETS[homeValueIdx]?.label} <span className="ml-0.5 opacity-70">✕</span>
+                  </button>
+                )}
+                {adrIdx > 0 && (
+                  <button
+                    onClick={() => setAdrIdx(0)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  >
+                    {ADR_BRACKETS[adrIdx]?.label} <span className="ml-0.5 opacity-70">✕</span>
+                  </button>
+                )}
+                {revenueIdx > 0 && (
+                  <button
+                    onClick={() => setRevenueIdx(0)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  >
+                    {REVENUE_BRACKETS[revenueIdx]?.label} <span className="ml-0.5 opacity-70">✕</span>
+                  </button>
+                )}
+                {regulationFilter !== "all" && (
+                  <button
+                    onClick={() => setRegulationFilter("all")}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                  >
+                    {regulationFilter === 'legal' ? 'Legal' : 'Restricted'} <span className="ml-0.5 opacity-70">✕</span>
+                  </button>
+                )}
+                {sortBy !== "score" && (
+                  <button
+                    onClick={() => setSortBy("score")}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                    style={{ backgroundColor: '#f5f5f0', color: '#787060', border: '1px solid #e5e3da' }}
+                  >
+                    {SORT_OPTIONS.find(o => o.value === sortBy)?.label} <span className="ml-0.5 opacity-50">✕</span>
+                  </button>
+                )}
+                <button
+                  onClick={clearAllFilters}
+                  className="text-[10px] font-medium px-2 py-1 rounded-full transition-all"
+                  style={{ color: '#0284c7', backgroundColor: '#f0f9ff' }}
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -726,7 +795,7 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="max-w-4xl mx-auto px-4 py-5">
-        {/* Results Count + Active Filters Summary */}
+        {/* Results Count */}
         <div className="flex items-center justify-between mb-5">
           <p className="text-sm" style={{ color: '#787060' }}>
             {filter === "allCities" && serverLoading && serverCities.length === 0 ? (
@@ -743,7 +812,6 @@ export default function SearchPage() {
             )}
           </p>
           <div className="flex items-center gap-2">
-
             {filter === "allCities" && (
               <span 
                 className="text-xs px-3 py-1 rounded-full font-medium"
@@ -753,12 +821,13 @@ export default function SearchPage() {
               </span>
             )}
             {activeFilterCount > 0 && (
-              <span 
-                className="text-xs px-3 py-1 rounded-full font-medium"
+              <button
+                onClick={() => setShowFilters(true)}
+                className="text-xs px-3 py-1 rounded-full font-medium transition-all"
                 style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)', color: '#2b2823' }}
               >
                 {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active
-              </span>
+              </button>
             )}
           </div>
         </div>
