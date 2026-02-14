@@ -43,7 +43,7 @@ function buildBrackets(values: number[], prefix: string, suffix: string, divider
     return `${prefix}${v}${suffix}`;
   };
   // Deduplicate if rounding collapses brackets
-  const cuts = [...new Set([r25, r50, r75])].sort((a, b) => a - b);
+  const cuts = Array.from(new Set([r25, r50, r75])).sort((a, b) => a - b);
   const brackets: { label: string; min: number; max: number }[] = [{ label: 'Any', min: 0, max: Infinity }];
   if (cuts.length >= 1) brackets.push({ label: `Under ${fmt(cuts[0])}`, min: 0, max: cuts[0] });
   for (let i = 0; i < cuts.length - 1; i++) {
