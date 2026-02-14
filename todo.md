@@ -288,3 +288,15 @@
 - [x] Bedroom-based estimate shown with label when no real data available
 - [x] Ensure existing auto-fill from analysis result still works
 - [x] No features removed
+
+## FEATURE: Smart Search Filters (February 2026)
+- [ ] Add collapsible Smart Filters panel to search page
+- [ ] Score range filter (dual-thumb slider, 0-100)
+- [ ] Home value range filter (price bracket presets)
+- [ ] ADR range filter (nightly rate bracket presets)
+- [ ] Regulation status filter (Legal / Restricted / All)
+- [ ] Sort by dropdown (Score, Home Value, ADR, Revenue, Cash-on-Cash)
+- [ ] Show active filter count badge
+- [ ] Show key metrics (ADR, Home Value, Revenue) on city cards
+- [ ] Keep existing filter tabs (Featured, All Cities, States, etc.) untouched
+- [ ] No existing features changed
