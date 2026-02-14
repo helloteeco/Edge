@@ -306,3 +306,11 @@
 - [ ] Make filter panel compact — reduce vertical space
 - [ ] Ensure page scrolls so users can reach results below filters
 - [ ] No existing features changed
+
+## FEATURE: Dynamic search filters + remove redundancy (February 2026)
+- [x] Make all filter brackets dynamic (computed from actual city data percentiles)
+- [x] Audit quick-filter tabs for redundancy with smart filters
+- [x] Removed "Score 70+" and "Hidden Gems" tabs (fully covered by Smart Filters)
+- [x] Kept: Featured, All Cities, States, Cities tabs
+- [x] Filters auto-adjust when new cities are added to data (buildBrackets uses p25/p50/p75)
+- [x] No existing features changed or deleted

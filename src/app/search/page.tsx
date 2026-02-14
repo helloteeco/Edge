@@ -11,42 +11,47 @@ import {
   MapIcon,
   HomeEquityIcon,
   StarIcon,
-  TrendUpIcon,
-  GemIcon,
   DollarIcon,
 } from "@/components/Icons";
 import { StuckHelper } from "@/components/StuckHelper";
 import AuthHeader from "@/components/AuthHeader";
 
-type FilterType = "all" | "states" | "cities" | "minScore" | "recommended" | "allCities";
+type FilterType = "all" | "states" | "cities" | "allCities";
 type SortOption = "score" | "homeValue" | "homeValueAsc" | "adr" | "revenue" | "cashOnCash";
 type RegulationFilter = "all" | "legal" | "restricted";
 
-// Price bracket presets
-const HOME_VALUE_BRACKETS = [
-  { label: "Any", min: 0, max: Infinity },
-  { label: "Under $200K", min: 0, max: 200000 },
-  { label: "$200K–$350K", min: 200000, max: 350000 },
-  { label: "$350K–$500K", min: 350000, max: 500000 },
-  { label: "$500K–$750K", min: 500000, max: 750000 },
-  { label: "$750K+", min: 750000, max: Infinity },
-];
-
-const ADR_BRACKETS = [
-  { label: "Any", min: 0, max: Infinity },
-  { label: "Under $150", min: 0, max: 150 },
-  { label: "$150–$250", min: 150, max: 250 },
-  { label: "$250–$400", min: 250, max: 400 },
-  { label: "$400+", min: 400, max: Infinity },
-];
-
-const REVENUE_BRACKETS = [
-  { label: "Any", min: 0, max: Infinity },
-  { label: "Under $3K/mo", min: 0, max: 3000 },
-  { label: "$3K–$5K/mo", min: 3000, max: 5000 },
-  { label: "$5K–$8K/mo", min: 5000, max: 8000 },
-  { label: "$8K+/mo", min: 8000, max: Infinity },
-];
+// Dynamic bracket builder — computes from actual data so new cities auto-adjust
+function buildBrackets(values: number[], prefix: string, suffix: string, divider: number) {
+  if (values.length === 0) return [{ label: 'Any', min: 0, max: Infinity }];
+  const sorted = [...values].filter(v => v > 0).sort((a, b) => a - b);
+  if (sorted.length === 0) return [{ label: 'Any', min: 0, max: Infinity }];
+  const p25 = sorted[Math.floor(sorted.length * 0.25)];
+  const p50 = sorted[Math.floor(sorted.length * 0.50)];
+  const p75 = sorted[Math.floor(sorted.length * 0.75)];
+  // Round to nice numbers
+  const round = (v: number) => {
+    if (divider >= 1000) return Math.round(v / divider) * divider;
+    if (divider >= 100) return Math.round(v / divider) * divider;
+    return Math.round(v / 10) * 10;
+  };
+  const r25 = round(p25);
+  const r50 = round(p50);
+  const r75 = round(p75);
+  const fmt = (v: number) => {
+    if (v >= 1000000) return `${prefix}${(v / 1000000).toFixed(1)}M${suffix}`;
+    if (v >= 1000) return `${prefix}${Math.round(v / 1000)}K${suffix}`;
+    return `${prefix}${v}${suffix}`;
+  };
+  // Deduplicate if rounding collapses brackets
+  const cuts = [...new Set([r25, r50, r75])].sort((a, b) => a - b);
+  const brackets: { label: string; min: number; max: number }[] = [{ label: 'Any', min: 0, max: Infinity }];
+  if (cuts.length >= 1) brackets.push({ label: `Under ${fmt(cuts[0])}`, min: 0, max: cuts[0] });
+  for (let i = 0; i < cuts.length - 1; i++) {
+    brackets.push({ label: `${fmt(cuts[i])}–${fmt(cuts[i + 1])}`, min: cuts[i], max: cuts[i + 1] });
+  }
+  if (cuts.length >= 1) brackets.push({ label: `${fmt(cuts[cuts.length - 1])}+`, min: cuts[cuts.length - 1], max: Infinity });
+  return brackets;
+}
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "score", label: "Score (High → Low)" },
@@ -236,22 +241,12 @@ export default function SearchPage() {
       cityResults = [];
     } else if (filter === "cities") {
       stateResults = [];
-    } else if (filter === "minScore") {
-      cityResults = cityResults.filter(c => c.marketScore >= 70);
-      stateResults = stateResults.filter(s => s.marketScore >= 70);
-    } else if (filter === "recommended") {
-      cityResults = cityResults.filter(c => 
-        c.marketScore >= 70 && 
-        c.regulation === "Legal" &&
-        c.medianHomeValue <= 250000
-      );
-      stateResults = [];
     }
 
     // Apply smart filters to cities
-    const hvBracket = HOME_VALUE_BRACKETS[homeValueIdx];
-    const adrBracket = ADR_BRACKETS[adrIdx];
-    const revBracket = REVENUE_BRACKETS[revenueIdx];
+    const hvBracket = HOME_VALUE_BRACKETS[homeValueIdx] || HOME_VALUE_BRACKETS[0];
+    const adrBracket = ADR_BRACKETS[adrIdx] || ADR_BRACKETS[0];
+    const revBracket = REVENUE_BRACKETS[revenueIdx] || REVENUE_BRACKETS[0];
 
     cityResults = cityResults.filter(city => {
       // Score filter
@@ -336,13 +331,16 @@ export default function SearchPage() {
     return `$${value}`;
   };
 
+  // Dynamic brackets computed from actual city data — auto-adjusts when new cities are added
+  const HOME_VALUE_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.medianHomeValue), '$', '', 50000), []);
+  const ADR_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.avgADR), '$', '', 50), []);
+  const REVENUE_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.strMonthlyRevenue), '$', '/mo', 1000), []);
+
   const filters = [
     { key: "all", label: "Featured", Icon: StarIcon },
     { key: "allCities", label: `All ${marketCounts.total.toLocaleString()}+ Cities`, Icon: MapIcon },
     { key: "states", label: "States", Icon: MapIcon },
     { key: "cities", label: "Cities", Icon: HomeEquityIcon },
-    { key: "minScore", label: "Score 70+", Icon: TrendUpIcon },
-    { key: "recommended", label: "Hidden Gems", Icon: GemIcon },
   ];
 
   return (
@@ -678,14 +676,7 @@ export default function SearchPage() {
             )}
           </p>
           <div className="flex items-center gap-2">
-            {filter === "recommended" && (
-              <span 
-                className="text-xs px-3 py-1 rounded-full font-medium"
-                style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)', color: '#2b2823' }}
-              >
-                High CoC • Low Competition • Legal
-              </span>
-            )}
+
             {filter === "allCities" && (
               <span 
                 className="text-xs px-3 py-1 rounded-full font-medium"
