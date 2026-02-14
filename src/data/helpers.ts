@@ -150,7 +150,15 @@ export function getAllCities(): FlatCity[] {
     }
   }
   
-  return cities;
+  // Deduplicate: keep first entry per city ID (curated data takes priority)
+  const seen = new Set<string>();
+  const deduped = cities.filter(city => {
+    if (seen.has(city.id)) return false;
+    seen.add(city.id);
+    return true;
+  });
+  
+  return deduped;
 }
 
 // Get grade from score
