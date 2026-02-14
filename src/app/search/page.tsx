@@ -212,16 +212,63 @@ export default function SearchPage() {
     }
   }, [serverLoading, serverHasMore, query, serverPage, searchServerCities]);
 
+  // Dynamic brackets computed from actual city data — auto-adjusts when new cities are added
+  const HOME_VALUE_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.medianHomeValue), '$', '', 50000), []);
+  const ADR_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.avgADR), '$', '', 50), []);
+  const REVENUE_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.strMonthlyRevenue), '$', '/mo', 1000), []);
+
   // Client-side filtering for featured cities and states
   const results = useMemo(() => {
     const searchLower = query.toLowerCase();
     
-    // For "allCities" filter, use server-side results
+    // For "allCities" filter, use server-side results but apply smart filters client-side
     if (filter === "allCities") {
+      const hvBracket = HOME_VALUE_BRACKETS[homeValueIdx] || HOME_VALUE_BRACKETS[0];
+      const adrBracket = ADR_BRACKETS[adrIdx] || ADR_BRACKETS[0];
+      const revBracket = REVENUE_BRACKETS[revenueIdx] || REVENUE_BRACKETS[0];
+      
+      let filteredServerCities = serverCities.filter(city => {
+        // Score filter
+        if (minScore > 0 && (city.marketScore === null || city.marketScore < minScore)) return false;
+        // Home value filter (skip if no data and filter is "Any")
+        if (homeValueIdx > 0) {
+          if (city.medianHomeValue === null || city.medianHomeValue <= 0) return false;
+          if (city.medianHomeValue < hvBracket.min || city.medianHomeValue > hvBracket.max) return false;
+        }
+        // ADR filter
+        if (adrIdx > 0) {
+          if (city.avgADR === null || city.avgADR <= 0) return false;
+          if (city.avgADR < adrBracket.min || city.avgADR > adrBracket.max) return false;
+        }
+        // Revenue filter
+        if (revenueIdx > 0) {
+          if (city.strMonthlyRevenue === null || city.strMonthlyRevenue <= 0) return false;
+          if (city.strMonthlyRevenue < revBracket.min || city.strMonthlyRevenue > revBracket.max) return false;
+        }
+        // Regulation filter (server cities may not have regulation data)
+        if (regulationFilter !== "all" && city.regulation) {
+          if (regulationFilter === "legal" && city.regulation !== "Legal") return false;
+          if (regulationFilter === "restricted" && city.regulation !== "Restricted") return false;
+        }
+        return true;
+      });
+      
+      // Sort server cities
+      filteredServerCities.sort((a, b) => {
+        switch (sortBy) {
+          case "homeValue": return (b.medianHomeValue || 0) - (a.medianHomeValue || 0);
+          case "homeValueAsc": return (a.medianHomeValue || 0) - (b.medianHomeValue || 0);
+          case "adr": return (b.avgADR || 0) - (a.avgADR || 0);
+          case "revenue": return (b.strMonthlyRevenue || 0) - (a.strMonthlyRevenue || 0);
+          case "cashOnCash": return (b.cashOnCash || 0) - (a.cashOnCash || 0);
+          default: return (b.marketScore || 0) - (a.marketScore || 0);
+        }
+      });
+      
       return { 
         cities: [], 
         states: [], 
-        serverCities: serverCities 
+        serverCities: filteredServerCities 
       };
     }
     
@@ -263,9 +310,25 @@ export default function SearchPage() {
       return true;
     });
 
-    // Apply smart filters to states (only score and regulation apply)
+    // Apply smart filters to states (score, home value, ADR, regulation)
     stateResults = stateResults.filter(state => {
+      // Score filter
       if (state.marketScore < minScore) return false;
+      // Home value filter — states have medianHomeValue (state average)
+      if (homeValueIdx > 0) {
+        if (!state.medianHomeValue || state.medianHomeValue <= 0) return false;
+        if (state.medianHomeValue < hvBracket.min || state.medianHomeValue > hvBracket.max) return false;
+      }
+      // ADR filter — states have avgADR
+      if (adrIdx > 0) {
+        if (!state.avgADR || state.avgADR <= 0) return false;
+        if (state.avgADR < adrBracket.min || state.avgADR > adrBracket.max) return false;
+      }
+      // Revenue filter — states don't have strMonthlyRevenue, hide states when revenue filter is active
+      if (revenueIdx > 0) return false;
+      // Regulation filter
+      if (regulationFilter === "legal" && state.regulation !== "Legal") return false;
+      if (regulationFilter === "restricted" && state.regulation !== "Restricted") return false;
       return true;
     });
 
@@ -281,13 +344,22 @@ export default function SearchPage() {
       }
     };
     cityResults.sort(sortFn);
-    stateResults.sort((a, b) => b.marketScore - a.marketScore);
+    // Sort states using same sort option where applicable
+    stateResults.sort((a, b) => {
+      switch (sortBy) {
+        case "homeValue": return (b.medianHomeValue || 0) - (a.medianHomeValue || 0);
+        case "homeValueAsc": return (a.medianHomeValue || 0) - (b.medianHomeValue || 0);
+        case "adr": return (b.avgADR || 0) - (a.avgADR || 0);
+        // For revenue/cashOnCash, states don't have these — fall back to score
+        default: return b.marketScore - a.marketScore;
+      }
+    });
 
     return { cities: cityResults, states: stateResults, serverCities: [] as ServerCity[] };
   }, [query, filter, serverCities, minScore, homeValueIdx, adrIdx, revenueIdx, regulationFilter, sortBy]);
 
   const totalResults = filter === "allCities" 
-    ? serverTotal 
+    ? results.serverCities.length 
     : results.cities.length + results.states.length;
 
   // Batch fetch like counts for visible city cards
@@ -330,11 +402,6 @@ export default function SearchPage() {
     if (value >= 1000) return `$${Math.round(value / 1000)}K`;
     return `$${value}`;
   };
-
-  // Dynamic brackets computed from actual city data — auto-adjusts when new cities are added
-  const HOME_VALUE_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.medianHomeValue), '$', '', 50000), []);
-  const ADR_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.avgADR), '$', '', 50), []);
-  const REVENUE_BRACKETS = useMemo(() => buildBrackets(cityData.map(c => c.strMonthlyRevenue), '$', '/mo', 1000), []);
 
   const filters = [
     { key: "all", label: "Featured", Icon: StarIcon },
@@ -685,7 +752,7 @@ export default function SearchPage() {
                 All US Cities
               </span>
             )}
-            {activeFilterCount > 0 && filter !== "allCities" && (
+            {activeFilterCount > 0 && (
               <span 
                 className="text-xs px-3 py-1 rounded-full font-medium"
                 style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)', color: '#2b2823' }}
@@ -749,7 +816,7 @@ export default function SearchPage() {
                     </span>
                   </div>
                   <div className="text-sm truncate" style={{ color: '#787060' }}>
-                    {state.cityCount} cities • ${state.avgADR}/night avg
+                    {state.cityCount} cities • {formatCurrency(state.medianHomeValue)} avg home • ${state.avgADR}/night
                   </div>
                   <div className="flex gap-2 mt-2">
                     <span 

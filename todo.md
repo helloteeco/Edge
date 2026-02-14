@@ -314,3 +314,20 @@
 - [x] Kept: Featured, All Cities, States, Cities tabs
 - [x] Filters auto-adjust when new cities are added to data (buildBrackets uses p25/p50/p75)
 - [x] No existing features changed or deleted
+
+## BUG FIX: Search filters not functional/accurate (February 2026)
+- [ ] Audit all filter logic (score, home value, ADR, revenue, regulation, sort)
+- [ ] Fix any broken filter conditions — ensure each filter actually works
+- [ ] Ensure filters work with real city data fields (correct field names)
+- [ ] Make filters fully dynamic — auto-adjust when new cities added
+- [ ] Test each filter individually and in combination
+- [ ] No other features changed
+
+## BUG FIX: Search filters not functional/accurate (February 2026)
+- [ ] Audit all filter logic — filters must apply to ALL tabs (Featured, All Cities, States, Cities)
+- [ ] Fix: Featured tab bypasses smart filters — must filter featured cities too
+- [ ] Fix: States tab must filter by state-level metrics (avg home value, avg ADR, etc.)
+- [ ] Fix: Each filter (score, home value, ADR, revenue, regulation) must actually work
+- [ ] Fix: Sort must work across all tabs
+- [ ] Make filters fully dynamic — auto-adjust when new cities added
+- [ ] No other features changed
