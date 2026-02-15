@@ -390,4 +390,18 @@
 
 ## Cost Optimization: Pre-cache cron biweekly (February 2026)
 - [x] Change pre-cache cron from weekly (Monday 6am) to biweekly (1st and 15th of each month)
+- [x] Commit and push to deploy
+
+## Bug Fix: Recent Searches not showing on desktop (February 2026)
+- [ ] Fix Recent Searches section not rendering on desktop/laptop view (works on mobile)
+- [ ] Commit and push to deploy
+
+## Credit System Audit + Recent Searches Sync (February 2026)
+- [x] Audit full credit consumption flow (when deducted, edge cases, refund risks)
+- [x] Create Supabase recent_searches table for cross-device sync
+- [x] Implement sync logic: save to both localStorage + Supabase on analysis complete
+- [x] On page load: fetch from Supabase for signed-in users, merge with local
+- [x] Update button wording: 'Analyze Free' for first use, then 'Analyze (1 Credit)' after
+- [x] Add 90-day expiration on cached results with 75-day staleness warning
+- [x] Add 're-analyze uses a credit' note on expired recent searches
 - [ ] Commit and push to deploy

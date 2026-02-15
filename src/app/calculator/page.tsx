@@ -604,6 +604,32 @@ export default function CalculatorPage() {
       }
     }
     
+    // Fetch from Supabase for signed-in users and merge with local
+    const savedEmail = localStorage.getItem("edge_auth_email");
+    if (savedEmail) {
+      fetch(`/api/recent-searches?email=${encodeURIComponent(savedEmail)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.searches?.length > 0) {
+            setRecentSearches(prev => {
+              // Merge: Supabase searches fill in anything not already in local
+              const localAddresses = new Set(prev.map((s: RecentSearch) => s.address));
+              const remoteOnly = data.searches
+                .filter((s: RecentSearch) => !localAddresses.has(s.address))
+                .map((s: RecentSearch) => ({
+                  ...s,
+                  timestamp: s.analyzedAt ? new Date(s.analyzedAt).getTime() : Date.now(),
+                }));
+              if (remoteOnly.length === 0) return prev;
+              const merged = [...prev, ...remoteOnly].slice(0, 10);
+              localStorage.setItem("edge_recent_searches", JSON.stringify(merged));
+              return merged;
+            });
+          }
+        })
+        .catch(err => console.error("[RecentSearches] Fetch error:", err));
+    }
+    
     // Load unsupported addresses list
     const savedUnsupported = localStorage.getItem("edge_unsupported_addresses");
     if (savedUnsupported) {
@@ -1514,11 +1540,21 @@ export default function CalculatorPage() {
     });
   };
 
-  // Save recent search
+  // Save recent search (localStorage + Supabase sync for signed-in users)
   const saveRecentSearch = (search: RecentSearch) => {
     const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 10);
     setRecentSearches(updated);
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
+    
+    // Sync to Supabase for cross-device access
+    const savedEmail = localStorage.getItem("edge_auth_email");
+    if (savedEmail) {
+      fetch("/api/recent-searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: savedEmail, search }),
+      }).catch(err => console.error("[RecentSearches] Sync error:", err));
+    }
   };
 
   // Save report to Saved section
@@ -3638,7 +3674,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <span className="text-sm">{loadingStep || "Analyzing..."}</span>
                 </div>
               ) : (
-                "Analyze Free"
+                typeof window !== 'undefined' && localStorage.getItem("edge_free_preview_used") ? "Analyze (1 Credit)" : "Analyze Free"
               )}
             </button>
           </div>
@@ -6546,9 +6582,21 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <p className="text-sm text-gray-500">
                         {formatCurrency(search.annualRevenue)}/yr • {formatCurrency(search.adr)}/night • {search.occupancy}% occ
                       </p>
+                      {/* 75-day staleness warning */}
+                      {search.timestamp && (Date.now() - search.timestamp) > 75 * 24 * 60 * 60 * 1000 && search.cachedResult && (
+                        <p className="text-xs mt-1" style={{ color: '#f59e0b' }}>
+                          ⚠ Data is {Math.floor((Date.now() - search.timestamp) / (24 * 60 * 60 * 1000))}+ days old — re-analyze for current numbers
+                        </p>
+                      )}
                     </div>
-                    {search.cachedResult && (
-                      <span className="ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Instant</span>
+                    {search.cachedResult ? (
+                      search.timestamp && (Date.now() - search.timestamp) > 75 * 24 * 60 * 60 * 1000 ? (
+                        <span className="ml-2 px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Stale</span>
+                      ) : (
+                        <span className="ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Instant</span>
+                      )
+                    ) : (
+                      <span className="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500" title="Re-analyzing uses 1 credit">1 Credit</span>
                     )}
                   </div>
                 </button>
