@@ -413,66 +413,101 @@ export default function CalculatorPage() {
   // Formulas scale with property size and local cost levels.
   // National median home price (~$350K) = 1.0x multiplier. Higher = more expensive area.
   // Adjusts automatically when new cities are added or market prices change.
+  // ===== RESEARCH-BASED STR EXPENSE DEFAULTS =====
+  // Sources: AirDNA (2024), BuildYourBnB, Steadily (2025), Host Tools (2025),
+  // Redfin (2025), BiggerPockets forums, RentCafe (2025)
+  // Key benchmarks:
+  //   - BuildYourBnB: ~$150/mo per utility, $75/room supplies, $200-250/room cleaning
+  //   - Steadily: Full homes $400-$800+/mo total utilities
+  //   - Host Tools: $500-$700/mo utilities for modest property
+  //   - Solar.com: Avg electric for 3BR = $163/mo nationwide
+  //   - STRs use significantly more utilities than regular homes (24/7 HVAC, frequent laundry)
   useEffect(() => {
     if (!result || userEditedExpenses.current) return;
     const br = bedrooms || 3;
     const guests = guestCount || br * 2;
-    const sqft = propertySqft || (br * 500 + 400); // estimate sqft if not available
+    const sqft = propertySqft || (br * 500 + 400);
     const homePrice = parseFloat(purchasePrice) || result?.listPrice || 350000;
     
-    // Cost-of-living multiplier: ratio of this home's price to national median
-    // Clamped between 0.7 (very affordable) and 1.8 (very expensive)
+    // Cost-of-living multiplier using dampened power curve
+    // $200K → 0.85x, $350K → 1.0x, $500K → 1.12x, $800K → 1.28x, $1M → 1.37x
     const NATIONAL_MEDIAN = 350000;
-    const colMultiplier = Math.min(Math.max(homePrice / NATIONAL_MEDIAN, 0.7), 1.8);
+    const rawCol = Math.pow(homePrice / NATIONAL_MEDIAN, 0.3);
+    const colMultiplier = Math.min(Math.max(rawCol, 0.75), 1.6);
     
-    // Guest impact factor: more guests = more water, supplies, consumables
-    const guestFactor = Math.min(Math.max(guests / 6, 0.7), 1.6); // 6 guests = 1.0x baseline
+    const round5 = (n: number) => Math.round(n / 5) * 5;
     
-    // Sqft impact for utilities: larger homes cost more to heat/cool
-    const sqftFactor = Math.min(Math.max(sqft / 1500, 0.7), 1.8); // 1500 sqft = 1.0x baseline
+    // ---- ELECTRIC ----
+    // Per-bedroom: $55/BR (STRs run HVAC 24/7 for guests, smart locks, always-on devices)
+    // Floor: $120 (even a studio STR has significant electric)
+    // Scales with: bedrooms (proxy for sqft) + cost-of-living
+    const electric = round5(Math.max(55 * br, 120) * colMultiplier);
     
-    // Base costs for a 3BR/6-guest/1500sqft home in a median-priced market
-    // These are realistic 2024-2026 US STR operating costs from industry data
-    const base = {
-      electric: 115,   // HVAC, lighting, appliances — scales with sqft
-      water: 75,       // Showers, laundry, dishwasher — scales with guests
-      internet: 60,    // Fixed cost, slight COL adjustment
-      trash: 35,       // Municipal service — slight COL adjustment
-      lawn: 60,        // Landscaping — scales with COL
-      pest: 25,        // Quarterly service — scales with COL
-      supplies: 55,    // Towels, linens, toiletries — scales with guests/bedrooms
-      consumables: 80, // Coffee, soap, TP, paper towels — scales with guests
-      maintenance: 110,// Repairs, wear & tear — scales with sqft and COL
-      software: 30,    // PMS/channel manager — fixed cost
-    };
+    // ---- WATER / SEWER ----
+    // Per-bedroom: $25/BR base + $5 per guest above 2-per-BR baseline
+    // Floor: $60. STRs do more laundry (linens every turnover), more showers
+    const extraGuests = Math.max(guests - br * 2, 0);
+    const water = round5(Math.max(25 * br + 5 * extraGuests, 60) * colMultiplier);
     
-    // Apply scaling factors to each expense category
-    const round5 = (n: number) => Math.round(n / 5) * 5; // Round to nearest $5
-    const computed = {
-      electric: round5(base.electric * sqftFactor * colMultiplier),
-      water: round5(base.water * guestFactor * colMultiplier),
-      internet: round5(base.internet * Math.min(colMultiplier, 1.3)), // internet doesn't vary as much
-      trash: round5(base.trash * Math.min(colMultiplier, 1.4)),
-      lawn: round5(base.lawn * colMultiplier),
-      pest: round5(base.pest * colMultiplier),
-      supplies: round5(base.supplies * (br / 3) * guestFactor),
-      consumables: round5(base.consumables * guestFactor * colMultiplier),
-      maintenance: round5(base.maintenance * sqftFactor * colMultiplier),
-      software: base.software, // fixed cost regardless of property
-    };
+    // ---- INTERNET ----
+    // Mostly flat: $80 base. Larger homes may need mesh systems ($100+)
+    // Slight COL adjustment (capped at 1.2x — internet doesn't vary much)
+    const internet = round5(br >= 5 ? 100 : 80) * Math.min(colMultiplier, 1.2) > 0
+      ? round5((br >= 5 ? 100 : 80) * Math.min(colMultiplier, 1.2))
+      : 80;
     
-    setElectricMonthly(computed.electric);
-    setWaterMonthly(computed.water);
-    setInternetMonthly(computed.internet);
-    setTrashMonthly(computed.trash);
-    setLawnCareMonthly(computed.lawn);
-    setPestControlMonthly(computed.pest);
-    setHouseSuppliesMonthly(computed.supplies);
-    setSuppliesConsumablesMonthly(computed.consumables);
-    setMaintenanceMonthly(computed.maintenance);
-    setRentalSoftwareMonthly(computed.software);
+    // ---- TRASH ----
+    // Per-bedroom: $12/BR + $3 per extra guest. Floor: $35
+    // More guests = more trash volume
+    const trash = round5(Math.max(12 * br + 3 * extraGuests, 35) * Math.min(colMultiplier, 1.3));
     
-    console.log(`[SmartDefaults] Dynamic expenses for ${br}BR/${guests}guests/${sqft}sqft/$${homePrice.toLocaleString()} home (COL: ${colMultiplier.toFixed(2)}x):`, computed);
+    // ---- LAWN CARE ----
+    // Per-bedroom: $20/BR (larger homes = larger lots). Floor: $75
+    // Scales with COL (labor costs vary by market)
+    const lawn = round5(Math.max(20 * br, 75) * colMultiplier);
+    
+    // ---- PEST CONTROL ----
+    // Per-bedroom: $8/BR. Floor: $25. Quarterly service amortized monthly
+    const pest = round5(Math.max(8 * br, 25) * Math.min(colMultiplier, 1.3));
+    
+    // ---- HOUSE SUPPLIES ----
+    // BuildYourBnB benchmark: $75/room for supplies (linens, towels, small items)
+    // We use $25/BR as monthly amortized cost (linens last ~6 months)
+    // Floor: $50. Scales with bedrooms primarily
+    const supplies = round5(Math.max(25 * br, 50) * (1 + (colMultiplier - 1) * 0.5));
+    
+    // ---- SUPPLIES & CONSUMABLES ----
+    // Toiletries, coffee, soap, TP, paper towels — scales heavily with guest count
+    // $15/BR base + $10/guest (guests consume these directly)
+    // Floor: $60
+    const consumables = round5(Math.max(15 * br + 10 * guests, 60) * (1 + (colMultiplier - 1) * 0.5));
+    
+    // ---- MAINTENANCE / REPAIR ----
+    // BuildYourBnB: ~$150/mo. Scales with property size and value
+    // Per-bedroom: $40/BR. Floor: $120
+    // STRs have higher wear & tear than regular homes (constant guest turnover)
+    const maintenance = round5(Math.max(40 * br, 120) * colMultiplier);
+    
+    // ---- RENTAL SOFTWARE ----
+    // PriceLabs ($20-40) + channel manager ($10-30) = $30-70/mo
+    // Larger properties may use more tools. Mostly flat.
+    const software = br >= 5 ? 50 : 35;
+    
+    setElectricMonthly(electric);
+    setWaterMonthly(water);
+    setInternetMonthly(internet);
+    setTrashMonthly(trash);
+    setLawnCareMonthly(lawn);
+    setPestControlMonthly(pest);
+    setHouseSuppliesMonthly(supplies);
+    setSuppliesConsumablesMonthly(consumables);
+    setMaintenanceMonthly(maintenance);
+    setRentalSoftwareMonthly(software);
+    
+    const total = electric + water + internet + trash + lawn + pest + supplies + consumables + maintenance + software;
+    console.log(`[SmartDefaults] Research-based expenses for ${br}BR/${guests}guests/${sqft}sqft/$${homePrice.toLocaleString()} home (COL: ${colMultiplier.toFixed(2)}x): $${total}/mo`, {
+      electric, water, internet, trash, lawn, pest, supplies, consumables, maintenance, software
+    });
   }, [result?.address, bedrooms, guestCount, propertySqft, purchasePrice]);
 
   // ===== SMART DEFAULTS: Auto-populate arbitrage rent from HUD FMR =====

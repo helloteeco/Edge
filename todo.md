@@ -351,3 +351,4 @@
 - [x] Make calculator expenses dynamic based on bedroom count, guest count, and city cost of living
 - [x] Auto-populate house size, bed/bath count, guest count from city data
 - [x] Make expense estimates adjust for inflation/economy changes dynamically
+- [ ] Research and recalibrate STR expense auto-populate with real-world benchmarks by property size and guest count
