@@ -1022,6 +1022,8 @@ export default function CalculatorPage() {
         localStorage.setItem("edge_auth_token", sessionToken);
         localStorage.setItem("edge_auth_expiry", expiryTime.toString());
         localStorage.setItem("edge_auth_email", data.email);
+        // Trigger sync flag so AuthHeader picks up the new auth state
+        localStorage.setItem("edge_auth_sync", Date.now().toString());
         
         // Verify storage worked
         const storedToken = localStorage.getItem("edge_auth_token");

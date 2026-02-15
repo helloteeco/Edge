@@ -14,46 +14,6 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Verify magic link token
-  const verifyMagicLink = useCallback(async (token: string) => {
-    console.log("[AuthHeader] Verifying magic link token...");
-    setIsVerifying(true);
-    
-    try {
-      const response = await fetch("/api/auth/verify-magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      
-      const data = await response.json();
-      console.log("[AuthHeader] Verification response:", data);
-      
-      if (data.success) {
-        // Store auth in localStorage (30-day session)
-        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
-        const sessionToken = data.sessionToken || token;
-        
-        localStorage.setItem("edge_auth_token", sessionToken);
-        localStorage.setItem("edge_auth_expiry", expiryTime.toString());
-        localStorage.setItem("edge_auth_email", data.email);
-        
-        // Trigger storage event for other tabs by setting a sync flag
-        localStorage.setItem("edge_auth_sync", Date.now().toString());
-        
-        setIsAuthenticated(true);
-        setUserEmail(data.email);
-        console.log("[AuthHeader] User authenticated successfully!");
-      } else {
-        console.error("[AuthHeader] Verification failed:", data.error);
-      }
-    } catch (err) {
-      console.error("[AuthHeader] Verification error:", err);
-    } finally {
-      setIsVerifying(false);
-    }
-  }, []);
-
   // Check localStorage for auth state
   const checkAuthState = useCallback(() => {
     const authEmail = localStorage.getItem("edge_auth_email");
@@ -76,21 +36,28 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
 
   // Check auth status on mount and handle magic link token
   useEffect(() => {
-    // First check URL for magic link token (takes priority)
+    // Don't handle magic link tokens here — let the page component handle it
+    // to avoid race conditions with duplicate verify calls.
+    // AuthHeader only reads localStorage for auth state.
+    
+    // Check if a token is in the URL — if so, wait briefly for the page to handle it
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     
     if (token) {
-      console.log("[AuthHeader] Found magic link token in URL, verifying...");
-      verifyMagicLink(token);
-      // Clean up URL immediately
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return; // Don't check localStorage if we're verifying a token
+      console.log("[AuthHeader] Token detected in URL, deferring to page handler...");
+      setIsVerifying(true);
+      // Wait for the page to verify and store auth, then check localStorage
+      const timer = setTimeout(() => {
+        checkAuthState();
+        setIsVerifying(false);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
     
     // No token in URL, check localStorage for existing session
     checkAuthState();
-  }, [verifyMagicLink, checkAuthState]);
+  }, [checkAuthState]);
 
   // Listen for storage events from other tabs (cross-tab sync)
   useEffect(() => {
