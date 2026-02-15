@@ -338,7 +338,7 @@
 - [ ] No other features changed
 
 ## Calculator Auto-Populate
-- [ ] Auto-populate purchase price from city median home price
+- [x] Auto-populate purchase price from city median home price
 - [ ] Auto-populate rent estimate for arbitrage calculator
 - [ ] Auto-populate realistic STR expenses based on bedroom count and guest capacity for all 3 calculators
 
@@ -347,8 +347,10 @@
 - [ ] Fix funding count to be dynamic (not hardcoded "45")
 - [ ] Fix "rural" wording in funding subtitle
 - [ ] Fix "County County" double-word in OG images
-- [ ] Add /map redirect to home page
+- [x] Add /map redirect to home page
 - [x] Make calculator expenses dynamic based on bedroom count, guest count, and city cost of living
 - [x] Auto-populate house size, bed/bath count, guest count from city data
 - [x] Make expense estimates adjust for inflation/economy changes dynamically
-- [ ] Research and recalibrate STR expense auto-populate with real-world benchmarks by property size and guest count
+- [x] Research and recalibrate STR expense auto-populate with real-world benchmarks by property size and guest count
+- [x] Fix Purchase Price field to auto-populate with median home value for the analyzed city (not blank)
+- [x] Ensure changing purchase price dynamically recalculates entire analysis (mortgage, expenses, insurance, ROI)

@@ -11,6 +11,7 @@ import { StuckHelper } from "@/components/StuckHelper";
 import { refilterComps, type Comp } from "@/lib/refilterComps";
 import { addCreditEvent, getCreditLog, formatCreditEventTime, type CreditEvent } from "@/lib/creditLog";
 import { cacheAnalysisResult } from "@/lib/serviceWorker";
+import { findCityForAddress, getStateBenchmark } from "@/data/helpers";
 
 // Dynamic import for CompMap (Leaflet needs client-side only)
 const CompMap = dynamic(() => import("@/components/CompMap").then(mod => ({ default: mod.CompMap })), {
@@ -680,6 +681,21 @@ export default function CalculatorPage() {
           setIsReportSaved(savedLocal.some((r: any) => r.address === addr));
           if (cachedSearch.cachedResult.listPrice > 0) {
             setPurchasePrice(cachedSearch.cachedResult.listPrice.toString());
+          } else {
+            // Fallback: use city median home value from our data
+            const cityMatch = findCityForAddress(addressParam);
+            if (cityMatch && cityMatch.medianHomeValue > 0) {
+              console.log('[PurchasePrice] Cache path fallback to city median:', cityMatch.name, cityMatch.medianHomeValue);
+              setPurchasePrice(Math.round(cityMatch.medianHomeValue).toString());
+            } else {
+              const parsed = addressParam.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+              if (parsed) {
+                const bench = getStateBenchmark(parsed[1].toUpperCase());
+                if (bench && bench.medianHomePrice > 0) {
+                  setPurchasePrice(Math.round(bench.medianHomePrice).toString());
+                }
+              }
+            }
           }
           if (cachedSearch.cachedResult.sqft > 0) {
             setPropertySqft(cachedSearch.cachedResult.sqft);
@@ -697,9 +713,33 @@ export default function CalculatorPage() {
                 }
                 if (details.success && details.estimatedValue > 0 && !cachedSearch.cachedResult.listPrice) {
                   setPurchasePrice(details.estimatedValue.toString());
+                } else if (!cachedSearch.cachedResult.listPrice) {
+                  setPurchasePrice(prev => {
+                    if (prev) return prev;
+                    const cityMatch = findCityForAddress(addressParam);
+                    if (cityMatch && cityMatch.medianHomeValue > 0) return Math.round(cityMatch.medianHomeValue).toString();
+                    const parsed = addressParam.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                    if (parsed) {
+                      const bench = getStateBenchmark(parsed[1].toUpperCase());
+                      if (bench && bench.medianHomePrice > 0) return Math.round(bench.medianHomePrice).toString();
+                    }
+                    return prev;
+                  });
                 }
               })
-              .catch(() => {});
+              .catch(() => {
+                setPurchasePrice(prev => {
+                  if (prev) return prev;
+                  const cityMatch = findCityForAddress(addressParam);
+                  if (cityMatch && cityMatch.medianHomeValue > 0) return Math.round(cityMatch.medianHomeValue).toString();
+                  const parsed = addressParam.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                  if (parsed) {
+                    const bench = getStateBenchmark(parsed[1].toUpperCase());
+                    if (bench && bench.medianHomePrice > 0) return Math.round(bench.medianHomePrice).toString();
+                  }
+                  return prev;
+                });
+              });
           }
         } else {
           // No local cache — try Supabase property-cache API (no credit used)
@@ -795,6 +835,19 @@ export default function CalculatorPage() {
                 setLastAnalyzedAddress(addressParam);
                 if (analysisResult.listPrice > 0) {
                   setPurchasePrice(analysisResult.listPrice.toString());
+                } else {
+                  const cityMatch = findCityForAddress(addressParam);
+                  if (cityMatch && cityMatch.medianHomeValue > 0) {
+                    setPurchasePrice(Math.round(cityMatch.medianHomeValue).toString());
+                  } else {
+                    const parsed = addressParam.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                    if (parsed) {
+                      const bench = getStateBenchmark(parsed[1].toUpperCase());
+                      if (bench && bench.medianHomePrice > 0) {
+                        setPurchasePrice(Math.round(bench.medianHomePrice).toString());
+                      }
+                    }
+                  }
                 }
                 if (analysisResult.sqft > 0) {
                   setPropertySqft(analysisResult.sqft);
@@ -812,9 +865,43 @@ export default function CalculatorPage() {
                       }
                       if (details.success && details.estimatedValue > 0 && !analysisResult.listPrice) {
                         setPurchasePrice(details.estimatedValue.toString());
+                      } else if (!analysisResult.listPrice) {
+                        // Fallback to city median when property details API has no estimated value
+                        setPurchasePrice(prev => {
+                          if (prev) return prev; // Don't overwrite if already set
+                          const cityMatch = findCityForAddress(addressParam);
+                          if (cityMatch && cityMatch.medianHomeValue > 0) {
+                            return Math.round(cityMatch.medianHomeValue).toString();
+                          }
+                          const parsed = addressParam.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                          if (parsed) {
+                            const bench = getStateBenchmark(parsed[1].toUpperCase());
+                            if (bench && bench.medianHomePrice > 0) {
+                              return Math.round(bench.medianHomePrice).toString();
+                            }
+                          }
+                          return prev;
+                        });
                       }
                     })
-                    .catch(() => {});
+                    .catch(() => {
+                      // Property details API failed - fallback to city median
+                      setPurchasePrice(prev => {
+                        if (prev) return prev;
+                        const cityMatch = findCityForAddress(addressParam);
+                        if (cityMatch && cityMatch.medianHomeValue > 0) {
+                          return Math.round(cityMatch.medianHomeValue).toString();
+                        }
+                        const parsed = addressParam.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                        if (parsed) {
+                          const bench = getStateBenchmark(parsed[1].toUpperCase());
+                          if (bench && bench.medianHomePrice > 0) {
+                            return Math.round(bench.medianHomePrice).toString();
+                          }
+                        }
+                        return prev;
+                      });
+                    });
                 }
               }
             })
@@ -1289,6 +1376,24 @@ export default function CalculatorPage() {
     // Auto-fill purchase price from analysis data (always on fresh analysis)
     if (analysisResult.listPrice > 0) {
       setPurchasePrice(analysisResult.listPrice.toString());
+    } else {
+      // Immediate fallback: use city median home value from our data
+      // (property details API may also fill this later, but this ensures it's never blank)
+      const addrForFallback = pendingAnalysis || address;
+      const cityMatch = findCityForAddress(addrForFallback);
+      if (cityMatch && cityMatch.medianHomeValue > 0) {
+        console.log('[PurchasePrice] Immediate fallback to city median:', cityMatch.name, cityMatch.medianHomeValue);
+        setPurchasePrice(Math.round(cityMatch.medianHomeValue).toString());
+      } else {
+        const parsed = addrForFallback.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+        if (parsed) {
+          const bench = getStateBenchmark(parsed[1].toUpperCase());
+          if (bench && bench.medianHomePrice > 0) {
+            console.log('[PurchasePrice] Immediate fallback to state median:', parsed[1], bench.medianHomePrice);
+            setPurchasePrice(Math.round(bench.medianHomePrice).toString());
+          }
+        }
+      }
     }
     
     // Auto-fill sqft from analysis data
@@ -1335,9 +1440,53 @@ export default function CalculatorPage() {
             });
           }
           console.log('[PropertyDetails]', details.source, '- sqft:', details.sqft, '(est:', details.isEstimate, ') value:', details.estimatedValue);
+          // If property details succeeded but still no price, fallback to city median
+          if ((!details.estimatedValue || details.estimatedValue === 0) && analysisResult.listPrice === 0) {
+            setPurchasePrice(prev => {
+              if (!prev || prev === '' || prev === '0') {
+                const cityMatch = findCityForAddress(addrForDetails);
+                if (cityMatch && cityMatch.medianHomeValue > 0) {
+                  console.log('[PurchasePrice] Fallback to city median (after prop details):', cityMatch.name, cityMatch.medianHomeValue);
+                  return Math.round(cityMatch.medianHomeValue).toString();
+                }
+                const parsed = addrForDetails.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                if (parsed) {
+                  const bench = getStateBenchmark(parsed[1].toUpperCase());
+                  if (bench && bench.medianHomePrice > 0) {
+                    return Math.round(bench.medianHomePrice).toString();
+                  }
+                }
+              }
+              return prev;
+            });
+          }
         }
       })
-      .catch(err => console.warn('[PropertyDetails] fetch failed (non-blocking):', err));
+      .catch(err => {
+        console.warn('[PropertyDetails] fetch failed (non-blocking):', err);
+        // Fallback: if property details failed and we still have no purchase price, use city median
+        if (analysisResult.listPrice === 0) {
+          setPurchasePrice(prev => {
+            if (!prev || prev === '' || prev === '0') {
+              const cityMatch = findCityForAddress(addrForDetails);
+              if (cityMatch && cityMatch.medianHomeValue > 0) {
+                console.log('[PurchasePrice] Fallback to city median:', cityMatch.name, cityMatch.medianHomeValue);
+                return Math.round(cityMatch.medianHomeValue).toString();
+              }
+              // State-level fallback
+              const parsed = addrForDetails.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+              if (parsed) {
+                const bench = getStateBenchmark(parsed[1].toUpperCase());
+                if (bench && bench.medianHomePrice > 0) {
+                  console.log('[PurchasePrice] Fallback to state median:', parsed[1], bench.medianHomePrice);
+                  return Math.round(bench.medianHomePrice).toString();
+                }
+              }
+            }
+            return prev;
+          });
+        }
+      });
     
     setUseCustomIncome(false);
     setCustomAnnualIncome("");
@@ -2074,6 +2223,20 @@ export default function CalculatorPage() {
       // Auto-fill purchase price if available
       if (analysisResult.listPrice > 0 && !purchasePrice) {
         setPurchasePrice(analysisResult.listPrice.toString());
+      } else if (!purchasePrice) {
+        // Fallback: use city median home value from our data
+        const cityMatch = findCityForAddress(addressToAnalyze);
+        if (cityMatch && cityMatch.medianHomeValue > 0) {
+          setPurchasePrice(Math.round(cityMatch.medianHomeValue).toString());
+        } else {
+          const parsed = addressToAnalyze.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+          if (parsed) {
+            const bench = getStateBenchmark(parsed[1].toUpperCase());
+            if (bench && bench.medianHomePrice > 0) {
+              setPurchasePrice(Math.round(bench.medianHomePrice).toString());
+            }
+          }
+        }
       }
       
       // Auto-set sqft for design/setup cost calculations
@@ -6339,6 +6502,19 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       // Auto-fill purchase price if available
                       if (search.cachedResult.listPrice > 0 && !purchasePrice) {
                         setPurchasePrice(search.cachedResult.listPrice.toString());
+                      } else if (!purchasePrice) {
+                        const cityMatch = findCityForAddress(search.address);
+                        if (cityMatch && cityMatch.medianHomeValue > 0) {
+                          setPurchasePrice(Math.round(cityMatch.medianHomeValue).toString());
+                        } else {
+                          const parsed = search.address.match(/,\s*([A-Z]{2})(?:\s|$|,)/i);
+                          if (parsed) {
+                            const bench = getStateBenchmark(parsed[1].toUpperCase());
+                            if (bench && bench.medianHomePrice > 0) {
+                              setPurchasePrice(Math.round(bench.medianHomePrice).toString());
+                            }
+                          }
+                        }
                       }
                       // Auto-set sqft
                       if (search.cachedResult.sqft > 0) {
