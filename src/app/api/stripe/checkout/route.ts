@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const clientIP = getClientIP(request);
 
     // Rate limit: max 10 checkout attempts per 5 minutes per IP
-    const rateLimitResult = rateLimit(`stripe-checkout:${clientIP}`, { windowMs: 5 * 60 * 1000, maxRequests: 10 });
+    const rateLimitResult = await rateLimit(`stripe-checkout:${clientIP}`, { limit: 10, windowSeconds: 300 });
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }

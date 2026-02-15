@@ -1060,7 +1060,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`property:${clientIP}`, RATE_LIMITS.standard);
+    const rateLimitResult = await rateLimit(`property:${clientIP}`, RATE_LIMITS.standard);
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: "Too many requests. Please wait before analyzing another property." },

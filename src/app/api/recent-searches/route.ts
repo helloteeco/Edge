@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`recent-searches-get:${clientIP}`, RATE_LIMITS.relaxed);
+    const rateLimitResult = await rateLimit(`recent-searches-get:${clientIP}`, RATE_LIMITS.relaxed);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`recent-searches-post:${clientIP}`, RATE_LIMITS.standard);
+    const rateLimitResult = await rateLimit(`recent-searches-post:${clientIP}`, RATE_LIMITS.standard);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }

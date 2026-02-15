@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting for AI endpoint (expensive calls)
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`chat:${clientIP}`, RATE_LIMITS.ai);
+    const rateLimitResult = await rateLimit(`chat:${clientIP}`, RATE_LIMITS.ai);
     
     if (!rateLimitResult.success) {
       return NextResponse.json(

@@ -46,6 +46,9 @@ interface RecentSearch {
   cachedBedrooms?: number;
   cachedBathrooms?: number;
   cachedGuestCount?: number;
+  // From Supabase cross-device sync
+  analyzedAt?: string;
+  expiresAt?: string;
 }
 
 interface AddressSuggestion {

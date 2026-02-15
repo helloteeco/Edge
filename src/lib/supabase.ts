@@ -443,6 +443,21 @@ export async function recordFreePreview(ipAddress: string, address?: string, fin
   }
 }
 
+// Get site-wide daily free preview count (for daily cap enforcement)
+export async function getDailyFreePreviewCount(): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc('get_daily_free_preview_count');
+    if (error) {
+      console.error('[FreePreview] Daily count error:', error);
+      return 0; // Fail open — don't block users if count check fails
+    }
+    return data ?? 0;
+  } catch (err) {
+    console.error('[FreePreview] Daily count exception:', err);
+    return 0;
+  }
+}
+
 // ============================================
 // PROPERTY CACHE - 90-day TTL
 // ============================================

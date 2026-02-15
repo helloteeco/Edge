@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     // SECURITY: Strict rate limiting for auth endpoints
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`auth:${clientIP}`, RATE_LIMITS.strict);
+    const rateLimitResult = await rateLimit(`auth:${clientIP}`, RATE_LIMITS.strict);
     
     if (!rateLimitResult.success) {
       return NextResponse.json(

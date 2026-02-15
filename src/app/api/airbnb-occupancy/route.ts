@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`occupancy:${clientIP}`, RATE_LIMITS.standard);
+    const rateLimitResult = await rateLimit(`occupancy:${clientIP}`, RATE_LIMITS.standard);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }

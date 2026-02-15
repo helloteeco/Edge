@@ -6,14 +6,14 @@ import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
 // Stricter rate limit for refunds (max 5 per 10 minutes per IP)
-const REFUND_RATE_LIMIT = { windowMs: 10 * 60 * 1000, maxRequests: 5 };
+const REFUND_RATE_LIMIT = { limit: 5, windowSeconds: 600 };
 
 // GET - Check user's credit balance
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`credits-get:${clientIP}`, RATE_LIMITS.relaxed);
+    const rateLimitResult = await rateLimit(`credits-get:${clientIP}`, RATE_LIMITS.relaxed);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const clientIP = getClientIP(request);
     
     // Rate limiting for credit operations (per IP)
-    const rateLimitResult = rateLimit(`credits-post:${clientIP}`, RATE_LIMITS.standard);
+    const rateLimitResult = await rateLimit(`credits-post:${clientIP}`, RATE_LIMITS.standard);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Per-email rate limit to prevent abuse (max 10 credit ops per 5 min per email)
-    const emailRateLimit = rateLimit(`credits-email:${email.toLowerCase().trim()}`, { windowMs: 5 * 60 * 1000, maxRequests: 10 });
+    const emailRateLimit = await rateLimit(`credits-email:${email.toLowerCase().trim()}`, { limit: 10, windowSeconds: 300 });
     if (!emailRateLimit.success) {
       console.warn(`[Credits] Per-email rate limit hit for ${email} from IP ${clientIP}`);
       return NextResponse.json({ success: false, error: "Too many credit operations" }, { status: 429 });
@@ -119,14 +119,14 @@ export async function POST(request: NextRequest) {
     // Refund action — stricter rate limiting
     if (action === "refund") {
       // Extra rate limit specifically for refunds (prevent refund spam)
-      const refundRateResult = rateLimit(`credits-refund:${clientIP}`, REFUND_RATE_LIMIT);
+      const refundRateResult = await rateLimit(`credits-refund:${clientIP}`, REFUND_RATE_LIMIT);
       if (!refundRateResult.success) {
         console.warn(`[Credits] Refund rate limit hit from IP ${clientIP} for ${email}`);
         return NextResponse.json({ success: false, error: "Too many refund requests" }, { status: 429 });
       }
 
       // Also rate limit refunds per email (max 3 per 10 min)
-      const emailRefundLimit = rateLimit(`credits-refund-email:${email.toLowerCase().trim()}`, { windowMs: 10 * 60 * 1000, maxRequests: 3 });
+      const emailRefundLimit = await rateLimit(`credits-refund-email:${email.toLowerCase().trim()}`, { limit: 3, windowSeconds: 600 });
       if (!emailRefundLimit.success) {
         console.warn(`[Credits] Per-email refund rate limit hit for ${email}`);
         return NextResponse.json({ success: false, error: "Too many refund requests" }, { status: 429 });

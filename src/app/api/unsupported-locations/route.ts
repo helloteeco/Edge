@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     // Rate limiting
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`unsupported-get:${clientIP}`, RATE_LIMITS.relaxed);
+    const rateLimitResult = await rateLimit(`unsupported-get:${clientIP}`, RATE_LIMITS.relaxed);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`unsupported-post:${clientIP}`, RATE_LIMITS.standard);
+    const rateLimitResult = await rateLimit(`unsupported-post:${clientIP}`, RATE_LIMITS.standard);
     if (!rateLimitResult.success) {
       return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429 });
     }
