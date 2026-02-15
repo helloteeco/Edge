@@ -311,7 +311,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
                   {getVerdictText(state.verdict)}
                 </span>
                 <a
-                  href={`https://www.proper.insure/regulations/${state.abbreviation.toLowerCase()}`}
+                  href="https://www.proper.insure/regulations/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition-opacity"
@@ -432,7 +432,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "STR Rules", value: "View →", highlight: false, link: `https://www.proper.insure/regulations/${state.abbreviation.toLowerCase()}` },
+            { label: "STR Rules", value: "View →", highlight: false, link: "https://www.proper.insure/regulations/" },
             { label: "Avg ADR", value: `$${state.avgADR}`, highlight: false },
             { label: "Median Home", value: `$${(state.medianHomeValue / 1000).toFixed(0)}K`, highlight: false },
             { label: "1Y Appreciation", value: `${state.appreciation >= 0 ? "+" : ""}${state.appreciation}%`, highlight: state.appreciation >= 0 },
@@ -630,7 +630,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
                     {city.dsi ? "✓ Pays Bills" : "✗ Bills Risk"}
                   </span>
                   <a
-                    href={`https://www.proper.insure/regulations/${city.stateCode.toLowerCase()}`}
+                    href="https://www.proper.insure/regulations/"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}

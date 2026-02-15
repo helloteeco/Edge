@@ -323,7 +323,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
                   {verdictInfo.text}
                 </span>
                 <a
-                  href={`https://www.proper.insure/regulations/${city.stateCode.toLowerCase()}`}
+                  href="https://www.proper.insure/regulations/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition-opacity"
@@ -933,7 +933,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
           </p>
           <div className="flex flex-wrap gap-2">
             <a
-              href={`https://www.proper.insure/regulations/${encodeURIComponent(city.stateCode.toLowerCase())}`}
+              href="https://www.proper.insure/regulations/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"

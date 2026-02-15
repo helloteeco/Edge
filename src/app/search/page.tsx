@@ -895,7 +895,7 @@ export default function SearchPage() {
                       {getVerdictStyle(state.marketScore).text}
                     </span>
                     <a
-                      href={`https://www.proper.insure/regulations/${state.abbreviation.toLowerCase()}`}
+                      href="https://www.proper.insure/regulations/"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
@@ -1000,7 +1000,7 @@ export default function SearchPage() {
                       {city.regulation}
                     </span>
                     <a
-                      href={`https://www.proper.insure/regulations/${city.stateCode.toLowerCase()}`}
+                      href="https://www.proper.insure/regulations/"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
@@ -1113,7 +1113,7 @@ export default function SearchPage() {
                       </span>
                       {city.state && (
                         <a
-                          href={`https://www.proper.insure/regulations/${city.state.toLowerCase()}`}
+                          href="https://www.proper.insure/regulations/"
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
