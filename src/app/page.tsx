@@ -166,9 +166,9 @@ export default function HomePage() {
     },
     'Acquire': {
       title: 'Acquire Property',
-      description: 'Discover 45+ creative ways to fund your STR investment.',
+      description: 'Discover 48+ creative ways to fund your STR investment.',
       features: [
-        'Funding tab with 45+ different financing strategies',
+        'Funding tab with 48+ different financing strategies',
         'Quick quiz to identify your 5 most likely funding options',
         'Links to Zillow for finding agents and lenders',
         'Edge AI Assistant can answer funding questions',
@@ -351,7 +351,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>3. Find Funding</h3>
               <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
-                Discover 45+ creative financing strategies. Take a quick quiz to find the best options, or ask the <strong>Edge AI Assistant</strong> for personalized guidance.
+                Discover 48+ creative financing strategies. Take a quick quiz to find the best options, or ask the <strong>Edge AI Assistant</strong> for personalized guidance.
               </p>
               <Link href="/funding" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
                 Use the Funding tab <ArrowRightIcon className="w-3 h-3" />
