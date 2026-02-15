@@ -373,3 +373,21 @@
 - [x] Delete dead route: /api/airbtics (Airbtics, never called)
 - [x] Verify all fallback chains still work after changes
 - [x] Syntax check and build verification
+
+## Future-Proofing: Harden city data pipeline for zero-effort expansion (February 2026)
+- [ ] Audit every consumer of city data for consistency gaps when new cities are added
+- [ ] Audit caching layer (Supabase property_cache, analysis_log) for new-city handling
+- [ ] Audit city card rendering for missing-field edge cases and defensive defaults
+- [ ] Auto-generate STR regulation fallback so no manual str-regulations.ts entry needed
+- [ ] Ensure scoring, grades, verdicts, and all card features auto-propagate for any new city
+- [ ] Verify state-level aggregation stays stable when city count changes
+
+## Re-audit: Verify dead routes removed + accurate cost report (February 2026)
+- [x] Verify dead API routes (airbnb-comps, property-search, airbtics) are deleted
+- [x] Audit all remaining connected APIs with accurate per-call costs
+- [x] Research PriceLabs actual pricing ($0.50/call per user report)
+- [x] Deliver clean cost breakdown report
+
+## Cost Optimization: Pre-cache cron biweekly (February 2026)
+- [x] Change pre-cache cron from weekly (Monday 6am) to biweekly (1st and 15th of each month)
+- [ ] Commit and push to deploy
