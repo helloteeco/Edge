@@ -288,71 +288,70 @@ export async function hasAvailableCredits(email: string): Promise<boolean> {
   return credits.credits_remaining > 0;
 }
 
-// Deduct one credit from user (server-side, atomic operation)
+// Deduct one credit from user (server-side, atomic operation via RPC)
 export async function deductCredit(email: string): Promise<{ success: boolean; remaining: number; error?: string }> {
   const normalizedEmail = email.toLowerCase().trim();
   
-  // First check current credits
-  const credits = await getUserCredits(normalizedEmail);
-  if (!credits) {
-    return { success: false, remaining: 0, error: 'User not found' };
+  try {
+    const { data, error } = await supabase.rpc('deduct_credit', { user_email: normalizedEmail });
+    
+    if (error) {
+      console.error('Error deducting credit (RPC):', error);
+      return { success: false, remaining: 0, error: 'Database error' };
+    }
+    
+    const result = data?.[0] || data;
+    if (!result) {
+      return { success: false, remaining: 0, error: 'No response from database' };
+    }
+    
+    const success = result.success === true;
+    const remaining = result.credits_remaining ?? 0;
+    
+    if (success) {
+      console.log(`[Credits] Deducted 1 credit from ${normalizedEmail}. Remaining: ${remaining}`);
+    } else {
+      console.log(`[Credits] Deduction failed for ${normalizedEmail}: ${result.error_msg}`);
+    }
+    
+    return { success, remaining, error: result.error_msg || undefined };
+  } catch (err) {
+    console.error('Error deducting credit:', err);
+    return { success: false, remaining: 0, error: 'Database error' };
   }
-  
-  if (credits.credits_remaining <= 0) {
-    return { success: false, remaining: 0, error: 'No credits remaining' };
-  }
-  
-  // Atomic increment of credits_used
-  const { data, error } = await supabase
-    .from('users')
-    .update({ credits_used: credits.credits_used + 1 })
-    .eq('email', normalizedEmail)
-    .select('credits_used, credits_limit')
-    .single();
-  
-  if (error) {
-    console.error('Error deducting credit:', error);
-    return { success: false, remaining: credits.credits_remaining, error: 'Database error' };
-  }
-  
-  const remaining = (data.credits_limit || 3) - (data.credits_used || 0);
-  console.log(`[Credits] Deducted 1 credit from ${normalizedEmail}. Remaining: ${remaining}`);
-  
-  return { success: true, remaining };
 }
 
-// Refund one credit to user (for market mismatch)
+// Refund one credit to user (atomic via RPC)
 export async function refundCredit(email: string): Promise<{ success: boolean; remaining: number; error?: string }> {
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Get current credits
-  const credits = await getUserCredits(normalizedEmail);
-  if (!credits) {
-    return { success: false, remaining: 0, error: 'User not found' };
+  try {
+    const { data, error } = await supabase.rpc('refund_credit', { user_email: normalizedEmail });
+    
+    if (error) {
+      console.error('Error refunding credit (RPC):', error);
+      return { success: false, remaining: 0, error: 'Database error' };
+    }
+    
+    const result = data?.[0] || data;
+    if (!result) {
+      return { success: false, remaining: 0, error: 'No response from database' };
+    }
+    
+    const success = result.success === true;
+    const remaining = result.credits_remaining ?? 0;
+    
+    if (success) {
+      console.log(`[Credits] Refunded 1 credit to ${normalizedEmail}. Remaining: ${remaining}`);
+    } else {
+      console.log(`[Credits] Refund failed for ${normalizedEmail}: ${result.error_msg}`);
+    }
+    
+    return { success, remaining, error: result.error_msg || undefined };
+  } catch (err) {
+    console.error('Error refunding credit:', err);
+    return { success: false, remaining: 0, error: 'Database error' };
   }
-  
-  // Only refund if they've used at least 1 credit
-  if (credits.credits_used <= 0) {
-    return { success: false, remaining: credits.credits_remaining, error: 'No credits to refund' };
-  }
-  
-  // Decrement credits_used (effectively refunding 1 credit)
-  const { data, error } = await supabase
-    .from('users')
-    .update({ credits_used: credits.credits_used - 1 })
-    .eq('email', normalizedEmail)
-    .select('credits_used, credits_limit')
-    .single();
-  
-  if (error) {
-    console.error('Error refunding credit:', error);
-    return { success: false, remaining: credits.credits_remaining, error: 'Database error' };
-  }
-  
-  const remaining = (data.credits_limit || 3) - (data.credits_used || 0);
-  console.log(`[Credits] Refunded 1 credit to ${normalizedEmail}. Remaining: ${remaining}`);
-  
-  return { success: true, remaining };
 }
 
 // Add credits to user (for purchases)
@@ -383,6 +382,65 @@ export async function addCredits(email: string, amount: number): Promise<{ succe
   
   console.log(`[Credits] Added ${amount} credits to ${normalizedEmail}. New limit: ${newLimit}`);
   return { success: true, new_limit: newLimit };
+}
+
+// Log credit transaction for audit trail
+export async function logCreditTransaction(params: {
+  email: string;
+  action: 'deduct' | 'refund' | 'add' | 'free_preview';
+  amount?: number;
+  creditsBefore?: number;
+  creditsAfter?: number;
+  reason?: string;
+  ipAddress?: string;
+  address?: string;
+}): Promise<void> {
+  try {
+    await supabase.from('credit_transactions').insert({
+      user_email: params.email.toLowerCase().trim(),
+      action: params.action,
+      amount: params.amount ?? 1,
+      credits_before: params.creditsBefore ?? null,
+      credits_after: params.creditsAfter ?? null,
+      reason: params.reason ?? null,
+      ip_address: params.ipAddress ?? null,
+      address: params.address ?? null,
+    });
+  } catch (err) {
+    console.error('[CreditLog] Failed to log transaction:', err);
+  }
+}
+
+// Check free preview usage by IP (server-side, prevents incognito abuse)
+export async function checkFreePreview(ipAddress: string): Promise<{ used: boolean; count: number }> {
+  try {
+    const { data, error } = await supabase
+      .from('free_previews')
+      .select('id')
+      .eq('ip_address', ipAddress);
+    
+    if (error) {
+      console.error('[FreePreview] Check error:', error);
+      return { used: false, count: 0 };
+    }
+    
+    return { used: (data?.length ?? 0) > 0, count: data?.length ?? 0 };
+  } catch {
+    return { used: false, count: 0 };
+  }
+}
+
+// Record free preview usage
+export async function recordFreePreview(ipAddress: string, address?: string, fingerprint?: string): Promise<void> {
+  try {
+    await supabase.from('free_previews').insert({
+      ip_address: ipAddress,
+      address: address ?? null,
+      fingerprint: fingerprint ?? null,
+    });
+  } catch (err) {
+    console.error('[FreePreview] Record error:', err);
+  }
 }
 
 // ============================================

@@ -1139,11 +1139,38 @@ export default function CalculatorPage() {
     const isFirstFreeAnalysis = !hasUsedFreePreview && !isAuthenticated && !hasValidSession;
     
     if (isFirstFreeAnalysis) {
+      // Server-side check to prevent incognito/multi-device abuse
+      try {
+        const previewCheck = await fetch('/api/free-preview');
+        const previewData = await previewCheck.json();
+        if (previewData.success && previewData.used) {
+          // This IP already used their free preview — require sign-in
+          console.log("[Auth] Free preview already used from this IP — requiring sign-in");
+          localStorage.setItem("edge_free_preview_used", "true");
+          localStorage.setItem("edge_pending_address", address);
+          localStorage.setItem("edge_pending_bedrooms", bedrooms?.toString() || "");
+          localStorage.setItem("edge_pending_bathrooms", bathrooms?.toString() || "");
+          localStorage.setItem("edge_pending_guests", guestCount?.toString() || "");
+          setShowAuthModal(true);
+          setAuthStep("email");
+          setAuthError(null);
+          return;
+        }
+      } catch (err) {
+        console.error("[Auth] Free preview check failed, allowing anyway:", err);
+      }
+      
       // Allow first analysis without sign-in — show value first
       console.log("[Auth] First free preview - skipping auth");
-      // Go straight to analysis (skip credit confirm too)
       handleAnalyze();
       localStorage.setItem("edge_free_preview_used", "true");
+      
+      // Record server-side that this IP used their free preview
+      fetch('/api/free-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address }),
+      }).catch(() => {});
       return;
     }
     
@@ -2090,6 +2117,17 @@ export default function CalculatorPage() {
           stepTimers.forEach(t => clearTimeout(t));
           if (fetchErr?.name === 'AbortError') {
             setError("Analysis timed out. The server took too long to respond. Please try again — results are often cached after the first attempt.");
+            // Auto-refund on timeout
+            const savedEmailTimeout = localStorage.getItem("edge_auth_email");
+            if (savedEmailTimeout && isAuthenticated) {
+              fetch('/api/credits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: savedEmailTimeout, action: 'refund', reason: 'Auto-refund: analysis timed out', address: addressToAnalyze }),
+              }).then(r => r.json()).then(d => {
+                if (d.success) { setCreditsRemaining(d.remaining); addCreditEvent({ type: 'refund', address: addressToAnalyze, creditsAfter: d.remaining, note: 'Auto-refund: timeout' }); setCreditLog(getCreditLog()); }
+              }).catch(() => {});
+            }
             setIsLoading(false);
             return;
           }
@@ -2103,6 +2141,17 @@ export default function CalculatorPage() {
 
       if (!data.success) {
         setError(data.error || data.message || "Could not find data for this address. Try a different address.");
+        // Auto-refund on API error
+        const savedEmailErr = localStorage.getItem("edge_auth_email");
+        if (savedEmailErr && isAuthenticated) {
+          fetch('/api/credits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: savedEmailErr, action: 'refund', reason: `Auto-refund: API error - ${data.error || 'unknown'}`, address: addressToAnalyze }),
+          }).then(r => r.json()).then(d => {
+            if (d.success) { setCreditsRemaining(d.remaining); addCreditEvent({ type: 'refund', address: addressToAnalyze, creditsAfter: d.remaining, note: 'Auto-refund: API error' }); setCreditLog(getCreditLog()); }
+          }).catch(() => {});
+        }
         setIsLoading(false);
         return;
       }
@@ -2336,6 +2385,33 @@ export default function CalculatorPage() {
     } catch (err) {
       console.error("Analysis error:", err);
       setError("Failed to analyze address. Please try again.");
+      
+      // CRITICAL: Auto-refund credit if analysis failed after deduction
+      const savedEmail = localStorage.getItem("edge_auth_email");
+      if (savedEmail && isAuthenticated) {
+        try {
+          console.log('[Credits] Attempting auto-refund after analysis failure...');
+          const refundRes = await fetch('/api/credits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: savedEmail, action: 'refund', reason: 'Auto-refund: analysis failed', address: addressToAnalyze }),
+          });
+          const refundData = await refundRes.json();
+          if (refundData.success) {
+            console.log('[Credits] Auto-refunded credit after failure');
+            setCreditsRemaining(refundData.remaining);
+            addCreditEvent({
+              type: 'refund',
+              address: addressToAnalyze,
+              creditsAfter: refundData.remaining,
+              note: 'Auto-refund: analysis failed',
+            });
+            setCreditLog(getCreditLog());
+          }
+        } catch (refundErr) {
+          console.error('[Credits] Auto-refund after failure failed:', refundErr);
+        }
+      }
     } finally {
       setIsLoading(false);
     }

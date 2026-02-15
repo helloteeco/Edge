@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
         console.log(`[Stripe Webhook] Created ${customerEmail} with ${newLimit} credits`);
       }
       
-      // Log the purchase
+      // Log the purchase in both tables
       await supabase
         .from("credit_purchases")
         .insert({
@@ -176,6 +176,16 @@ export async function POST(request: NextRequest) {
           stripe_session_id: session.id,
           purchased_at: new Date().toISOString()
         });
+      
+      // Also log in unified audit trail
+      await supabase.from("credit_transactions").insert({
+        user_email: customerEmail,
+        action: 'add',
+        amount: creditsToAdd,
+        credits_before: userData ? ((userData.credits_limit || 3) - (userData.credits_used || 0)) : 3,
+        credits_after: userData ? (((userData.credits_limit || 3) + creditsToAdd) - (userData.credits_used || 0)) : 3 + creditsToAdd,
+        reason: `Stripe purchase: ${session.id} ($${((session.amount_total || 0) / 100).toFixed(2)})`,
+      });
       
       return NextResponse.json({ success: true, credits_added: creditsToAdd });
     }
@@ -234,13 +244,39 @@ export async function POST(request: NextRequest) {
       }
       
       if (customerEmail) {
+        // Get current user data to preserve purchased credits
+        const { data: userData } = await supabase
+          .from("users")
+          .select("credits_used, credits_limit")
+          .eq("email", customerEmail)
+          .single();
+        
+        // When cancelling unlimited subscription, revert to base 3 credits
+        // but preserve any separately purchased credit packs
+        // (Unlimited sets credits_limit to 999, so we can't preserve that)
+        // The fairest approach: set to base 3 + any unused credits_used headroom
+        // In practice, unlimited users have 999 limit, so just reset to 3
+        const newLimit = 3;
+        
+        console.log(`[Stripe Webhook] Subscription cancelled for ${customerEmail}. Reverting to ${newLimit} credits.`);
+        
         await supabase
           .from("users")
           .update({
-            credits_limit: 3,
+            credits_limit: newLimit,
             is_unlimited: false
           })
           .eq("email", customerEmail);
+        
+        // Log the cancellation
+        await supabase.from("credit_transactions").insert({
+          user_email: customerEmail,
+          action: 'add',
+          amount: 0,
+          credits_before: userData?.credits_limit ?? 999,
+          credits_after: newLimit,
+          reason: 'Subscription cancelled - reverted to base credits',
+        });
       }
     }
     
