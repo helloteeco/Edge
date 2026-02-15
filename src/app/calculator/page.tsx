@@ -267,6 +267,7 @@ export default function CalculatorPage() {
   const userEditedExpenses = useRef(false);
   const userEditedRent = useRef(false);
   const userEditedInsurance = useRef(false);
+  const userEditedFurnishings = useRef(false);
 
   // Market mismatch detection
   const [marketMismatch, setMarketMismatch] = useState<{
@@ -852,6 +853,7 @@ export default function CalculatorPage() {
                 userEditedExpenses.current = false;
                 userEditedRent.current = false;
                 userEditedInsurance.current = false;
+                userEditedFurnishings.current = false;
                 // Restore allComps and targetCoords for local bedroom re-filtering and comp map
                 if (data.allComps && Array.isArray(data.allComps) && data.allComps.length > 0) {
                   setAllComps(data.allComps as ComparableListing[]);
@@ -1414,6 +1416,7 @@ export default function CalculatorPage() {
     userEditedExpenses.current = false;
     userEditedRent.current = false;
     userEditedInsurance.current = false;
+    userEditedFurnishings.current = false;
     
     // Cache in service worker for offline access
     cacheAnalysisResult(pendingAnalysis || address, data);
@@ -2235,6 +2238,7 @@ export default function CalculatorPage() {
       userEditedExpenses.current = false;
       userEditedRent.current = false;
       userEditedInsurance.current = false;
+      userEditedFurnishings.current = false;
       setAddress(addressToAnalyze);
       
       // Store full comp set for local bedroom re-filtering (no new API call needed)
@@ -4996,7 +5000,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={numDisplay(propertySqft)}
-                  onChange={handleNumericChange(setPropertySqft)}
+                  onChange={(e) => {
+                    handleNumericChange(setPropertySqft)(e);
+                    // Auto-recalculate furnishings cost unless user manually edited it
+                    if (!userEditedFurnishings.current) {
+                      const raw = e.target.value;
+                      const newSqft = raw === '' || raw === '-' ? 0 : parseInt(raw, 10);
+                      if (!isNaN(newSqft)) {
+                        setFurnishingsCost(Math.round(newSqft * 15));
+                      }
+                    }
+                  }}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200"
                   placeholder="Auto-filled from property data"
                 />
@@ -5072,7 +5086,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(furnishingsCost)}
-                    onChange={handleNumericChange(setFurnishingsCost)}
+                    onChange={(e) => { userEditedFurnishings.current = true; handleNumericChange(setFurnishingsCost)(e); }}
                     placeholder="0"
                     className="w-28 px-3 py-2 rounded-lg text-right font-semibold"
                     style={{ 
