@@ -611,6 +611,25 @@ export default function CalculatorPage() {
     // Fetch from Supabase for signed-in users and merge with local
     const savedEmail = localStorage.getItem("edge_auth_email");
     if (savedEmail) {
+      // 1. Bulk-sync local searches TO Supabase (background, non-blocking)
+      const localSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+      if (localSearches.length > 0) {
+        const syncKey = `edge_searches_synced_${savedEmail.toLowerCase().trim()}`;
+        const lastSynced = localStorage.getItem(syncKey);
+        const now = Date.now();
+        // Re-sync every 5 minutes to catch new local searches
+        if (!lastSynced || (now - parseInt(lastSynced, 10)) > 5 * 60 * 1000) {
+          fetch("/api/recent-searches", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: savedEmail, searches: localSearches }),
+          })
+            .then(() => localStorage.setItem(syncKey, String(now)))
+            .catch(err => console.error("[RecentSearches] Bulk sync error:", err));
+        }
+      }
+
+      // 2. Fetch FROM Supabase and merge remote-only searches into local
       fetch(`/api/recent-searches?email=${encodeURIComponent(savedEmail)}`)
         .then(res => res.json())
         .then(data => {
@@ -1041,6 +1060,22 @@ export default function CalculatorPage() {
         
         // Fetch user credits
         fetchUserCredits(data.email);
+        
+        // Bulk-sync local searches to Supabase on sign-in
+        const localSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+        if (localSearches.length > 0) {
+          fetch("/api/recent-searches", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: data.email, searches: localSearches }),
+          })
+            .then(() => {
+              const syncKey = `edge_searches_synced_${data.email.toLowerCase().trim()}`;
+              localStorage.setItem(syncKey, String(Date.now()));
+              console.log("[RecentSearches] Bulk synced local searches to cloud on sign-in");
+            })
+            .catch(err => console.error("[RecentSearches] Bulk sync error on sign-in:", err));
+        }
         
         // Restore pending analysis state if it exists
         const pendingAddress = localStorage.getItem("edge_pending_address");
