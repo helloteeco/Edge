@@ -2493,293 +2493,838 @@ export default function CalculatorPage() {
     if (!result) return;
     
     const investment = calculateInvestment();
+    const arbitrage = calculateArbitrage();
+    const iownit = calculateIownit();
     const displayRevenue = getDisplayRevenue();
     const guestMultiplier = getGuestCountMultiplier();
     const guestBonus = Math.round((guestMultiplier - 1) * 100);
     const baselineGuests = (bedrooms || 3) * 2;
-    // Derive effective ADR and occupancy from adjusted revenue
     const effectiveOccupancy = result.occupancy || 55;
     const effectiveAdr = effectiveOccupancy > 0 ? Math.round(displayRevenue / (365 * effectiveOccupancy / 100)) : result.adr;
     
-    // Get seasonal data from the same function used in UI
+    // Get seasonal data
     const seasonalData = getSeasonalityData();
     const baseMonthlyRev = displayRevenue / 12;
     
-    // Calculate monthly revenues with seasonal variation - SAME LOGIC AS UI
+    // Calculate monthly revenues with seasonal variation
     const monthlyRevenues = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
       const monthData = seasonalData[index];
       let monthlyRev = 0;
-      
       if (monthData?.revenue && monthData.revenue > 0) {
-        // Use actual historical revenue with guest multiplier
         monthlyRev = Math.round(monthData.revenue * guestMultiplier);
       } else if (monthData?.occupancy) {
-        // Calculate from occupancy variation
         const baseOccupancy = result.occupancy || 55;
         const seasonalMultiplier = baseOccupancy > 0 ? (monthData.occupancy / baseOccupancy) : 1;
         monthlyRev = Math.round(baseMonthlyRev * Math.min(Math.max(seasonalMultiplier, 0.5), 1.5));
       } else {
-        // Fallback to base monthly
         monthlyRev = Math.round(baseMonthlyRev);
       }
-      
       return { month, revenue: monthlyRev || Math.round(baseMonthlyRev) };
     });
     
-    // Find peak and low months
     const sortedMonths = [...monthlyRevenues].sort((a, b) => b.revenue - a.revenue);
     const peakMonth = sortedMonths[0];
     const lowMonth = sortedMonths[sortedMonths.length - 1];
     
-    // Create a printable HTML document - Premium Teeco Investment Report
+    // Calculate deal score (same logic as UI)
+    let totalScore = 0;
+    let cocScore = 0, cashFlowScore = 0, occupancyScore = 0, dataScore = 0;
+    let cocPct = "0", monthlyNet = "$0", paybackMonths = 0;
+    let paybackYears: string | null = null;
+    
+    if (analysisMode === "iownit") {
+      const advantageScore = Math.min(40, Math.max(0, (iownit.monthlyDifference / 500) * 40));
+      cashFlowScore = Math.min(30, Math.max(0, (iownit.strMonthlyCashFlow / 500) * 30));
+      occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20));
+      dataScore = (result.percentiles ? 5 : 2.5) + (hudFmrData ? 5 : 2.5);
+      cocScore = advantageScore;
+      totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+      monthlyNet = formatCurrency(iownit.strMonthlyCashFlow);
+      cocPct = iownit.fmrMonthly > 0 ? ((iownit.grossRevenue / (iownit.fmrMonthly * 12)) * 100 - 100).toFixed(0) : "0";
+    } else {
+      const activeCalc = analysisMode === "buying" ? investment : arbitrage;
+      cocScore = Math.min(40, Math.max(0, activeCalc.cashOnCashReturn * 4));
+      cashFlowScore = Math.min(30, Math.max(0, (activeCalc.monthlyCashFlow / 500) * 30));
+      occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20));
+      dataScore = result.percentiles ? 10 : 5;
+      totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+      paybackMonths = activeCalc.monthlyCashFlow > 0 ? Math.ceil(activeCalc.totalCashNeeded / activeCalc.monthlyCashFlow) : 0;
+      paybackYears = paybackMonths > 0 ? (paybackMonths / 12).toFixed(1) : null;
+      cocPct = activeCalc.cashOnCashReturn.toFixed(1);
+      monthlyNet = formatCurrency(activeCalc.monthlyCashFlow);
+    }
+    
+    let verdict = "PASS";
+    let verdictColor = "#f59e0b";
+    let explanation = "This deal may work but requires careful consideration.";
+    
+    if (analysisMode === "iownit") {
+      if (totalScore >= 75) { verdict = "GO STR"; verdictColor = "#16a34a"; explanation = `STR nets ${monthlyNet}/mo \u2014 ${formatCurrency(Math.abs(iownit.monthlyDifference))} more than LTR. Strong case for short-term rental.`; }
+      else if (totalScore >= 60) { verdict = "STR FAVORED"; verdictColor = "#22c55e"; explanation = `STR nets ${monthlyNet}/mo. The numbers favor STR, but consider the extra work involved.`; }
+      else if (totalScore >= 45) { verdict = "CLOSE CALL"; verdictColor = "#eab308"; explanation = `STR and LTR are close. STR nets ${monthlyNet}/mo. Consider your time, effort, and risk tolerance.`; }
+      else { verdict = iownit.strWins ? "MARGINAL STR" : "LTR BETTER"; verdictColor = "#ef4444"; explanation = iownit.strWins ? `STR barely edges out LTR.` : `LTR wins by ${formatCurrency(Math.abs(iownit.monthlyDifference))}/mo with far less hassle.`; }
+    } else if (totalScore >= 75) { verdict = "STRONG BUY"; verdictColor = "#16a34a"; explanation = `${cocPct}% CoC return with ${monthlyNet}/mo cash flow. ${paybackYears ? `Full payback in ~${paybackYears} years.` : ''} Top-tier deal.`; }
+    else if (totalScore >= 60) { verdict = "GOOD DEAL"; verdictColor = "#22c55e"; explanation = `${cocPct}% CoC return netting ${monthlyNet}/mo. ${paybackYears ? `Payback in ~${paybackYears} years.` : ''} Solid fundamentals.`; }
+    else if (totalScore >= 45) { verdict = "CONSIDER"; verdictColor = "#eab308"; explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. Moderate returns \u2014 a value-add strategy could improve this.`; }
+    else { verdict = "CAUTION"; verdictColor = "#ef4444"; explanation = `${cocPct}% CoC with ${monthlyNet}/mo cash flow. Returns are too thin to justify the risk.`; }
+    
+    // Verdict background colors
+    const verdictBgMap: Record<string, string> = { "#16a34a": "#dcfce7", "#22c55e": "#ecfdf5", "#eab308": "#fefce8", "#f59e0b": "#fef3c7", "#ef4444": "#fef2f2" };
+    const verdictBg = verdictBgMap[verdictColor] || "#fef3c7";
+    
+    // Operating expenses breakdown
+    const monthlyExpenses = calculateMonthlyExpenses();
+    const utilityTotal = electricMonthly + waterMonthly + internetMonthly + trashMonthly;
+    const maintenanceTotal = lawnCareMonthly + pestControlMonthly + maintenanceMonthly;
+    const operationsTotal = houseSuppliesMonthly + suppliesConsumablesMonthly + rentalSoftwareMonthly;
+    
+    // Revenue percentile data
+    const hasPercentiles = !!result.percentiles?.revenue;
+    const p25 = hasPercentiles ? Math.round(result.percentiles!.revenue.p25 * guestMultiplier) : Math.round(displayRevenue * 0.7);
+    const p50 = hasPercentiles ? Math.round(result.percentiles!.revenue.p50 * guestMultiplier) : displayRevenue;
+    const p75 = hasPercentiles ? Math.round(result.percentiles!.revenue.p75 * guestMultiplier) : Math.round(displayRevenue * 1.25);
+    const p90 = hasPercentiles ? Math.round(result.percentiles!.revenue.p90 * guestMultiplier) : Math.round(displayRevenue * 1.45);
+    
+    // Break-even occupancy
+    const pdfBreakEvenOcc = effectiveAdr > 0 ? Math.round(((analysisMode === 'buying' ? investment.totalAnnualExpenses : analysisMode === 'arbitrage' ? arbitrage.totalAnnualExpenses : iownit.totalAnnualExpenses) / (effectiveAdr * 365)) * 100) : 0;
+    
+    // Cap rate (buying only)
+    const capRate = analysisMode === "buying" && purchasePrice ? ((investment.netOperatingIncome / (parseFloat(purchasePrice) || 1)) * 100).toFixed(1) : null;
+    
+    // DSCR (buying only)
+    const annualDebtService = investment.monthlyMortgage * 12;
+    const dscr = annualDebtService > 0 ? (investment.netOperatingIncome / annualDebtService).toFixed(2) : null;
+    
+    // AI analysis from sessionStorage
+    const aiAnalysisText = typeof window !== 'undefined' ? sessionStorage.getItem('aiAnalysisForPdf') || aiAnalysis : aiAnalysis;
+    
+    // Strategy label
+    const strategyLabel = analysisMode === "iownit" ? "I Own It (STR vs LTR)" : analysisMode === "arbitrage" ? "Airbnb Arbitrage" : "Investment Purchase";
+    const strategyIcon = analysisMode === "iownit" ? "&#127968;" : analysisMode === "arbitrage" ? "&#128273;" : "&#127969;";
+    
+    // Percentile position for marker
+    const percentilePosition = (() => {
+      if (!hasPercentiles || displayRevenue <= p25) return 10;
+      if (displayRevenue >= p90) return 90;
+      if (displayRevenue <= p50) return 10 + ((displayRevenue - p25) / Math.max(p50 - p25, 1)) * 40;
+      if (displayRevenue <= p75) return 50 + ((displayRevenue - p50) / Math.max(p75 - p50, 1)) * 25;
+      return 75 + ((displayRevenue - p75) / Math.max(p90 - p75, 1)) * 15;
+    })();
+    
     const reportHTML = `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>${analysisMode === 'iownit' ? 'I Own It (STR vs LTR)' : analysisMode === 'arbitrage' ? 'Airbnb Arbitrage' : 'Investment'} Analysis - ${result.address || result.neighborhood}</title>
+  <title>${strategyLabel} Analysis \u2014 ${result.address || result.neighborhood} | Edge by Teeco</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #2b2823; line-height: 1.6; background: #fff; }
-    .page { max-width: 800px; margin: 0 auto; padding: 48px; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     
-    /* Premium Header */
-    .header { text-align: center; padding-bottom: 32px; margin-bottom: 32px; border-bottom: 1px solid #e5e3da; }
-    .logo-container { margin-bottom: 24px; }
-    .logo { height: 48px; }
-    .property-title { font-size: 32px; font-weight: 700; color: #2b2823; margin-bottom: 12px; letter-spacing: -0.5px; }
-    .property-details { font-size: 15px; color: #787060; font-weight: 500; }
-    .property-details span { margin: 0 12px; }
-    
-    /* Executive Summary - Premium Card */
-    .executive-summary { background: #2b2823; border-radius: 20px; padding: 40px; margin-bottom: 32px; color: white; }
-    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; text-align: center; }
-    .summary-item { }
-    .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.6); margin-bottom: 8px; font-weight: 500; }
-    .summary-value { font-size: 32px; font-weight: 700; color: #22c55e; }
-    .summary-subtext { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 6px; }
-    
-    /* Section Headers */
-    h2 { font-size: 16px; font-weight: 600; color: #2b2823; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid #e5e3da; text-transform: uppercase; letter-spacing: 1px; }
-    h2 .badge { font-size: 10px; background: #22c55e; color: white; padding: 3px 10px; border-radius: 20px; margin-left: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    /* Investment Highlights */
-    .highlights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-    .highlight-card { background: #f5f4f0; border-radius: 16px; padding: 24px 16px; text-align: center; }
-    .highlight-card.positive { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
-    .highlight-card.accent { background: #2b2823; }
-    .highlight-card.accent .highlight-value { color: #22c55e; }
-    .highlight-card.accent .highlight-label { color: rgba(255,255,255,0.6); }
-    .strategy-badge { display: inline-block; background: #2b2823; color: #fff; padding: 6px 20px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; }
-    .highlight-value { font-size: 28px; font-weight: 700; color: #2b2823; margin-bottom: 4px; }
-    .highlight-label { font-size: 10px; color: #787060; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
-    
-    /* Tables */
-    .table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-    .table td { padding: 16px 20px; border-bottom: 1px solid #e5e3da; font-size: 14px; }
-    .table tr:last-child td { border-bottom: none; }
-    .table .total { background: #f5f4f0; font-weight: 600; }
-    .table .positive { color: #16a34a; font-weight: 600; }
-    .table .negative { color: #dc2626; }
-    .table .right { text-align: right; font-weight: 500; }
-    
-    /* Monthly Revenue Grid - Premium */
-    .monthly-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 20px 0; }
-    .month-card { background: #f5f4f0; border-radius: 12px; padding: 16px 10px; text-align: center; transition: all 0.2s; }
-    .month-card.peak { background: #2b2823; color: white; }
-    .month-card.peak .month-name { color: rgba(255,255,255,0.6); }
-    .month-card.peak .month-value { color: #22c55e; }
-    .month-card.low { background: #fef3c7; }
-    .month-name { font-size: 10px; color: #787060; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
-    .month-value { font-size: 15px; font-weight: 700; color: #2b2823; margin-top: 6px; }
-    
-    /* Comps */
-    .comp-card { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #e5e3da; }
-    .comp-card:last-child { border-bottom: none; }
-    .comp-info { flex: 1; }
-    .comp-name { font-weight: 600; color: #2b2823; font-size: 14px; }
-    .comp-details { font-size: 12px; color: #787060; margin-top: 4px; }
-    .comp-revenue { text-align: right; }
-    .comp-revenue-value { font-weight: 700; color: #2b2823; font-size: 16px; }
-    .comp-revenue-details { font-size: 11px; color: #787060; }
-    
-    /* Amenities */
-    .amenity-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .amenity-item { display: flex; align-items: center; padding: 14px 16px; background: #f5f4f0; border-radius: 12px; }
-    .amenity-item.must-have { background: #2b2823; color: white; }
-    .amenity-item.must-have .amenity-name { color: white; }
-    .amenity-item.must-have .amenity-boost { color: #22c55e; }
-    .amenity-item.high-impact { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
-    .amenity-name { flex: 1; font-weight: 500; font-size: 14px; color: #2b2823; }
-    .amenity-boost { font-weight: 700; color: #16a34a; font-size: 14px; }
-    
-    /* ROI Timeline */
-    .roi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 16px 0; }
-    .roi-year { background: #f5f4f0; border-radius: 10px; padding: 14px 8px; text-align: center; }
-    .roi-year.highlight { background: #2b2823; color: white; }
-    .roi-year.highlight .roi-label { color: rgba(255,255,255,0.6); }
-    .roi-year.highlight .roi-value { color: #22c55e; }
-    .roi-label { font-size: 10px; color: #787060; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-    .roi-value { font-size: 14px; font-weight: 700; color: #2b2823; margin-top: 4px; }
-    
-    /* Footer */
-    .footer { margin-top: 48px; padding-top: 32px; border-top: 1px solid #e5e3da; text-align: center; }
-    .footer-brand { font-size: 20px; font-weight: 700; color: #2b2823; margin-bottom: 4px; letter-spacing: -0.5px; }
-    .footer-url { font-size: 14px; color: #2b2823; font-weight: 500; margin-bottom: 8px; }
-    .footer-tagline { font-size: 13px; color: #787060; font-style: italic; margin-bottom: 16px; }
-    .footer-text { font-size: 12px; color: #787060; }
-    .disclaimer { font-size: 10px; color: #a0a0a0; margin-top: 20px; max-width: 550px; margin-left: auto; margin-right: auto; line-height: 1.5; }
-    
-    /* Print styles */
-    @page {
-      margin: 0.5in;
-      size: letter;
+    :root {
+      --olive: #2b2823;
+      --olive-light: #3d3830;
+      --cream: #f5f4f0;
+      --cream-dark: #e8e6e0;
+      --gold: #b8a88a;
+      --gold-light: #d4c9b0;
+      --green: #22c55e;
+      --green-dark: #16a34a;
+      --green-bg: #ecfdf5;
+      --red: #ef4444;
+      --red-bg: #fef2f2;
+      --yellow: #f59e0b;
+      --yellow-bg: #fef3c7;
+      --blue: #0ea5e9;
+      --text: #2b2823;
+      --text-secondary: #787060;
+      --text-muted: #a09888;
+      --border: #e5e3da;
     }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 48px;
+    }
+    
+    .report-header {
+      position: relative;
+      padding: 40px;
+      background: var(--olive);
+      border-radius: 20px;
+      color: white;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    .report-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 60%;
+      height: 200%;
+      background: radial-gradient(ellipse, rgba(184,168,138,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-name {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .brand-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      display: inline-block;
+    }
+    .report-type {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold);
+      font-weight: 600;
+      padding: 6px 16px;
+      border: 1px solid rgba(184,168,138,0.4);
+      border-radius: 20px;
+    }
+    .property-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    .property-location {
+      font-size: 15px;
+      color: var(--gold-light);
+      font-weight: 400;
+      margin-bottom: 20px;
+    }
+    .property-specs {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .spec-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+    }
+    .spec-divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,0.2);
+    }
+    .data-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 16px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .data-badge.pricelabs { background: rgba(14,165,233,0.2); color: #7dd3fc; }
+    .data-badge.airbnb { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+    
+    .deal-score-banner {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 32px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+    }
+    .score-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 28px;
+      flex-shrink: 0;
+      border: 3px solid;
+    }
+    .score-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      opacity: 0.7;
+    }
+    .score-verdict {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .score-explanation {
+      font-size: 13px;
+      opacity: 0.8;
+      line-height: 1.5;
+      margin-top: 2px;
+    }
+    
+    .exec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .exec-card {
+      background: var(--olive);
+      border-radius: 16px;
+      padding: 28px 20px;
+      text-align: center;
+      color: white;
+    }
+    .exec-card.highlight {
+      background: linear-gradient(135deg, var(--olive) 0%, var(--olive-light) 100%);
+      border: 1px solid rgba(184,168,138,0.3);
+    }
+    .exec-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .exec-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: -0.5px;
+    }
+    .exec-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 6px;
+    }
+    
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .metric-card {
+      background: var(--cream);
+      border-radius: 14px;
+      padding: 20px 10px;
+      text-align: center;
+    }
+    .metric-card.dark {
+      background: var(--olive);
+    }
+    .metric-card.dark .metric-value { color: var(--green); }
+    .metric-card.dark .metric-label { color: rgba(255,255,255,0.5); }
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .metric-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 36px 0 20px 0;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    .section-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--olive);
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .section-badge {
+      font-size: 9px;
+      background: var(--green);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .percentile-container {
+      background: var(--cream);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .percentile-bar {
+      position: relative;
+      height: 8px;
+      background: linear-gradient(90deg, #fecaca 0%, #fde68a 25%, #bbf7d0 50%, #86efac 75%, #22c55e 100%);
+      border-radius: 4px;
+      margin: 20px 0 12px 0;
+    }
+    .percentile-marker {
+      position: absolute;
+      top: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--olive);
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transform: translateX(-50%);
+    }
+    .percentile-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .percentile-item {
+      text-align: center;
+    }
+    .percentile-item .value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .percentile-item .label {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .percentile-item.active .value {
+      color: var(--green-dark);
+      font-size: 15px;
+    }
+    .percentile-item.active .label {
+      color: var(--green-dark);
+      font-weight: 600;
+    }
+    
+    .monthly-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .month-card {
+      background: var(--cream);
+      border-radius: 12px;
+      padding: 14px 6px;
+      text-align: center;
+    }
+    .month-card.peak {
+      background: var(--olive);
+      color: white;
+    }
+    .month-card.peak .month-name { color: rgba(255,255,255,0.5); }
+    .month-card.peak .month-value { color: var(--green); }
+    .month-card.low { background: #fef3c7; }
+    .month-name {
+      font-size: 9px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .month-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 4px;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+    .data-table td {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table .label { color: var(--text); font-weight: 400; }
+    .data-table .value { text-align: right; font-weight: 600; color: var(--text); }
+    .data-table .total-row { background: var(--cream); border-radius: 8px; }
+    .data-table .total-row td { font-weight: 700; font-size: 14px; }
+    .data-table .positive { color: var(--green-dark); }
+    .data-table .negative { color: var(--red); }
+    .data-table .highlight-row { background: var(--olive); border-radius: 8px; }
+    .data-table .highlight-row td { color: white; font-weight: 700; font-size: 14px; border-bottom: none; }
+    .data-table .highlight-row .positive { color: var(--green); }
+    .data-table .highlight-row .negative { color: #fca5a5; }
+    
+    .expense-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .expense-category {
+      background: var(--cream);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .expense-category-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--cream-dark);
+    }
+    .expense-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 12px;
+    }
+    .expense-line .name { color: var(--text-secondary); }
+    .expense-line .amount { font-weight: 600; color: var(--text); }
+    .expense-total {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 8px;
+      margin-top: 8px;
+      border-top: 1px solid var(--cream-dark);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    
+    .comp-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .comp-card:last-child { border-bottom: none; }
+    .comp-rank {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .comp-info { flex: 1; }
+    .comp-name { font-weight: 600; color: var(--text); font-size: 12px; }
+    .comp-details { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+    .comp-revenue { text-align: right; }
+    .comp-revenue-value { font-weight: 700; color: var(--text); font-size: 14px; }
+    .comp-revenue-details { font-size: 10px; color: var(--text-secondary); }
+    
+    .amenity-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .amenity-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--cream);
+    }
+    .amenity-item.must-have {
+      background: var(--olive);
+      color: white;
+    }
+    .amenity-item.must-have .amenity-name { color: white; }
+    .amenity-item.must-have .amenity-boost { color: var(--green); }
+    .amenity-item.high-impact { background: var(--green-bg); }
+    .amenity-name { font-weight: 500; font-size: 11px; color: var(--text); }
+    .amenity-boost { font-weight: 700; color: var(--green-dark); font-size: 12px; }
+    
+    .roi-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+      margin: 16px 0;
+    }
+    .roi-year {
+      text-align: center;
+      padding: 10px 4px;
+      border-radius: 8px;
+    }
+    .roi-year.positive { background: var(--green-bg); }
+    .roi-year.negative { background: var(--red-bg); }
+    .roi-year .year-label {
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .roi-year .year-value {
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .roi-year.positive .year-value { color: var(--green-dark); }
+    .roi-year.negative .year-value { color: var(--red); }
+    
+    .ai-analysis {
+      background: linear-gradient(135deg, #f8f7f4 0%, #f0efe8 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 24px 0;
+    }
+    .ai-analysis-badge {
+      font-size: 9px;
+      background: var(--olive);
+      color: var(--gold);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ai-analysis-content {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    
+    .callout {
+      padding: 20px 24px;
+      border-radius: 14px;
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .callout-icon { font-size: 24px; flex-shrink: 0; }
+    .callout-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .callout-text { font-size: 12px; opacity: 0.8; }
+    
+    .report-footer {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 2px solid var(--border);
+      text-align: center;
+    }
+    .footer-brand { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+    .footer-url { font-size: 14px; color: var(--text); font-weight: 500; margin-top: 2px; }
+    .footer-tagline { font-size: 13px; color: var(--text-secondary); font-style: italic; margin-top: 4px; }
+    .footer-date { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+    .footer-disclaimer {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+    
+    @page { margin: 0.4in; size: letter; }
     @media print {
-      body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .page { padding: 24px; }
+      body { padding: 0; }
+      .page { padding: 20px; }
       .page-break { page-break-before: always; }
+      .no-break { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <!-- Header -->
-    <div class="header">
-      <div class="logo-container">
-        <img src="data:image/png;base64,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" style="height: 40px; width: auto;" alt="Teeco" />
+    
+    <!-- HEADER -->
+    <div class="report-header">
+      <div class="header-top">
+        <div class="brand">
+          <span class="brand-name">Edge by Teeco</span>
+          <span class="brand-dot"></span>
+        </div>
+        <div class="report-type">${strategyIcon} ${strategyLabel}</div>
       </div>
-      ${analysisMode === 'arbitrage' ? '<div class="strategy-badge">&#128273; Airbnb Arbitrage Analysis</div>' : ''}
       <h1 class="property-title">${result.address || result.neighborhood}</h1>
-      <p class="property-details">
-        <span>${result.city}, ${result.state}</span> &bull; 
-        <span>${result.bedrooms} Bed / ${result.bathrooms} Bath</span> &bull; 
-        <span>Sleeps ${guestCount || baselineGuests}</span>
-      </p>
-      ${result.dataSource && result.dataSource.includes('pricelabs') ? '<div style="display:inline-block;margin-top:12px;padding:4px 14px;background:#0ea5e9;color:#fff;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">&#9989; PRICELABS DATA &bull; Powered by PriceLabs</div>' : result.dataSource ? '<div style="display:inline-block;margin-top:12px;padding:4px 14px;background:#94a3b8;color:#fff;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;">AIRBNB DATA</div>' : ''}
+      <p class="property-location">${result.city}, ${result.state}</p>
+      <div class="property-specs">
+        <span class="spec-item">${result.bedrooms} Bedrooms</span>
+        <span class="spec-divider"></span>
+        <span class="spec-item">${result.bathrooms} Bathrooms</span>
+        <span class="spec-divider"></span>
+        <span class="spec-item">Sleeps ${guestCount || baselineGuests}</span>
+        <span class="spec-divider"></span>
+        <span class="spec-item">${propertySqft.toLocaleString()} sqft</span>
+        <span class="spec-divider"></span>
+        <span class="spec-item">${result.propertyType || 'Single Family'}</span>
+      </div>
+      ${result.dataSource && result.dataSource.includes('pricelabs') 
+        ? '<div class="data-badge pricelabs">&#9989; PriceLabs Verified Data</div>' 
+        : '<div class="data-badge airbnb">Airbnb Market Data</div>'}
     </div>
     
-    <!-- Executive Summary -->
-    <div class="executive-summary">
-      <div class="summary-grid">
-        <div class="summary-item">
-          <p class="summary-label">Projected Annual Revenue</p>
-          <p class="summary-value">${formatCurrency(displayRevenue)}</p>
-          <p class="summary-subtext">${formatCurrency(Math.round(displayRevenue / 12))}/month average</p>
-        </div>
-        <div class="summary-item">
-          <p class="summary-label">Monthly Cash Flow</p>
-          <p class="summary-value">${formatCurrency(Math.round((analysisMode === 'arbitrage' ? arbitrage.cashFlow : investment.cashFlow) / 12))}</p>
-          <p class="summary-subtext">After all expenses</p>
-        </div>
-        <div class="summary-item">
-          <p class="summary-label">Cash-on-Cash Return</p>
-          <p class="summary-value">${(analysisMode === 'arbitrage' ? arbitrage.cashOnCashReturn : investment.cashOnCashReturn).toFixed(1)}%</p>
-          <p class="summary-subtext">On total cash invested</p>
-        </div>
+    <!-- DEAL SCORE -->
+    <div class="deal-score-banner" style="background: ${verdictBg};">
+      <div class="score-circle" style="color: ${verdictColor}; border-color: ${verdictColor};">
+        ${totalScore}
+        <span class="score-label">Score</span>
       </div>
-    </div>
-    
-    <!-- Investment Highlights -->
-    <div class="highlights">
-      <div class="highlight-card">
-        <div class="highlight-value">${formatCurrency(effectiveAdr)}</div>
-        <div class="highlight-label">Avg Daily Rate</div>
-      </div>
-      <div class="highlight-card">
-        <div class="highlight-value">${effectiveOccupancy}%</div>
-        <div class="highlight-label">Occupancy Rate</div>
-      </div>
-      <div class="highlight-card positive">
-        <div class="highlight-value">${formatCurrency(analysisMode === 'arbitrage' ? arbitrage.totalCashNeeded : investment.totalCashNeeded)}</div>
-        <div class="highlight-label">${analysisMode === 'arbitrage' ? 'Total Cash to Start' : 'Total Cash Required'}</div>
-      </div>
-      <div class="highlight-card accent">
-        <div class="highlight-value">${analysisMode === 'arbitrage' ? `${Math.ceil(arbitrage.totalCashNeeded / Math.max(arbitrage.cashFlow / 12, 1))} mo` : formatCurrency(peakMonth.revenue)}</div>
-        <div class="highlight-label">${analysisMode === 'arbitrage' ? 'Payback Period' : `Peak Month (${peakMonth.month})`}</div>
+      <div>
+        <div class="score-verdict" style="color: ${verdictColor};">${verdict}</div>
+        <div class="score-explanation" style="color: ${verdictColor};">${explanation}</div>
       </div>
     </div>
     
-    <!-- Investment / Arbitrage Analysis -->
-    ${analysisMode === "buying" && purchasePrice ? `
-    <h2>Investment Analysis (Buying to Own)</h2>
-    <table class="table">
-      <tr><td>Purchase Price</td><td class="right">${formatCurrency(parseFloat(purchasePrice))}</td></tr>
-      <tr><td>Down Payment (${downPaymentPercent}%)</td><td class="right">${formatCurrency(investment.downPayment)}</td></tr>
-      <tr><td>Loan Amount (${loanTerm}yr @ ${interestRate}%)</td><td class="right">${formatCurrency(investment.loanAmount)}</td></tr>
-      <tr><td>Monthly Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage)}</td></tr>
-      <tr class="total"><td>Total Cash Required</td><td class="right">${formatCurrency(investment.totalCashNeeded)}</td></tr>
-    </table>
+    <!-- EXECUTIVE SUMMARY -->
+    <div class="exec-grid">
+      <div class="exec-card highlight">
+        <p class="exec-label">Projected Annual Revenue</p>
+        <p class="exec-value">${formatCurrency(displayRevenue)}</p>
+        <p class="exec-sub">${formatCurrency(Math.round(displayRevenue / 12))}/month average</p>
+      </div>
+      <div class="exec-card">
+        <p class="exec-label">Monthly Cash Flow</p>
+        <p class="exec-value" style="color: ${(analysisMode === 'arbitrage' ? arbitrage.cashFlow : analysisMode === 'iownit' ? iownit.strCashFlow : investment.cashFlow) >= 0 ? 'var(--green)' : '#fca5a5'};">${formatCurrency(Math.round((analysisMode === 'arbitrage' ? arbitrage.cashFlow : analysisMode === 'iownit' ? iownit.strCashFlow : investment.cashFlow) / 12))}</p>
+        <p class="exec-sub">After all expenses</p>
+      </div>
+      <div class="exec-card">
+        <p class="exec-label">${analysisMode === 'iownit' ? 'STR vs LTR Advantage' : 'Cash-on-Cash Return'}</p>
+        <p class="exec-value">${analysisMode === 'iownit' ? formatCurrency(Math.abs(iownit.monthlyDifference)) + '/mo' : (analysisMode === 'arbitrage' ? arbitrage.cashOnCashReturn : investment.cashOnCashReturn).toFixed(1) + '%'}</p>
+        <p class="exec-sub">${analysisMode === 'iownit' ? (iownit.strWins ? 'STR wins' : 'LTR wins') : 'On total cash invested'}</p>
+      </div>
+    </div>
     
-    <h2>Annual Expense Breakdown</h2>
-    <table class="table">
-      <tr><td>Mortgage (P&I)</td><td class="right">${formatCurrency(investment.monthlyMortgage * 12)}</td></tr>
-      <tr><td>Property Tax (${propertyTaxRate}%)</td><td class="right">${formatCurrency(investment.annualPropertyTax)}</td></tr>
-      <tr><td>STR Insurance</td><td class="right">${formatCurrency(investment.annualInsurance)}</td></tr>
-      <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(investment.annualManagement)}</td></tr>
-      <tr><td>Platform Fee (${platformFeePercent}%)</td><td class="right">${formatCurrency(investment.annualPlatformFee)}</td></tr>
-      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(investment.monthlyOperating * 12)}</td></tr>
-      <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
-      <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(displayRevenue)}</td></tr>
-      <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${investment.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(investment.cashFlow)}</strong></td></tr>
-    </table>
-    ` : ''}
-    ${analysisMode === "arbitrage" && monthlyRent ? `
-    <h2>Arbitrage Analysis (Rental Arbitrage)</h2>
-    <table class="table">
-      <tr><td>Monthly Rent to Landlord</td><td class="right">${formatCurrency(parseFloat(monthlyRent))}</td></tr>
-      <tr><td>Security Deposit</td><td class="right">${formatCurrency(arbitrage.securityDepositAmount)}</td></tr>
-      <tr><td>${firstLastMonth ? 'First + Last Month Rent' : 'First Month Rent'}</td><td class="right">${formatCurrency(arbitrage.firstLastMonthCost)}</td></tr>
-      <tr><td>Startup Costs</td><td class="right">${formatCurrency(arbitrage.startupCosts)}</td></tr>
-      <tr class="total"><td>Total Cash to Get Started</td><td class="right">${formatCurrency(arbitrage.totalCashNeeded)}</td></tr>
-    </table>
+    <!-- KEY METRICS -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-value">${formatCurrency(effectiveAdr)}</div>
+        <div class="metric-label">Avg Daily Rate</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">${effectiveOccupancy}%</div>
+        <div class="metric-label">Occupancy</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">${formatCurrency(analysisMode === 'arbitrage' ? arbitrage.totalCashNeeded : analysisMode === 'iownit' ? iownit.startupCosts : investment.totalCashNeeded)}</div>
+        <div class="metric-label">${analysisMode === 'arbitrage' ? 'Cash to Start' : analysisMode === 'iownit' ? 'Setup Cost' : 'Cash Required'}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">${result.nearbyListings || '\u2014'}</div>
+        <div class="metric-label">Active Listings</div>
+      </div>
+      <div class="metric-card dark">
+        <div class="metric-value">${pdfBreakEvenOcc}%</div>
+        <div class="metric-label">Break-Even Occ.</div>
+      </div>
+    </div>
     
-    <h2>Annual Expense Breakdown</h2>
-    <table class="table">
-      <tr><td>Rent to Landlord</td><td class="right">${formatCurrency(arbitrage.annualRent)}</td></tr>
-      <tr><td>Management Fee (${managementFeePercent}%)</td><td class="right">${formatCurrency(arbitrage.annualManagement)}</td></tr>
-      <tr><td>Platform Fee (${platformFeePercent}%)</td><td class="right">${formatCurrency(arbitrage.annualPlatformFee)}</td></tr>
-      <tr><td>Liability Insurance</td><td class="right">${formatCurrency(arbitrage.annualInsurance)}</td></tr>
-      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(arbitrage.monthlyOperating * 12)}</td></tr>
-      <tr class="total"><td>Total Annual Expenses</td><td class="right negative">${formatCurrency(arbitrage.totalAnnualExpenses)}</td></tr>
-      <tr class="total"><td>Gross Revenue</td><td class="right positive">${formatCurrency(displayRevenue)}</td></tr>
-      <tr class="total"><td><strong>Net Annual Cash Flow</strong></td><td class="right ${arbitrage.cashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(arbitrage.cashFlow)}</strong></td></tr>
-    </table>
-    ` : ''}
-    ${analysisMode === "iownit" && hudFmrData ? `
-    <h2>I Own It Analysis (STR vs LTR)</h2>
-    <table class="table">
-      <tr><td>Monthly Mortgage</td><td class="right">${iownitMortgage ? formatCurrency(parseFloat(iownitMortgage)) : 'Paid off'}</td></tr>
-      <tr><td>HUD Fair Market Rent (${bedrooms || 3}BR)</td><td class="right">${formatCurrency(iownit.fmrMonthly)}/mo</td></tr>
-    </table>
-    <h2>STR Income</h2>
-    <table class="table">
-      <tr><td>Gross Revenue</td><td class="right positive">${formatCurrency(iownit.grossRevenue)}</td></tr>
-      ${iownit.annualMortgage > 0 ? `<tr><td>Mortgage</td><td class="right">${formatCurrency(iownit.annualMortgage)}</td></tr>` : ''}
-      <tr><td>STR Insurance</td><td class="right">${formatCurrency(iownit.annualInsurance)}</td></tr>
-      <tr><td>Management (${managementFeePercent}%)</td><td class="right">${formatCurrency(iownit.annualManagement)}</td></tr>
-      <tr><td>Platform Fee (${platformFeePercent}%)</td><td class="right">${formatCurrency(iownit.annualPlatformFee)}</td></tr>
-      <tr><td>Operating Expenses</td><td class="right">${formatCurrency(iownit.monthlyOperating * 12)}</td></tr>
-      <tr class="total"><td><strong>STR Net Cash Flow</strong></td><td class="right ${iownit.strCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(iownit.strCashFlow)}</strong></td></tr>
-    </table>
-    <h2>LTR Income (HUD Fair Market Rent)</h2>
-    <table class="table">
-      <tr><td>Gross Rent (${bedrooms || 3}BR FMR)</td><td class="right positive">${formatCurrency(iownit.ltrGrossAnnual)}</td></tr>
-      ${iownit.annualMortgage > 0 ? `<tr><td>Mortgage</td><td class="right">${formatCurrency(iownit.annualMortgage)}</td></tr>` : ''}
-      <tr><td>Landlord Insurance</td><td class="right">${formatCurrency(iownit.ltrInsurance)}</td></tr>
-      <tr><td>Vacancy (5%)</td><td class="right">${formatCurrency(iownit.ltrVacancy)}</td></tr>
-      <tr><td>Management (8%)</td><td class="right">${formatCurrency(iownit.ltrManagement)}</td></tr>
-      <tr><td>Maintenance (5%)</td><td class="right">${formatCurrency(iownit.ltrMaintenance)}</td></tr>
-      <tr class="total"><td><strong>LTR Net Cash Flow</strong></td><td class="right ${iownit.ltrCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${formatCurrency(iownit.ltrCashFlow)}</strong></td></tr>
-    </table>
-    <div style="background: ${iownit.strWins ? '#ecfdf5' : '#eff6ff'}; padding: 16px; border-radius: 12px; text-align: center; margin: 16px 0;">
-      <p style="font-size: 18px; font-weight: bold; color: ${iownit.strWins ? '#16a34a' : '#2563eb'};">${iownit.strWins ? '🚀 STR wins' : '🏢 LTR wins'} by ${formatCurrency(Math.abs(iownit.monthlyDifference))}/mo</p>
-      <p style="font-size: 12px; color: #666; margin-top: 4px;">That's ${formatCurrency(Math.abs(iownit.annualDifference))} more per year</p>
+    ${guestBonus > 0 ? `
+    <div class="callout" style="background: var(--green-bg); border: 1px solid #bbf7d0;">
+      <span class="callout-icon">&#128101;</span>
+      <div>
+        <div class="callout-title" style="color: var(--green-dark);">+${guestBonus}% Guest Capacity Bonus Applied</div>
+        <div class="callout-text" style="color: var(--green-dark);">Sleeping ${guestCount} guests (vs ${baselineGuests} baseline for ${bedrooms}BR) adds ~${guestBonus}% revenue uplift based on market data.</div>
+      </div>
     </div>
     ` : ''}
     
-    <!-- Monthly Revenue Forecast -->
-    <h2>Monthly Revenue Forecast <span class="badge">Seasonal</span></h2>
+    <!-- SECTION 1: REVENUE -->
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <span class="section-title">Revenue Analysis</span>
+      ${hasPercentiles ? '<span class="section-badge">Market Data</span>' : ''}
+    </div>
+    
+    <div class="percentile-container">
+      <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Market Revenue Positioning</div>
+      <div style="font-size: 11px; color: var(--text-muted);">Based on ${result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} ${result.bedrooms}BR listings within 25 miles</div>
+      <div class="percentile-bar">
+        <div class="percentile-marker" style="left: ${Math.round(percentilePosition)}%;"></div>
+      </div>
+      <div class="percentile-labels">
+        <div class="percentile-item">
+          <div class="value">${formatCurrency(p25)}</div>
+          <div class="label">25th %</div>
+        </div>
+        <div class="percentile-item ${revenuePercentile === 'average' ? 'active' : ''}">
+          <div class="value">${formatCurrency(p50)}</div>
+          <div class="label">Median</div>
+        </div>
+        <div class="percentile-item ${revenuePercentile === '75th' ? 'active' : ''}">
+          <div class="value">${formatCurrency(p75)}</div>
+          <div class="label">75th %</div>
+        </div>
+        <div class="percentile-item ${revenuePercentile === '90th' ? 'active' : ''}">
+          <div class="value">${formatCurrency(p90)}</div>
+          <div class="label">90th %</div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 12px; font-size: 11px; color: var(--text-secondary);">
+        Your projection: <strong style="color: var(--green-dark);">${formatCurrency(displayRevenue)}/yr</strong> 
+        (${revenuePercentile === 'average' ? 'Median estimate' : revenuePercentile === '75th' ? '75th percentile' : '90th percentile'}${useCustomIncome ? ' \u2014 Custom override' : ''})
+      </div>
+    </div>
+    
+    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Monthly Revenue Forecast</div>
     <div class="monthly-grid">
       ${monthlyRevenues.map(m => {
         const isPeak = m.revenue === peakMonth.revenue;
@@ -2790,34 +3335,195 @@ export default function CalculatorPage() {
         </div>`;
       }).join('')}
     </div>
-    <p style="font-size: 12px; color: #666; text-align: center; margin-top: 8px;"><span style="color:#22c55e;">&#9679;</span> Peak Season &nbsp; <span style="color:#eab308;">&#9679;</span> Low Season &nbsp; Annual Total: <strong>${formatCurrency(monthlyRevenues.reduce((sum, m) => sum + m.revenue, 0))}</strong></p>
+    <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+      <span style="color:var(--green);">&#9679;</span> Peak: ${peakMonth.month} (${formatCurrency(peakMonth.revenue)}) &nbsp;&nbsp;
+      <span style="color:var(--yellow);">&#9679;</span> Low: ${lowMonth.month} (${formatCurrency(lowMonth.revenue)}) &nbsp;&nbsp;
+      Annual: <strong>${formatCurrency(monthlyRevenues.reduce((sum, m) => sum + m.revenue, 0))}</strong>
+    </p>
     
-    <!-- Nearby Airbnb Listings -->
+    <div class="page-break"></div>
+    
+    <!-- SECTION 2: FINANCIAL ANALYSIS -->
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <span class="section-title">Financial Analysis</span>
+      <span class="section-badge">${strategyLabel}</span>
+    </div>
+    
+    ${analysisMode === "buying" && purchasePrice ? `
+    <table class="data-table">
+      <tr><td class="label">Purchase Price</td><td class="value">${formatCurrency(parseFloat(purchasePrice))}</td></tr>
+      <tr><td class="label">Down Payment (${downPaymentPercent}%)</td><td class="value">${formatCurrency(investment.downPayment)}</td></tr>
+      <tr><td class="label">Loan Amount (${loanTerm}yr @ ${interestRate}%)</td><td class="value">${formatCurrency(investment.loanAmount)}</td></tr>
+      <tr><td class="label">Monthly Mortgage (P&amp;I)</td><td class="value">${formatCurrency(investment.monthlyMortgage)}</td></tr>
+      ${capRate ? `<tr><td class="label">Cap Rate</td><td class="value">${capRate}%</td></tr>` : ''}
+      ${dscr ? `<tr><td class="label">Debt Service Coverage Ratio</td><td class="value">${dscr}x</td></tr>` : ''}
+      <tr class="total-row"><td class="label">Total Cash Required</td><td class="value">${formatCurrency(investment.totalCashNeeded)}</td></tr>
+    </table>
+    
+    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 12px 0;">Annual Income &amp; Expenses</div>
+    <table class="data-table">
+      <tr style="background: var(--green-bg);"><td class="label" style="font-weight:600;">Gross STR Revenue</td><td class="value positive">${formatCurrency(displayRevenue)}</td></tr>
+      <tr><td class="label">Mortgage (P&amp;I)</td><td class="value">-${formatCurrency(investment.monthlyMortgage * 12)}</td></tr>
+      <tr><td class="label">Property Tax (${propertyTaxRate}%)</td><td class="value">-${formatCurrency(investment.annualPropertyTax)}</td></tr>
+      <tr><td class="label">STR Insurance</td><td class="value">-${formatCurrency(investment.annualInsurance)}</td></tr>
+      <tr><td class="label">Management Fee (${managementFeePercent}%)</td><td class="value">-${formatCurrency(investment.annualManagement)}</td></tr>
+      <tr><td class="label">Platform Fee (${platformFeePercent}%)</td><td class="value">-${formatCurrency(investment.annualPlatformFee)}</td></tr>
+      <tr><td class="label">Maintenance (${maintenancePercent}%)</td><td class="value">-${formatCurrency(investment.annualMaintenance)}</td></tr>
+      <tr><td class="label">Operating Expenses</td><td class="value">-${formatCurrency(monthlyExpenses * 12)}</td></tr>
+      <tr class="total-row"><td class="label">Total Annual Expenses</td><td class="value negative">-${formatCurrency(investment.totalAnnualExpenses)}</td></tr>
+      <tr class="highlight-row"><td class="label">Net Annual Cash Flow</td><td class="value ${investment.cashFlow >= 0 ? 'positive' : 'negative'}">${formatCurrency(investment.cashFlow)}</td></tr>
+    </table>
+    ` : ''}
+    
+    ${analysisMode === "arbitrage" && monthlyRent ? `
+    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">Cost to Control Property</div>
+    <table class="data-table">
+      <tr><td class="label">Monthly Rent to Landlord</td><td class="value">${formatCurrency(parseFloat(monthlyRent))}</td></tr>
+      <tr><td class="label">Security Deposit</td><td class="value">${formatCurrency(arbitrage.securityDepositAmount)}</td></tr>
+      <tr><td class="label">${firstLastMonth ? 'First + Last Month Rent' : 'First Month Rent'}</td><td class="value">${formatCurrency(arbitrage.firstLastMonthCost)}</td></tr>
+      <tr><td class="label">Startup Costs</td><td class="value">${formatCurrency(arbitrage.startupCosts)}</td></tr>
+      <tr class="total-row"><td class="label">Total Cash to Get Started</td><td class="value">${formatCurrency(arbitrage.totalCashNeeded)}</td></tr>
+    </table>
+    
+    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 12px 0;">Annual Income &amp; Expenses</div>
+    <table class="data-table">
+      <tr style="background: var(--green-bg);"><td class="label" style="font-weight:600;">Gross STR Revenue</td><td class="value positive">${formatCurrency(displayRevenue)}</td></tr>
+      <tr><td class="label">Rent to Landlord</td><td class="value">-${formatCurrency(arbitrage.annualRent)}</td></tr>
+      <tr><td class="label">Management Fee (${managementFeePercent}%)</td><td class="value">-${formatCurrency(arbitrage.annualManagement)}</td></tr>
+      <tr><td class="label">Platform Fee (${platformFeePercent}%)</td><td class="value">-${formatCurrency(arbitrage.annualPlatformFee)}</td></tr>
+      <tr><td class="label">Liability Insurance</td><td class="value">-${formatCurrency(arbitrage.annualInsurance)}</td></tr>
+      <tr><td class="label">Operating Expenses</td><td class="value">-${formatCurrency(arbitrage.monthlyOperating * 12)}</td></tr>
+      <tr class="total-row"><td class="label">Total Annual Expenses</td><td class="value negative">-${formatCurrency(arbitrage.totalAnnualExpenses)}</td></tr>
+      <tr class="highlight-row"><td class="label">Net Annual Cash Flow</td><td class="value ${arbitrage.cashFlow >= 0 ? 'positive' : 'negative'}">${formatCurrency(arbitrage.cashFlow)}</td></tr>
+    </table>
+    ` : ''}
+    
+    ${analysisMode === "iownit" && hudFmrData ? `
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">STR Income</div>
+        <table class="data-table">
+          <tr style="background: var(--green-bg);"><td class="label" style="font-weight:600;">Gross Revenue</td><td class="value positive">${formatCurrency(iownit.grossRevenue)}</td></tr>
+          ${iownit.annualMortgage > 0 ? `<tr><td class="label">Mortgage</td><td class="value">-${formatCurrency(iownit.annualMortgage)}</td></tr>` : ''}
+          ${iownit.annualPropertyTax > 0 ? `<tr><td class="label">Property Tax</td><td class="value">-${formatCurrency(iownit.annualPropertyTax)}</td></tr>` : ''}
+          <tr><td class="label">STR Insurance</td><td class="value">-${formatCurrency(iownit.annualInsurance)}</td></tr>
+          <tr><td class="label">Management (${managementFeePercent}%)</td><td class="value">-${formatCurrency(iownit.annualManagement)}</td></tr>
+          <tr><td class="label">Platform Fee (${platformFeePercent}%)</td><td class="value">-${formatCurrency(iownit.annualPlatformFee)}</td></tr>
+          <tr><td class="label">Operating</td><td class="value">-${formatCurrency(iownit.monthlyOperating * 12)}</td></tr>
+          <tr class="highlight-row"><td class="label">STR Net</td><td class="value ${iownit.strCashFlow >= 0 ? 'positive' : 'negative'}">${formatCurrency(iownit.strCashFlow)}</td></tr>
+        </table>
+      </div>
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">LTR Income (HUD FMR)</div>
+        <table class="data-table">
+          <tr style="background: #eff6ff;"><td class="label" style="font-weight:600;">Gross Rent (${bedrooms || 3}BR)</td><td class="value" style="color:#2563eb;">${formatCurrency(iownit.ltrGrossAnnual)}</td></tr>
+          ${iownit.annualMortgage > 0 ? `<tr><td class="label">Mortgage</td><td class="value">-${formatCurrency(iownit.annualMortgage)}</td></tr>` : ''}
+          ${iownit.ltrPropertyTax > 0 ? `<tr><td class="label">Property Tax</td><td class="value">-${formatCurrency(iownit.ltrPropertyTax)}</td></tr>` : ''}
+          <tr><td class="label">Landlord Insurance</td><td class="value">-${formatCurrency(iownit.ltrInsurance)}</td></tr>
+          <tr><td class="label">Vacancy (5%)</td><td class="value">-${formatCurrency(iownit.ltrVacancy)}</td></tr>
+          <tr><td class="label">Management (8%)</td><td class="value">-${formatCurrency(iownit.ltrManagement)}</td></tr>
+          <tr><td class="label">Maintenance (5%)</td><td class="value">-${formatCurrency(iownit.ltrMaintenance)}</td></tr>
+          <tr class="highlight-row"><td class="label">LTR Net</td><td class="value ${iownit.ltrCashFlow >= 0 ? 'positive' : 'negative'}">${formatCurrency(iownit.ltrCashFlow)}</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="callout" style="background: ${iownit.strWins ? 'var(--green-bg)' : '#eff6ff'}; border: 1px solid ${iownit.strWins ? '#bbf7d0' : '#bfdbfe'}; margin-top: 16px;">
+      <span class="callout-icon">${iownit.strWins ? '&#128640;' : '&#127970;'}</span>
+      <div>
+        <div class="callout-title" style="color: ${iownit.strWins ? 'var(--green-dark)' : '#2563eb'};">${iownit.strWins ? 'STR wins' : 'LTR wins'} by ${formatCurrency(Math.abs(iownit.monthlyDifference))}/mo</div>
+        <div class="callout-text" style="color: ${iownit.strWins ? 'var(--green-dark)' : '#2563eb'};">That's ${formatCurrency(Math.abs(iownit.annualDifference))} more per year</div>
+      </div>
+    </div>
+    ` : ''}
+    
+    <!-- SECTION 3: OPERATING EXPENSES -->
+    <div class="section-header no-break">
+      <div class="section-number">3</div>
+      <span class="section-title">Monthly Operating Expenses</span>
+    </div>
+    
+    <div class="expense-grid no-break">
+      <div class="expense-category">
+        <div class="expense-category-title">Utilities</div>
+        <div class="expense-line"><span class="name">Electric</span><span class="amount">${formatCurrency(electricMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Water/Sewer</span><span class="amount">${formatCurrency(waterMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Internet/WiFi</span><span class="amount">${formatCurrency(internetMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Trash</span><span class="amount">${formatCurrency(trashMonthly)}</span></div>
+        <div class="expense-total"><span>Subtotal</span><span>${formatCurrency(utilityTotal)}/mo</span></div>
+      </div>
+      <div class="expense-category">
+        <div class="expense-category-title">Property Care</div>
+        <div class="expense-line"><span class="name">Lawn Care</span><span class="amount">${formatCurrency(lawnCareMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Pest Control</span><span class="amount">${formatCurrency(pestControlMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Maintenance</span><span class="amount">${formatCurrency(maintenanceMonthly)}</span></div>
+        <div class="expense-total"><span>Subtotal</span><span>${formatCurrency(maintenanceTotal)}/mo</span></div>
+      </div>
+      <div class="expense-category">
+        <div class="expense-category-title">Operations</div>
+        <div class="expense-line"><span class="name">House Supplies</span><span class="amount">${formatCurrency(houseSuppliesMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Consumables</span><span class="amount">${formatCurrency(suppliesConsumablesMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Rental Software</span><span class="amount">${formatCurrency(rentalSoftwareMonthly)}</span></div>
+        <div class="expense-total"><span>Subtotal</span><span>${formatCurrency(operationsTotal)}/mo</span></div>
+      </div>
+      <div class="expense-category" style="background: var(--olive); color: white;">
+        <div class="expense-category-title" style="color: var(--gold); border-color: rgba(255,255,255,0.15);">Total Monthly</div>
+        <div style="font-size: 28px; font-weight: 800; color: var(--green); text-align: center; padding: 16px 0;">${formatCurrency(monthlyExpenses)}</div>
+        <div style="text-align: center; font-size: 11px; color: rgba(255,255,255,0.5);">${formatCurrency(monthlyExpenses * 12)}/year</div>
+      </div>
+    </div>
+    
+    ${(investment.startupCosts > 0 || arbitrage.startupCosts > 0 || iownit.startupCosts > 0) ? `
+    <div class="section-header no-break">
+      <div class="section-number">4</div>
+      <span class="section-title">Startup Investment</span>
+    </div>
+    
+    <table class="data-table no-break">
+      ${includeDesignServices ? `<tr><td class="label">Teeco Design Services ($7/sqft x ${propertySqft.toLocaleString()} sqft)</td><td class="value">${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
+      ${includeSetupServices ? `<tr><td class="label">Teeco Setup Services ($13/sqft x ${propertySqft.toLocaleString()} sqft)</td><td class="value">${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
+      ${includeFurnishings ? `<tr><td class="label">Furnishings &amp; Decor (~$15/sqft)</td><td class="value">${formatCurrency(furnishingsCost)}</td></tr>` : ''}
+      ${includeAmenities ? `<tr><td class="label">Upgrades &amp; Amenities</td><td class="value">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
+      <tr class="highlight-row"><td class="label">Total Startup Investment</td><td class="value">${formatCurrency(analysisMode === 'arbitrage' ? arbitrage.startupCosts : analysisMode === 'iownit' ? iownit.startupCosts : investment.startupCosts)}</td></tr>
+    </table>
+    ` : ''}
+    
+    <div class="page-break"></div>
+    
+    <!-- SECTION 5: COMPS -->
     ${result.comparables && result.comparables.length > 0 ? `
-    <h2>Nearby Airbnb Listings</h2>
-    <p style="font-size: 11px; color: #666; margin-bottom: 8px;">These are sample active Airbnb listings near this address, shown for reference. Revenue estimates above are based on a larger dataset.</p>
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <span class="section-title">Comparable Listings</span>
+    </div>
+    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Active Airbnb listings near this property. Revenue estimates are based on a larger dataset of ${result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} properties.</p>
     <div>
-      ${result.comparables.slice(0, 5).map(c => `
-      <div class="comp-card">
+      ${result.comparables.filter(c => !excludedCompIds.has(c.id)).slice(0, 8).map((c, i) => `
+      <div class="comp-card no-break">
+        <div class="comp-rank">${i + 1}</div>
         <div class="comp-info">
-          <div class="comp-name">${c.name.substring(0, 45)}${c.name.length > 45 ? '...' : ''}</div>
-          <div class="comp-details">${c.bedrooms} bed &bull; ${c.bathrooms || '-'} bath &bull; &#9733; ${c.rating || '-'}</div>
+          <div class="comp-name">${c.name.length > 55 ? c.name.substring(0, 55) + '...' : c.name}</div>
+          <div class="comp-details">${c.bedrooms} bed &#8226; ${c.bathrooms || '-'} bath &#8226; &#9733; ${c.rating || '-'} ${c.distance ? `&#8226; ${c.distance.toFixed(1)} mi` : ''}</div>
         </div>
         <div class="comp-revenue">
           <div class="comp-revenue-value">${formatCurrency(c.annualRevenue)}/yr</div>
-          <div class="comp-revenue-details">${formatCurrency(c.nightPrice)}/night &bull; ${c.occupancy}% occ</div>
+          <div class="comp-revenue-details">${formatCurrency(c.nightPrice)}/night &#8226; ${c.occupancy}% occ</div>
         </div>
       </div>
       `).join('')}
     </div>
     ` : ''}
     
-    <!-- Recommended Amenities -->
+    <!-- SECTION 6: AMENITIES -->
     ${result.recommendedAmenities && result.recommendedAmenities.length > 0 ? `
-    <h2>Upgrades to Reach 90th Percentile</h2>
-    <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Based on 25-mile market analysis of top-performing Airbnbs</p>
-    <div class="amenity-grid">
-      ${result.recommendedAmenities.slice(0, 6).map(a => `
+    <div class="section-header no-break">
+      <div class="section-number">6</div>
+      <span class="section-title">Revenue-Boosting Amenities</span>
+      <span class="section-badge">Market Analysis</span>
+    </div>
+    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Based on top-performing listings in this market. Adding these amenities can increase your revenue tier.</p>
+    <div class="amenity-grid no-break">
+      ${result.recommendedAmenities.slice(0, 9).map(a => `
       <div class="amenity-item ${a.priority === 'MUST HAVE' ? 'must-have' : a.priority === 'HIGH IMPACT' ? 'high-impact' : ''}">
         <span class="amenity-name">${a.name}</span>
         <span class="amenity-boost">+${a.boost}%</span>
@@ -2826,33 +3532,28 @@ export default function CalculatorPage() {
     </div>
     ` : ''}
     
-    <!-- Startup Costs -->
-    ${investment.startupCosts > 0 ? `
-    <h2>Startup Investment</h2>
-    <table class="table">
-      ${includeDesignServices ? `<tr><td>Teeco Design Services</td><td class="right">${formatCurrency(calculateDesignCost())}</td></tr>` : ''}
-      ${includeSetupServices ? `<tr><td>Teeco Setup Services</td><td class="right">${formatCurrency(calculateSetupCost())}</td></tr>` : ''}
-      ${includeFurnishings ? `<tr><td>Furnishings & Decor</td><td class="right">${formatCurrency(furnishingsCost)}</td></tr>` : ''}
-      ${includeAmenities ? `<tr><td>Upgrades & Amenities</td><td class="right">${formatCurrency(amenitiesCost)}</td></tr>` : ''}
-      <tr class="total"><td><strong>Total Startup Investment</strong></td><td class="right"><strong>${formatCurrency(investment.startupCosts)}</strong></td></tr>
+    <!-- SECTION 7: PROJECTION -->
+    ${analysisMode === "arbitrage" && monthlyRent ? `
+    <div class="section-header no-break">
+      <div class="section-number">7</div>
+      <span class="section-title">Payback Timeline</span>
+    </div>
+    <table class="data-table no-break">
+      <tr><td class="label">Monthly Cash Flow</td><td class="value" style="color: ${arbitrage.monthlyCashFlow >= 0 ? 'var(--green-dark)' : 'var(--red)'};">${formatCurrency(arbitrage.monthlyCashFlow)}</td></tr>
+      <tr><td class="label">Payback Period</td><td class="value">${arbitrage.monthlyCashFlow > 0 ? Math.ceil(arbitrage.totalCashNeeded / arbitrage.monthlyCashFlow) + ' months' : 'N/A'}</td></tr>
+      <tr><td class="label">Year 1 Profit</td><td class="value" style="color: ${arbitrage.cashFlow >= 0 ? 'var(--green-dark)' : 'var(--red)'};">${formatCurrency(arbitrage.cashFlow)}</td></tr>
+      <tr><td class="label">Year 2 Cumulative (no startup costs)</td><td class="value" style="color: var(--green-dark);">${formatCurrency(arbitrage.cashFlow + (displayRevenue - arbitrage.totalAnnualExpenses + arbitrage.startupCosts))}</td></tr>
+      <tr class="highlight-row"><td class="label">3-Year Projected Profit</td><td class="value positive">${formatCurrency(arbitrage.cashFlow + (displayRevenue - arbitrage.totalAnnualExpenses + arbitrage.startupCosts) * 2)}</td></tr>
     </table>
     ` : ''}
     
-    <!-- 10-Year Investment Projection (Buying only) / Payback Timeline (Arbitrage) -->
-    ${analysisMode === "arbitrage" && monthlyRent ? `
-    <h2>Payback Timeline</h2>
-    <table class="table">
-      <tr><td>Monthly Cash Flow</td><td class="right" style="color: ${arbitrage.monthlyCashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(arbitrage.monthlyCashFlow)}</td></tr>
-      <tr><td>Payback Period</td><td class="right">${arbitrage.monthlyCashFlow > 0 ? Math.ceil(arbitrage.totalCashNeeded / arbitrage.monthlyCashFlow) + ' months' : 'N/A'}</td></tr>
-      <tr><td>Year 1 Profit</td><td class="right" style="color: ${arbitrage.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(arbitrage.cashFlow)}</td></tr>
-      <tr class="total"><td><strong>Year 2 Profit (no startup costs)</strong></td><td class="right" style="color: ${arbitrage.cashFlow >= 0 ? '#22c55e' : '#ef4444'};"><strong>${formatCurrency(arbitrage.cashFlow * 2 - arbitrage.totalCashNeeded)}</strong></td></tr>
-    </table>
-    ` : ''}
     ${analysisMode === "buying" && purchasePrice ? `
-    <h2>10-Year Investment Projection</h2>
-    <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px;">
+    <div class="section-header no-break">
+      <div class="section-number">7</div>
+      <span class="section-title">10-Year Investment Projection</span>
+    </div>
+    <div class="roi-grid no-break">
       ${(() => {
-        // Proper amortization for PDF
         const pdfPrice = parseFloat(purchasePrice) || 0;
         const pdfLoan = pdfPrice - investment.downPayment;
         const pdfMonthlyR = interestRate / 100 / 12;
@@ -2869,15 +3570,14 @@ export default function CalculatorPage() {
           }
           pdfCumPrincipal.push(pdfTotalPrin);
         }
-        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((year) => {
-          const annualCashFlow = investment.cashFlow;
-          const cumulativeCashFlow = annualCashFlow * year;
+        return [1,2,3,4,5,6,7,8,9,10].map((year) => {
+          const cumulativeCashFlow = investment.cashFlow * year;
           const principalPaid = pdfCumPrincipal[year - 1] || 0;
           const appreciation = pdfPrice * 0.03 * year;
           const totalReturn = cumulativeCashFlow + investment.downPayment + principalPaid + appreciation - investment.totalCashNeeded;
-          return `<div style="text-align: center; padding: 8px; background: ${totalReturn >= 0 ? '#ecfdf5' : '#fef2f2'}; border-radius: 4px;">
-            <div style="font-size: 10px; color: #666;">Year ${year}</div>
-            <div style="font-size: 11px; font-weight: bold; color: ${totalReturn >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(totalReturn)}</div>
+          return `<div class="roi-year ${totalReturn >= 0 ? 'positive' : 'negative'}">
+            <div class="year-label">Yr ${year}</div>
+            <div class="year-value">${totalReturn >= 1000 || totalReturn <= -1000 ? (totalReturn >= 0 ? '+' : '') + Math.round(totalReturn / 1000) + 'K' : formatCurrency(totalReturn)}</div>
           </div>`;
         }).join('');
       })()}
@@ -2898,40 +3598,55 @@ export default function CalculatorPage() {
       const pdfAppreciation10 = pdfPrice2 * 0.03 * 10;
       const pdfEquity = investment.downPayment + pdfTotalPrin2 + pdfAppreciation10;
       const pdfTotalReturn = (investment.cashFlow * 10) + pdfEquity - investment.totalCashNeeded;
-      return `<table class="table">
-        <tr><td>10-Year Cumulative Cash Flow</td><td class="right" style="color: ${investment.cashFlow >= 0 ? '#22c55e' : '#ef4444'};">${formatCurrency(investment.cashFlow * 10)}</td></tr>
-        <tr><td>Estimated Equity Built (Principal + 3% Appreciation)</td><td class="right">${formatCurrency(pdfEquity)}</td></tr>
-        <tr class="total"><td><strong>Total 10-Year Return</strong></td><td class="right" style="color: #22c55e;"><strong>${formatCurrency(pdfTotalReturn)}</strong></td></tr>
+      return `<table class="data-table">
+        <tr><td class="label">10-Year Cumulative Cash Flow</td><td class="value" style="color: ${investment.cashFlow >= 0 ? 'var(--green-dark)' : 'var(--red)'};">${formatCurrency(investment.cashFlow * 10)}</td></tr>
+        <tr><td class="label">Equity Built (Principal + 3% Appreciation)</td><td class="value">${formatCurrency(pdfEquity)}</td></tr>
+        <tr class="highlight-row"><td class="label">Total 10-Year Return</td><td class="value positive">${formatCurrency(pdfTotalReturn)}</td></tr>
       </table>`;
     })()}
-    <p style="font-size: 10px; color: #999; text-align: center; margin-top: 8px;">*Assumes 3% annual appreciation with proper amortization schedule</p>
+    <p style="font-size: 9px; color: var(--text-muted); text-align: center; margin-top: 8px;">*Assumes 3% annual appreciation with proper amortization schedule</p>
     ` : ''}
     
-    <!-- Footer -->
-    <div class="footer">
+    <!-- AI ANALYSIS -->
+    ${aiAnalysisText ? `
+    <div class="page-break"></div>
+    <div class="section-header">
+      <div class="section-number">&#9733;</div>
+      <span class="section-title">AI Investment Analysis</span>
+      <span class="ai-analysis-badge">Edge AI</span>
+    </div>
+    <div class="ai-analysis">
+      <div class="ai-analysis-content">${aiAnalysisText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/#{1,3}\s(.*?)(<br>|$)/g, '<div style="font-size:14px;font-weight:700;color:var(--text);margin:16px 0 8px 0;">$1</div>')}</div>
+    </div>
+    ` : ''}
+    
+    <!-- FOOTER -->
+    <div class="report-footer">
       <div class="footer-brand">Edge by Teeco</div>
       <p class="footer-url">edge.teeco.co</p>
       <p class="footer-tagline">Your unfair advantage in STR investing</p>
-      <p class="footer-text">Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-      <p class="disclaimer">This analysis is for informational purposes only and should not be considered financial advice. Projections are based on market data and may vary based on property management, market conditions, and other factors. Always conduct your own due diligence before making investment decisions.</p>
+      <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">STR Regulations: proper.insure/regulations</p>
+      <p class="footer-date">Report generated ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <p class="footer-disclaimer">This analysis is for informational purposes only and does not constitute financial, legal, or investment advice. Revenue projections are based on historical market data from ${result.dataSource?.includes('pricelabs') ? 'PriceLabs' : 'Airbnb'} and comparable listings, and actual results may vary significantly based on property management quality, market conditions, seasonality, local regulations, and other factors. Past performance of comparable properties does not guarantee future results. Always conduct independent due diligence, consult with qualified professionals, and verify local STR regulations before making any investment decisions. Edge by Teeco is not responsible for investment outcomes based on this report.</p>
     </div>
+    
   </div>
 </body>
 </html>
     `;
     
-    // Open print dialog with the report
-    const printWindow = window.open('', '_blank');
+    // Open print dialog with the report - use named window to avoid about:blank
+    const printWindow = window.open('', 'EdgeReport');
     if (printWindow) {
       printWindow.document.write(reportHTML);
       printWindow.document.close();
       printWindow.focus();
-      // Auto-trigger print dialog after a short delay
       setTimeout(() => {
         printWindow.print();
-      }, 500);
+      }, 600);
     }
   };
+
 
   // Calculate guest count multiplier based on industry data
   // Research shows ~5-8% revenue increase per additional guest capacity above baseline
