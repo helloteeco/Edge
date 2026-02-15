@@ -7009,11 +7009,23 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {/* Pricing Options - Hormozi 3-Tier */}
               <div className="space-y-3 mb-4">
                 {/* Tier 1: Starter - Makes middle look smart */}
-                <a 
-                  href={`https://buy.stripe.com/9B628r5GbfOa2J03eE8AE07?prefilled_email=${encodeURIComponent(authEmail || '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/stripe/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tier: 'starter', email: authEmail }),
+                      });
+                      const data = await res.json();
+                      if (data.success && data.url) {
+                        window.open(data.url, '_blank');
+                      } else if (data.fallback) {
+                        window.open(`https://buy.stripe.com/9B628r5GbfOa2J03eE8AE07?prefilled_email=${encodeURIComponent(authEmail || '')}`, '_blank');
+                      }
+                    } catch { window.open(`https://buy.stripe.com/9B628r5GbfOa2J03eE8AE07?prefilled_email=${encodeURIComponent(authEmail || '')}`, '_blank'); }
+                  }}
+                  className="block w-full text-left p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all" 
                   style={{ borderColor: '#e5e5e5' }}
                 >
                   <div className="flex justify-between items-center">
@@ -7023,14 +7035,26 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                     <p className="text-lg font-bold" style={{ color: '#2b2823' }}>$4.99</p>
                   </div>
-                </a>
+                </button>
                 
                 {/* Tier 2: Pro - BEST VALUE - Where most buyers land */}
-                <a 
-                  href={`https://buy.stripe.com/9B614ngkP1XkdnEaH68AE09?prefilled_email=${encodeURIComponent(authEmail || '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-4 rounded-xl border-2 cursor-pointer hover:border-green-600 transition-all relative" 
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/stripe/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tier: 'pro', email: authEmail }),
+                      });
+                      const data = await res.json();
+                      if (data.success && data.url) {
+                        window.open(data.url, '_blank');
+                      } else if (data.fallback) {
+                        window.open(`https://buy.stripe.com/9B614ngkP1XkdnEaH68AE09?prefilled_email=${encodeURIComponent(authEmail || '')}`, '_blank');
+                      }
+                    } catch { window.open(`https://buy.stripe.com/9B614ngkP1XkdnEaH68AE09?prefilled_email=${encodeURIComponent(authEmail || '')}`, '_blank'); }
+                  }}
+                  className="block w-full text-left p-4 rounded-xl border-2 cursor-pointer hover:border-green-600 transition-all relative" 
                   style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}
                 >
                   <div className="absolute -top-2 left-3 px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: '#22c55e', color: '#fff' }}>
@@ -7046,14 +7070,26 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>Save 20%</p>
                     </div>
                   </div>
-                </a>
+                </button>
                 
                 {/* Tier 3: Power - Price anchor that makes Pro look like a deal */}
-                <a 
-                  href={`https://buy.stripe.com/eVq3cv7Oj1Xk6Zg7uU8AE06?prefilled_email=${encodeURIComponent(authEmail || '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" 
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/stripe/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tier: 'power', email: authEmail }),
+                      });
+                      const data = await res.json();
+                      if (data.success && data.url) {
+                        window.open(data.url, '_blank');
+                      } else if (data.fallback) {
+                        window.open(`https://buy.stripe.com/eVq3cv7Oj1Xk6Zg7uU8AE06?prefilled_email=${encodeURIComponent(authEmail || '')}`, '_blank');
+                      }
+                    } catch { window.open(`https://buy.stripe.com/eVq3cv7Oj1Xk6Zg7uU8AE06?prefilled_email=${encodeURIComponent(authEmail || '')}`, '_blank'); }
+                  }}
+                  className="block w-full text-left p-3 rounded-xl border-2 cursor-pointer hover:border-gray-400 transition-all relative" 
                   style={{ borderColor: '#e5e5e5', backgroundColor: '#fafafa' }}
                 >
                   <div className="absolute -top-2 left-3 px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
@@ -7069,7 +7105,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       <p className="text-xs font-medium" style={{ color: '#787060' }}>Save 30%</p>
                     </div>
                   </div>
-                </a>
+                </button>
               </div>
               
               <p className="text-xs mb-3" style={{ color: '#a0a0a0' }}>

@@ -415,3 +415,10 @@
 - [x] Audit rate limiting and API abuse vectors
 - [x] Fix all critical issues found
 - [x] Compile and deliver comprehensive audit report
+
+## FIX: Replace Stripe Payment Links with server-side Checkout Sessions (February 2026)
+- [x] Audit current payment link URLs and pricing tiers in calculator page
+- [x] Create /api/stripe/checkout API route that creates Checkout Sessions with locked customer_email
+- [x] Update calculator frontend to call new checkout route instead of opening payment link URLs
+- [x] Verify Stripe webhook still handles checkout.session.completed correctly
+- [ ] Commit and push to deploy
