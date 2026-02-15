@@ -33,18 +33,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Try Google Places API first if key is available
+    // Try Geoapify first (free, 3000 requests/day)
+    const geoapifyResult = await fetchGeoapify(query);
+    if (geoapifyResult.suggestions.length > 0) {
+      return NextResponse.json(geoapifyResult);
+    }
+
+    // Fallback to Google Places if Geoapify returns no results
     if (GOOGLE_PLACES_API_KEY) {
       const googleResult = await fetchGooglePlaces(query);
       if (googleResult.suggestions.length > 0) {
         return NextResponse.json(googleResult);
       }
-    }
-
-    // Fallback to Geoapify
-    const geoapifyResult = await fetchGeoapify(query);
-    if (geoapifyResult.suggestions.length > 0) {
-      return NextResponse.json(geoapifyResult);
     }
 
     // Final fallback to Nominatim

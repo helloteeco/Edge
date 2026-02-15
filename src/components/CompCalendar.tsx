@@ -141,7 +141,7 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-semibold" style={{ color: "#2b2823" }}>Comp Calendar</h3>
-          <p className="text-xs" style={{ color: "#787060" }}>Real availability from Airbnb calendars</p>
+          <p className="text-xs" style={{ color: "#787060" }}>Estimated availability based on reviews &amp; seasonality</p>
         </div>
         <div className="flex items-center gap-1 text-xs">
           <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: "#dcfce7", border: "1px solid #86efac" }}></span>

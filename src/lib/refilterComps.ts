@@ -2,7 +2,7 @@
  * Client-side comp re-filtering utility.
  * Mirrors the server-side enrichListings logic so that when a user changes
  * bedrooms/bathrooms/guest count, we can re-filter the full comp set locally
- * WITHOUT making a new API call (saving Apify credits).
+ * WITHOUT making a new API call (saving API credits).
  */
 
 // Haversine distance in miles

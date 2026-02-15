@@ -376,8 +376,8 @@ export default function CalculatorPage() {
   useEffect(() => {
     if (!result?.comparables || result.comparables.length === 0) return;
     
-    const roomIds = result.comparables
-      .slice(0, 8)
+    const topComps = result.comparables.slice(0, 8);
+    const roomIds = topComps
       .map(c => String(c.id))
       .filter(id => id && id !== '0');
     
@@ -386,10 +386,19 @@ export default function CalculatorPage() {
     const fetchOccupancy = async () => {
       setIsLoadingOccupancy(true);
       try {
+        // Pass listing data so the estimation endpoint can use review counts,
+        // nightly prices, and coordinates for accurate per-comp occupancy
+        const listings = topComps.map(c => ({
+          id: String(c.id),
+          reviewsCount: c.reviewsCount || 0,
+          nightPrice: c.nightPrice || 150,
+          latitude: c.latitude || 0,
+          longitude: c.longitude || 0,
+        }));
         const response = await fetch('/api/airbnb-occupancy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomIds }),
+          body: JSON.stringify({ roomIds, listings }),
         });
         if (response.ok) {
           const data = await response.json();
@@ -398,7 +407,7 @@ export default function CalculatorPage() {
           }
         }
       } catch (err) {
-        console.warn('Failed to fetch real occupancy data:', err);
+        console.warn('Failed to fetch occupancy data:', err);
       } finally {
         setIsLoadingOccupancy(false);
       }
@@ -1917,7 +1926,7 @@ export default function CalculatorPage() {
 
     try {
       // FAST PATH: Check server-side property_cache first (no credit used, ~200ms)
-      // If the exact address was analyzed before, we can skip the expensive Apify scrape
+      // If the exact address was analyzed before, we can skip the expensive API calls
       let data: any = null;
       try {
         const cacheCheck = await fetch(`/api/property-cache?address=${encodeURIComponent(addressToAnalyze)}`);
@@ -2071,7 +2080,7 @@ export default function CalculatorPage() {
         return 0;
       };
 
-      // Get REAL data from Apify comps - STR only
+      // Get comp data from Airbnb Direct API - STR only
       const avgAdr = parseNum(neighborhood?.adr);
       const avgOccupancy = parseNum(neighborhood?.occupancy);
       
@@ -4554,9 +4563,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     <div className="mb-4 p-3 rounded-xl" style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-semibold" style={{ color: '#1d4ed8' }}>📅 Real Calendar Occupancy</p>
+                          <p className="text-xs font-semibold" style={{ color: '#1d4ed8' }}>📅 Comp Occupancy Estimate</p>
                           <p className="text-xs mt-0.5" style={{ color: '#787060' }}>
-                            Based on {realEntries.length} listing calendar{realEntries.length !== 1 ? 's' : ''} scraped
+                            Based on {realEntries.length} listing{realEntries.length !== 1 ? 's' : ''} analyzed
                           </p>
                         </div>
                         <div className="text-right">
@@ -4572,7 +4581,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 })()}
                 {isLoadingOccupancy && Object.keys(realOccupancyData).length === 0 && (
                   <div className="mb-4 p-3 rounded-xl animate-pulse" style={{ backgroundColor: '#f0f9ff', border: '1px solid #e0f2fe' }}>
-                    <p className="text-xs font-medium" style={{ color: '#0284c7' }}>📅 Fetching real calendar occupancy for top comps...</p>
+                    <p className="text-xs font-medium" style={{ color: '#0284c7' }}>📅 Estimating occupancy for top comps...</p>
                   </div>
                 )}
                 
@@ -4675,7 +4684,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           </div>
                           <div className="flex items-center gap-3 mt-1">
                             {realOccupancyData[String(listing.id)] ? (
-                              <span className="text-xs font-medium" style={{ color: '#16a34a' }} title={`Real data: ${realOccupancyData[String(listing.id)].bookedDays}/${realOccupancyData[String(listing.id)].totalDays} days booked`}>
+                              <span className="text-xs font-medium" style={{ color: '#16a34a' }} title={`Estimated: ${realOccupancyData[String(listing.id)].bookedDays}/${realOccupancyData[String(listing.id)].totalDays} days booked`}>
                                 📅 {realOccupancyData[String(listing.id)].occupancyRate}% occ
                               </span>
                             ) : isLoadingOccupancy ? (

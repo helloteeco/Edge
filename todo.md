@@ -354,3 +354,22 @@
 - [x] Research and recalibrate STR expense auto-populate with real-world benchmarks by property size and guest count
 - [x] Fix Purchase Price field to auto-populate with median home value for the analyzed city (not blank)
 - [x] Ensure changing purchase price dynamically recalculates entire analysis (mortgage, expenses, insurance, ROI)
+
+## AUDIT: External API costs and paid services inventory (February 2026)
+- [x] Audit all API keys and environment variables for paid services
+- [x] Trace all external API fetch calls in backend API routes
+- [x] Trace all external API fetch calls in frontend code
+- [x] Audit third-party infrastructure services (Supabase, Vercel, domain, etc.)
+- [x] Calculate per-search cost breakdown and monthly recurring costs
+- [x] Deliver comprehensive cost audit report
+
+## API Consolidation: Kill Apify, Promote Geoapify, Clean Dead Routes (February 2026)
+- [x] Replace Apify calendar scraping with review-based occupancy estimation (keep per-comp occupancy badges visible)
+- [x] Convert CompCalendar heatmap to use estimated data instead of scraped calendar data
+- [x] Keep "Real Calendar Occupancy" banner but relabel as occupancy comparison using existing data
+- [x] Promote Geoapify to primary autocomplete in /api/geocode, demote Google Places to fallback
+- [x] Delete dead route: /api/airbnb-comps (Apify listing scraper, never called)
+- [x] Delete dead route: /api/property-search (Mashvisor, never called)
+- [x] Delete dead route: /api/airbtics (Airbtics, never called)
+- [x] Verify all fallback chains still work after changes
+- [x] Syntax check and build verification
