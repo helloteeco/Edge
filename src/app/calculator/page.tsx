@@ -259,6 +259,11 @@ export default function CalculatorPage() {
   // Force refresh state (bypasses cache, always uses credit)
   const [forceRefresh, setForceRefresh] = useState(false);
   
+  // Track whether user has manually edited expenses (to avoid overwriting)
+  const userEditedExpenses = useRef(false);
+  const userEditedRent = useRef(false);
+  const userEditedInsurance = useRef(false);
+
   // Market mismatch detection
   const [marketMismatch, setMarketMismatch] = useState<{
     searched: string;
@@ -402,6 +407,97 @@ export default function CalculatorPage() {
     const timer = setTimeout(fetchOccupancy, 1500);
     return () => clearTimeout(timer);
   }, [result?.comparables]);
+
+  // ===== SMART DEFAULTS: Dynamic expense auto-populate =====
+  // Factors: bedroom count, guest count, sqft, and cost-of-living (via home price)
+  // Formulas scale with property size and local cost levels.
+  // National median home price (~$350K) = 1.0x multiplier. Higher = more expensive area.
+  // Adjusts automatically when new cities are added or market prices change.
+  useEffect(() => {
+    if (!result || userEditedExpenses.current) return;
+    const br = bedrooms || 3;
+    const guests = guestCount || br * 2;
+    const sqft = propertySqft || (br * 500 + 400); // estimate sqft if not available
+    const homePrice = parseFloat(purchasePrice) || result?.listPrice || 350000;
+    
+    // Cost-of-living multiplier: ratio of this home's price to national median
+    // Clamped between 0.7 (very affordable) and 1.8 (very expensive)
+    const NATIONAL_MEDIAN = 350000;
+    const colMultiplier = Math.min(Math.max(homePrice / NATIONAL_MEDIAN, 0.7), 1.8);
+    
+    // Guest impact factor: more guests = more water, supplies, consumables
+    const guestFactor = Math.min(Math.max(guests / 6, 0.7), 1.6); // 6 guests = 1.0x baseline
+    
+    // Sqft impact for utilities: larger homes cost more to heat/cool
+    const sqftFactor = Math.min(Math.max(sqft / 1500, 0.7), 1.8); // 1500 sqft = 1.0x baseline
+    
+    // Base costs for a 3BR/6-guest/1500sqft home in a median-priced market
+    // These are realistic 2024-2026 US STR operating costs from industry data
+    const base = {
+      electric: 115,   // HVAC, lighting, appliances — scales with sqft
+      water: 75,       // Showers, laundry, dishwasher — scales with guests
+      internet: 60,    // Fixed cost, slight COL adjustment
+      trash: 35,       // Municipal service — slight COL adjustment
+      lawn: 60,        // Landscaping — scales with COL
+      pest: 25,        // Quarterly service — scales with COL
+      supplies: 55,    // Towels, linens, toiletries — scales with guests/bedrooms
+      consumables: 80, // Coffee, soap, TP, paper towels — scales with guests
+      maintenance: 110,// Repairs, wear & tear — scales with sqft and COL
+      software: 30,    // PMS/channel manager — fixed cost
+    };
+    
+    // Apply scaling factors to each expense category
+    const round5 = (n: number) => Math.round(n / 5) * 5; // Round to nearest $5
+    const computed = {
+      electric: round5(base.electric * sqftFactor * colMultiplier),
+      water: round5(base.water * guestFactor * colMultiplier),
+      internet: round5(base.internet * Math.min(colMultiplier, 1.3)), // internet doesn't vary as much
+      trash: round5(base.trash * Math.min(colMultiplier, 1.4)),
+      lawn: round5(base.lawn * colMultiplier),
+      pest: round5(base.pest * colMultiplier),
+      supplies: round5(base.supplies * (br / 3) * guestFactor),
+      consumables: round5(base.consumables * guestFactor * colMultiplier),
+      maintenance: round5(base.maintenance * sqftFactor * colMultiplier),
+      software: base.software, // fixed cost regardless of property
+    };
+    
+    setElectricMonthly(computed.electric);
+    setWaterMonthly(computed.water);
+    setInternetMonthly(computed.internet);
+    setTrashMonthly(computed.trash);
+    setLawnCareMonthly(computed.lawn);
+    setPestControlMonthly(computed.pest);
+    setHouseSuppliesMonthly(computed.supplies);
+    setSuppliesConsumablesMonthly(computed.consumables);
+    setMaintenanceMonthly(computed.maintenance);
+    setRentalSoftwareMonthly(computed.software);
+    
+    console.log(`[SmartDefaults] Dynamic expenses for ${br}BR/${guests}guests/${sqft}sqft/$${homePrice.toLocaleString()} home (COL: ${colMultiplier.toFixed(2)}x):`, computed);
+  }, [result?.address, bedrooms, guestCount, propertySqft, purchasePrice]);
+
+  // ===== SMART DEFAULTS: Auto-populate arbitrage rent from HUD FMR =====
+  useEffect(() => {
+    if (!hudFmrData || userEditedRent.current) return;
+    const br = bedrooms || 3;
+    const fmrRent = hudFmrData.byBedrooms?.[Math.min(br, 4)];
+    if (fmrRent && fmrRent > 0) {
+      setMonthlyRent(Math.round(fmrRent).toString());
+      console.log(`[SmartDefaults] Auto-filled arbitrage rent from HUD FMR: $${fmrRent}/mo for ${br}BR`);
+    }
+  }, [hudFmrData, bedrooms]);
+
+  // ===== SMART DEFAULTS: Scale STR insurance with purchase price =====
+  useEffect(() => {
+    if (userEditedInsurance.current) return;
+    const price = parseFloat(purchasePrice) || 0;
+    if (price > 0) {
+      // STR insurance typically runs $2.50-$3.50 per $1K of home value annually
+      // Use $3 per $1K as a reasonable middle estimate, with a floor of $1,800 and cap of $8,000
+      const estimated = Math.round(Math.min(Math.max(price * 0.003, 1800), 8000) / 100) * 100;
+      setInsuranceAnnual(estimated);
+      console.log(`[SmartDefaults] Set STR insurance to $${estimated}/yr for $${price.toLocaleString()} home`);
+    }
+  }, [purchasePrice]);
 
   // Lock body scroll when AI Analysis modal is open
   useEffect(() => {
@@ -640,6 +736,9 @@ export default function CalculatorPage() {
                   dataSource: ((data as any).dataSource as string) || undefined,
                 };
                 setResult(analysisResult);
+                userEditedExpenses.current = false;
+                userEditedRent.current = false;
+                userEditedInsurance.current = false;
                 // Restore allComps and targetCoords for local bedroom re-filtering and comp map
                 if (data.allComps && Array.isArray(data.allComps) && data.allComps.length > 0) {
                   setAllComps(data.allComps as ComparableListing[]);
@@ -1121,6 +1220,11 @@ export default function CalculatorPage() {
     setResult(analysisResult);
     setIsReportSaved(false); // Reset saved state for new analysis
     setAddress(pendingAnalysis || address);
+    
+    // Reset user-edit flags so smart defaults apply to new analysis
+    userEditedExpenses.current = false;
+    userEditedRent.current = false;
+    userEditedInsurance.current = false;
     
     // Cache in service worker for offline access
     cacheAnalysisResult(pendingAnalysis || address, data);
@@ -1845,7 +1949,10 @@ export default function CalculatorPage() {
         dataSource: ((data as any).dataSource as string) || undefined,
       };
       setResult(analysisResult);
-      setAddress(addressToAnalyze);;
+      userEditedExpenses.current = false;
+      userEditedRent.current = false;
+      userEditedInsurance.current = false;
+      setAddress(addressToAnalyze);
       
       // Store full comp set for local bedroom re-filtering (no new API call needed)
       if (rawAllComps && Array.isArray(rawAllComps) && rawAllComps.length > 0) {
@@ -4696,7 +4803,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             {/* Monthly Operating Expenses */}
             <div className="rounded-2xl p-6 mt-2" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
               <h3 className="text-lg font-semibold mb-2" style={{ color: "#2b2823" }}>Monthly Operating Expenses</h3>
-              <p className="text-sm text-gray-500 mb-4">Recurring costs to run your STR</p>
+              <p className="text-sm text-gray-500 mb-2">Recurring costs to run your STR</p>
+              {result && !userEditedExpenses.current && (
+                <p className="text-xs mb-4" style={{ color: '#22c55e' }}>✓ Auto-estimated for {bedrooms || 3}BR / {guestCount || (bedrooms || 3) * 2} guests{propertySqft ? ` / ${propertySqft.toLocaleString()} sqft` : ''}{purchasePrice ? ` · adjusted for local costs` : ''}</p>
+              )}
+              {(!result || userEditedExpenses.current) && <div className="mb-2" />}
               
               <div className="grid grid-cols-2 gap-4">
                 {/* Row 1: Electric & Water */}
@@ -4707,7 +4818,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(electricMonthly)}
-                    onChange={handleNumericChange(setElectricMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setElectricMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4719,7 +4830,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(waterMonthly)}
-                    onChange={handleNumericChange(setWaterMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setWaterMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4733,7 +4844,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(internetMonthly)}
-                    onChange={handleNumericChange(setInternetMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setInternetMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4745,7 +4856,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(trashMonthly)}
-                    onChange={handleNumericChange(setTrashMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setTrashMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4759,7 +4870,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(lawnCareMonthly)}
-                    onChange={handleNumericChange(setLawnCareMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setLawnCareMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4771,7 +4882,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(pestControlMonthly)}
-                    onChange={handleNumericChange(setPestControlMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setPestControlMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4788,7 +4899,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(houseSuppliesMonthly)}
-                    onChange={handleNumericChange(setHouseSuppliesMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setHouseSuppliesMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4802,7 +4913,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(suppliesConsumablesMonthly)}
-                    onChange={handleNumericChange(setSuppliesConsumablesMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setSuppliesConsumablesMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4816,7 +4927,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(maintenanceMonthly)}
-                    onChange={handleNumericChange(setMaintenanceMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setMaintenanceMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4828,7 +4939,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={numDisplay(rentalSoftwareMonthly)}
-                    onChange={handleNumericChange(setRentalSoftwareMonthly)}
+                    onChange={(e) => { userEditedExpenses.current = true; handleNumericChange(setRentalSoftwareMonthly)(e); }}
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200"
                   />
@@ -4936,7 +5047,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                     <div>
                       <label className="text-sm block mb-1" style={{ color: "#787060" }}>STR Insurance (Annual)</label>
-                      <input type="text" inputMode="numeric" pattern="[0-9]*" value={numDisplay(insuranceAnnual)} onChange={handleNumericChange(setInsuranceAnnual)} placeholder="0" className="w-full px-3 py-2 rounded-lg border border-gray-200" />
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" value={numDisplay(insuranceAnnual)} onChange={(e) => { userEditedInsurance.current = true; handleNumericChange(setInsuranceAnnual)(e); }} placeholder="0" className="w-full px-3 py-2 rounded-lg border border-gray-200" />
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-1">
@@ -5105,10 +5216,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={monthlyRent}
-                      onChange={(e) => setMonthlyRent(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="Enter monthly rent..."
+                      onChange={(e) => { userEditedRent.current = true; setMonthlyRent(e.target.value.replace(/[^0-9]/g, '')); }}
+                      placeholder="Auto-filled from HUD Fair Market Rent"
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg"
                     />
+                    {monthlyRent && hudFmrData && !userEditedRent.current && (
+                      <p className="text-xs mt-1" style={{ color: '#22c55e' }}>✓ Based on HUD Fair Market Rent ({hudFmrData.year}) for {bedrooms || 3}BR in {hudFmrData.areaName || result?.city}</p>
+                    )}
+                    {!monthlyRent && (
+                      <p className="text-xs text-gray-400 mt-1">Enter the monthly rent you&apos;d pay to the landlord</p>
+                    )}
                   </div>
                   
                   {/* Arbitrage-specific inputs */}

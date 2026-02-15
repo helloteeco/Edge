@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Redirects
+  async redirects() {
+    return [
+      {
+        source: '/map',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
   // Security Headers
   async headers() {
     return [

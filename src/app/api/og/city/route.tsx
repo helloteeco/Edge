@@ -36,8 +36,9 @@ export async function GET(request: NextRequest) {
   const gc = gradeColor(grade);
   const scoreNum = parseInt(score);
 
-  const subtitleText = county
-    ? `${county} County \u00B7 Market Score: ${score}/100`
+  const countyDisplay = county && county.toLowerCase().includes('county') ? county : county ? `${county} County` : '';
+  const subtitleText = countyDisplay
+    ? `${countyDisplay} \u00B7 Market Score: ${score}/100`
     : `Market Score: ${score}/100`;
 
   const footerLabel = scoreNum >= 75

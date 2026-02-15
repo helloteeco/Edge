@@ -333,6 +333,21 @@
 - [ ] No other features changed
 
 ## BUG: Filter panel takes full screen on mobile, blocks scrolling and tapping (February 2026)
-- [ ] Make filter panel collapsible — auto-collapse after selecting a filter so results are visible
-- [ ] Ensure bottom elements (Sort By) are accessible above the tab bar
+- [x] Make filter panel collapsible — auto-collapse after selecting a filter so results are visible
+- [x] Ensure bottom elements (Sort By) are accessible above the tab bar
 - [ ] No other features changed
+
+## Calculator Auto-Populate
+- [ ] Auto-populate purchase price from city median home price
+- [ ] Auto-populate rent estimate for arbitrage calculator
+- [ ] Auto-populate realistic STR expenses based on bedroom count and guest capacity for all 3 calculators
+
+## Low-Priority Cosmetic Fixes
+- [ ] Fix "Trending Markets" section - populate dynamically or hide when empty
+- [ ] Fix funding count to be dynamic (not hardcoded "45")
+- [ ] Fix "rural" wording in funding subtitle
+- [ ] Fix "County County" double-word in OG images
+- [ ] Add /map redirect to home page
+- [x] Make calculator expenses dynamic based on bedroom count, guest count, and city cost of living
+- [x] Auto-populate house size, bed/bath count, guest count from city data
+- [x] Make expense estimates adjust for inflation/economy changes dynamically

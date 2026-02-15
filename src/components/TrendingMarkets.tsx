@@ -43,7 +43,14 @@ export function TrendingMarkets() {
   };
 
   return (
-    <div className="space-y-5">
+    <div 
+      className="mt-8 rounded-2xl p-5 sm:p-6 space-y-5"
+      style={{ 
+        backgroundColor: '#ffffff', 
+        border: '1px solid #d8d6cd',
+        boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
+      }}
+    >
       <div>
         <div className="flex items-center gap-2 mb-1">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" className="flex-shrink-0">

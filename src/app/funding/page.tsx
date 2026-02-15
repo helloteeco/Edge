@@ -1001,7 +1001,7 @@ export default function FundingPage() {
                   Funding Options
                 </h1>
                 <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                  45+ ways to fund your rural STR investment
+                  {fundingMethods.length}+ ways to fund your STR investment
                 </p>
               </div>
             </div>
@@ -1321,7 +1321,7 @@ export default function FundingPage() {
             className="text-xl font-bold mb-4"
             style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
           >
-            All 45 Funding Methods
+            All {fundingMethods.length} Funding Methods
           </h2>
 
           {/* Search */}
