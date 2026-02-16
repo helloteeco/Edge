@@ -537,11 +537,51 @@ export default function CityPage({ params }: { params: { id: string } }) {
                     but capped at <strong>{city.grade}</strong> ({city.marketScore}/100) due to regulation risk.
                   </div>
                 )}
-                {city.regulationInfo.last_verified && (
-                  <div className="text-xs mt-2" style={{ color: '#9ca3af' }}>
-                    Last verified: {city.regulationInfo.last_verified}
+                {/* Last Updated + Disclaimer + How to Verify + Report */}
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                  <div className="text-xs mb-2" style={{ color: '#9ca3af' }}>
+                    {city.regulationInfo.last_verified 
+                      ? `Data as of ${city.regulationInfo.last_verified}` 
+                      : 'AI-generated regulation data'}
+                    {' · Regulations change frequently'}
                   </div>
-                )}
+                  <div 
+                    className="rounded-lg p-3 mb-2 text-xs"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}
+                  >
+                    <div className="font-semibold mb-1" style={{ color: '#2b2823' }}>📞 How to Verify</div>
+                    <div style={{ color: '#4b5563' }}>
+                      Call the <strong>{city.name} City Clerk</strong> or <strong>Planning &amp; Zoning Department</strong> and ask:
+                    </div>
+                    <div style={{ color: '#4b5563', marginTop: 4 }}>
+                      1. Are short-term rentals (under 30 days) allowed at [your address]?<br/>
+                      2. What permits or licenses are required?<br/>
+                      3. Are there owner-occupancy requirements?<br/>
+                      4. Any caps on rental nights per year or number of permits?
+                    </div>
+                    <div style={{ color: '#6b7280', marginTop: 6, fontStyle: 'italic' }}>
+                      Many cities have active Airbnbs operating legally with permits — restrictions don&apos;t always mean it&apos;s impossible.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(city.name + ' ' + city.stateCode + ' short term rental ordinance')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.7)', color: '#2563eb', border: '1px solid rgba(37,99,235,0.2)' }}
+                    >
+                      🔗 Search Municipal Code
+                    </a>
+                    <a
+                      href={`mailto:support@teeco.co?subject=Regulation%20Inaccuracy%20-%20${encodeURIComponent(city.name + ', ' + city.stateCode)}&body=Hi%20Edge%20team,%0A%0AThe%20STR%20regulation%20data%20for%20${encodeURIComponent(city.name + ', ' + city.stateCode)}%20appears%20to%20be%20inaccurate.%0A%0AWhat%20I%20found:%0A%0A`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.7)', color: '#92400e', border: '1px solid rgba(146,64,14,0.2)' }}
+                    >
+                      🚩 Report Inaccuracy
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -594,8 +634,47 @@ export default function CityPage({ params }: { params: { id: string } }) {
                     </span>
                   )}
                 </div>
-                <div className="text-xs mt-2" style={{ color: '#9ca3af' }}>
-                  AI-verified regulation data
+                {/* Last Updated + Disclaimer + How to Verify + Report */}
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                  <div className="text-xs mb-2" style={{ color: '#9ca3af' }}>
+                    AI-generated regulation data · Regulations change frequently
+                  </div>
+                  <div 
+                    className="rounded-lg p-3 mb-2 text-xs"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}
+                  >
+                    <div className="font-semibold mb-1" style={{ color: '#2b2823' }}>📞 How to Verify</div>
+                    <div style={{ color: '#4b5563' }}>
+                      Call the <strong>{city.name} City Clerk</strong> or <strong>Planning &amp; Zoning Department</strong> and ask:
+                    </div>
+                    <div style={{ color: '#4b5563', marginTop: 4 }}>
+                      1. Are short-term rentals (under 30 days) allowed at [your address]?<br/>
+                      2. What permits or licenses are required?<br/>
+                      3. Are there owner-occupancy requirements?<br/>
+                      4. Any caps on rental nights per year or number of permits?
+                    </div>
+                    <div style={{ color: '#6b7280', marginTop: 6, fontStyle: 'italic' }}>
+                      Many cities have active Airbnbs operating legally with permits — restrictions don&apos;t always mean it&apos;s impossible.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(city.name + ' ' + city.stateCode + ' short term rental ordinance')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.7)', color: '#2563eb', border: '1px solid rgba(37,99,235,0.2)' }}
+                    >
+                      🔗 Search Municipal Code
+                    </a>
+                    <a
+                      href={`mailto:support@teeco.co?subject=Regulation%20Inaccuracy%20-%20${encodeURIComponent(city.name + ', ' + city.stateCode)}&body=Hi%20Edge%20team,%0A%0AThe%20STR%20regulation%20data%20for%20${encodeURIComponent(city.name + ', ' + city.stateCode)}%20appears%20to%20be%20inaccurate.%0A%0AWhat%20I%20found:%0A%0A`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.7)', color: '#92400e', border: '1px solid rgba(146,64,14,0.2)' }}
+                    >
+                      🚩 Report Inaccuracy
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -625,11 +704,51 @@ export default function CityPage({ params }: { params: { id: string } }) {
                 <p className="text-sm" style={{ color: '#a16207' }}>
                   {city.regulationInfo.summary}
                 </p>
-                {city.regulationInfo.last_verified && (
-                  <div className="text-xs mt-2" style={{ color: '#9ca3af' }}>
-                    Last verified: {city.regulationInfo.last_verified}
+                {/* Last Updated + Disclaimer + How to Verify + Report */}
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                  <div className="text-xs mb-2" style={{ color: '#9ca3af' }}>
+                    {city.regulationInfo.last_verified 
+                      ? `Data as of ${city.regulationInfo.last_verified}` 
+                      : 'AI-generated regulation data'}
+                    {' · Regulations change frequently'}
                   </div>
-                )}
+                  <div 
+                    className="rounded-lg p-3 mb-2 text-xs"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}
+                  >
+                    <div className="font-semibold mb-1" style={{ color: '#2b2823' }}>📞 How to Verify</div>
+                    <div style={{ color: '#4b5563' }}>
+                      Call the <strong>{city.name} City Clerk</strong> or <strong>Planning &amp; Zoning Department</strong> and ask:
+                    </div>
+                    <div style={{ color: '#4b5563', marginTop: 4 }}>
+                      1. Are short-term rentals (under 30 days) allowed at [your address]?<br/>
+                      2. What permits or licenses are required?<br/>
+                      3. Are there owner-occupancy requirements?<br/>
+                      4. Any caps on rental nights per year or number of permits?
+                    </div>
+                    <div style={{ color: '#6b7280', marginTop: 6, fontStyle: 'italic' }}>
+                      STRs are legal here — the permit process is just more involved. Many hosts navigate it successfully.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(city.name + ' ' + city.stateCode + ' short term rental permit application')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.7)', color: '#2563eb', border: '1px solid rgba(37,99,235,0.2)' }}
+                    >
+                      🔗 Search Permit Info
+                    </a>
+                    <a
+                      href={`mailto:support@teeco.co?subject=Regulation%20Inaccuracy%20-%20${encodeURIComponent(city.name + ', ' + city.stateCode)}&body=Hi%20Edge%20team,%0A%0AThe%20STR%20regulation%20data%20for%20${encodeURIComponent(city.name + ', ' + city.stateCode)}%20appears%20to%20be%20inaccurate.%0A%0AWhat%20I%20found:%0A%0A`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.7)', color: '#92400e', border: '1px solid rgba(146,64,14,0.2)' }}
+                    >
+                      🚩 Report Inaccuracy
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
