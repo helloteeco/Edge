@@ -18,10 +18,24 @@ const SUGGESTED_PROMPTS = [
   { label: "Hidden gem markets", question: "Find me hidden gem STR markets with low competition and high occupancy" },
 ];
 
-// Simple markdown-like formatting for AI responses
+// Strip all Markdown formatting and render as clean plain text
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold** → bold
+    .replace(/\*(.+?)\*/g, '$1')       // *italic* → italic
+    .replace(/__(.+?)__/g, '$1')       // __bold__ → bold
+    .replace(/_(.+?)_/g, '$1')         // _italic_ → italic
+    .replace(/`(.+?)`/g, '$1')         // `code` → code
+    .replace(/^#{1,6}\s*/gm, '')       // ## headers → plain text
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1') // [link](url) → link
+    .replace(/^[-*]\s+/gm, '- ')       // normalize bullets to plain dash
+    .replace(/^\d+[\.\)]\s+/gm, (m) => m) // keep numbered lists as-is
+    .trim();
+}
+
 function formatResponse(text: string) {
-  // Split into paragraphs
-  const parts = text.split("\n");
+  const cleaned = stripMarkdown(text);
+  const parts = cleaned.split("\n");
   const elements: JSX.Element[] = [];
   let listItems: string[] = [];
   let listKey = 0;
@@ -33,7 +47,7 @@ function formatResponse(text: string) {
           {listItems.map((item, i) => (
             <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "#2b2823" }}>
               <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#22c55e" }} />
-              <span dangerouslySetInnerHTML={{ __html: boldify(item) }} />
+              <span>{item}</span>
             </li>
           ))}
         </ul>
@@ -42,34 +56,28 @@ function formatResponse(text: string) {
     }
   };
 
-  const boldify = (s: string) =>
-    s.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#2b2823">$1</strong>');
-
   parts.forEach((line, i) => {
     const trimmed = line.trim();
     if (!trimmed) {
       flushList();
       return;
     }
-    // Bullet point
-    if (/^[-•*]\s/.test(trimmed) || /^\d+[\.\)]\s/.test(trimmed)) {
-      listItems.push(trimmed.replace(/^[-•*\d\.\)]+\s*/, ""));
+    // Bullet point (plain dash)
+    if (/^-\s/.test(trimmed)) {
+      listItems.push(trimmed.replace(/^-\s*/, ""));
+      return;
+    }
+    // Numbered list
+    if (/^\d+[\.\)]\s/.test(trimmed)) {
+      listItems.push(trimmed.replace(/^\d+[\.\)]\s*/, ""));
       return;
     }
     flushList();
-    // Heading-like (starts with # or all caps short line)
-    if (trimmed.startsWith("#")) {
-      const headingText = trimmed.replace(/^#+\s*/, "");
-      elements.push(
-        <h4 key={`h-${i}`} className="font-semibold text-sm mt-3 mb-1" style={{ color: "#2b2823" }}>
-          {headingText}
-        </h4>
-      );
-      return;
-    }
     // Regular paragraph
     elements.push(
-      <p key={`p-${i}`} className="text-sm leading-relaxed my-1" style={{ color: "#4a4640" }} dangerouslySetInnerHTML={{ __html: boldify(trimmed) }} />
+      <p key={`p-${i}`} className="text-sm leading-relaxed my-1" style={{ color: "#4a4640" }}>
+        {trimmed}
+      </p>
     );
   });
   flushList();
