@@ -322,8 +322,9 @@ export default function CityPage({ params }: { params: { id: string } }) {
                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
                 title="Share Analysis"
               >
-                <svg className="w-5 h-5" style={{ color: '#ffffff' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-5 5m5-5l5 5" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" />
                 </svg>
               </button>
               <button

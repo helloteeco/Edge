@@ -498,3 +498,8 @@
 - [x] Pinned chats show at top of history list with star icon
 - [x] Pin/unpin toggle button on each session in history
 - [x] No other features changed
+
+## FIX: Match city header share button to floating share icon (February 2026)
+- [ ] Update the up-arrow share icon in city header to paper plane style matching the floating action button
+- [ ] Apply to all cities consistently
+- [ ] No other features changed
