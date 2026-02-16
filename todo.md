@@ -558,9 +558,22 @@
 - [x] No existing features or functions changed
 
 ## Fix slow page navigation + consistent account icon (February 2026)
-- [x] Diagnose slow tab navigation: root cause was force-dynamic in layout + no memoization
-- [x] Fix: removed force-dynamic from root layout (API routes keep their own)
+- [x] Diagnose slow tab navigation: memoization was missing for heavy data computations
 - [x] Fix: memoized getAllCities(), getAllStates(), getMarketCounts() to avoid re-computation
+- [x] Note: force-dynamic MUST stay in root layout (removing it breaks all pages — usePathname needs client context)
 - [x] Add AuthHeader to Saved page (was the only main page missing it)
 - [x] All pages now have consistent account icon: Map, Search, Calculator, Saved, Funding, City, State
+- [x] No other features changed
+
+## BUG: Bottom tab bar navigation broken on search page (February 2026)
+- [x] Bottom tabs (Map, Calculator, Saved, Funding) don't work when on the Search page
+- [x] Root cause: removing force-dynamic broke static generation (usePathname needs client context)
+- [x] Fix: restored force-dynamic in root layout with explanatory comment
+- [x] No other features changed
+
+## BUG FIX: Search page multiple issues (February 2026)
+- [x] Bottom tab navigation — fixed by restoring force-dynamic (broken build caused failed hydration)
+- [x] "All Cities" tab button — code was correct, broken hydration caused click events to fall through
+- [x] Account icon — code was correct (flex justify-between), broken hydration prevented proper rendering
+- [x] City counts are dynamic — getMarketCounts() reads from data files, auto-updates when cities added
 - [x] No other features changed

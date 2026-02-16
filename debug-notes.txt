@@ -1,0 +1,24 @@
+Search Page Bug Investigation - Feb 16, 2026
+
+ISSUE 1: Bottom tab navigation not working on search page
+- The page loads and renders content (states, cities visible)
+- But the Navigation component (bottom tab bar) is not rendering in the DOM
+- No nav elements found, no fixed bottom elements found
+- This could be a build error causing the layout to fail on the search page
+- The search page content IS rendering, so the page itself works
+- The layout.tsx wraps all pages with Navigation component
+
+ISSUE 2: "All Cities" button going to calculator
+- Need to check the filter tabs - they use onClick handlers, not links
+- Could be an event propagation issue or misrouted click
+
+ISSUE 3: Account icon not consistent
+- AuthHeader is imported and rendered on search page at line 471
+- But it appears as a standalone green circle below the title, not inline with the title
+
+KEY FINDING: The page renders content but the body.innerHTML was empty when checked via console
+- This suggests the page may be using a different rendering path
+- Or the Vercel deployment has a build issue with the search page specifically
+
+NEXT STEP: Check the Vercel build logs for errors on the search page
+Also check if removing force-dynamic from root layout caused a static build error

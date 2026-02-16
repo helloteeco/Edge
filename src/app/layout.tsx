@@ -12,6 +12,10 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// Required: all pages use client hooks (usePathname, useState, useEffect, localStorage)
+// Without this, Next.js tries to statically pre-render and fails
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   viewport: {
     width: "device-width",
