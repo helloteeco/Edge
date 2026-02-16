@@ -639,13 +639,16 @@
 - [x] No major feature changes — design/wording only
 
 ## DATA: Add missing smaller cities near key regions + national park gateways (February 2026)
-- [ ] Save backup checkpoint before any changes
-- [ ] Audit existing 1,444 cities to avoid duplicates
-- [ ] Add missing cities near New River Gorge, WV (Oak Hill, Beckley, Hinton, Summersville, Lewisburg, etc.)
-- [ ] Add missing cities near Greenville, SC area
-- [ ] Add missing cities near Gainesville, FL area
-- [ ] Add missing cities near Toledo, OH area
-- [ ] Add missing national park gateway towns across the US
-- [ ] Integrate all new cities in exact same data format as existing entries
-- [ ] Verify TypeScript compiles, no duplicates, data feeds all app sections
-- [ ] Push to GitHub and verify deployment
+- [x] Save backup checkpoint before any changes (tag: backup-before-city-expansion)
+- [x] Audit existing 1,472 cities to avoid duplicates
+- [x] Add missing cities near New River Gorge, WV (12 cities: Oak Hill, Summersville, Ansted, Mt Hope, Princeton, Bluefield, etc.)
+- [x] Add missing cities near Greenville, SC area (17 cities: Travelers Rest, Greer, Simpsonville, Clemson, Anderson, Seneca, etc.)
+- [x] Add missing cities near Gainesville, FL area (19 cities: Alachua, Newberry, High Springs, Ocala, Everglades City, etc.)
+- [x] Add missing cities near Toledo, OH area (18 cities: Perrysburg, Maumee, Bowling Green, Findlay, Peninsula, etc.)
+- [x] Add missing national park gateway towns across the US (100+ cities across 28 states)
+- [x] Integrate all new cities in exact same data format as existing entries (167 total new cities)
+- [x] Verify TypeScript compiles (0 errors), no new duplicates (0 added), all connections intact
+- [x] Push to GitHub and verify deployment — total markets: 1,472 → 1,639
+
+## Cost Control: Lower daily free preview cap (February 2026)
+- [x] Change DAILY_FREE_PREVIEW_CAP from 200 to 75

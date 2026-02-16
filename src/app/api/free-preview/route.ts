@@ -5,7 +5,7 @@ import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
 // Site-wide daily cap for free previews (prevents cost exposure if site goes viral)
-const DAILY_FREE_PREVIEW_CAP = 200;
+const DAILY_FREE_PREVIEW_CAP = 75;
 
 // GET - Check if this IP has already used their free preview
 export async function GET(request: NextRequest) {
