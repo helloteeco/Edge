@@ -536,3 +536,14 @@
 - [x] Add "External Links & Third-Party Services" section to Terms of Service page
 - [x] Add affiliate disclosure language (future-proofing)
 - [x] No other features changed
+
+## Fix misleading "Analyze Free" language — make credits model transparent (February 2026)
+- [x] Calculator button: "Try It Free" for first visit, "Analyze (1 Credit)" after
+- [x] Calculator subtitle: "STR revenue analysis for any US address" (removed "Free")
+- [x] Calculator "No signup required" — only shows for first-time visitors
+- [x] Home page button: "Analyze a Property →" (removed "Free")
+- [x] Home page feature: "1 free analysis to try, 3 more when you sign up" (fully transparent)
+- [x] AuthModal "3 free property analyses" — kept (accurate in context)
+- [x] AuthModal "Get Started Free" — kept (signing up is free)
+- [x] OG meta images — removed "Free" from STR analysis descriptions
+- [x] No other features changed

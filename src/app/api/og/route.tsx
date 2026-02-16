@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
               alignItems: 'center',
               gap: '8px',
             }}>
-              <span style={{ fontSize: '13px', color: '#9a9488' }}>Free STR analysis for any US address</span>
+              <span style={{ fontSize: '13px', color: '#9a9488' }}>STR analysis for any US address</span>
               <span style={{ fontSize: '14px', color: '#ffffff', fontWeight: 600 }}>edge.teeco.co</span>
             </div>
           </div>

@@ -159,7 +159,7 @@ export default function HomePage() {
         'Generate reports to email investors or save for yourself',
         'AI Analysis to help interpret returns if you\'re new',
         'Save section to review old reports and add personal notes',
-        '3 free analyses included, more available if needed'
+        '1 free analysis to try, 3 more when you sign up'
       ]
     },
     'Acquire': {
@@ -267,9 +267,9 @@ export default function HomePage() {
                 href="/calculator"
                 className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
                 style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
-                aria-label="Analyze a deal for free"
+                aria-label="Analyze a property"
               >
-                Analyze Free
+                Analyze a Property
                 <ArrowRightIcon className="w-3.5 h-3.5" />
               </Link>
             </div>

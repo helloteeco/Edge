@@ -226,14 +226,14 @@ export async function GET(request: NextRequest) {
             backgroundColor: '#2b2823',
           }}>
             <span style={{ fontSize: '13px', color: '#9a9488' }}>
-              {'\u2022 Free STR market data for all 50 states'}
+              {'\u2022 STR market data for all 50 states'}
             </span>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
             }}>
-              <span style={{ fontSize: '13px', color: '#9a9488' }}>Explore 1000+ STR markets free</span>
+              <span style={{ fontSize: '13px', color: '#9a9488' }}>Explore 1,000+ STR markets</span>
               <span style={{ fontSize: '14px', color: '#ffffff', fontWeight: 600 }}>edge.teeco.co</span>
             </div>
           </div>

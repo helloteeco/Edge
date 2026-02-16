@@ -4518,12 +4518,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <span className="text-sm">{loadingStep || "Analyzing..."}</span>
                 </div>
               ) : (
-                typeof window !== 'undefined' && localStorage.getItem("edge_free_preview_used") ? "Analyze (1 Credit)" : "Analyze Free"
+                typeof window !== 'undefined' && localStorage.getItem("edge_free_preview_used") ? "Analyze (1 Credit)" : "Try It Free"
               )}
             </button>
           </div>
           
-          <p className="text-xs text-gray-400 mt-2">Free short-term rental revenue analysis for any US address</p>
+          <p className="text-xs text-gray-400 mt-2">STR revenue analysis for any US address</p>
           <p className="text-xs text-gray-400 mt-1">Defaults: 3 bed / 2 bath — you can refine after results</p>
           
           {/* Credit Display */}
@@ -4565,10 +4565,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <span className="text-xs text-gray-500">Used by STR investors across 50 states</span>
             </div>
             <div className="h-4 w-px bg-gray-200"></div>
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-semibold" style={{ color: '#22c55e' }}>Free</span>
-              <span className="text-xs text-gray-500">No signup required</span>
-            </div>
+            {typeof window !== 'undefined' && !localStorage.getItem('edge_free_preview_used') && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-semibold" style={{ color: '#22c55e' }}>Try free</span>
+                <span className="text-xs text-gray-500">No signup needed</span>
+              </div>
+            )}
           </div>
         )}
 
