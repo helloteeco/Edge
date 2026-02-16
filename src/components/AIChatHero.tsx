@@ -15,6 +15,7 @@ type ChatSession = {
   id: string;
   title: string;
   has_images: boolean;
+  pinned?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -241,6 +242,37 @@ export function AIChatHero() {
     }
   }, [currentSessionId]);
 
+  // Pin/unpin a session
+  const togglePin = useCallback(async (sessionId: string, currentlyPinned: boolean) => {
+    const email = getAuthEmail();
+    if (!email) return;
+    try {
+      const res = await fetch("/api/chat-sessions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, sessionId, pinned: !currentlyPinned }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.error) alert(data.error);
+        return;
+      }
+      setSessions((prev) => {
+        const updated = prev.map((s) =>
+          s.id === sessionId ? { ...s, pinned: !currentlyPinned } : s
+        );
+        // Sort: pinned first, then by updated_at
+        return updated.sort((a, b) => {
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
+      });
+    } catch (err) {
+      console.error("Failed to toggle pin:", err);
+    }
+  }, []);
+
   const sendMessage = async (content: string, imageData?: string) => {
     if ((!content.trim() && !imageData) || isLoading) return;
 
@@ -429,42 +461,78 @@ export function AIChatHero() {
               </p>
             ) : (
               <div className="space-y-1">
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between group rounded-lg px-3 py-2.5 cursor-pointer transition-all hover:bg-white"
-                    style={{
-                      backgroundColor: currentSessionId === session.id ? "#ffffff" : "transparent",
-                      border: currentSessionId === session.id ? "1px solid #d8d6cd" : "1px solid transparent",
-                    }}
-                    onClick={() => loadSession(session.id)}
-                  >
-                    <div className="flex-1 min-w-0 mr-3">
-                      <div className="flex items-center gap-2">
-                        {session.has_images && (
-                          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="#9a958c" strokeWidth={2} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                          </svg>
-                        )}
-                        <p className="text-sm font-medium truncate" style={{ color: "#2b2823" }}>
-                          {session.title}
-                        </p>
-                      </div>
-                      <p className="text-[10px] mt-0.5" style={{ color: "#9a958c" }}>
-                        {new Date(session.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                      </p>
+                {/* Pinned section */}
+                {sessions.some((s) => s.pinned) && (
+                  <>
+                    <div className="flex items-center gap-1.5 px-1 pb-1">
+                      <svg className="w-3 h-3" fill="#d4a017" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#9a958c" }}>Pinned</span>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all hover:bg-red-50"
-                      title="Delete conversation"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="#ef4444" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                  </>
+                )}
+                {sessions.map((session, idx) => {
+                  // Add "Recent" header before first unpinned session
+                  const showRecentHeader = !session.pinned && (idx === 0 || sessions[idx - 1]?.pinned);
+                  return (
+                    <div key={session.id}>
+                      {showRecentHeader && sessions.some((s) => s.pinned) && (
+                        <div className="flex items-center gap-1.5 px-1 pb-1 pt-2">
+                          <svg className="w-3 h-3" fill="none" stroke="#9a958c" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#9a958c" }}>Recent</span>
+                        </div>
+                      )}
+                      <div
+                        className="flex items-center justify-between group rounded-lg px-3 py-2.5 cursor-pointer transition-all hover:bg-white"
+                        style={{
+                          backgroundColor: currentSessionId === session.id ? "#ffffff" : "transparent",
+                          border: currentSessionId === session.id ? "1px solid #d8d6cd" : "1px solid transparent",
+                        }}
+                        onClick={() => loadSession(session.id)}
+                      >
+                        <div className="flex-1 min-w-0 mr-2">
+                          <div className="flex items-center gap-1.5">
+                            {session.pinned && (
+                              <svg className="w-3 h-3 flex-shrink-0" fill="#d4a017" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            )}
+                            {session.has_images && (
+                              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="#9a958c" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                              </svg>
+                            )}
+                            <p className="text-sm font-medium truncate" style={{ color: "#2b2823" }}>
+                              {session.title}
+                            </p>
+                          </div>
+                          <p className="text-[10px] mt-0.5" style={{ color: "#9a958c" }}>
+                            {new Date(session.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); togglePin(session.id, !!session.pinned); }}
+                            className={`p-1.5 rounded transition-all ${session.pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                            style={{ minWidth: 28, minHeight: 28 }}
+                            title={session.pinned ? "Unpin conversation" : "Pin conversation"}
+                            aria-label={session.pinned ? "Unpin conversation" : "Pin conversation"}
+                          >
+                            <svg className="w-3.5 h-3.5" fill={session.pinned ? "#d4a017" : "none"} stroke={session.pinned ? "#d4a017" : "#9a958c"} strokeWidth={2} viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded transition-all hover:bg-red-50"
+                            style={{ minWidth: 28, minHeight: 28 }}
+                            title="Delete conversation"
+                            aria-label="Delete conversation"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="#ef4444" strokeWidth={2} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
