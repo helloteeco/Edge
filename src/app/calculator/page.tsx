@@ -334,14 +334,52 @@ export default function CalculatorPage() {
     return result.comparables.filter(c => !excludedCompIds.has(c.id));
   };
   
-  // Recalculate revenue from active comps only
-  const getCompBasedRevenue = (): { adr: number; occupancy: number; annualRevenue: number } | null => {
+  // Recalculate revenue from active comps only, with percentile support
+  const getCompBasedRevenue = (): { adr: number; occupancy: number; annualRevenue: number; percentiles: { p25: number; p50: number; p75: number; p90: number }; adrPercentiles: { p25: number; p50: number; p75: number; p90: number }; occPercentiles: { p25: number; p50: number; p75: number; p90: number } } | null => {
     const activeComps = getActiveComps();
     if (activeComps.length === 0) return null;
     const avgAdr = Math.round(activeComps.reduce((sum, c) => sum + c.nightPrice, 0) / activeComps.length);
     const avgOcc = Math.round(activeComps.reduce((sum, c) => sum + c.occupancy, 0) / activeComps.length);
     const avgRevenue = Math.round(activeComps.reduce((sum, c) => sum + (c.annualRevenue || c.monthlyRevenue * 12), 0) / activeComps.length);
-    return { adr: avgAdr, occupancy: avgOcc, annualRevenue: avgRevenue };
+    
+    // Compute percentiles from active comps
+    const revenues = activeComps.map(c => c.annualRevenue || c.monthlyRevenue * 12).sort((a, b) => a - b);
+    const adrs = activeComps.map(c => c.nightPrice).sort((a, b) => a - b);
+    const occs = activeComps.map(c => c.occupancy).sort((a, b) => a - b);
+    
+    const percentile = (arr: number[], p: number) => {
+      if (arr.length === 0) return 0;
+      if (arr.length === 1) return arr[0];
+      const idx = (p / 100) * (arr.length - 1);
+      const lower = Math.floor(idx);
+      const upper = Math.ceil(idx);
+      if (lower === upper) return arr[lower];
+      return Math.round(arr[lower] + (arr[upper] - arr[lower]) * (idx - lower));
+    };
+    
+    return {
+      adr: avgAdr,
+      occupancy: avgOcc,
+      annualRevenue: avgRevenue,
+      percentiles: {
+        p25: percentile(revenues, 25),
+        p50: percentile(revenues, 50),
+        p75: percentile(revenues, 75),
+        p90: percentile(revenues, 90),
+      },
+      adrPercentiles: {
+        p25: percentile(adrs, 25),
+        p50: percentile(adrs, 50),
+        p75: percentile(adrs, 75),
+        p90: percentile(adrs, 90),
+      },
+      occPercentiles: {
+        p25: percentile(occs, 25),
+        p50: percentile(occs, 50),
+        p75: percentile(occs, 75),
+        p90: percentile(occs, 90),
+      },
+    };
   };
   
   // Limited data warning modal
@@ -2687,12 +2725,13 @@ export default function CalculatorPage() {
     const maintenanceTotal = lawnCareMonthly + pestControlMonthly + maintenanceMonthly;
     const operationsTotal = houseSuppliesMonthly + suppliesConsumablesMonthly + rentalSoftwareMonthly;
     
-    // Revenue percentile data
-    const hasPercentiles = !!result.percentiles?.revenue;
-    const p25 = hasPercentiles ? Math.round(result.percentiles!.revenue.p25 * guestMultiplier) : Math.round(displayRevenue * 0.7);
-    const p50 = hasPercentiles ? Math.round(result.percentiles!.revenue.p50 * guestMultiplier) : displayRevenue;
-    const p75 = hasPercentiles ? Math.round(result.percentiles!.revenue.p75 * guestMultiplier) : Math.round(displayRevenue * 1.25);
-    const p90 = hasPercentiles ? Math.round(result.percentiles!.revenue.p90 * guestMultiplier) : Math.round(displayRevenue * 1.45);
+    // Revenue percentile data — use comp-based when exclusions active
+    const pdfCompRev = excludedCompIds.size > 0 ? getCompBasedRevenue() : null;
+    const hasPercentiles = !!(pdfCompRev?.percentiles || result.percentiles?.revenue);
+    const p25 = pdfCompRev ? Math.round(pdfCompRev.percentiles.p25 * guestMultiplier) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p25 * guestMultiplier) : Math.round(displayRevenue * 0.7);
+    const p50 = pdfCompRev ? Math.round(pdfCompRev.percentiles.p50 * guestMultiplier) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p50 * guestMultiplier) : displayRevenue;
+    const p75 = pdfCompRev ? Math.round(pdfCompRev.percentiles.p75 * guestMultiplier) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p75 * guestMultiplier) : Math.round(displayRevenue * 1.25);
+    const p90 = pdfCompRev ? Math.round(pdfCompRev.percentiles.p90 * guestMultiplier) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p90 * guestMultiplier) : Math.round(displayRevenue * 1.45);
     
     // Break-even occupancy
     const pdfBreakEvenOcc = effectiveAdr > 0 ? Math.round(((analysisMode === 'buying' ? investment.totalAnnualExpenses : analysisMode === 'arbitrage' ? arbitrage.totalAnnualExpenses : iownit.totalAnnualExpenses) / (effectiveAdr * 365)) * 100) : 0;
@@ -3850,11 +3889,22 @@ export default function CalculatorPage() {
     
     const guestMultiplier = getGuestCountMultiplier();
     
-    // When comps are excluded, recalculate from active comps only
+    // When comps are excluded, recalculate from active comps only — respecting percentile selection
     if (excludedCompIds.size > 0) {
       const compRevenue = getCompBasedRevenue();
       if (compRevenue) {
-        return Math.round(compRevenue.annualRevenue * guestMultiplier);
+        let baseRevenue = compRevenue.percentiles.p50; // default to median
+        switch (revenuePercentile) {
+          case "75th":
+            baseRevenue = compRevenue.percentiles.p75;
+            break;
+          case "90th":
+            baseRevenue = compRevenue.percentiles.p90;
+            break;
+          default:
+            baseRevenue = compRevenue.percentiles.p50;
+        }
+        return Math.round(baseRevenue * guestMultiplier);
       }
     }
     
@@ -3895,11 +3945,17 @@ export default function CalculatorPage() {
     }
     if (!result) return 0;
     const guestMultiplier = getGuestCountMultiplier();
-    // When comps are excluded, recalculate from active comps only
+    // When comps are excluded, recalculate from active comps only — respecting percentile selection
     if (excludedCompIds.size > 0) {
       const compRevenue = getCompBasedRevenue();
       if (compRevenue) {
-        return Math.round(compRevenue.annualRevenue * guestMultiplier);
+        let baseRevenue = compRevenue.percentiles.p50;
+        switch (revenuePercentile) {
+          case "75th": baseRevenue = compRevenue.percentiles.p75; break;
+          case "90th": baseRevenue = compRevenue.percentiles.p90; break;
+          default: baseRevenue = compRevenue.percentiles.p50;
+        }
+        return Math.round(baseRevenue * guestMultiplier);
       }
     }
     if (result.percentiles?.revenue) {
@@ -4997,8 +5053,19 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </div>
 
               {/* Percentile Selector */}
+              {(() => {
+                const compRev = excludedCompIds.size > 0 ? getCompBasedRevenue() : null;
+                const gm = getGuestCountMultiplier();
+                return (
               <div className="flex gap-2 sm:gap-3 mb-4 overflow-x-auto">
-                {(["average", "75th", "90th"] as const).map((p) => (
+                {(["average", "75th", "90th"] as const).map((p) => {
+                  // Use comp-based percentiles when exclusions are active, otherwise PriceLabs
+                  const labelValue = compRev
+                    ? Math.round((p === "average" ? compRev.percentiles.p50 : p === "75th" ? compRev.percentiles.p75 : compRev.percentiles.p90) * gm)
+                    : result.percentiles?.revenue
+                      ? Math.round((p === "average" ? result.percentiles.revenue.p50 : p === "75th" ? result.percentiles.revenue.p75 : result.percentiles.revenue.p90) * gm)
+                      : null;
+                  return (
                   <button
                     key={p}
                     onClick={() => setRevenuePercentile(p)}
@@ -5010,22 +5077,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     style={revenuePercentile === p ? { backgroundColor: "#2b2823" } : {}}
                   >
                     {p === "average" ? "Average" : p === "75th" ? "75th %" : "90th %"}
-                    {result.percentiles?.revenue && (
+                    {labelValue !== null && (
                       <span className="block text-xs opacity-75">
-                        {formatCurrency(
-                          p === "average" 
-                            ? result.percentiles.revenue.p50
-                            : p === "75th" 
-                              ? result.percentiles.revenue.p75
-                              : result.percentiles.revenue.p90
-                        )}/yr
+                        {formatCurrency(labelValue)}/yr
                       </span>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
+                );
+              })()}
 
               {/* Revenue Display */}
+              {(() => {
+                const compRevForDisplay = excludedCompIds.size > 0 ? getCompBasedRevenue() : null;
+                const gmForDisplay = getGuestCountMultiplier();
+                const activeCount = result.comparables ? result.comparables.filter(c => !excludedCompIds.has(c.id)).length : 0;
+                const totalCount = result.comparables?.length || 0;
+                
+                // Range values: use comp-based when exclusions active, otherwise PriceLabs
+                const rangeP25 = compRevForDisplay
+                  ? Math.round(compRevForDisplay.percentiles.p25 * gmForDisplay)
+                  : result.percentiles?.revenue?.p25
+                    ? Math.round(result.percentiles.revenue.p25 * gmForDisplay)
+                    : Math.round(getDisplayRevenue() * 0.8);
+                const rangeP75 = compRevForDisplay
+                  ? Math.round(compRevForDisplay.percentiles.p75 * gmForDisplay)
+                  : result.percentiles?.revenue?.p75
+                    ? Math.round(result.percentiles.revenue.p75 * gmForDisplay)
+                    : Math.round(getDisplayRevenue() * 1.2);
+                
+                return (
               <div className="text-center py-4 sm:py-6 rounded-xl" style={{ backgroundColor: "#f5f4f0" }}>
                 <p className="text-xs sm:text-sm font-medium mb-1" style={{ color: "#787060" }}>
                   {revenuePercentile === "average" ? "Estimated Annual Revenue" : 
@@ -5034,23 +5117,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <p className="text-3xl sm:text-4xl font-bold" style={{ color: "#22c55e" }}>
                   {formatCurrency(getDisplayRevenue())}
                 </p>
-                {/* Confidence Range - uses real p25-p75 percentile data when available */}
+                {/* Exclusion indicator */}
+                {excludedCompIds.size > 0 && (
+                  <p className="text-[11px] font-medium mt-1 inline-block px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+                    Based on {activeCount} of {totalCount} comps ({excludedCompIds.size} excluded)
+                  </p>
+                )}
+                {/* Confidence Range - uses comp-based p25-p75 when exclusions active */}
                 <p className="text-sm mt-1" style={{ color: "#787060" }}>
-                  Range: {formatCurrency(
-                    result.percentiles?.revenue?.p25 
-                      ? Math.round(result.percentiles.revenue.p25 * getGuestCountMultiplier())
-                      : Math.round(getDisplayRevenue() * 0.8)
-                  )} – {formatCurrency(
-                    result.percentiles?.revenue?.p75
-                      ? Math.round(result.percentiles.revenue.p75 * getGuestCountMultiplier())
-                      : Math.round(getDisplayRevenue() * 1.2)
-                  )}
+                  Range: {formatCurrency(rangeP25)} – {formatCurrency(rangeP75)}
                 </p>
-                {result.percentiles?.revenue?.p25 && (
-                  <p className="text-[10px] mt-0.5" style={{ color: "#a0a0a0" }}>25th – 75th percentile from comparable listings</p>
+                {(result.percentiles?.revenue?.p25 || compRevForDisplay) && (
+                  <p className="text-[10px] mt-0.5" style={{ color: "#a0a0a0" }}>
+                    {compRevForDisplay ? `25th – 75th percentile from ${activeCount} selected comps` : '25th – 75th percentile from comparable listings'}
+                  </p>
                 )}
                 <p className="text-xs text-gray-400 mt-1">
-                  {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') ? (
+                  {excludedCompIds.size > 0 ? (
+                    <>Revenue recalculated from <strong style={{ color: '#2563eb' }}>{activeCount} selected comparable listings</strong></>
+                  ) : result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') ? (
                     <>Based on PriceLabs analysis of <strong style={{ color: '#2563eb' }}>{result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} comparable properties</strong> across multiple platforms</>
                   ) : (
                     <>Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby STR listings</>
@@ -5058,13 +5143,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </p>
                 {revenuePercentile !== "average" && (
                   <p className="text-xs text-gray-400 mt-2">
-                    {result?.dataSource?.toLowerCase().includes('pricelabs')
+                    {excludedCompIds.size > 0
                       ? (revenuePercentile === "75th" 
-                          ? "Actual 75th percentile from PriceLabs market data" 
-                          : "Actual 90th percentile from PriceLabs market data")
-                      : (revenuePercentile === "75th" 
-                          ? "Top 25% performers in this market" 
-                          : "Top 10% performers in this market")}
+                          ? "75th percentile from selected comps" 
+                          : "90th percentile from selected comps")
+                      : result?.dataSource?.toLowerCase().includes('pricelabs')
+                        ? (revenuePercentile === "75th" 
+                            ? "Actual 75th percentile from PriceLabs market data" 
+                            : "Actual 90th percentile from PriceLabs market data")
+                        : (revenuePercentile === "75th" 
+                            ? "Top 25% performers in this market" 
+                            : "Top 10% performers in this market")}
                   </p>
                 )}
                 {guestCount && bedrooms && guestCount > bedrooms * 2 && (
@@ -5073,6 +5162,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   </p>
                 )}
               </div>
+                );
+              })()}
 
               {/* Forward-Looking 30-Day Revenue Estimate */}
               {(() => {
@@ -5287,6 +5378,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   Revenue estimates above are based on real comparable listings. Here&apos;s what separates each tier.
                 </p>
                 
+                {(() => {
+                  const tierCompRev = excludedCompIds.size > 0 ? getCompBasedRevenue() : null;
+                  const tierGm = getGuestCountMultiplier();
+                  const tierP50 = tierCompRev ? Math.round(tierCompRev.percentiles.p50 * tierGm) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p50 * tierGm) : null;
+                  const tierP75 = tierCompRev ? Math.round(tierCompRev.percentiles.p75 * tierGm) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p75 * tierGm) : null;
+                  const tierP90 = tierCompRev ? Math.round(tierCompRev.percentiles.p90 * tierGm) : result.percentiles?.revenue ? Math.round(result.percentiles.revenue.p90 * tierGm) : null;
+                  return (
                 <div className="space-y-3">
                   {/* Average tier */}
                   <div 
@@ -5299,9 +5397,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-semibold" style={{ color: '#2b2823' }}>50th Percentile (Average)</span>
-                      {result.percentiles?.revenue && (
+                      {tierP50 !== null && (
                         <span className="text-sm font-bold" style={{ color: '#2b2823' }}>
-                          {formatCurrency(Math.round(result.percentiles.revenue.p50 * getGuestCountMultiplier()))}/yr
+                          {formatCurrency(tierP50)}/yr
                         </span>
                       )}
                     </div>
@@ -5319,9 +5417,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-semibold" style={{ color: '#16a34a' }}>75th Percentile</span>
-                      {result.percentiles?.revenue && (
+                      {tierP75 !== null && (
                         <span className="text-sm font-bold" style={{ color: '#22c55e' }}>
-                          {formatCurrency(Math.round(result.percentiles.revenue.p75 * getGuestCountMultiplier()))}/yr
+                          {formatCurrency(tierP75)}/yr
                         </span>
                       )}
                     </div>
@@ -5339,15 +5437,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-semibold" style={{ color: '#d97706' }}>90th Percentile</span>
-                      {result.percentiles?.revenue && (
+                      {tierP90 !== null && (
                         <span className="text-sm font-bold" style={{ color: '#f59e0b' }}>
-                          {formatCurrency(Math.round(result.percentiles.revenue.p90 * getGuestCountMultiplier()))}/yr
+                          {formatCurrency(tierP90)}/yr
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">Unique theme, exceptional reviews, dynamic pricing mastery, premium amenities. Top 10% of hosts.</p>
                   </div>
                 </div>
+                  );
+                })()}
                 
                 <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: '#f0fdf4', border: '1px solid #dcfce7' }}>
                   <p className="text-xs" style={{ color: '#16a34a' }}>
@@ -5591,17 +5691,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 )}
                 
                 {/* Comp-based revenue recalculation banner */}
-                {hasExclusions && compRevenue && (
+                {hasExclusions && compRevenue && (() => {
+                  const bannerGm = getGuestCountMultiplier();
+                  const bannerLabel = revenuePercentile === '75th' ? '75th %' : revenuePercentile === '90th' ? '90th %' : 'Median';
+                  const bannerRevenue = revenuePercentile === '75th' 
+                    ? Math.round(compRevenue.percentiles.p75 * bannerGm)
+                    : revenuePercentile === '90th'
+                      ? Math.round(compRevenue.percentiles.p90 * bannerGm)
+                      : Math.round(compRevenue.percentiles.p50 * bannerGm);
+                  return (
                   <div className="mb-4 p-3 rounded-xl border-2 border-dashed" style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-semibold" style={{ color: '#15803d' }}>Custom Comp Average ({activeComps.length} selected)</p>
+                        <p className="text-xs font-semibold" style={{ color: '#15803d' }}>Custom Comp {bannerLabel} ({activeComps.length} selected)</p>
                         <p className="text-xs mt-0.5" style={{ color: '#787060' }}>
-                          ${compRevenue.adr}/night • {compRevenue.occupancy}% occ
+                          ${compRevenue.adr}/night avg • {compRevenue.occupancy}% avg occ
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold" style={{ color: '#15803d' }}>{formatCurrency(compRevenue.annualRevenue)}/yr</p>
+                        <p className="text-lg font-bold" style={{ color: '#15803d' }}>{formatCurrency(bannerRevenue)}/yr</p>
                       </div>
                     </div>
                     <button
@@ -5612,7 +5720,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       Reset Selection (Include All)
                     </button>
                   </div>
-                )}
+                  );
+                })()}
                 
                 <div className="space-y-4">
                   {comps.slice(0, showAllComps ? comps.length : 5).map((listing, index) => {
