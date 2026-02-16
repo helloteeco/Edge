@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getMarketCounts } from "@/data/helpers";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  image?: string; // base64 data URL for images
+};
+
+type ChatSession = {
+  id: string;
+  title: string;
+  has_images: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 const SUGGESTED_PROMPTS = [
@@ -18,18 +27,17 @@ const SUGGESTED_PROMPTS = [
   { label: "Hidden gem markets", question: "Find me hidden gem STR markets with low competition and high occupancy" },
 ];
 
-// Strip all Markdown formatting and render as clean plain text
 function stripMarkdown(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold** → bold
-    .replace(/\*(.+?)\*/g, '$1')       // *italic* → italic
-    .replace(/__(.+?)__/g, '$1')       // __bold__ → bold
-    .replace(/_(.+?)_/g, '$1')         // _italic_ → italic
-    .replace(/`(.+?)`/g, '$1')         // `code` → code
-    .replace(/^#{1,6}\s*/gm, '')       // ## headers → plain text
-    .replace(/\[(.+?)\]\(.+?\)/g, '$1') // [link](url) → link
-    .replace(/^[-*]\s+/gm, '- ')       // normalize bullets to plain dash
-    .replace(/^\d+[\.\)]\s+/gm, (m) => m) // keep numbered lists as-is
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1")
+    .replace(/^[-*]\s+/gm, "- ")
+    .replace(/^\d+[\.\)]\s+/gm, (m) => m)
     .trim();
 }
 
@@ -58,22 +66,10 @@ function formatResponse(text: string) {
 
   parts.forEach((line, i) => {
     const trimmed = line.trim();
-    if (!trimmed) {
-      flushList();
-      return;
-    }
-    // Bullet point (plain dash)
-    if (/^-\s/.test(trimmed)) {
-      listItems.push(trimmed.replace(/^-\s*/, ""));
-      return;
-    }
-    // Numbered list
-    if (/^\d+[\.\)]\s/.test(trimmed)) {
-      listItems.push(trimmed.replace(/^\d+[\.\)]\s*/, ""));
-      return;
-    }
+    if (!trimmed) { flushList(); return; }
+    if (/^-\s/.test(trimmed)) { listItems.push(trimmed.replace(/^-\s*/, "")); return; }
+    if (/^\d+[\.\)]\s/.test(trimmed)) { listItems.push(trimmed.replace(/^\d+[\.\)]\s*/, "")); return; }
     flushList();
-    // Regular paragraph
     elements.push(
       <p key={`p-${i}`} className="text-sm leading-relaxed my-1" style={{ color: "#4a4640" }}>
         {trimmed}
@@ -84,17 +80,63 @@ function formatResponse(text: string) {
   return elements;
 }
 
+// Helper to get auth email from localStorage
+function getAuthEmail(): string | null {
+  if (typeof window === "undefined") return null;
+  const email = localStorage.getItem("edge_auth_email");
+  const token = localStorage.getItem("edge_auth_token");
+  const expiry = localStorage.getItem("edge_auth_expiry");
+  if (email && token && expiry && Date.now() < parseInt(expiry, 10)) {
+    return email;
+  }
+  return null;
+}
+
+// Compress image to reduce base64 size for API calls
+function compressImage(file: File, maxWidth: number = 1024, quality: number = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas not supported")); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AIChatHero() {
   const marketCounts = getMarketCounts();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll within the chat container only, not the whole page
+  // Scroll within the chat container only
   useEffect(() => {
     if (chatContainerRef.current && messages.length > 0) {
       const container = chatContainerRef.current;
@@ -104,13 +146,112 @@ export function AIChatHero() {
     }
   }, [messages, isLoading]);
 
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || isLoading) return;
+  // Auto-save session after each assistant response
+  const saveSession = useCallback(async (msgs: Message[], sessionId: string | null) => {
+    const email = getAuthEmail();
+    if (!email || msgs.length === 0) return null;
 
-    const userMsg: Message = { role: "user", content: content.trim() };
+    const hasImages = msgs.some((m) => !!m.image);
+    // Generate title from first user message
+    const firstUserMsg = msgs.find((m) => m.role === "user");
+    const title = firstUserMsg
+      ? firstUserMsg.content.slice(0, 60) + (firstUserMsg.content.length > 60 ? "..." : "")
+      : "New Chat";
+
+    try {
+      const res = await fetch("/api/chat-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          sessionId,
+          title,
+          messages: msgs.map((m) => ({ role: m.role, content: m.content, image: m.image ? "[image]" : undefined })),
+          has_images: hasImages,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.session?.id || null;
+      }
+    } catch (err) {
+      console.error("Failed to save chat session:", err);
+    }
+    return null;
+  }, []);
+
+  // Load sessions list
+  const loadSessions = useCallback(async () => {
+    const email = getAuthEmail();
+    if (!email) return;
+    setSessionsLoading(true);
+    try {
+      const res = await fetch(`/api/chat-sessions?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+      }
+    } catch (err) {
+      console.error("Failed to load sessions:", err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+
+  // Load a specific session
+  const loadSession = useCallback(async (sessionId: string) => {
+    const email = getAuthEmail();
+    if (!email) return;
+    try {
+      const res = await fetch(`/api/chat-sessions?email=${encodeURIComponent(email)}&id=${sessionId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.session) {
+          const loadedMessages = (data.session.messages || []).map((m: { role: string; content: string; image?: string }) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            image: m.image === "[image]" ? undefined : m.image,
+          }));
+          setMessages(loadedMessages);
+          setCurrentSessionId(sessionId);
+          setIsExpanded(true);
+          setShowHistory(false);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load session:", err);
+    }
+  }, []);
+
+  // Delete a session
+  const deleteSession = useCallback(async (sessionId: string) => {
+    const email = getAuthEmail();
+    if (!email) return;
+    try {
+      await fetch(`/api/chat-sessions?email=${encodeURIComponent(email)}&id=${sessionId}`, { method: "DELETE" });
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      if (currentSessionId === sessionId) {
+        setMessages([]);
+        setCurrentSessionId(null);
+        setIsExpanded(false);
+      }
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+    }
+  }, [currentSessionId]);
+
+  const sendMessage = async (content: string, imageData?: string) => {
+    if ((!content.trim() && !imageData) || isLoading) return;
+
+    const userMsg: Message = {
+      role: "user",
+      content: content.trim() || (imageData ? "Analyze this image" : ""),
+      image: imageData,
+    };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
+    setPendingImage(null);
     setIsLoading(true);
     setIsExpanded(true);
 
@@ -119,14 +260,25 @@ export function AIChatHero() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          messages: newMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            ...(m.image ? { image: m.image } : {}),
+          })),
         }),
       });
 
       if (!response.ok) throw new Error("Failed");
 
       const data = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.message }]);
+      const updatedMessages = [...newMessages, { role: "assistant" as const, content: data.message }];
+      setMessages(updatedMessages);
+
+      // Auto-save for logged-in users
+      const newId = await saveSession(updatedMessages, currentSessionId);
+      if (newId && !currentSessionId) {
+        setCurrentSessionId(newId);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -139,7 +291,7 @@ export function AIChatHero() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(input);
+    sendMessage(input, pendingImage || undefined);
   };
 
   const handlePromptClick = (question: string) => {
@@ -150,7 +302,37 @@ export function AIChatHero() {
     setMessages([]);
     setIsExpanded(false);
     setInput("");
+    setPendingImage(null);
+    setCurrentSessionId(null);
   };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Validate file type and size
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Image must be under 20MB");
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setPendingImage(compressed);
+    } catch (err) {
+      console.error("Failed to process image:", err);
+    }
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleHistoryToggle = () => {
+    if (!showHistory) {
+      loadSessions();
+    }
+    setShowHistory(!showHistory);
+  };
+
+  const userEmail = getAuthEmail();
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-3 sm:pt-6 pb-2">
@@ -188,23 +370,102 @@ export function AIChatHero() {
                 </p>
               </div>
             </div>
-            {isExpanded && (
-              <button
-                onClick={handleNewChat}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-                style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.8)" }}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                New chat
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* History button — only for logged-in users */}
+              {userEmail && (
+                <button
+                  onClick={handleHistoryToggle}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+                  style={{
+                    backgroundColor: showHistory ? "rgba(34, 197, 94, 0.3)" : "rgba(255,255,255,0.15)",
+                    color: showHistory ? "#22c55e" : "rgba(255,255,255,0.8)",
+                  }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  History
+                </button>
+              )}
+              {isExpanded && (
+                <button
+                  onClick={handleNewChat}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+                  style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.8)" }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  New
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Chat History Panel */}
+        {showHistory && (
+          <div
+            className="px-5 py-3 overflow-y-auto"
+            style={{ maxHeight: "300px", borderBottom: "1px solid #e5e3da", backgroundColor: "#faf9f7" }}
+          >
+            {sessionsLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#c8c5bc", animation: "pulse 1.4s ease-in-out infinite" }} />
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#c8c5bc", animation: "pulse 1.4s ease-in-out 0.2s infinite" }} />
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#c8c5bc", animation: "pulse 1.4s ease-in-out 0.4s infinite" }} />
+                </div>
+              </div>
+            ) : sessions.length === 0 ? (
+              <p className="text-xs text-center py-6" style={{ color: "#9a958c" }}>
+                No saved conversations yet. Start chatting and your history will appear here.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between group rounded-lg px-3 py-2.5 cursor-pointer transition-all hover:bg-white"
+                    style={{
+                      backgroundColor: currentSessionId === session.id ? "#ffffff" : "transparent",
+                      border: currentSessionId === session.id ? "1px solid #d8d6cd" : "1px solid transparent",
+                    }}
+                    onClick={() => loadSession(session.id)}
+                  >
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="flex items-center gap-2">
+                        {session.has_images && (
+                          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="#9a958c" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                          </svg>
+                        )}
+                        <p className="text-sm font-medium truncate" style={{ color: "#2b2823" }}>
+                          {session.title}
+                        </p>
+                      </div>
+                      <p className="text-[10px] mt-0.5" style={{ color: "#9a958c" }}>
+                        {new Date(session.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all hover:bg-red-50"
+                      title="Delete conversation"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="#ef4444" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Chat messages area */}
-        {isExpanded && messages.length > 0 && (
+        {isExpanded && messages.length > 0 && !showHistory && (
           <div
             ref={chatContainerRef}
             className="px-5 py-4 overflow-y-auto"
@@ -213,11 +474,23 @@ export function AIChatHero() {
             {messages.map((msg, i) => (
               <div key={i} className={`mb-4 ${msg.role === "user" ? "flex justify-end" : ""}`}>
                 {msg.role === "user" ? (
-                  <div
-                    className="inline-block px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm"
-                    style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
-                  >
-                    {msg.content}
+                  <div className="max-w-[85%]">
+                    {msg.image && (
+                      <div className="mb-2 flex justify-end">
+                        <img
+                          src={msg.image}
+                          alt="Uploaded"
+                          className="rounded-xl max-h-48 max-w-full object-cover"
+                          style={{ border: "2px solid #2b2823" }}
+                        />
+                      </div>
+                    )}
+                    <div
+                      className="inline-block px-4 py-2.5 rounded-2xl rounded-br-md text-sm"
+                      style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
+                    >
+                      {msg.content}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex gap-3 max-w-full">
@@ -261,13 +534,63 @@ export function AIChatHero() {
 
         {/* Input area */}
         <div className="px-5 py-4">
+          {/* Pending image preview */}
+          {pendingImage && (
+            <div className="mb-3 flex items-start gap-2">
+              <div className="relative">
+                <img
+                  src={pendingImage}
+                  alt="Selected"
+                  className="rounded-xl h-20 w-20 object-cover"
+                  style={{ border: "2px solid #d8d6cd" }}
+                />
+                <button
+                  onClick={() => setPendingImage(null)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-xs mt-1" style={{ color: "#9a958c" }}>
+                Add a message or tap send to analyze
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex gap-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+
+            {/* Photo button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="px-3 py-3 rounded-xl transition-all hover:opacity-80 active:scale-95 disabled:opacity-40 flex-shrink-0"
+              style={{ backgroundColor: "#f8f7f4", border: "1px solid #d8d6cd" }}
+              title="Upload a photo"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="#787060" strokeWidth={1.8} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+              </svg>
+            </button>
+
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about any market, city, or STR strategy..."
+              placeholder={pendingImage ? "Describe what to analyze..." : "Ask about any market, city, or STR strategy..."}
               disabled={isLoading}
               className="flex-1 px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 disabled:opacity-60"
               style={{
@@ -290,7 +613,7 @@ export function AIChatHero() {
             />
             <button
               type="submit"
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && !pendingImage) || isLoading}
               className="px-4 py-3 rounded-xl font-medium text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
               style={{ backgroundColor: "#2b2823", color: "#ffffff" }}
             >
@@ -300,8 +623,8 @@ export function AIChatHero() {
             </button>
           </form>
 
-          {/* Suggested prompts — show when no messages */}
-          {!isExpanded && (
+          {/* Suggested prompts — show when no messages and not showing history */}
+          {!isExpanded && !showHistory && (
             <div className="mt-3">
               <p className="text-xs mb-2" style={{ color: "#9a958c" }}>
                 Try asking:
@@ -326,7 +649,7 @@ export function AIChatHero() {
           )}
 
           {/* Quick actions when expanded */}
-          {isExpanded && !isLoading && messages.length > 0 && (
+          {isExpanded && !isLoading && messages.length > 0 && !showHistory && (
             <div className="mt-3 flex items-center gap-3">
               <Link
                 href="/calculator"

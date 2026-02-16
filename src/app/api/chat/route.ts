@@ -282,6 +282,13 @@ You can look up real data for any of our analyzed cities and states, find top ma
 - If someone seems ready to invest, mention Teeco's coaching program briefly.
 - Your data is from Edge's database (updated ${DATA_LAST_UPDATED}) — mention this naturally, not as a disclaimer.
 
+## WHEN THE USER SENDS AN IMAGE:
+- The user may send screenshots of Zillow/Airbnb listings, property photos, or market data.
+- If it's a listing screenshot: extract the property details (price, location, bedrooms, etc.) and analyze its STR potential using your tools to look up the city's market data.
+- If it's a property photo: describe what you see and suggest how it could be optimized for STR (amenities, staging, etc.).
+- If it's a map or chart: interpret the data and relate it to STR investing.
+- Always connect your image analysis back to real Edge market data when possible.
+
 ## IMPORTANT:
 - ALWAYS use tools when users ask about specific cities, states, or market criteria.
 - Never make up statistics — use tools or say you don't have that data.
@@ -310,10 +317,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Build conversation with system prompt
-    const conversation: Array<{ role: string; content: string; tool_call_id?: string; tool_calls?: unknown[] }> = [
+    // Support both text-only and multimodal (image) messages
+    const conversation: Array<{ role: string; content: unknown; tool_call_id?: string; tool_calls?: unknown[] }> = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...messages,
     ];
+
+    for (const msg of messages) {
+      if (msg.image) {
+        // Multimodal message with image — use content array format for OpenAI vision
+        const contentParts: Array<{ type: string; text?: string; image_url?: { url: string; detail?: string } }> = [];
+        if (msg.content) {
+          contentParts.push({ type: "text", text: msg.content });
+        }
+        contentParts.push({
+          type: "image_url",
+          image_url: { url: msg.image, detail: "auto" },
+        });
+        conversation.push({ role: msg.role, content: contentParts });
+      } else {
+        conversation.push({ role: msg.role, content: msg.content });
+      }
+    }
 
     // Allow up to 3 rounds of tool calls
     for (let round = 0; round < 3; round++) {
@@ -321,7 +345,8 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_API_KEY}` },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          // Use gpt-4o for vision messages, gpt-4o-mini for text-only
+          model: messages.some((m: { image?: string }) => m.image) ? "gpt-4o" : "gpt-4o-mini",
           messages: conversation,
           tools,
           tool_choice: round === 0 ? "auto" : "auto",
