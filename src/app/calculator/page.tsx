@@ -679,9 +679,13 @@ export default function CalculatorPage() {
           return search;
         });
         
-        setRecentSearches(withExpiredCachesCleared);
+        // Sort by timestamp DESC and cap at 5
+        const sorted = withExpiredCachesCleared
+          .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+          .slice(0, 5);
+        setRecentSearches(sorted);
         // Update localStorage with cleaned data
-        localStorage.setItem("edge_recent_searches", JSON.stringify(withExpiredCachesCleared));
+        localStorage.setItem("edge_recent_searches", JSON.stringify(sorted));
       } catch (e) {
         console.error("Failed to parse recent searches:", e);
       }
@@ -744,10 +748,10 @@ export default function CalculatorPage() {
               
               if (!changed) return prev;
               
-              // Sort by timestamp descending (most recent first), limit to 10
+              // Sort by timestamp descending (most recent first), limit to 5
               const merged = Array.from(localMap.values())
                 .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-                .slice(0, 10);
+                .slice(0, 5);
               localStorage.setItem("edge_recent_searches", JSON.stringify(merged));
               console.log(`[RecentSearches] Merged ${cloudSearches.length} cloud + ${prev.length} local → ${merged.length} total`);
               return merged;
@@ -1719,7 +1723,7 @@ export default function CalculatorPage() {
 
   // Save recent search (localStorage + Supabase sync for signed-in users)
   const saveRecentSearch = (search: RecentSearch) => {
-    const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 10);
+    const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
     

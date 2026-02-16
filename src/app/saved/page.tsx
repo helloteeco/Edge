@@ -1026,7 +1026,7 @@ export default function SavedPage() {
                 <p className="text-sm" style={{ color: '#787060' }}>
                   Last 5 analyses cached on this device. Tap &quot;View&quot; to pull up without using a credit.
                 </p>
-                {analysisHistory.sort((a, b) => b.timestamp - a.timestamp).map((item, index) => (
+                {analysisHistory.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5).map((item, index) => (
                   <div
                     key={`${item.address}-${index}`}
                     className="rounded-2xl p-5"

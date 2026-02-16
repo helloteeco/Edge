@@ -20,13 +20,13 @@ export async function GET(request: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Fetch recent searches, ordered by most recent first, limit 10
+    // Fetch recent searches, ordered by most recent first, limit 5
     const { data, error } = await supabase
       .from("recent_searches")
       .select("*")
       .eq("user_email", normalizedEmail)
       .order("analyzed_at", { ascending: false })
-      .limit(10);
+      .limit(5);
 
     if (error) {
       console.error("[RecentSearches] Error fetching:", error);
@@ -73,8 +73,8 @@ export async function PUT(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
     const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Upsert each search (max 10)
-    const toSync = searches.slice(0, 10);
+    // Upsert each search (max 5)
+    const toSync = searches.slice(0, 5);
     let synced = 0;
     for (const search of toSync) {
       if (!search.address) continue;
@@ -99,15 +99,15 @@ export async function PUT(request: NextRequest) {
       if (!error) synced++;
     }
 
-    // Enforce max 10 searches per user
+    // Enforce max 5 searches per user
     const { data: allSearches } = await supabase
       .from("recent_searches")
       .select("id, analyzed_at")
       .eq("user_email", normalizedEmail)
       .order("analyzed_at", { ascending: false });
 
-    if (allSearches && allSearches.length > 10) {
-      const idsToDelete = allSearches.slice(10).map((s) => s.id);
+    if (allSearches && allSearches.length > 5) {
+      const idsToDelete = allSearches.slice(5).map((s) => s.id);
       await supabase.from("recent_searches").delete().in("id", idsToDelete);
     }
 
@@ -162,15 +162,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Database error" }, { status: 500 });
     }
 
-    // Enforce max 10 searches per user: delete oldest beyond 10
+    // Enforce max 5 searches per user: delete oldest beyond 5
     const { data: allSearches } = await supabase
       .from("recent_searches")
       .select("id, analyzed_at")
       .eq("user_email", normalizedEmail)
       .order("analyzed_at", { ascending: false });
 
-    if (allSearches && allSearches.length > 10) {
-      const idsToDelete = allSearches.slice(10).map((s) => s.id);
+    if (allSearches && allSearches.length > 5) {
+      const idsToDelete = allSearches.slice(5).map((s) => s.id);
       await supabase.from("recent_searches").delete().in("id", idsToDelete);
     }
 
