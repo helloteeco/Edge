@@ -789,10 +789,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           ? `<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;">Superhost</span>`
           : "";
 
-        const excludeBtnLabel = isExcluded ? "✓ Include in Estimate" : "✕ Exclude from Estimate";
-        const excludeBtnStyle = isExcluded 
-          ? "background:#22c55e;color:white;" 
-          : "background:#f5f4f0;color:#787060;border:1px solid #e5e3da;";
+        // Exclude button moved to sticky bar above map
 
         const popupContent = `
           <div class="comp-popup-card">
@@ -827,27 +824,14 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
                  class="comp-popup-link">
                 View on Airbnb →
               </a>
-              <button class="comp-exclude-btn" data-comp-id="${comp.id}" 
-                style="display:block;width:100%;text-align:center;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;margin-top:6px;cursor:pointer;${excludeBtnStyle}">
-                ${excludeBtnLabel}
-              </button>
+
             </div>
           </div>
         `;
 
         marker.bindPopup(popupContent, { closeButton: true, maxWidth: 280, offset: [0, -14] });
 
-        // Wire up exclude button click via event delegation on popup open
-        marker.on("popupopen", () => {
-          const btn = document.querySelector(`.comp-exclude-btn[data-comp-id="${comp.id}"]`) as HTMLButtonElement;
-          if (btn) {
-            btn.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleExclude?.(comp.id);
-            };
-          }
-        });
+
 
         marker.on("click", () => {
           setSelectedComp(comp);
@@ -975,6 +959,60 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         </div>
       </div>
 
+      {/* Sticky exclude bar — appears between header and map when a comp is selected */}
+      {selectedComp && (
+        <div className="px-4 py-2.5 flex items-center gap-2 border-t border-b" style={{ borderColor: "#e5e3da", backgroundColor: "#fafaf8" }}>
+          {/* Thumbnail */}
+          {selectedComp.image && !imgErrors.has(selectedComp.id) ? (
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden">
+              <img
+                src={selectedComp.image}
+                alt={selectedComp.name}
+                className="w-full h-full object-cover"
+                onError={() => handleImgError(selectedComp.id)}
+              />
+            </div>
+          ) : (
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: "#f5f4f0" }}>
+              🏡
+            </div>
+          )}
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-xs truncate" style={{ color: "#2b2823" }}>
+              {selectedComp.name}
+            </p>
+            <p className="text-[11px]" style={{ color: "#787060" }}>
+              ${selectedComp.nightPrice}/night · {selectedComp.distance.toFixed(1)}mi · {selectedComp.occupancy}% occ
+            </p>
+          </div>
+          {/* Exclude/Include button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleExclude?.(selectedComp.id);
+            }}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+            style={
+              excludedIds.has(selectedComp.id)
+                ? { backgroundColor: "#22c55e", color: "white" }
+                : { backgroundColor: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }
+            }
+          >
+            {excludedIds.has(selectedComp.id) ? "✓ Include" : "✕ Exclude"}
+          </button>
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedComp(null)}
+            className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs"
+            style={{ backgroundColor: "#f5f4f0", color: "#787060" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Map wrapper — creates isolated stacking context and clips Leaflet */}
       <div
         style={{
@@ -998,55 +1036,36 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         />
       </div>
 
-      {/* Selected comp detail card (below map) */}
+      {/* Selected comp detail card (below map) — Airbnb link only */}
       {selectedComp && (
-        <div className="px-5 py-4 border-t" style={{ borderColor: "#e5e3da" }}>
-          <div className="flex gap-3">
-            {/* Thumbnail */}
-            {selectedComp.image && !imgErrors.has(selectedComp.id) ? (
-              <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
-                <img
-                  src={selectedComp.image}
-                  alt={selectedComp.name}
-                  className="w-full h-full object-cover"
-                  onError={() => handleImgError(selectedComp.id)}
-                />
-              </div>
-            ) : (
-              <div className="flex-shrink-0 w-16 h-16 rounded-lg flex items-center justify-center text-2xl" style={{ backgroundColor: "#f5f4f0" }}>
-                🏡
-              </div>
-            )}
-            {/* Details */}
+        <div className="px-5 py-3 border-t" style={{ borderColor: "#e5e3da" }}>
+          <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate" style={{ color: "#2b2823" }}>
-                {selectedComp.name}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "#787060" }}>
-                {selectedComp.bedrooms}bd / {selectedComp.bathrooms}ba · {selectedComp.accommodates} guests · {selectedComp.distance.toFixed(1)}mi
-              </p>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-sm font-bold" style={{ color: "#2b2823" }}>
-                  ${selectedComp.nightPrice}/night
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold" style={{ color: "#2b2823" }}>
+                  {selectedComp.bedrooms}bd / {selectedComp.bathrooms}ba · {selectedComp.accommodates} guests
                 </span>
-                <span className="text-xs" style={{ color: "#787060" }}>
-                  {selectedComp.occupancy}% occ
-                </span>
-                <span className="text-xs font-semibold" style={{ color: "#16a34a" }}>
-                  {formatCurrency(selectedComp.annualRevenue)}/yr
-                </span>
+                {selectedComp.isSuperhost && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>Superhost</span>
+                )}
+                {selectedComp.rating > 0 && (
+                  <span className="text-[11px]" style={{ color: "#787060" }}>★ {selectedComp.rating.toFixed(1)}</span>
+                )}
               </div>
+              <span className="text-xs font-semibold" style={{ color: "#16a34a" }}>
+                {formatCurrency(selectedComp.annualRevenue)}/yr
+              </span>
             </div>
+            <a
+              href={selectedComp.url || `https://www.airbnb.com/rooms/${selectedComp.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 px-4 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ backgroundColor: "#ff5a5f", color: "white" }}
+            >
+              View on Airbnb →
+            </a>
           </div>
-          <a
-            href={selectedComp.url || `https://www.airbnb.com/rooms/${selectedComp.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80"
-            style={{ backgroundColor: "#ff5a5f", color: "white" }}
-          >
-            View on Airbnb →
-          </a>
         </div>
       )}
     </div>

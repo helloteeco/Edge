@@ -5782,8 +5782,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     searchRadiusMiles={(result as any).searchRadiusMiles}
                     onToggleExclude={toggleCompExclusion}
                     onSelectComp={(comp) => {
-                      const compEl = document.getElementById(`comp-card-${comp.id}`);
-                      if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // No auto-scroll — selected comp details shown in sticky bar above map
                     }}
                   />
                 </CalculatorErrorBoundary>
