@@ -708,23 +708,48 @@ export default function CalculatorPage() {
         }
       }
 
-      // 2. Fetch FROM Supabase and merge remote-only searches into local
+      // 2. Fetch FROM Supabase and merge with local (cloud wins when newer)
       fetch(`/api/recent-searches?email=${encodeURIComponent(savedEmail)}`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.searches?.length > 0) {
             setRecentSearches(prev => {
-              // Merge: Supabase searches fill in anything not already in local
-              const localAddresses = new Set(prev.map((s: RecentSearch) => s.address));
-              const remoteOnly = data.searches
-                .filter((s: RecentSearch) => !localAddresses.has(s.address))
-                .map((s: RecentSearch) => ({
-                  ...s,
-                  timestamp: s.analyzedAt ? new Date(s.analyzedAt).getTime() : Date.now(),
-                }));
-              if (remoteOnly.length === 0) return prev;
-              const merged = [...prev, ...remoteOnly].slice(0, 10);
+              // Build a map of local searches keyed by address
+              const localMap = new Map<string, RecentSearch>();
+              prev.forEach((s: RecentSearch) => localMap.set(s.address, s));
+              
+              // Merge: for each cloud search, use cloud version if newer or if local doesn't have it
+              let changed = false;
+              const cloudSearches = data.searches.map((s: RecentSearch) => ({
+                ...s,
+                timestamp: s.analyzedAt ? new Date(s.analyzedAt).getTime() : (s.timestamp || Date.now()),
+              }));
+              
+              for (const cloud of cloudSearches) {
+                const local = localMap.get(cloud.address);
+                if (!local) {
+                  // Cloud-only: add it
+                  localMap.set(cloud.address, cloud);
+                  changed = true;
+                } else {
+                  // Both exist: use whichever is newer
+                  const cloudTime = cloud.timestamp || 0;
+                  const localTime = local.timestamp || 0;
+                  if (cloudTime > localTime) {
+                    localMap.set(cloud.address, cloud);
+                    changed = true;
+                  }
+                }
+              }
+              
+              if (!changed) return prev;
+              
+              // Sort by timestamp descending (most recent first), limit to 10
+              const merged = Array.from(localMap.values())
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                .slice(0, 10);
               localStorage.setItem("edge_recent_searches", JSON.stringify(merged));
+              console.log(`[RecentSearches] Merged ${cloudSearches.length} cloud + ${prev.length} local → ${merged.length} total`);
               return merged;
             });
           }
