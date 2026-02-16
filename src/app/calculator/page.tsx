@@ -268,6 +268,8 @@ export default function CalculatorPage() {
   const userEditedRent = useRef(false);
   const userEditedInsurance = useRef(false);
   const userEditedFurnishings = useRef(false);
+  // Track whether we've already done the initial bedroom-filter after data loads
+  const hasInitialRefiltered = useRef(false);
 
   // Market mismatch detection
   const [marketMismatch, setMarketMismatch] = useState<{
@@ -374,7 +376,84 @@ export default function CalculatorPage() {
     setExcludedCompIds(new Set());
     setRealOccupancyData({});
     setShowAllComps(false);
+    // Reset the initial refilter flag so the next analysis gets auto-filtered too
+    hasInitialRefiltered.current = false;
   }, [result?.address]);
+
+  // ===== AUTO-REFILTER ON INITIAL LOAD =====
+  // When PriceLabs returns raw unfiltered data (average across ALL bedroom sizes),
+  // immediately refilter using the property's detected bedroom count so the first
+  // displayed revenue is bedroom-appropriate and consistent with manual refilters.
+  useEffect(() => {
+    if (hasInitialRefiltered.current) return;
+    if (!result || allComps.length === 0 || !targetCoords) return;
+    // Need at least 3 comps to make filtering meaningful
+    if (allComps.length < 3) return;
+    
+    const br = bedrooms ?? result.bedrooms ?? 3;
+    const ba = bathrooms ?? 2;
+    const gc = guestCount ?? br * 2;
+    
+    console.log(`[InitialRefilter] Auto-filtering ${allComps.length} comps for ${br}br/${ba}ba/${gc}guests`);
+    hasInitialRefiltered.current = true;
+    
+    // Inline refilter logic to avoid stale closure issues with handleLocalRefilterAuto
+    const timer = setTimeout(() => {
+      try {
+        const filtered = refilterComps(
+          allComps as Comp[],
+          targetCoords.lat,
+          targetCoords.lng,
+          br,
+          ba,
+          gc,
+        );
+        
+        const newPercentiles = {
+          revenue: filtered.percentiles.revenue,
+          adr: filtered.percentiles.adr,
+          occupancy: filtered.percentiles.occupancy,
+          listingsAnalyzed: filtered.filteredListings,
+          totalListingsInArea: filtered.totalListings,
+        };
+        
+        let annualRevenue = 0;
+        if (filtered.percentiles.revenue.p50 > 0) {
+          annualRevenue = filtered.percentiles.revenue.p50;
+        } else if (filtered.avgAnnualRevenue > 0) {
+          annualRevenue = filtered.avgAnnualRevenue;
+        } else if (filtered.avgAdr > 0 && filtered.avgOccupancy > 0) {
+          annualRevenue = Math.round(filtered.avgAdr * (filtered.avgOccupancy / 100) * 365);
+        }
+        
+        const monthlyRevenue = Math.round(annualRevenue / 12);
+        const revPAN = filtered.avgAdr > 0 && filtered.avgOccupancy > 0 
+          ? Math.round(filtered.avgAdr * (filtered.avgOccupancy / 100)) : 0;
+        
+        setResult(prev => prev ? {
+          ...prev,
+          annualRevenue,
+          monthlyRevenue,
+          adr: filtered.avgAdr,
+          occupancy: filtered.avgOccupancy,
+          revPAN,
+          bedrooms: br,
+          bathrooms: ba,
+          percentiles: newPercentiles,
+          comparables: filtered.comparables as ComparableListing[],
+          nearbyListings: filtered.totalListings,
+        } : prev);
+        
+        setExcludedCompIds(new Set());
+        
+        console.log(`[InitialRefilter] Done: ${filtered.filteredListings} comps, ADR $${filtered.avgAdr}, Rev $${annualRevenue}/yr`);
+      } catch (err) {
+        console.warn('[InitialRefilter] Failed:', err);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allComps, targetCoords, result?.address]);
   
   // Fetch real occupancy data for comps after analysis completes
   useEffect(() => {

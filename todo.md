@@ -666,3 +666,8 @@
 - [x] Add billing cycle tracking to admin dashboard API (supabase.ts) + Billing Cycle tab UI
 - [x] Show PriceLabs search usage meter, current bill, projected bill, cycle revenue, P/L
 - [x] Show daily breakdown table with per-day API calls and costs, cost thresholds
+
+## Bug Fix: Initial revenue display shows unfiltered average before bedroom filter (February 2026)
+- [ ] Diagnose why initial load shows revenue across ALL bedroom sizes (91 comps) instead of filtering by property's bedroom count
+- [ ] Fix initial display to pre-filter by bedroom count so revenue doesn't jump dramatically when user adjusts
+- [ ] No major feature changes
