@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { getMarketCounts } from "@/data/helpers";
 
 type Message = {
   role: "user" | "assistant";
@@ -76,6 +77,7 @@ function formatResponse(text: string) {
 }
 
 export function AIChatHero() {
+  const marketCounts = getMarketCounts();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -169,7 +171,7 @@ export function AIChatHero() {
                   Ask Edge AI
                 </h2>
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
-                  Powered by real data from 600+ US markets
+                  {`Powered by real data from ${marketCounts.withFullData.toLocaleString()}+ US markets`}
                 </p>
               </div>
             </div>
