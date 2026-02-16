@@ -199,10 +199,10 @@ export default function HomePage() {
     <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
       {/* Informational Banner - Subtle cream-dark */}
       <div style={{ backgroundColor: '#d8d6cd', borderBottom: '1px solid rgba(120, 112, 96, 0.15)' }}>
-        <div className="max-w-5xl mx-auto px-4 py-2.5">
+        <div className="max-w-5xl mx-auto px-4 py-1.5 sm:py-2.5">
           <div className="flex items-center justify-center gap-2">
             
-            <p className="text-xs sm:text-sm" style={{ color: '#2b2823' }}>
+            <p className="text-[11px] sm:text-sm" style={{ color: '#2b2823' }}>
               Most students successfully launch their first STR with just <span className="font-semibold">$65K</span>.
             </p>
           </div>
@@ -211,9 +211,9 @@ export default function HomePage() {
 
       {/* Hero Header - Compact hero with heading, badges, CTA, stats */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 50%, #2b2823 100%)' }}>
-        <div className="max-w-5xl mx-auto px-4 py-4 sm:py-6">
+        <div className="max-w-5xl mx-auto px-4 py-2.5 sm:py-6">
           {/* Top bar: Logo + Auth */}
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-4">
             <div className="flex items-center gap-2.5">
               <Image src="/teeco-icon-black.png" alt="Teeco" width={32} height={32} className="w-8 h-8 invert" />
               <h2 
@@ -229,28 +229,28 @@ export default function HomePage() {
           {/* Hero Content - Compact */}
           <div className="max-w-2xl">
             <h1 
-              className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight mb-2"
+              className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight mb-1 sm:mb-2"
               style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
             >
               Find Your Next Cash-Flowing Airbnb
             </h1>
-            <p className="text-xs sm:text-sm mb-3 leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+            <p className="text-[11px] sm:text-sm mb-2 sm:mb-3 leading-snug sm:leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               AI-powered STR market research, deal analysis, and funding &mdash; backed by real data across every US state. Built by a real investor generating $1M+/yr.
             </p>
 
             {/* Badges + CTA inline */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                 AI-Powered
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
+              <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 AI Assistant
               </span>
               <Link 
                 href="/calculator"
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
                 style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
               >
                 Analyze Free
@@ -260,7 +260,7 @@ export default function HomePage() {
           </div>
 
           {/* Stats Row - Compact */}
-          <div className="flex gap-2 mt-4 pt-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div className="flex gap-2 mt-2.5 sm:mt-4 pt-2 sm:pt-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
             {[
               { value: '50', label: 'States' },
               { value: `${Math.floor(getMarketCounts().total / 1000)}K+`, label: 'Cities' },
@@ -268,11 +268,11 @@ export default function HomePage() {
             ].map((stat, i) => (
               <div 
                 key={i}
-                className="rounded-lg px-3 py-2 min-w-[80px]"
+                className="rounded-lg px-3 py-1.5 sm:py-2 min-w-[80px]"
                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
               >
                 <div 
-                  className="text-lg sm:text-xl font-bold"
+                  className="text-base sm:text-xl font-bold"
                   style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
                   {stat.value}

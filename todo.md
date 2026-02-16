@@ -434,3 +434,8 @@
 - [x] Adaptive guidance text: "Before You Invest" for legal, "How to Verify" for restricted/banned
 - [x] TypeScript compilation passes with zero errors
 - [x] Push to GitHub for Vercel auto-deploy
+
+## UI: Shorten Mobile Hero Header (February 2026)
+- [ ] Reduce vertical spacing/padding in hero section on mobile
+- [ ] Make Ask Edge AI more prominent above the fold
+- [ ] Keep all existing content and features intact
