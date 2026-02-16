@@ -32,38 +32,57 @@ async function researchRegulations(cityName: string, stateCode: string): Promise
     throw new Error("OpenAI API key not configured");
   }
 
-  const prompt = `You are a short-term rental (STR/Airbnb) regulation expert. Research the current STR regulations for ${cityName}, ${stateCode}.
+  const prompt = `You are a short-term rental (STR/Airbnb) regulation researcher. Your job is to determine the ACTUAL, CURRENT regulation status for ${cityName}, ${stateCode}.
 
-Classify the city based on these criteria:
+CRITICAL RULES — READ CAREFULLY:
+
+1. DEFAULT TO "legal" UNLESS YOU HAVE SPECIFIC EVIDENCE OTHERWISE.
+   - The vast majority of US cities (especially small towns, rural areas, and unincorporated areas) have NO specific STR ordinance. This means STRs are LEGAL by default.
+   - Do NOT classify a city as "restricted" or "banned" unless you can cite a specific municipal ordinance, county code, or state law that restricts STRs there.
+   - If a city simply requires a business license, tax registration, or basic permit, that is "legal" with "easy" or "moderate" permit difficulty — NOT restricted.
+
+2. ONLY classify as "restricted" if there are SEVERE, SPECIFIC restrictions:
+   - Owner-occupied ONLY requirement (no investor rentals allowed)
+   - Annual night cap under 120 days
+   - Permit moratorium or lottery system
+   - Specific zone-only restrictions that exclude most residential areas
+   - Examples: parts of Denver CO, some Nashville TN zones
+
+3. ONLY classify as "banned" if STRs are EFFECTIVELY PROHIBITED:
+   - City has passed an ordinance banning or effectively banning non-owner-occupied STRs
+   - Examples: Irvine CA, most of NYC for whole-unit rentals, Santa Monica non-primary residence
+
+4. For SMALL TOWNS (population under 25,000) and RURAL/UNINCORPORATED AREAS:
+   - Almost always "legal" — small towns rarely have STR-specific ordinances
+   - Check if the COUNTY has regulations; if not, default to "legal"
+   - State-level regulations (like tax collection requirements) do NOT make a city "restricted"
+
+5. PERMIT DIFFICULTY:
+   - "easy": No permit required, or simple online registration/tax signup
+   - "moderate": Standard permit with application, basic inspection, fees under $500
+   - "hard": Multiple inspections, fees over $500, conditional use permits, long waits
+   - "very_hard": Lottery, very limited permits, moratorium on new permits
+
+6. ACCURACY REQUIREMENTS:
+   - Your summary and details MUST match what someone would find by Googling "${cityName} ${stateCode} short term rental regulations"
+   - Do NOT invent restrictions that don't exist
+   - If you're uncertain, lean toward "legal" with "moderate" difficulty and say so in the details
+   - Include the county name in your response when relevant
 
 LEGALITY STATUS:
-- "legal": STRs are explicitly allowed, even if permits/licenses are required. Most cities fall here.
-- "restricted": STRs are technically legal but with severe restrictions that make it very difficult (e.g., owner-occupied only, strict caps on permits, 90-day annual limits, specific zones only, moratoriums on new permits)
-- "banned": STRs are effectively banned or prohibited (e.g., Irvine CA, most of NYC for whole-unit rentals, Santa Monica non-primary residence)
-
-PERMIT DIFFICULTY:
-- "easy": No permit required, or simple online registration with minimal requirements
-- "moderate": Permit required with standard requirements (application, inspection, fees under $500)
-- "hard": Permit required with significant requirements (multiple inspections, fees over $500, conditional use permits, neighborhood notification, long wait times)
-- "very_hard": Extremely difficult to obtain (lottery system, very limited permits available, extensive approval process, moratorium on new permits)
-
-IMPORTANT GUIDELINES:
-- Be conservative: if a city has significant restrictions, classify as "restricted" not "legal"
-- Cities that require owner-occupancy for ALL STRs should be "restricted" 
-- Cities with annual night caps under 120 days should be "restricted"
-- Cities that effectively banned non-owner-occupied STRs should be "banned"
-- If you're unsure about a small town, check if the COUNTY or STATE has relevant regulations
-- For unincorporated areas, use county-level regulations
+- "legal": STRs are allowed (with or without permits/registration). This is the DEFAULT.
+- "restricted": STRs face severe restrictions (specific ordinance required as evidence)
+- "banned": STRs are effectively prohibited (specific ban ordinance required as evidence)
 
 Respond ONLY with valid JSON (no markdown, no explanation):
 {
   "legality_status": "legal" | "restricted" | "banned",
   "permit_difficulty": "easy" | "moderate" | "hard" | "very_hard",
-  "max_nights_per_year": null or number (if there's an annual cap),
+  "max_nights_per_year": null or number (if there's a documented annual cap),
   "owner_occupied_required": true/false,
-  "permit_cap": true/false (is there a limit on number of permits issued?),
-  "summary": "One sentence summary of the regulation status",
-  "details": "2-3 sentences with key details: what's required, any caps, fees, zones, recent changes"
+  "permit_cap": true/false (is there a documented limit on number of permits?),
+  "summary": "One sentence summary — be specific about what's required or allowed",
+  "details": "2-3 sentences: what county this is in, what's specifically required, any documented restrictions. If no specific ordinance exists, say so clearly."
 }`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -75,10 +94,10 @@ Respond ONLY with valid JSON (no markdown, no explanation):
     body: JSON.stringify({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are an expert on US short-term rental regulations. Always respond with valid JSON only." },
+        { role: "system", content: "You are a factual researcher on US short-term rental regulations. You default to 'legal' unless you have specific evidence of restrictions. Most US cities allow STRs. Always respond with valid JSON only." },
         { role: "user", content: prompt },
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       max_tokens: 500,
     }),
   });
@@ -131,12 +150,14 @@ export async function GET(request: NextRequest) {
   const city = searchParams.get("city");
   const state = searchParams.get("state");
   const forceRefresh = searchParams.get("refresh") === "true";
+  const providedCityId = searchParams.get("cityId");
 
   if (!city || !state) {
     return NextResponse.json({ error: "city and state parameters required" }, { status: 400 });
   }
 
-  const cityId = `${state.toLowerCase()}-${city.toLowerCase().replace(/\s+/g, "-")}`;
+  // Use provided cityId if available (more accurate), otherwise construct from city/state
+  const cityId = providedCityId || `${state.toLowerCase()}-${city.toLowerCase().replace(/\s+/g, "-")}`;
 
   // Check cache first (unless force refresh)
   if (!forceRefresh) {
@@ -147,11 +168,11 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (cached) {
-      // Check if data is stale (older than 90 days)
+      // Check if data is stale (older than 30 days)
       const lastVerified = new Date(cached.last_verified);
       const daysSinceVerified = (Date.now() - lastVerified.getTime()) / (1000 * 60 * 60 * 24);
 
-      if (daysSinceVerified < 90) {
+      if (daysSinceVerified < 30) {
         return NextResponse.json({
           ...cached,
           source: "cached",
@@ -235,7 +256,7 @@ export async function POST(request: NextRequest) {
 
         if (cached) {
           const daysSince = (Date.now() - new Date(cached.last_verified).getTime()) / (1000 * 60 * 60 * 24);
-          if (daysSince < 90) {
+          if (daysSince < 30) {
             results.push({ city, state, status: "cached", result: cached });
             continue;
           }

@@ -422,3 +422,15 @@
 - [x] Update calculator frontend to call new checkout route instead of opening payment link URLs
 - [x] Verify Stripe webhook still handles checkout.session.completed correctly
 - [ ] Commit and push to deploy
+
+
+## FEATURE: Universal STR Regulation Cards for ALL 1,444+ Cities (February 2026)
+- [ ] Unify regulation card into single reusable RegulationCard component for consistent display
+- [ ] Make enrichment trigger for ALL cities (curated, default, and future) not just default-source
+- [ ] Show regulation card on every city page regardless of status (legal/restricted/banned)
+- [ ] Cache AI enrichment results in Supabase so each city only researched once per 30 days
+- [ ] Ensure new states/cities added in future auto-get regulation cards without code changes
+- [ ] Adaptive card styling: green (legal), yellow (restricted), red (banned)
+- [ ] Adaptive guidance text: "Before You Invest" for legal, "How to Verify" for restricted/banned
+- [ ] TypeScript compilation passes with zero errors
+- [ ] Push to GitHub for Vercel auto-deploy
