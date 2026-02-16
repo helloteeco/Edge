@@ -436,6 +436,12 @@
 - [x] Push to GitHub for Vercel auto-deploy
 
 ## UI: Shorten Mobile Hero Header (February 2026)
-- [ ] Reduce vertical spacing/padding in hero section on mobile
-- [ ] Make Ask Edge AI more prominent above the fold
-- [ ] Keep all existing content and features intact
+- [x] Reduce vertical spacing/padding in hero section on mobile
+- [x] Make Ask Edge AI more prominent above the fold
+- [x] Keep all existing content and features intact
+
+## UI: Mobile Hero Refinements (February 2026)
+- [ ] Shorter single-line headline on mobile
+- [ ] Tighter description paragraph — one clear line
+- [ ] Remove redundant AI badges, keep only Analyze Free CTA
+- [ ] Reduce gap between hero and AI chat card for seamless flow

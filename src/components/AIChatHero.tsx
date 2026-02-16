@@ -153,7 +153,7 @@ export function AIChatHero() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+    <div className="max-w-5xl mx-auto px-4 pt-3 sm:pt-6 pb-2">
       <div
         className="rounded-2xl overflow-hidden transition-all duration-300"
         style={{
