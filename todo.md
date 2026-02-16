@@ -584,7 +584,12 @@
 - [x] No other features changed
 
 ## FIX: Truncated text on mobile — Search subtitle, Funding subtitle, Calculator placeholder (February 2026)
-- [ ] Shorten Search page subtitle so it fits on mobile without "..."
-- [ ] Shorten Funding page subtitle so it fits on mobile without "..."
-- [ ] Shorten Calculator input placeholder so it fits on mobile without "..."
+- [x] Shorten Search page subtitle so it fits on mobile without "..."
+- [x] Shorten Funding page subtitle so it fits on mobile without "..."
+- [x] Shorten Calculator input placeholder so it fits on mobile without "..."
+- [ ] No other features changed
+
+## FIX: Search subtitle Unicode escape and Calculator comps wording (February 2026)
+- [ ] Fix Search subtitle showing raw \u2022 instead of bullet character
+- [ ] Fix Calculator "30+ real STR comps" — not always 30 comps
 - [ ] No other features changed

@@ -485,7 +485,7 @@ export default function SearchPage() {
                 Search Markets
               </h1>
               <p className="text-[11px]" style={{ color: '#787060' }}>
-                {marketCounts.total.toLocaleString()}+ cities \u2022 {marketCounts.withFullData} with full data
+                {marketCounts.total.toLocaleString()}+ cities {"\u2022"} {marketCounts.withFullData} with full data
               </p>
             </div>
             

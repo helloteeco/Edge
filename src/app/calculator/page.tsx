@@ -4429,7 +4429,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
           <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
             How much could your<br />STR earn?
           </h1>
-          <p className="text-gray-600">Revenue estimates from 30+ real STR comps near your property</p>
+          <p className="text-gray-600">Revenue estimates from real STR comps near your property</p>
         </div>
 
         {/* Search Box */}
