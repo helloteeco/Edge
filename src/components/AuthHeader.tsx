@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import AuthModal from "./AuthModal";
+import AvatarPicker, { AvatarIcon, getSelectedAvatar } from "./AvatarPicker";
 
 interface AuthHeaderProps {
   className?: string;
@@ -13,6 +14,9 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
 
   // Check localStorage for auth state
   const checkAuthState = useCallback(() => {
@@ -36,18 +40,12 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
 
   // Check auth status on mount and handle magic link token
   useEffect(() => {
-    // Don't handle magic link tokens here — let the page component handle it
-    // to avoid race conditions with duplicate verify calls.
-    // AuthHeader only reads localStorage for auth state.
-    
-    // Check if a token is in the URL — if so, wait briefly for the page to handle it
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     
     if (token) {
       console.log("[AuthHeader] Token detected in URL, deferring to page handler...");
       setIsVerifying(true);
-      // Wait for the page to verify and store auth, then check localStorage
       const timer = setTimeout(() => {
         checkAuthState();
         setIsVerifying(false);
@@ -55,23 +53,28 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
       return () => clearTimeout(timer);
     }
     
-    // No token in URL, check localStorage for existing session
     checkAuthState();
   }, [checkAuthState]);
+
+  // Load selected avatar on mount
+  useEffect(() => {
+    setSelectedAvatar(getSelectedAvatar());
+  }, []);
 
   // Listen for storage events from other tabs (cross-tab sync)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      // When auth state changes in another tab, update this tab
       if (e.key === "edge_auth_sync" || e.key === "edge_auth_email" || e.key === "edge_auth_token") {
         console.log("[AuthHeader] Storage change detected, checking auth state...");
         checkAuthState();
+      }
+      if (e.key === "edge_user_avatar") {
+        setSelectedAvatar(getSelectedAvatar());
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     
-    // Also poll periodically in case storage events don't fire (some browsers)
     const pollInterval = setInterval(() => {
       const currentAuth = localStorage.getItem("edge_auth_email");
       if (currentAuth && !isAuthenticated) {
@@ -81,7 +84,7 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
         console.log("[AuthHeader] Polling detected sign out");
         checkAuthState();
       }
-    }, 2000); // Check every 2 seconds
+    }, 2000);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
@@ -89,11 +92,19 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
     };
   }, [checkAuthState, isAuthenticated]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handleClickOutside = () => setShowDropdown(false);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showDropdown]);
+
   const handleSignOut = () => {
     localStorage.removeItem("edge_auth_email");
     localStorage.removeItem("edge_auth_token");
     localStorage.removeItem("edge_auth_expiry");
-    localStorage.setItem("edge_auth_sync", Date.now().toString()); // Notify other tabs
+    localStorage.setItem("edge_auth_sync", Date.now().toString());
     setIsAuthenticated(false);
     setUserEmail(null);
   };
@@ -104,17 +115,14 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
     setShowAuthModal(false);
   };
 
+  const handleAvatarSelect = (avatarId: string) => {
+    setSelectedAvatar(avatarId);
+    setShowAvatarPicker(false);
+  };
+
   // Styles based on variant
   const styles = variant === "dark" 
     ? {
-        signedInText: { color: 'rgba(255, 255, 255, 0.7)' },
-        checkColor: 'rgba(134, 239, 172, 0.9)',
-        emailText: { color: '#ffffff' },
-        signOutBtn: { 
-          color: 'rgba(255, 255, 255, 0.7)', 
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          backgroundColor: 'rgba(255, 255, 255, 0.05)'
-        },
         signInBtn: { 
           backgroundColor: 'rgba(255, 255, 255, 0.1)', 
           color: '#ffffff',
@@ -123,30 +131,12 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
         verifyingText: { color: 'rgba(255, 255, 255, 0.7)' }
       }
     : {
-        signedInText: { color: '#16a34a' },
-        checkColor: '#16a34a',
-        emailText: { color: '#2b2823' },
-        signOutBtn: { 
-          color: '#787060', 
-          border: '1px solid #d8d6cd',
-          backgroundColor: '#ffffff'
-        },
         signInBtn: { 
           backgroundColor: '#2b2823', 
           color: '#ffffff' 
         },
         verifyingText: { color: '#787060' }
       };
-
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    if (!showDropdown) return;
-    const handleClickOutside = () => setShowDropdown(false);
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [showDropdown]);
 
   return (
     <>
@@ -160,23 +150,17 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
           <div className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
-              className="flex items-center justify-center w-9 h-9 rounded-full transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-1"
-              style={{
-                backgroundColor: variant === 'dark' ? 'rgba(34, 197, 94, 0.25)' : '#f0fdf4',
-                border: variant === 'dark' ? '2px solid rgba(34, 197, 94, 0.5)' : '2px solid #bbf7d0',
-              }}
+              className="flex items-center justify-center transition-all hover:opacity-80 focus:outline-none min-w-[44px] min-h-[44px]"
               aria-label="Account menu"
               aria-expanded={showDropdown}
               aria-haspopup="true"
             >
-              <svg className="w-4.5 h-4.5" fill="none" stroke={variant === 'dark' ? '#86efac' : '#16a34a'} strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-              </svg>
+              <AvatarIcon avatarId={selectedAvatar} size={36} />
             </button>
             {/* Dropdown menu */}
             {showDropdown && (
               <div
-                className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden shadow-lg z-50"
+                className="absolute right-0 top-full mt-2 w-60 rounded-xl overflow-hidden shadow-lg z-50"
                 style={{
                   backgroundColor: '#ffffff',
                   border: '1px solid #e5e3da',
@@ -194,10 +178,21 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
                   </div>
                   <p className="text-xs truncate" style={{ color: '#4a4640' }}>{userEmail}</p>
                 </div>
+                {/* Change Avatar */}
+                <button
+                  onClick={() => { setShowAvatarPicker(true); setShowDropdown(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-all hover:bg-gray-50 min-h-[44px]"
+                  style={{ color: '#4a4640', borderBottom: '1px solid #f0efe9' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+                  </svg>
+                  Change Avatar
+                </button>
                 {/* Sign out button */}
                 <button
                   onClick={() => { handleSignOut(); setShowDropdown(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-all hover:bg-red-50"
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-all hover:bg-red-50 min-h-[44px]"
                   style={{ color: '#787060' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -230,6 +225,14 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
         onSuccess={handleAuthSuccess}
         title="Sign in to Edge"
         subtitle="Sign in to save your favorite markets and sync across all your devices. No password needed."
+      />
+
+      {/* Avatar Picker Modal */}
+      <AvatarPicker
+        isOpen={showAvatarPicker}
+        onClose={() => setShowAvatarPicker(false)}
+        onSelect={handleAvatarSelect}
+        currentAvatarId={selectedAvatar}
       />
     </>
   );
