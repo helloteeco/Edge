@@ -31,6 +31,7 @@ interface CompMapProps {
   targetLng: number;
   targetAddress?: string;
   onSelectComp?: (comp: CompListing) => void;
+  onToggleExclude?: (compId: number | string) => void;
   excludedIds?: Set<number | string>;
   dataSource?: string; // e.g. "pricelabs (366 listings)" or "airbnb-direct"
   listingsAnalyzed?: number; // Number of listings PriceLabs analyzed
@@ -632,7 +633,7 @@ function ensureAllStyles(): void {
   if (oldLeafletCss) oldLeafletCss.remove();
 }
 
-export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, excludedIds = new Set(), dataSource, listingsAnalyzed, searchRadiusMiles }: CompMapProps) {
+export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSelectComp, onToggleExclude, excludedIds = new Set(), dataSource, listingsAnalyzed, searchRadiusMiles }: CompMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -788,6 +789,11 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           ? `<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;">Superhost</span>`
           : "";
 
+        const excludeBtnLabel = isExcluded ? "✓ Include in Estimate" : "✕ Exclude from Estimate";
+        const excludeBtnStyle = isExcluded 
+          ? "background:#22c55e;color:white;" 
+          : "background:#f5f4f0;color:#787060;border:1px solid #e5e3da;";
+
         const popupContent = `
           <div class="comp-popup-card">
             ${imgHtml}
@@ -821,11 +827,27 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
                  class="comp-popup-link">
                 View on Airbnb →
               </a>
+              <button class="comp-exclude-btn" data-comp-id="${comp.id}" 
+                style="display:block;width:100%;text-align:center;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;margin-top:6px;cursor:pointer;${excludeBtnStyle}">
+                ${excludeBtnLabel}
+              </button>
             </div>
           </div>
         `;
 
         marker.bindPopup(popupContent, { closeButton: true, maxWidth: 280, offset: [0, -14] });
+
+        // Wire up exclude button click via event delegation on popup open
+        marker.on("popupopen", () => {
+          const btn = document.querySelector(`.comp-exclude-btn[data-comp-id="${comp.id}"]`) as HTMLButtonElement;
+          if (btn) {
+            btn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleExclude?.(comp.id);
+            };
+          }
+        });
 
         marker.on("click", () => {
           setSelectedComp(comp);

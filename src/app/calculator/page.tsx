@@ -3850,6 +3850,14 @@ export default function CalculatorPage() {
     
     const guestMultiplier = getGuestCountMultiplier();
     
+    // When comps are excluded, recalculate from active comps only
+    if (excludedCompIds.size > 0) {
+      const compRevenue = getCompBasedRevenue();
+      if (compRevenue) {
+        return Math.round(compRevenue.annualRevenue * guestMultiplier);
+      }
+    }
+    
     // Use real percentile data if available
     // NOTE: percentiles.revenue values are ALREADY ANNUAL (not monthly)
     if (result.percentiles?.revenue) {
@@ -3887,6 +3895,13 @@ export default function CalculatorPage() {
     }
     if (!result) return 0;
     const guestMultiplier = getGuestCountMultiplier();
+    // When comps are excluded, recalculate from active comps only
+    if (excludedCompIds.size > 0) {
+      const compRevenue = getCompBasedRevenue();
+      if (compRevenue) {
+        return Math.round(compRevenue.annualRevenue * guestMultiplier);
+      }
+    }
     if (result.percentiles?.revenue) {
       let baseRevenue = 0;
       switch (revenuePercentile) {
@@ -5765,6 +5780,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     dataSource={result.dataSource}
                     listingsAnalyzed={result.percentiles?.listingsAnalyzed || result.percentiles?.totalListingsInArea}
                     searchRadiusMiles={(result as any).searchRadiusMiles}
+                    onToggleExclude={toggleCompExclusion}
                     onSelectComp={(comp) => {
                       const compEl = document.getElementById(`comp-card-${comp.id}`);
                       if (compEl) compEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
