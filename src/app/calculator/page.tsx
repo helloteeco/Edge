@@ -4450,7 +4450,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 onChange={(e) => { userIsTypingRef.current = true; setAddress(e.target.value); }}
                 onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Enter property address..."
+                placeholder="Enter address..."
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"

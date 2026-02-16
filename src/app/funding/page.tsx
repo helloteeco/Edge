@@ -1000,8 +1000,8 @@ export default function FundingPage() {
                 >
                   Funding Options
                 </h1>
-                <p className="text-sm truncate" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                  {fundingMethods.length}+ ways to fund your STR investment
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                  {fundingMethods.length}+ funding strategies
                 </p>
               </div>
             </div>

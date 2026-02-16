@@ -579,6 +579,12 @@
 - [x] No other features changed
 
 ## FIX: Inconsistent account icon positioning on Search and Funding pages (February 2026)
-- [ ] Fix account icon on Search page — should be in top-right header like Map/Calculator/Saved
-- [ ] Fix account icon on Funding page — should be in top-right header like Map/Calculator/Saved
+- [x] Fix account icon on Search page — should be in top-right header like Map/Calculator/Saved
+- [x] Fix account icon on Funding page — should be in top-right header like Map/Calculator/Saved
+- [x] No other features changed
+
+## FIX: Truncated text on mobile — Search subtitle, Funding subtitle, Calculator placeholder (February 2026)
+- [ ] Shorten Search page subtitle so it fits on mobile without "..."
+- [ ] Shorten Funding page subtitle so it fits on mobile without "..."
+- [ ] Shorten Calculator input placeholder so it fits on mobile without "..."
 - [ ] No other features changed
