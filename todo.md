@@ -478,10 +478,10 @@
 - [x] No other features changed
 
 ## FEATURE: Pre-made avatar picker for account icon (February 2026)
-- [ ] Generate 16 avatar images (investor personas, animals, abstract)
-- [ ] Build AvatarPicker component (grid modal with avatar options)
-- [ ] Integrate into AuthHeader dropdown (show selected avatar, "Change Avatar" option)
-- [ ] Save selected avatar to localStorage (and Supabase if logged in)
-- [ ] Show selected avatar in header circle instead of generic person icon
-- [ ] 44px touch targets, accessible labels
-- [ ] No other features changed
+- [x] Generate 16 SVG avatars (investor personas, animals, abstract)
+- [x] Build AvatarPicker component (grid modal with avatar options)
+- [x] Integrate into AuthHeader dropdown (show selected avatar, "Change Avatar" option)
+- [x] Save selected avatar to localStorage
+- [x] Show selected avatar in header circle instead of generic person icon
+- [x] 44px touch targets, accessible labels
+- [x] No other features changed
