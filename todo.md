@@ -460,3 +460,19 @@
 - [x] Auto-save conversations for logged-in users
 - [x] "New Chat" button to start fresh conversation
 - [x] Load and continue previous conversations
+
+## FEATURE: Soft login gate after 3 chat messages (February 2026)
+- [ ] Show inline banner after 3rd message: "Sign in to save this conversation"
+- [ ] Banner is dismissible, doesn't block chat
+- [ ] If user signs in mid-conversation, auto-save current conversation
+- [ ] No other features changed
+
+## UI: Hero polish + accessibility (February 2026)
+- [ ] Move "Analyze a Deal Free" CTA below stats or make it outline/secondary style
+- [ ] Simplify stats row: 2 clearer numbers instead of 3 confusing ones
+- [ ] Add subtle green left-border accent to prompt chips for better tappability
+- [ ] Tighten gap below AI chat card
+- [ ] Replace "Sign Out" text with user icon (dropdown with Sign Out inside)
+- [ ] Ensure all changes meet WCAG AA contrast ratios (4.5:1 for text, 3:1 for large text)
+- [ ] Minimum 44px touch targets for all interactive elements
+- [ ] No other features changed

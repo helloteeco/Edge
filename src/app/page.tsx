@@ -238,25 +238,13 @@ export default function HomePage() {
               Real data on 1,444+ markets. Built by an investor generating $1M+/yr.
             </p>
 
-            {/* CTA */}
-            <div className="flex items-center">
-              <Link 
-                href="/calculator"
-                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
-                style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
-              >
-                Analyze a Deal Free
-                <ArrowRightIcon className="w-3.5 h-3.5" />
-              </Link>
-            </div>
           </div>
 
-          {/* Stats Row - Compact */}
-          <div className="flex gap-2 mt-2.5 sm:mt-4 pt-2 sm:pt-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          {/* Stats Row + CTA - Compact */}
+          <div className="flex items-center gap-2 mt-2.5 sm:mt-4 pt-2 sm:pt-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
             {[
               { value: '50', label: 'States' },
-              { value: `${Math.floor(getMarketCounts().total / 1000)}K+`, label: 'Cities' },
-              { value: String(getMarketCounts().withFullData), label: 'Markets' },
+              { value: String(getMarketCounts().withFullData), label: 'Analyzed Markets' },
             ].map((stat, i) => (
               <div 
                 key={i}
@@ -269,11 +257,22 @@ export default function HomePage() {
                 >
                   {stat.value}
                 </div>
-                <div className="text-[10px]" style={{ color: 'rgba(255, 255, 255, 0.55)' }}>
+                <div className="text-[10px] sm:text-xs" style={{ color: 'rgba(255, 255, 255, 0.55)' }}>
                   {stat.label}
                 </div>
               </div>
             ))}
+            <div className="ml-auto">
+              <Link 
+                href="/calculator"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
+                aria-label="Analyze a deal for free"
+              >
+                Analyze Free
+                <ArrowRightIcon className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

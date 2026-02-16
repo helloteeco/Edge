@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getMarketCounts } from "@/data/helpers";
+import AuthModal from "@/components/AuthModal";
 
 type Message = {
   role: "user" | "assistant";
@@ -333,9 +334,14 @@ export function AIChatHero() {
   };
 
   const userEmail = getAuthEmail();
+  const [loginBannerDismissed, setLoginBannerDismissed] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const userMessageCount = messages.filter((m) => m.role === "user").length;
+  const showLoginNudge = !userEmail && userMessageCount >= 3 && !loginBannerDismissed && !isLoading;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pt-3 sm:pt-6 pb-2">
+    <>
+    <div className="max-w-5xl mx-auto px-4 pt-1.5 sm:pt-4 pb-1">
       <div
         className="rounded-2xl overflow-hidden transition-all duration-300"
         style={{
@@ -532,6 +538,43 @@ export function AIChatHero() {
           </div>
         )}
 
+        {/* Soft login nudge — appears after 3 messages for non-logged-in users */}
+        {showLoginNudge && (
+          <div
+            className="mx-5 mb-2 flex items-center gap-3 px-4 py-3 rounded-xl"
+            style={{
+              backgroundColor: "#f0fdf4",
+              border: "1px solid #bbf7d0",
+            }}
+            role="alert"
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#16a34a" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: "#15803d" }}>Save this conversation</p>
+              <p className="text-xs" style={{ color: "#4ade80" }}>Sign in to keep your chat history and pick up where you left off.</p>
+            </div>
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90 active:scale-95 min-h-[44px] flex-shrink-0"
+              style={{ backgroundColor: "#16a34a", color: "#ffffff" }}
+              aria-label="Sign in to save conversation"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setLoginBannerDismissed(true)}
+              className="p-1.5 rounded-lg transition-all hover:bg-green-100 min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0"
+              aria-label="Dismiss sign in prompt"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="#16a34a" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Input area */}
         <div className="px-5 py-4">
           {/* Pending image preview */}
@@ -634,12 +677,14 @@ export function AIChatHero() {
                   <button
                     key={i}
                     onClick={() => handlePromptClick(prompt.question)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] min-h-[44px] flex items-center"
                     style={{
                       backgroundColor: "#f8f7f4",
                       border: "1px solid #e5e3da",
-                      color: "#4a4640",
+                      borderLeft: "3px solid #22c55e",
+                      color: "#3d3a34",
                     }}
+                    aria-label={`Ask: ${prompt.label}`}
                   >
                     {prompt.label}
                   </button>
@@ -688,5 +733,24 @@ export function AIChatHero() {
         </div>
       </div>
     </div>
+
+    {/* Auth Modal for login nudge */}
+    <AuthModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={(email: string) => {
+          setShowLoginModal(false);
+          setLoginBannerDismissed(true);
+          // Auto-save current conversation after login
+          if (messages.length > 0) {
+            saveSession(messages, currentSessionId).then((newId) => {
+              if (newId) setCurrentSessionId(newId);
+            });
+          }
+        }}
+        title="Sign in to Edge"
+        subtitle="Save your conversations and pick up where you left off. No password needed."
+    />
+    </>
   );
 }
