@@ -652,3 +652,8 @@
 
 ## Cost Control: Lower daily free preview cap (February 2026)
 - [x] Change DAILY_FREE_PREVIEW_CAP from 200 to 75
+
+## Security: Handle Stripe chargebacks and refunds (February 2026)
+- [x] Add charge.refunded handler to webhook — claw back credits when refund issued
+- [x] Add charge.disputed handler to webhook — claw back credits on chargeback
+- [x] Log all clawbacks in credit_transactions audit trail

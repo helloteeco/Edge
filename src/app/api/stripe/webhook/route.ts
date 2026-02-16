@@ -231,6 +231,121 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Handle Stripe refunds — claw back credits
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      
+      // Get customer email from the charge
+      let customerEmail: string | null = charge.receipt_email || null;
+      if (!customerEmail && typeof charge.customer === "string") {
+        try {
+          const customer = await stripe.customers.retrieve(charge.customer);
+          if (!("deleted" in customer)) {
+            customerEmail = customer.email;
+          }
+        } catch (e) {
+          console.error("[Stripe Webhook] Error fetching customer for refund:", e);
+        }
+      }
+      
+      if (customerEmail) {
+        // Determine how many credits to claw back based on refund amount
+        const refundedAmount = charge.amount_refunded; // in cents
+        let creditsToRemove = 0;
+        
+        if (refundedAmount >= 6999) creditsToRemove = 100;       // Power Pack
+        else if (refundedAmount >= 1999) creditsToRemove = 25;   // Pro Pack
+        else if (refundedAmount >= 499) creditsToRemove = 5;     // Starter Pack
+        
+        if (creditsToRemove > 0) {
+          const { data: userData } = await supabase
+            .from("users")
+            .select("credits_used, credits_limit")
+            .eq("email", customerEmail)
+            .single();
+          
+          if (userData) {
+            const currentLimit = userData.credits_limit || 3;
+            // Don't go below base 3 credits
+            const newLimit = Math.max(3, currentLimit - creditsToRemove);
+            const creditsBefore = currentLimit - (userData.credits_used || 0);
+            const creditsAfter = newLimit - (userData.credits_used || 0);
+            
+            await supabase
+              .from("users")
+              .update({ credits_limit: newLimit })
+              .eq("email", customerEmail);
+            
+            await supabase.from("credit_transactions").insert({
+              user_email: customerEmail,
+              action: 'deduct' as const,
+              amount: creditsToRemove,
+              credits_before: Math.max(0, creditsBefore),
+              credits_after: Math.max(0, creditsAfter),
+              reason: `Stripe refund clawback: ${charge.id} (-${creditsToRemove} credits, $${(refundedAmount / 100).toFixed(2)} refunded)`,
+            });
+            
+            console.log(`[Stripe Webhook] Refund clawback: removed ${creditsToRemove} credits from ${customerEmail}. New limit: ${newLimit}`);
+          }
+        }
+      }
+      
+      return NextResponse.json({ success: true, event: "charge.refunded" });
+    }
+    
+    // Handle chargebacks/disputes — claw back credits immediately
+    if (event.type === "charge.dispute.created") {
+      const dispute = event.data.object as Stripe.Dispute;
+      const charge = typeof dispute.charge === "string"
+        ? await stripe.charges.retrieve(dispute.charge)
+        : dispute.charge as Stripe.Charge;
+      
+      let customerEmail: string | null = charge?.receipt_email || null;
+      if (!customerEmail && charge && typeof charge.customer === "string") {
+        try {
+          const customer = await stripe.customers.retrieve(charge.customer);
+          if (!("deleted" in customer)) {
+            customerEmail = customer.email;
+          }
+        } catch (e) {
+          console.error("[Stripe Webhook] Error fetching customer for dispute:", e);
+        }
+      }
+      
+      if (customerEmail) {
+        // On dispute, remove ALL purchased credits (reset to base 3)
+        const { data: userData } = await supabase
+          .from("users")
+          .select("credits_used, credits_limit, is_unlimited")
+          .eq("email", customerEmail)
+          .single();
+        
+        if (userData) {
+          const creditsBefore = (userData.credits_limit || 3) - (userData.credits_used || 0);
+          
+          await supabase
+            .from("users")
+            .update({ credits_limit: 3, is_unlimited: false })
+            .eq("email", customerEmail);
+          
+          const creditsAfter = Math.max(0, 3 - (userData.credits_used || 0));
+          
+          await supabase.from("credit_transactions").insert({
+            user_email: customerEmail,
+            action: 'deduct' as const,
+            amount: (userData.credits_limit || 3) - 3,
+            credits_before: Math.max(0, creditsBefore),
+            credits_after: Math.max(0, creditsAfter),
+            reason: `Stripe dispute/chargeback: ${dispute.id} — all purchased credits revoked`,
+          });
+          
+          console.log(`[Stripe Webhook] Dispute clawback: reset ${customerEmail} to base 3 credits (was ${userData.credits_limit})`);
+        }
+      }
+      
+      return NextResponse.json({ success: true, event: "charge.dispute.created" });
+    }
+    
     // Handle subscription cancellation
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
