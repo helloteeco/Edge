@@ -73,6 +73,12 @@ export default function CityPage({ params }: { params: { id: string } }) {
       updated = [...saved, city?.id].filter((x): x is string => x !== undefined);
     }
     setSavedCities(updated, email);
+    // Sync saved cities to cloud
+    fetch('/api/user-profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, savedCities: updated }),
+    }).catch(() => {});
     
     // Toggle like on server (user-specific)
     try {

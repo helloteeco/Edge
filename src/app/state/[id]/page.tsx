@@ -107,6 +107,12 @@ export default function StatePage({ params }: { params: { id: string } }) {
       updated = [...saved, state?.abbreviation].filter((x): x is string => x !== undefined);
     }
     setSavedStates(updated, email);
+    // Sync saved states to cloud
+    fetch('/api/user-profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, savedStates: updated }),
+    }).catch(() => {});
     
     // Toggle like on server (user-specific)
     try {

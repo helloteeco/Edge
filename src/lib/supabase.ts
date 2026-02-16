@@ -13,6 +13,9 @@ export interface User {
   email: string;
   created_at: string;
   last_login_at: string;
+  avatar_id?: string | null;
+  saved_cities?: string[];
+  saved_states?: string[];
 }
 
 export interface SavedProperty {
@@ -1485,4 +1488,42 @@ export async function getAdminDashboardData() {
       },
     },
   };
+}
+
+
+// ── User Profile Sync (avatar, saved markets) ──────────────────
+
+export async function getUserProfile(email: string): Promise<{ avatar_id: string | null; saved_cities: string[]; saved_states: string[] } | null> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('avatar_id, saved_cities, saved_states')
+    .eq('email', email.toLowerCase().trim())
+    .single();
+
+  if (error || !data) return null;
+  return {
+    avatar_id: data.avatar_id || null,
+    saved_cities: Array.isArray(data.saved_cities) ? data.saved_cities : [],
+    saved_states: Array.isArray(data.saved_states) ? data.saved_states : [],
+  };
+}
+
+export async function updateUserAvatar(email: string, avatarId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('users')
+    .update({ avatar_id: avatarId })
+    .eq('email', email.toLowerCase().trim());
+  return !error;
+}
+
+export async function updateUserSavedMarkets(
+  email: string,
+  savedCities: string[],
+  savedStates: string[]
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('users')
+    .update({ saved_cities: savedCities, saved_states: savedStates })
+    .eq('email', email.toLowerCase().trim());
+  return !error;
 }

@@ -103,47 +103,117 @@ export default function SavedPage() {
 
   // Load saved data
   const loadSavedData = useCallback(async () => {
-    // Load account-specific market data (cities/states)
-    const { getSavedCities, getSavedStates, migrateOldSavedData } = await import('@/lib/account-storage');
-    if (isAuthenticated && userEmail) {
-      migrateOldSavedData(userEmail);
-    }
-    const cities = getSavedCities(userEmail);
-    const states = getSavedStates(userEmail);
-    
-    // Load analysis history from calculator recent searches
-    const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
-    const historyData: AnalysisHistory[] = recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number; cachedResult?: Record<string, unknown> }) => ({
-      address: s.address,
-      annualRevenue: s.annualRevenue,
-      adr: s.adr,
-      occupancy: s.occupancy,
-      timestamp: s.timestamp,
-      bedrooms: s.cachedBedrooms,
-      bathrooms: s.cachedBathrooms,
-      guestCount: s.cachedGuestCount,
-      cachedResult: s.cachedResult,
-    }));
-    setAnalysisHistory(historyData);
-    
-    setSavedCitiesState(cities);
-    setSavedStatesState(states);
-    
-    // Only load property reports if authenticated (user-specific data)
+    const { getSavedCities, getSavedStates, setSavedCities: setLocalCities, setSavedStates: setLocalStates, migrateOldSavedData } = await import('@/lib/account-storage');
+
     if (!isAuthenticated || !userEmail) {
+      // Not signed in — use localStorage only
+      const cities = getSavedCities(userEmail);
+      const states = getSavedStates(userEmail);
+      setSavedCitiesState(cities);
+      setSavedStatesState(states);
+
+      const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+      const historyData: AnalysisHistory[] = recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number; cachedResult?: Record<string, unknown> }) => ({
+        address: s.address,
+        annualRevenue: s.annualRevenue,
+        adr: s.adr,
+        occupancy: s.occupancy,
+        timestamp: s.timestamp,
+        bedrooms: s.cachedBedrooms,
+        bathrooms: s.cachedBathrooms,
+        guestCount: s.cachedGuestCount,
+        cachedResult: s.cachedResult,
+      }));
+      setAnalysisHistory(historyData);
       setSavedReports([]);
       return;
     }
-    
-    // Fetch from server when authenticated
+
+    // ── Authenticated: Supabase is source of truth ──
+    migrateOldSavedData(userEmail);
     setIsSyncing(true);
+
     try {
-      const response = await fetch(`/api/saved-properties?email=${encodeURIComponent(userEmail)}`);
-      const data = await response.json();
-      
-      if (data.success && data.properties) {
-        // Use server data directly (user-specific)
-        const serverReports = data.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number }; customInputs?: Record<string, unknown> }) => ({
+      // Fetch all three in parallel: profile (markets), recent searches, saved reports
+      const [profileRes, recentRes, reportsRes] = await Promise.all([
+        fetch(`/api/user-profile?email=${encodeURIComponent(userEmail)}`),
+        fetch(`/api/recent-searches?email=${encodeURIComponent(userEmail)}`),
+        fetch(`/api/saved-properties?email=${encodeURIComponent(userEmail)}`),
+      ]);
+
+      const [profileData, recentData, reportsData] = await Promise.all([
+        profileRes.json(),
+        recentRes.json(),
+        reportsRes.json(),
+      ]);
+
+      // ── Markets: cloud wins, merge local-only into cloud ──
+      const localCities = getSavedCities(userEmail);
+      const localStates = getSavedStates(userEmail);
+      const cloudCities: string[] = profileData.success && profileData.profile?.saved_cities ? profileData.profile.saved_cities : [];
+      const cloudStates: string[] = profileData.success && profileData.profile?.saved_states ? profileData.profile.saved_states : [];
+      const mergedCities = Array.from(new Set([...cloudCities, ...localCities]));
+      const mergedStates = Array.from(new Set([...cloudStates, ...localStates]));
+      setSavedCitiesState(mergedCities);
+      setSavedStatesState(mergedStates);
+      // Persist merged back to both local and cloud
+      setLocalCities(mergedCities, userEmail);
+      setLocalStates(mergedStates, userEmail);
+      if (mergedCities.length !== cloudCities.length || mergedStates.length !== cloudStates.length) {
+        fetch('/api/user-profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail, savedCities: mergedCities, savedStates: mergedStates }),
+        }).catch(() => {});
+      }
+
+      // ── History: Supabase is source of truth ──
+      if (recentData.success && recentData.searches) {
+        const cloudHistory: AnalysisHistory[] = recentData.searches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; analyzedAt: string; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number; cachedResult?: Record<string, unknown> }) => ({
+          address: s.address,
+          annualRevenue: s.annualRevenue,
+          adr: s.adr,
+          occupancy: s.occupancy,
+          timestamp: new Date(s.analyzedAt).getTime(),
+          bedrooms: s.cachedBedrooms,
+          bathrooms: s.cachedBathrooms,
+          guestCount: s.cachedGuestCount,
+          cachedResult: s.cachedResult,
+        }));
+        setAnalysisHistory(cloudHistory);
+        // Also update localStorage so calculator page stays in sync
+        const localFormat = cloudHistory.map(h => ({
+          address: h.address,
+          annualRevenue: h.annualRevenue,
+          adr: h.adr,
+          occupancy: h.occupancy,
+          timestamp: h.timestamp,
+          cachedBedrooms: h.bedrooms,
+          cachedBathrooms: h.bathrooms,
+          cachedGuestCount: h.guestCount,
+          cachedResult: h.cachedResult,
+        }));
+        localStorage.setItem('edge_recent_searches', JSON.stringify(localFormat));
+      } else {
+        // Fallback to local
+        const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+        const historyData: AnalysisHistory[] = recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number; cachedResult?: Record<string, unknown> }) => ({
+          address: s.address,
+          annualRevenue: s.annualRevenue,
+          adr: s.adr,
+          occupancy: s.occupancy,
+          timestamp: s.timestamp,
+          bedrooms: s.cachedBedrooms,
+          bathrooms: s.cachedBathrooms,
+          guestCount: s.cachedGuestCount,
+          cachedResult: s.cachedResult,
+        }));
+        setAnalysisHistory(historyData);
+      }
+
+      // ── Reports: already Supabase-backed ──
+      if (reportsData.success && reportsData.properties) {
+        const serverReports = reportsData.properties.map((p: { id: string; address: string; savedAt: number; notes?: string; result?: { annualRevenue?: number; cashOnCash?: number; monthlyNetCashFlow?: number; bedrooms?: number; bathrooms?: number; guestCount?: number }; customInputs?: Record<string, unknown> }) => ({
           id: p.id,
           address: p.address,
           city: p.address.split(',')[1]?.trim() || '',
@@ -159,7 +229,6 @@ export default function SavedPage() {
           savedAt: p.savedAt,
           customInputs: p.customInputs || undefined,
         }));
-        
         setSavedReports(serverReports);
         setLastSyncTime(Date.now());
       } else {
@@ -167,6 +236,17 @@ export default function SavedPage() {
       }
     } catch (error) {
       console.error("Error fetching from server:", error);
+      // Fallback to local data
+      const cities = getSavedCities(userEmail);
+      const states = getSavedStates(userEmail);
+      setSavedCitiesState(cities);
+      setSavedStatesState(states);
+      const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
+      setAnalysisHistory(recentSearches.map((s: { address: string; annualRevenue: number; adr: number; occupancy: number; timestamp: number; cachedBedrooms?: number; cachedBathrooms?: number; cachedGuestCount?: number; cachedResult?: Record<string, unknown> }) => ({
+        address: s.address, annualRevenue: s.annualRevenue, adr: s.adr, occupancy: s.occupancy,
+        timestamp: s.timestamp, bedrooms: s.cachedBedrooms, bathrooms: s.cachedBathrooms,
+        guestCount: s.cachedGuestCount, cachedResult: s.cachedResult,
+      })));
       setSavedReports([]);
     }
     setIsSyncing(false);
@@ -180,18 +260,33 @@ export default function SavedPage() {
     const updated = savedCities.filter(id => id !== cityId);
     setSavedCitiesState(updated);
     import('@/lib/account-storage').then(({ setSavedCities }) => setSavedCities(updated, userEmail));
+    // Sync to cloud
+    if (isAuthenticated && userEmail) {
+      fetch('/api/user-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, savedCities: updated }),
+      }).catch(() => {});
+    }
   };
 
   const removeSavedState = (stateCode: string) => {
     const updated = savedStates.filter(code => code !== stateCode);
     setSavedStatesState(updated);
     import('@/lib/account-storage').then(({ setSavedStates }) => setSavedStates(updated, userEmail));
+    // Sync to cloud
+    if (isAuthenticated && userEmail) {
+      fetch('/api/user-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, savedStates: updated }),
+      }).catch(() => {});
+    }
   };
 
   const removeSavedReport = async (reportId: string) => {
     const updated = savedReports.filter(r => r.id !== reportId);
     setSavedReports(updated);
-    localStorage.setItem("savedReports", JSON.stringify(updated));
     
     // Sync with server if authenticated
     if (isAuthenticated && userEmail) {
@@ -212,7 +307,6 @@ export default function SavedPage() {
       r.id === reportId ? { ...r, notes } : r
     );
     setSavedReports(updated);
-    localStorage.setItem("savedReports", JSON.stringify(updated));
     setEditingNoteId(null);
     
     // Sync with server if authenticated
@@ -234,13 +328,21 @@ export default function SavedPage() {
     setNoteText(report.notes || "");
   };
 
-  // Delete a history item from localStorage
+  // Delete a history item from localStorage and cloud
   const deleteHistoryItem = (address: string) => {
     const recentSearches = JSON.parse(localStorage.getItem("edge_recent_searches") || "[]");
     const updated = recentSearches.filter((s: { address: string }) => s.address !== address);
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
     setAnalysisHistory(prev => prev.filter(h => h.address !== address));
     setDeleteConfirmAddress(null);
+    // Sync deletion to cloud
+    if (isAuthenticated && userEmail) {
+      fetch('/api/recent-searches', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, address }),
+      }).catch(() => {});
+    }
   };
 
   const handleSignOut = () => {

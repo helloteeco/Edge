@@ -180,3 +180,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "An error occurred" }, { status: 500 });
   }
 }
+
+// DELETE - Remove a specific recent search by address
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, address } = body;
+
+    if (!email || !address) {
+      return NextResponse.json({ success: false, error: "Email and address required" }, { status: 400 });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const { error } = await supabase
+      .from("recent_searches")
+      .delete()
+      .eq("user_email", normalizedEmail)
+      .eq("address", address);
+
+    if (error) {
+      console.error("[RecentSearches] Error deleting:", error);
+      return NextResponse.json({ success: false, error: "Database error" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[RecentSearches] Delete error:", error);
+    return NextResponse.json({ success: false, error: "An error occurred" }, { status: 500 });
+  }
+}

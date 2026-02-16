@@ -56,9 +56,32 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
     checkAuthState();
   }, [checkAuthState]);
 
-  // Load selected avatar on mount
+  // Load selected avatar on mount — prefer cloud version for cross-device sync
   useEffect(() => {
-    setSelectedAvatar(getSelectedAvatar());
+    const localAvatar = getSelectedAvatar();
+    setSelectedAvatar(localAvatar);
+    // If authenticated, fetch cloud avatar and override local
+    const email = localStorage.getItem('edge_auth_email');
+    const token = localStorage.getItem('edge_auth_token');
+    const expiry = localStorage.getItem('edge_auth_expiry');
+    if (email && token && expiry && Date.now() < parseInt(expiry, 10)) {
+      fetch(`/api/user-profile?email=${encodeURIComponent(email)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.profile?.avatar_id) {
+            localStorage.setItem('edge_user_avatar', data.profile.avatar_id);
+            setSelectedAvatar(data.profile.avatar_id);
+          } else if (data.success && !data.profile?.avatar_id && localAvatar) {
+            // Local has avatar but cloud doesn't — push local to cloud
+            fetch('/api/user-profile', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, avatarId: localAvatar }),
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   // Listen for storage events from other tabs (cross-tab sync)

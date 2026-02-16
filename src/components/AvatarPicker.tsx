@@ -254,6 +254,15 @@ export default function AvatarPicker({ isOpen, onClose, onSelect, currentAvatarI
     localStorage.setItem(AVATAR_STORAGE_KEY, id);
     onSelect(id);
     onClose();
+    // Sync avatar to cloud for cross-device consistency
+    const email = typeof window !== 'undefined' ? localStorage.getItem('edge_auth_email') : null;
+    if (email) {
+      fetch('/api/user-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, avatarId: id }),
+      }).catch(() => {});
+    }
   };
 
   return (
