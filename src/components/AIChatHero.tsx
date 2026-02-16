@@ -91,11 +91,16 @@ export function AIChatHero() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Scroll within the chat container only, not the whole page
   useEffect(() => {
-    if (messagesEndRef.current && messages.length > 0) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current && messages.length > 0) {
+      const container = chatContainerRef.current;
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
     }
   }, [messages, isLoading]);
 
@@ -201,6 +206,7 @@ export function AIChatHero() {
         {/* Chat messages area */}
         {isExpanded && messages.length > 0 && (
           <div
+            ref={chatContainerRef}
             className="px-5 py-4 overflow-y-auto"
             style={{ maxHeight: "400px", borderBottom: "1px solid #e5e3da" }}
           >

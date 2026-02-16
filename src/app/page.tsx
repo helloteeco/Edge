@@ -135,10 +135,7 @@ export default function HomePage() {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
-    window.scrollTo(0, 0);
-    // Also scroll after a brief delay to override any async scroll restoration
-    const timer = setTimeout(() => window.scrollTo(0, 0), 100);
-    return () => clearTimeout(timer);
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, []);
   
   // Journey stage info content - accurate Edge features
