@@ -292,70 +292,84 @@ export default function HomePage() {
       {/* AI Chat Hero */}
       <AIChatHero />
 
-      {/* How Edge Works - 3 Cards */}
-      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+      {/* How Edge Works - Compact Cards */}
+      <div className="max-w-5xl mx-auto px-4 pt-4 pb-2">
         <div 
-          className="rounded-2xl p-5 sm:p-6"
+          className="rounded-2xl p-4 sm:p-5"
           style={{ 
             backgroundColor: '#ffffff', 
             border: '1px solid #d8d6cd',
             boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)'
           }}
         >
-          <div className="text-center mb-5">
-            <h2 
-              className="text-lg sm:text-xl font-semibold mb-1"
-              style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-            >
-              How Edge Works
-            </h2>
-            <p className="text-sm" style={{ color: '#787060' }}>
-              Three AI-enhanced tools. Everything you need to invest with confidence.
-            </p>
-          </div>
+          <h2 
+            className="text-base sm:text-lg font-semibold mb-3 text-center"
+            style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            How Edge Works
+          </h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-2.5">
             {/* Card 1: Explore Markets */}
-            <div className="rounded-xl p-5" style={{ border: '1px solid #e5e3da' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#2b2823' }}>
-                <SearchMarketIcon className="w-5 h-5" color="#ffffff" />
+            <a 
+              href="#interactive-map" 
+              className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50"
+              style={{ border: '1px solid #e5e3da' }}
+              onClick={(e) => { e.preventDefault(); document.getElementById('interactive-map')?.scrollIntoView({ behavior: 'smooth' }); }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2b2823' }}>
+                <SearchMarketIcon className="w-4 h-4" color="#ffffff" />
               </div>
-              <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>1. Explore Markets</h3>
-              <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
-                Browse the interactive US map to find high cash flow STR markets. See grades, home prices, and revenue data for 1,000+ cities.
-              </p>
-              <a href="#interactive-map" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }} onClick={(e) => { e.preventDefault(); document.getElementById('interactive-map')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                Use the Map tab <ArrowRightIcon className="w-3 h-3" />
-              </a>
-            </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm" style={{ color: '#2b2823' }}>1. Explore Markets</h3>
+                  <span className="text-xs font-medium flex items-center gap-0.5 flex-shrink-0" style={{ color: '#22c55e' }}>Map <ArrowRightIcon className="w-3 h-3" /></span>
+                </div>
+                <p className="text-xs leading-relaxed mt-0.5" style={{ color: '#787060' }}>
+                  Browse the interactive US map to find high cash flow STR markets with grades, prices, and revenue data.
+                </p>
+              </div>
+            </a>
 
             {/* Card 2: Analyze Properties */}
-            <div className="rounded-xl p-5" style={{ border: '1px solid #e5e3da' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#2b2823' }}>
-                <CalculatorIcon className="w-5 h-5" color="#ffffff" />
+            <Link 
+              href="/calculator" 
+              className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50"
+              style={{ border: '1px solid #e5e3da' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2b2823' }}>
+                <CalculatorIcon className="w-4 h-4" color="#ffffff" />
               </div>
-              <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>2. Analyze Properties</h3>
-              <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
-                Enter any US address and get estimated annual revenue, cash-on-cash return, and a full investment report. Then tap <strong>Get AI Analysis</strong> for a plain-English breakdown of your deal.
-              </p>
-              <Link href="/calculator" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
-                Use the Calculator tab <ArrowRightIcon className="w-3 h-3" />
-              </Link>
-            </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm" style={{ color: '#2b2823' }}>2. Analyze Properties</h3>
+                  <span className="text-xs font-medium flex items-center gap-0.5 flex-shrink-0" style={{ color: '#22c55e' }}>Calculator <ArrowRightIcon className="w-3 h-3" /></span>
+                </div>
+                <p className="text-xs leading-relaxed mt-0.5" style={{ color: '#787060' }}>
+                  Enter any US address for estimated revenue, cash-on-cash return, and a full AI-powered investment report.
+                </p>
+              </div>
+            </Link>
 
             {/* Card 3: Find Funding */}
-            <div className="rounded-xl p-5" style={{ border: '1px solid #e5e3da' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#2b2823' }}>
-                <DollarIcon className="w-5 h-5" color="#ffffff" />
+            <Link 
+              href="/funding" 
+              className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50"
+              style={{ border: '1px solid #e5e3da' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2b2823' }}>
+                <DollarIcon className="w-4 h-4" color="#ffffff" />
               </div>
-              <h3 className="font-semibold text-base mb-2" style={{ color: '#2b2823' }}>3. Find Funding</h3>
-              <p className="text-sm leading-relaxed mb-3" style={{ color: '#787060' }}>
-                Discover 48+ creative financing strategies. Take a quick quiz to find the best options, or ask the <strong>Edge AI Assistant</strong> for personalized guidance.
-              </p>
-              <Link href="/funding" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: '#22c55e' }}>
-                Use the Funding tab <ArrowRightIcon className="w-3 h-3" />
-              </Link>
-            </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm" style={{ color: '#2b2823' }}>3. Find Funding</h3>
+                  <span className="text-xs font-medium flex items-center gap-0.5 flex-shrink-0" style={{ color: '#22c55e' }}>Funding <ArrowRightIcon className="w-3 h-3" /></span>
+                </div>
+                <p className="text-xs leading-relaxed mt-0.5" style={{ color: '#787060' }}>
+                  Discover 48+ financing strategies, take a quick quiz, or ask the Edge AI Assistant for guidance.
+                </p>
+              </div>
+            </Link>
           </div>
         </div>
       </div>
