@@ -8,6 +8,7 @@ import { TrendingMarkets } from "@/components/TrendingMarkets";
 import AuthHeader from "@/components/AuthHeader";
 import { StuckHelper } from "@/components/StuckHelper";
 import { cityData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
+import { AIChatHero } from "@/components/AIChatHero";
 import {
   GraduationIcon,
   HomeEquityIcon,
@@ -292,6 +293,9 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* AI Chat Hero */}
+      <AIChatHero />
 
       {/* How Edge Works - 3 Cards */}
       <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
