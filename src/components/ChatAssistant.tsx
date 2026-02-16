@@ -215,7 +215,7 @@ export function ChatAssistant() {
                     </div>
                     <div>
                       <div className="font-semibold" style={{ color: '#2b2823' }}>Ask Edge Assistant</div>
-                      <div className="text-sm" style={{ color: '#787060' }}>Get personalized STR advice from our AI expert</div>
+                      <div className="text-sm" style={{ color: '#787060' }}>Explore STR info with our AI assistant</div>
                     </div>
                   </div>
                 </button>
@@ -378,7 +378,7 @@ export function ChatAssistant() {
                 {surveyStep === "budget" && (
                   <div className="space-y-3">
                     <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>How much deployable cash do you have?</h4>
-                    <p className="text-xs" style={{ color: '#787060' }}>This helps us recommend the right strategy for you.</p>
+                    <p className="text-xs" style={{ color: '#787060' }}>This helps us share the most relevant info for your situation.</p>
                     {["Under $100k", "$100k-250k", "$250k-500k", "$500k+"].map((opt) => (
                       <button
                         key={opt}
@@ -427,7 +427,7 @@ export function ChatAssistant() {
                 {surveyStep === "email" && (
                   <div className="space-y-4">
                     <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Enter your email to continue</h4>
-                    <p className="text-xs" style={{ color: '#787060' }}>We&apos;ll send you personalized recommendations based on your answers.</p>
+                    <p className="text-xs" style={{ color: '#787060' }}>We&apos;ll share relevant educational resources based on your answers.</p>
                     <input
                       type="email"
                       value={surveyData.email}
@@ -477,7 +477,7 @@ export function ChatAssistant() {
                           className="rounded-xl p-3 text-left"
                           style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
                         >
-                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ You qualify for our Coaching Program!</p>
+                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ Based on your answers, our Coaching Program may be a good fit:</p>
                           <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
                             <li>• Full guided experience: 9 total calls</li>
                             <li>• Deal → Setup & Design → Live STR</li>
@@ -486,21 +486,38 @@ export function ChatAssistant() {
                           </ul>
                         </div>
                         <p className="text-sm" style={{ color: '#787060' }}>
-                          Reach out to get started:
+                          Reach out to learn more:
                         </p>
                         <a
                           href="mailto:hello@teeco.co"
-                          className="block w-full py-3 rounded-xl font-semibold transition-colors"
+                          className="block w-full py-3 rounded-xl font-semibold transition-colors text-center"
                           style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                         >
                           Email hello@teeco.co
                         </a>
                       </div>
                     ) : (
-                      <p className="text-sm" style={{ color: '#787060' }}>
-                        We&apos;ll send you helpful resources to get started with STR investing!
-                      </p>
+                      <div className="space-y-3">
+                        <div 
+                          className="rounded-xl p-3 text-left"
+                          style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
+                        >
+                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>Here are some resources to explore:</p>
+                          <ul className="text-xs space-y-1.5" style={{ color: '#787060' }}>
+                            <li>• Use the <strong>Search</strong> tab to explore 1,444+ STR markets</li>
+                            <li>• Try the <strong>Calculator</strong> to estimate revenue for any address</li>
+                            <li>• Check <strong>Funding</strong> for 48+ financing strategies</li>
+                            <li>• Ask the <strong>Edge Assistant</strong> any STR questions</li>
+                          </ul>
+                        </div>
+                        <p className="text-xs" style={{ color: '#9a9488' }}>
+                          Have questions? Email hello@teeco.co
+                        </p>
+                      </div>
                     )}
+                    <p className="text-[10px] mt-2" style={{ color: '#9a9488' }}>
+                      For informational purposes only. Not financial or investment advice.
+                    </p>
                     <button
                       onClick={resetChat}
                       className="mt-4 text-sm transition-colors"

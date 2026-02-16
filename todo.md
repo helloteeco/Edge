@@ -590,6 +590,12 @@
 - [ ] No other features changed
 
 ## FIX: Search subtitle Unicode escape and Calculator comps wording (February 2026)
-- [ ] Fix Search subtitle showing raw \u2022 instead of bullet character
-- [ ] Fix Calculator "30+ real STR comps" — not always 30 comps
+- [x] Fix Search subtitle showing raw \u2022 instead of bullet character
+- [x] Fix Calculator "30+ real STR comps" — not always 30 comps
+- [ ] No other features changed
+
+## FIX: Coaching Survey — tracking, delivery, and legal wording (February 2026)
+- [ ] Save coaching survey submissions (email + answers) to database for admin tracking
+- [ ] Show results/info after email submission instead of doing nothing
+- [ ] Change wording from "recommendations/advice" to educational information only
 - [ ] No other features changed
