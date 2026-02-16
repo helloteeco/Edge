@@ -632,8 +632,20 @@
 - [x] No feature changes
 
 ## DESIGN: Condense map state info card + STR status wording (February 2026)
-- [ ] Condense state info card on map page — reduce vertical height so less scrolling needed on mobile
-- [ ] Change "Restricted" STR status wording to something less discouraging (Airbnbs exist everywhere)
-- [ ] Keep "Friendly" as is
-- [ ] Update STR status labels across all pages (map, search, city, state)
-- [ ] No major feature changes — design/wording only
+- [x] Condense state info card on map page — reduce vertical height so less scrolling needed on mobile
+- [x] Change "Restricted" STR status wording to something less discouraging (Airbnbs exist everywhere)
+- [x] Keep "Friendly" as is
+- [x] Update STR status labels across all pages (map, search, city, state)
+- [x] No major feature changes — design/wording only
+
+## DATA: Add missing smaller cities near key regions + national park gateways (February 2026)
+- [ ] Save backup checkpoint before any changes
+- [ ] Audit existing 1,444 cities to avoid duplicates
+- [ ] Add missing cities near New River Gorge, WV (Oak Hill, Beckley, Hinton, Summersville, Lewisburg, etc.)
+- [ ] Add missing cities near Greenville, SC area
+- [ ] Add missing cities near Gainesville, FL area
+- [ ] Add missing cities near Toledo, OH area
+- [ ] Add missing national park gateway towns across the US
+- [ ] Integrate all new cities in exact same data format as existing entries
+- [ ] Verify TypeScript compiles, no duplicates, data feeds all app sections
+- [ ] Push to GitHub and verify deployment
