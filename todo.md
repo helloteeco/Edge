@@ -491,10 +491,10 @@
 - [x] No other features changed
 
 ## FEATURE: Chat history retention policy (February 2026)
-- [ ] Add 'pinned' boolean column to chat_sessions table in Supabase
-- [ ] Auto-delete unpinned conversations older than 90 days
-- [ ] Cap at 50 conversations per user (oldest unpinned deleted first)
-- [ ] Allow users to pin/star up to 5 conversations (exempt from auto-delete)
-- [ ] Pinned chats show at top of history list with star icon
-- [ ] Pin/unpin toggle button on each session in history
-- [ ] No other features changed
+- [x] Add 'pinned' boolean column to chat_sessions table in Supabase
+- [x] Auto-delete unpinned conversations older than 90 days
+- [x] Cap at 50 conversations per user (oldest unpinned deleted first)
+- [x] Allow users to pin/star up to 5 conversations (exempt from auto-delete)
+- [x] Pinned chats show at top of history list with star icon
+- [x] Pin/unpin toggle button on each session in history
+- [x] No other features changed
