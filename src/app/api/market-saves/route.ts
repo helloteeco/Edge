@@ -47,11 +47,14 @@ export async function GET(request: NextRequest) {
         userLiked = Array.from(likedSet);
       }
       
-      return NextResponse.json({
+      const resp = NextResponse.json({
         success: true,
         counts,
         userLiked,
       });
+      // Cache batch counts for 2 minutes, serve stale for 10 min while revalidating
+      resp.headers.set('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
+      return resp;
     }
 
     // Get count for single market + user's like status

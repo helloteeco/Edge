@@ -547,3 +547,12 @@
 - [x] AuthModal "Get Started Free" — kept (signing up is free)
 - [x] OG meta images — removed "Free" from STR analysis descriptions
 - [x] No other features changed
+
+## Search Page: Compact header + Performance fix (February 2026)
+- [x] Compact the header — less vertical space, results visible sooner
+- [x] Move search bar, filters, and tabs into a tighter layout
+- [x] Remove redundant elements (search icon circle, excess padding)
+- [x] Fix slow tab-switch: add API-level caching (Cache-Control headers + client-side cache)
+- [x] Add client-side caching so switching tabs doesn't re-fetch
+- [x] Ensure caching scales well as more cities are added (LRU eviction, 5min TTL)
+- [x] No existing features or functions changed

@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       fullData: city.full_data,
     })) || [];
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       cities,
       pagination: {
         page,
@@ -99,6 +99,9 @@ export async function GET(request: NextRequest) {
         hasMore: offset + limit < (count || 0),
       },
     });
+    // Cache for 5 minutes on CDN, serve stale for 1 hour while revalidating
+    response.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=3600');
+    return response;
   } catch (error) {
     console.error('City search error:', error);
     return NextResponse.json(

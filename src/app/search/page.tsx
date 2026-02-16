@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { cityData, stateData, getMarketCounts, DATA_LAST_UPDATED } from "@/data/helpers";
 import {
@@ -131,11 +131,16 @@ export default function SearchPage() {
   const [serverHasMore, setServerHasMore] = useState(false);
   const [serverTotal, setServerTotal] = useState(0);
 
+  // Client-side cache for server search results (avoids re-fetching on tab switch)
+  const serverCacheRef = React.useRef<Map<string, { cities: ServerCity[]; hasMore: boolean; total: number; page: number; ts: number }>>(new Map());
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   // Get market counts for display
   const marketCounts = useMemo(() => getMarketCounts(), []);
 
-  // Like counts for city cards
+  // Like counts for city cards (cached to avoid re-fetching on tab switch)
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const fetchedLikeIdsRef = useRef<Set<string>>(new Set());
 
   // Count active smart filters
   const activeFilterCount = useMemo(() => {
@@ -158,8 +163,20 @@ export default function SearchPage() {
     setSortBy("score");
   };
 
-  // Debounced server search for allCities filter
+  // Debounced server search for allCities filter — with client-side cache
   const searchServerCities = useCallback(async (searchQuery: string, page: number, append: boolean = false) => {
+    const cacheKey = `${searchQuery}||${page}`;
+    const cached = serverCacheRef.current.get(cacheKey);
+    
+    // Return cached results if fresh (avoids re-fetch on tab switch)
+    if (cached && Date.now() - cached.ts < CACHE_TTL && !append) {
+      setServerCities(cached.cities);
+      setServerHasMore(cached.hasMore);
+      setServerTotal(cached.total);
+      setServerPage(cached.page);
+      return;
+    }
+    
     setServerLoading(true);
     try {
       const params = new URLSearchParams({
@@ -175,20 +192,33 @@ export default function SearchPage() {
       
       const data: SearchResponse = await response.json();
       
-      if (append) {
-        setServerCities(prev => [...prev, ...data.cities]);
-      } else {
-        setServerCities(data.cities);
-      }
+      const newCities = append ? [...serverCities, ...data.cities] : data.cities;
+      
+      setServerCities(newCities);
       setServerHasMore(data.pagination.hasMore);
       setServerTotal(data.pagination.total);
       setServerPage(page);
+      
+      // Store in cache
+      serverCacheRef.current.set(cacheKey, {
+        cities: newCities,
+        hasMore: data.pagination.hasMore,
+        total: data.pagination.total,
+        page,
+        ts: Date.now(),
+      });
+      
+      // Evict old cache entries (keep last 20)
+      if (serverCacheRef.current.size > 20) {
+        const firstKey = serverCacheRef.current.keys().next().value;
+        if (firstKey) serverCacheRef.current.delete(firstKey);
+      }
     } catch (error) {
       console.error('Server search error:', error);
     } finally {
       setServerLoading(false);
     }
-  }, []);
+  }, [serverCities]);
 
   // Effect to trigger server search when filter is allCities
   useEffect(() => {
@@ -362,15 +392,17 @@ export default function SearchPage() {
     ? results.serverCities.length 
     : results.cities.length + results.states.length;
 
-  // Batch fetch like counts for visible city cards
+  // Batch fetch like counts for visible city cards — only fetch IDs not already cached
   useEffect(() => {
     const cityIds = results.cities.map(c => c.id);
-    if (cityIds.length === 0) return;
-    fetch(`/api/market-saves?action=batch&marketIds=${cityIds.join(',')}&marketType=city`)
+    const newIds = cityIds.filter(id => !fetchedLikeIdsRef.current.has(id));
+    if (newIds.length === 0) return;
+    fetch(`/api/market-saves?action=batch&marketIds=${newIds.join(',')}&marketType=city`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.counts) {
           setLikeCounts(prev => ({ ...prev, ...data.counts }));
+          newIds.forEach(id => fetchedLikeIdsRef.current.add(id));
         }
       })
       .catch(console.error);
@@ -421,26 +453,18 @@ export default function SearchPage() {
           borderBottom: '1px solid #d8d6cd'
         }}
       >
-        <div className="max-w-4xl mx-auto px-4 py-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: '#f0f9ff', border: '1px solid #7dd3fc' }}
+        <div className="max-w-4xl mx-auto px-4 pt-3 pb-0">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 
+                className="text-lg font-bold leading-tight"
+                style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
               >
-                <SearchIcon className="w-5 h-5" color="#0284c7" />
-              </div>
-              <div>
-                <h1 
-                  className="text-2xl font-bold"
-                  style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-                >
-                  Search Markets
-                </h1>
-                <p className="text-xs" style={{ color: '#787060' }}>
-                  {marketCounts.total.toLocaleString()}+ cities • {marketCounts.withFullData} with full STR data • Updated {DATA_LAST_UPDATED}
-                </p>
-              </div>
+                Search Markets
+              </h1>
+              <p className="text-[11px]" style={{ color: '#787060' }}>
+                {marketCounts.total.toLocaleString()}+ cities • {marketCounts.withFullData} with full STR data • Updated {DATA_LAST_UPDATED}
+              </p>
             </div>
             
             {/* Auth Header */}
@@ -449,15 +473,15 @@ export default function SearchPage() {
           
           {/* Search Input */}
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#787060' }}>
-              <SearchIcon className="w-5 h-5" color="#787060" />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#787060' }}>
+              <SearchIcon className="w-4 h-4" color="#9a9488" />
             </div>
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search any US city, state, or county..."
-              className="w-full pl-12 pr-4 py-3.5 rounded-xl transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm transition-all"
               style={{ 
                 backgroundColor: '#ffffff',
                 border: '1px solid #d8d6cd',
@@ -467,16 +491,16 @@ export default function SearchPage() {
             {query && (
               <button 
                 onClick={() => setQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+                className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
                 style={{ color: '#787060' }}
               >
-                <XIcon className="w-5 h-5" color="#787060" />
+                <XIcon className="w-4 h-4" color="#787060" />
               </button>
             )}
           </div>
 
           {/* Tab Filters Row */}
-          <div className="flex items-center gap-2 py-4 -mx-4 px-4">
+          <div className="flex items-center gap-2 py-2 -mx-4 px-4">
             {/* Smart Filters Toggle Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -794,9 +818,9 @@ export default function SearchPage() {
       </div>
 
       {/* Results */}
-      <div className="max-w-4xl mx-auto px-4 py-5">
+      <div className="max-w-4xl mx-auto px-4 py-3">
         {/* Results Count */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-3">
           <p className="text-sm" style={{ color: '#787060' }}>
             {filter === "allCities" && serverLoading && serverCities.length === 0 ? (
               <span style={{ color: '#787060' }}>Searching...</span>
