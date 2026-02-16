@@ -200,60 +200,68 @@ export function ChatAssistant() {
           {/* Content */}
           <div className={`overflow-y-auto ${mode === "menu" ? "max-h-[80vh] sm:max-h-none sm:h-auto" : "h-80"}`}>
             {mode === "menu" && (
-              <div className="p-4 space-y-3">
+              <div className="p-3 space-y-2">
                 <button
                   onClick={() => setMode("chat")}
-                  className="w-full p-4 rounded-xl text-left transition-all group"
-                  style={{ backgroundColor: '#e5e3da' }}
+                  className="w-full px-3 py-3 rounded-xl text-left transition-all group"
+                  style={{ backgroundColor: '#2b2823' }}
                 >
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110"
-                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
                     >
-                      🤖
+                      ✨
                     </div>
                     <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Ask Edge Assistant</div>
-                      <div className="text-sm" style={{ color: '#787060' }}>Explore STR info with our AI assistant</div>
+                      <div className="font-semibold text-sm" style={{ color: '#ffffff' }}>Ask Edge AI</div>
+                      <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Markets, analysis & STR info</div>
                     </div>
+                    <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
                 <button
                   onClick={() => { setMode("survey"); setSurveyStep("budget"); }}
-                  className="w-full p-4 rounded-xl text-left transition-all group"
-                  style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
+                  className="w-full px-3 py-3 rounded-xl text-left transition-all group"
+                  style={{ backgroundColor: '#f5f4f0', border: '1px solid #e5e3da' }}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-3">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110 flex-shrink-0"
-                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)' }}
                     >
                       🎓
                     </div>
-                    <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Coaching Program</div>
-                      <div className="text-sm font-medium" style={{ color: '#2b2823' }}>Only ~3 hours/week once set up</div>
-                      <div className="text-xs mt-1" style={{ color: '#787060' }}>9 guided calls: Deal → Setup & Design → Live STR. We can set up your STR remotely while you keep your job.</div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm" style={{ color: '#2b2823' }}>Coaching Program</div>
+                      <div className="text-xs" style={{ color: '#787060' }}>9 guided calls · ~3 hrs/week</div>
                     </div>
+                    <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#9a9488' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
                 <button
                   onClick={() => window.open("https://teeco.co/before-after-photos", "_blank")}
-                  className="w-full p-4 rounded-xl text-left transition-all group"
-                  style={{ backgroundColor: '#e5e3da' }}
+                  className="w-full px-3 py-3 rounded-xl text-left transition-all group"
+                  style={{ backgroundColor: '#f5f4f0', border: '1px solid #e5e3da' }}
                 >
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-transform group-hover:scale-110"
-                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.1)' }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(43, 40, 35, 0.08)' }}
                     >
                       🎨
                     </div>
-                    <div>
-                      <div className="font-semibold" style={{ color: '#2b2823' }}>Design & Setup Services</div>
-                      <div className="text-sm" style={{ color: '#787060' }}>Transform your property into a 5-star STR</div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm" style={{ color: '#2b2823' }}>Design & Setup</div>
+                      <div className="text-xs" style={{ color: '#787060' }}>Full STR property design</div>
                     </div>
+                    <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#9a9488' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
               </div>

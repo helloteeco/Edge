@@ -621,8 +621,12 @@
 - [ ] Report findings before making changes
 
 ## FIX: Funding quiz — send real results email + wording fixes (February 2026)
-- [ ] Make "Email me results" button actually send a real email with quiz results
-- [ ] Include proper disclaimer in the email
-- [ ] Change "Your Top Recommendations" → "Strategies That Match Your Situation"
-- [ ] Change "Best Match" → "Top Match"
-- [ ] No other features changed
+- [x] Make "Email me results" button actually send a real email with quiz results
+- [x] Include proper disclaimer in the email
+- [x] Change "Your Top Recommendations" → "Strategies That Match Your Situation"
+- [x] Change "Best Match" → "Top Match"
+- [x] No other features changed
+
+## REFINE: Chat bubble menu design (February 2026)
+- [ ] Clean up crowded chat bubble menu — tighter spacing, shorter text, better hierarchy
+- [ ] No feature changes
