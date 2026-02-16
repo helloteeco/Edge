@@ -63,6 +63,31 @@ interface DashboardData {
       count: number;
       data: Array<{ email: string; investment_budget: string; credit_score: string; experience: string; timeline: string; created_at: string }>;
     };
+    billingCycle?: {
+      cycleStart: string;
+      daysSinceCycleStart: number;
+      daysRemaining: number;
+      totalAnalyses: number;
+      priceLabsCalls: number;
+      airbnbCalls: number;
+      cachedCalls: number;
+      freePreviewCount: number;
+      paidAnalyses: number;
+      refunds: number;
+      priceLabsBaseFee: number;
+      priceLabsIncludedSearches: number;
+      priceLabsOverageRate: number;
+      searchesUsed: number;
+      searchesRemaining: number;
+      overageSearches: number;
+      overageCost: number;
+      currentBill: number;
+      projectedMonthlySearches: number;
+      projectedBill: number;
+      cycleRevenue: number;
+      cycleProfitLoss: number;
+      dailyBreakdown: Array<{ date: string; pricelabs: number; airbnb: number; cached: number; freePreview: number; paid: number }>;
+    };
   };
 }
 
@@ -144,6 +169,7 @@ export default function AdminDashboard() {
     { id: "analyses", label: `Analyses (${data.analysisLog.count})`, icon: "🔍" },
     { id: "leads", label: "Leads", icon: "🎓" },
     { id: "cache", label: "Cache Health", icon: "💾" },
+    { id: "billing", label: "Billing Cycle", icon: "📋" },
   ];
 
   // Mini bar chart component
@@ -519,6 +545,162 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* ===== BILLING CYCLE TAB ===== */}
+        {activeTab === "billing" && a && a.billingCycle && (() => {
+          const b = a.billingCycle;
+          const usagePct = Math.min(100, Math.round((b.searchesUsed / b.priceLabsIncludedSearches) * 100));
+          const cycleStart = new Date(b.cycleStart);
+          const cycleEnd = new Date(cycleStart);
+          cycleEnd.setDate(cycleEnd.getDate() + 30);
+          return (
+          <div className="space-y-6">
+            {/* Billing Period Header */}
+            <div className="rounded-xl p-5" style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold text-lg" style={{ color: '#fff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>PriceLabs Billing Cycle</h3>
+                  <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    {cycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {cycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>Day {b.daysSinceCycleStart} of 30</div>
+                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{b.daysRemaining} days remaining</div>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                <div className="h-2 rounded-full" style={{ backgroundColor: b.daysSinceCycleStart > 25 ? '#f59e0b' : '#22c55e', width: `${Math.round((b.daysSinceCycleStart / 30) * 100)}%` }} />
+              </div>
+            </div>
+
+            {/* Search Usage Meter */}
+            <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>PriceLabs Search Usage</h3>
+                <span className="text-sm font-medium px-3 py-1 rounded-full" style={{ backgroundColor: usagePct >= 90 ? '#fef2f2' : usagePct >= 70 ? '#fffbeb' : '#f0fdf4', color: usagePct >= 90 ? '#dc2626' : usagePct >= 70 ? '#d97706' : '#16a34a' }}>
+                  {b.searchesUsed} / {b.priceLabsIncludedSearches}
+                </span>
+              </div>
+              <div className="h-4 rounded-full mb-3" style={{ backgroundColor: '#f0ede8' }}>
+                <div className="h-4 rounded-full transition-all" style={{ backgroundColor: usagePct >= 90 ? '#dc2626' : usagePct >= 70 ? '#f59e0b' : '#22c55e', width: `${Math.min(usagePct, 100)}%` }} />
+              </div>
+              <div className="flex justify-between text-xs" style={{ color: '#787060' }}>
+                <span>{b.searchesRemaining} searches remaining</span>
+                <span>{usagePct}% used</span>
+              </div>
+              {b.overageSearches > 0 && (
+                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
+                  <span className="text-sm font-medium" style={{ color: '#dc2626' }}>⚠️ {b.overageSearches} overage searches — ${b.overageCost.toFixed(2)} extra this cycle</span>
+                </div>
+              )}
+            </div>
+
+            {/* Current Bill & Projections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: "Current Bill", value: `$${b.currentBill.toFixed(2)}`, desc: `Base $249 + $${b.overageCost.toFixed(2)} overage`, color: "#dc2626", icon: "💸" },
+                { label: "Projected Bill", value: `$${b.projectedBill.toFixed(2)}`, desc: `~${b.projectedMonthlySearches} searches at current pace`, color: "#f59e0b", icon: "📈" },
+                { label: "Cycle Revenue", value: `$${b.cycleRevenue.toFixed(2)}`, desc: `From credit pack purchases`, color: "#16a34a", icon: "💵" },
+                { label: "Cycle P/L", value: `${b.cycleProfitLoss >= 0 ? '+' : ''}$${b.cycleProfitLoss.toFixed(2)}`, desc: `Revenue minus PriceLabs bill`, color: b.cycleProfitLoss >= 0 ? "#16a34a" : "#dc2626", icon: b.cycleProfitLoss >= 0 ? "✅" : "⚠️" },
+              ].map((c) => (
+                <div key={c.label} className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
+                  <span className="text-2xl">{c.icon}</span>
+                  <div className="text-2xl font-bold mt-2" style={{ color: c.color }}>{c.value}</div>
+                  <div className="text-sm font-medium" style={{ color: '#2b2823' }}>{c.label}</div>
+                  <div className="text-xs mt-1" style={{ color: '#787060' }}>{c.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Usage Breakdown */}
+            <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
+              <h3 className="font-semibold mb-4" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>This Cycle Breakdown</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Total Analyses", value: b.totalAnalyses, color: "#2b2823" },
+                  { label: "PriceLabs Calls", value: b.priceLabsCalls, color: "#2563eb" },
+                  { label: "Free Previews", value: b.freePreviewCount, color: "#f59e0b" },
+                  { label: "Paid Analyses", value: b.paidAnalyses, color: "#16a34a" },
+                  { label: "Airbnb Calls", value: b.airbnbCalls, color: "#ec4899" },
+                  { label: "Cache Hits", value: b.cachedCalls, color: "#0891b2" },
+                  { label: "Refunds", value: b.refunds, color: "#dc2626" },
+                  { label: "Net Billable", value: Math.max(0, b.priceLabsCalls - b.cachedCalls), color: "#9333ea" },
+                ].map((m) => (
+                  <div key={m.label} className="text-center p-3 rounded-lg" style={{ backgroundColor: '#faf9f7' }}>
+                    <div className="text-2xl font-bold" style={{ color: m.color }}>{m.value}</div>
+                    <div className="text-xs mt-1" style={{ color: '#787060' }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Daily Activity */}
+            {b.dailyBreakdown && b.dailyBreakdown.length > 0 && (
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
+                <h3 className="font-semibold mb-4" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Daily Usage This Cycle</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e5e3da' }}>
+                        <th className="text-left py-2 px-2" style={{ color: '#787060' }}>Date</th>
+                        <th className="text-center py-2 px-2" style={{ color: '#2563eb' }}>PriceLabs</th>
+                        <th className="text-center py-2 px-2" style={{ color: '#ec4899' }}>Airbnb</th>
+                        <th className="text-center py-2 px-2" style={{ color: '#0891b2' }}>Cached</th>
+                        <th className="text-center py-2 px-2" style={{ color: '#f59e0b' }}>Free</th>
+                        <th className="text-center py-2 px-2" style={{ color: '#16a34a' }}>Paid</th>
+                        <th className="text-center py-2 px-2" style={{ color: '#dc2626' }}>Est. Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {b.dailyBreakdown.map((day: { date: string; pricelabs: number; airbnb: number; cached: number; freePreview: number; paid: number }) => (
+                        <tr key={day.date} style={{ borderBottom: '1px solid #f0ede8' }}>
+                          <td className="py-2 px-2 font-medium" style={{ color: '#2b2823' }}>{new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                          <td className="text-center py-2 px-2" style={{ color: '#2563eb' }}>{day.pricelabs}</td>
+                          <td className="text-center py-2 px-2" style={{ color: '#ec4899' }}>{day.airbnb}</td>
+                          <td className="text-center py-2 px-2" style={{ color: '#0891b2' }}>{day.cached}</td>
+                          <td className="text-center py-2 px-2" style={{ color: '#f59e0b' }}>{day.freePreview}</td>
+                          <td className="text-center py-2 px-2" style={{ color: '#16a34a' }}>{day.paid}</td>
+                          <td className="text-center py-2 px-2 font-medium" style={{ color: '#dc2626' }}>${(day.pricelabs * 0.50).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ borderTop: '2px solid #2b2823' }}>
+                        <td className="py-2 px-2 font-bold" style={{ color: '#2b2823' }}>Total</td>
+                        <td className="text-center py-2 px-2 font-bold" style={{ color: '#2563eb' }}>{b.priceLabsCalls}</td>
+                        <td className="text-center py-2 px-2 font-bold" style={{ color: '#ec4899' }}>{b.airbnbCalls}</td>
+                        <td className="text-center py-2 px-2 font-bold" style={{ color: '#0891b2' }}>{b.cachedCalls}</td>
+                        <td className="text-center py-2 px-2 font-bold" style={{ color: '#f59e0b' }}>{b.freePreviewCount}</td>
+                        <td className="text-center py-2 px-2 font-bold" style={{ color: '#16a34a' }}>{b.paidAnalyses}</td>
+                        <td className="text-center py-2 px-2 font-bold" style={{ color: '#dc2626' }}>${(b.priceLabsCalls * 0.50).toFixed(2)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Cost Alert Thresholds */}
+            <div className="rounded-xl p-5" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
+              <h3 className="font-semibold mb-3" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Cost Thresholds</h3>
+              <div className="space-y-2 text-sm">
+                {[
+                  { label: "Included searches (no overage)", threshold: 500, current: b.searchesUsed, status: b.searchesUsed <= 500 },
+                  { label: "Break-even (revenue covers bill)", threshold: `$${b.currentBill.toFixed(0)}`, current: `$${b.cycleRevenue.toFixed(0)}`, status: b.cycleRevenue >= b.currentBill },
+                  { label: "Free preview daily cap", threshold: "75/day", current: `${b.freePreviewCount} total`, status: true },
+                ].map((t) => (
+                  <div key={t.label} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: t.status ? '#f0fdf4' : '#fef2f2' }}>
+                    <span style={{ color: '#2b2823' }}>{t.label}</span>
+                    <span className="font-medium" style={{ color: t.status ? '#16a34a' : '#dc2626' }}>{t.status ? '✅' : '⚠️'} {String(t.current)} / {String(t.threshold)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          );
+        })()}
 
         {/* ===== MARKETS TAB ===== */}
         {activeTab === "markets" && a && (

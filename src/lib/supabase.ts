@@ -1193,6 +1193,8 @@ export async function getAdminDashboardData() {
     sharedAnalysesRes,
     fundingQuizRes,
     airbnbCacheRes,
+    freePreviewsRes,
+    creditTxRes,
   ] = await Promise.all([
     supabase.from('users').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
     supabase.from('quiz_leads').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
@@ -1205,7 +1207,13 @@ export async function getAdminDashboardData() {
     supabase.from('shared_analyses').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
     supabase.from('funding_quiz_submissions').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
     supabase.from('airbnb_comp_cache').select('id,cache_key,listings_count,created_at,expires_at', { count: 'exact' }),
+    // Billing cycle data: free_previews and credit_transactions since cycle start
+    supabase.from('free_previews').select('id,created_at', { count: 'exact' }),
+    supabase.from('credit_transactions').select('action,amount,created_at,reason', { count: 'exact' }).order('created_at', { ascending: false }),
   ]);
+
+  const freePreviewsAll = (freePreviewsRes as any).data || [];
+  const creditTxAll = (creditTxRes as any).data || [];
 
   // ===== DERIVED ANALYTICS =====
   const users = usersRes.data || [];
@@ -1310,6 +1318,75 @@ export async function getAdminDashboardData() {
   const airbnbMarkets = marketDataRows.filter((m: Record<string, string>) => m.source === 'airbnb-direct' || m.source === 'airbnb' || m.source === 'apify').length;
   const expiredCache = marketDataRows.filter((m: Record<string, string>) => m.expires_at && new Date(m.expires_at) < now).length;
 
+  // ===== BILLING CYCLE TRACKING =====
+  const billingCycleStart = (() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const day = today.getDate();
+    if (day >= 16) {
+      return new Date(year, month, 16, 0, 0, 0);
+    } else {
+      return new Date(year, month - 1, 16, 0, 0, 0);
+    }
+  })();
+  const billingCycleStartISO = billingCycleStart.toISOString();
+
+  const cycleAnalyses = analyses.filter((a: Record<string, string>) =>
+    a.created_at && new Date(a.created_at) >= billingCycleStart
+  );
+  const cyclePriceLabsCalls = cycleAnalyses.filter((a: Record<string, string>) =>
+    a.data_provider === 'pricelabs' || a.revenue_source === 'pricelabs'
+  ).length;
+  const cycleAirbnbCalls = cycleAnalyses.filter((a: Record<string, string>) =>
+    a.data_provider === 'airbnb-direct' || a.revenue_source === 'airbnb-direct' || a.data_provider === 'airbnb'
+  ).length;
+  const cycleCachedCalls = cycleAnalyses.filter((a: Record<string, boolean>) => a.is_instant).length;
+  const cycleTotalAnalyses = cycleAnalyses.length;
+
+  const cycleFreePreviewCount = freePreviewsAll.filter((fp: Record<string, string>) =>
+    fp.created_at && new Date(fp.created_at) >= billingCycleStart
+  ).length;
+  const cyclePaidAnalyses = creditTxAll.filter((tx: Record<string, string>) =>
+    tx.action === 'deduct' && tx.created_at && new Date(tx.created_at) >= billingCycleStart
+  ).length;
+  const cycleRefunds = creditTxAll.filter((tx: Record<string, string>) =>
+    tx.action === 'refund' && tx.created_at && new Date(tx.created_at) >= billingCycleStart
+  ).length;
+
+  const priceLabsBaseFee = 249;
+  const priceLabsIncludedSearches = 500;
+  const priceLabsOverageRate = 0.50;
+  const overageSearches = Math.max(0, cyclePriceLabsCalls - priceLabsIncludedSearches);
+  const priceLabsOverageCost = overageSearches * priceLabsOverageRate;
+  const priceLabsProjectedTotal = priceLabsBaseFee + priceLabsOverageCost;
+
+  const daysSinceCycleStart = Math.max(1, Math.ceil((Date.now() - billingCycleStart.getTime()) / (1000 * 60 * 60 * 24)));
+  const daysInCycle = 30;
+  const projectedMonthlySearches = Math.round((cyclePriceLabsCalls / daysSinceCycleStart) * daysInCycle);
+  const projectedOverage = Math.max(0, projectedMonthlySearches - priceLabsIncludedSearches);
+  const projectedTotal = priceLabsBaseFee + (projectedOverage * priceLabsOverageRate);
+
+  const cyclePurchases = purchases.filter((p: Record<string, string>) =>
+    (p.purchased_at || p.created_at) && new Date(p.purchased_at || p.created_at) >= billingCycleStart
+  );
+  const cycleRevenue = cyclePurchases.reduce((sum: number, p: Record<string, number>) => sum + (p.amount_paid || 0), 0) / 100;
+
+  const cycleDailyBreakdown: Array<{ date: string; pricelabs: number; airbnb: number; cached: number; freePreview: number; paid: number }> = [];
+  for (let i = 0; i < daysSinceCycleStart && i < 31; i++) {
+    const d = new Date(billingCycleStart.getTime() + i * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().split('T')[0];
+    const dayAnalyses = cycleAnalyses.filter((a: Record<string, string>) => a.created_at && a.created_at.startsWith(key));
+    cycleDailyBreakdown.push({
+      date: key,
+      pricelabs: dayAnalyses.filter((a: Record<string, string>) => a.data_provider === 'pricelabs' || a.revenue_source === 'pricelabs').length,
+      airbnb: dayAnalyses.filter((a: Record<string, string>) => a.data_provider === 'airbnb-direct' || a.revenue_source === 'airbnb-direct' || a.data_provider === 'airbnb').length,
+      cached: dayAnalyses.filter((a: Record<string, boolean>) => a.is_instant).length,
+      freePreview: freePreviewsAll.filter((fp: Record<string, string>) => fp.created_at && fp.created_at.startsWith(key)).length,
+      paid: creditTxAll.filter((tx: Record<string, string>) => tx.action === 'deduct' && tx.created_at && tx.created_at.startsWith(key)).length,
+    });
+  }
+
   return {
     // Original data (backward compatible)
     users: { count: usersRes.count || 0, data: users },
@@ -1375,6 +1452,36 @@ export async function getAdminDashboardData() {
       fundingQuiz: {
         count: fundingQuizRes.count || 0,
         data: (fundingQuizRes.data || []).slice(0, 10),
+      },
+      billingCycle: {
+        cycleStart: billingCycleStartISO,
+        daysSinceCycleStart,
+        daysRemaining: Math.max(0, daysInCycle - daysSinceCycleStart),
+        // Usage counts
+        totalAnalyses: cycleTotalAnalyses,
+        priceLabsCalls: cyclePriceLabsCalls,
+        airbnbCalls: cycleAirbnbCalls,
+        cachedCalls: cycleCachedCalls,
+        freePreviewCount: cycleFreePreviewCount,
+        paidAnalyses: cyclePaidAnalyses,
+        refunds: cycleRefunds,
+        // Cost tracking
+        priceLabsBaseFee,
+        priceLabsIncludedSearches,
+        priceLabsOverageRate,
+        searchesUsed: cyclePriceLabsCalls,
+        searchesRemaining: Math.max(0, priceLabsIncludedSearches - cyclePriceLabsCalls),
+        overageSearches,
+        overageCost: priceLabsOverageCost,
+        currentBill: priceLabsProjectedTotal,
+        // Projections
+        projectedMonthlySearches,
+        projectedBill: Math.round(projectedTotal * 100) / 100,
+        // Revenue vs cost
+        cycleRevenue,
+        cycleProfitLoss: Math.round((cycleRevenue - priceLabsProjectedTotal) * 100) / 100,
+        // Daily breakdown
+        dailyBreakdown: cycleDailyBreakdown,
       },
     },
   };

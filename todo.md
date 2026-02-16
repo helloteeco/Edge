@@ -661,3 +661,8 @@
 ## Bug Fix: Pinch-to-zoom on comp map triggers heart animation (February 2026)
 - [x] Fix two-finger pinch-to-zoom on calculator comp map triggering the heart/like animation
 - [x] Keep double-tap-to-like working elsewhere
+
+## Admin: API usage tracking on admin dashboard (February 2026)
+- [x] Add billing cycle tracking to admin dashboard API (supabase.ts) + Billing Cycle tab UI
+- [x] Show PriceLabs search usage meter, current bill, projected bill, cycle revenue, P/L
+- [x] Show daily breakdown table with per-day API calls and costs, cost thresholds
