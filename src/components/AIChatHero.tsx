@@ -133,6 +133,10 @@ export function AIChatHero() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [feedbackMap, setFeedbackMap] = useState<Record<number, string>>({});
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [dislikeInputIndex, setDislikeInputIndex] = useState<number | null>(null);
+  const [dislikeText, setDislikeText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -218,6 +222,7 @@ export function AIChatHero() {
           setCurrentSessionId(sessionId);
           setIsExpanded(true);
           setShowHistory(false);
+          loadFeedback(sessionId);
         }
       }
     } catch (err) {
@@ -337,7 +342,117 @@ export function AIChatHero() {
     setInput("");
     setPendingImage(null);
     setCurrentSessionId(null);
+    setFeedbackMap({});
+    setDislikeInputIndex(null);
+    setDislikeText("");
   };
+
+  // Load feedback state when loading a session
+  const loadFeedback = useCallback(async (sessionId: string) => {
+    const email = getAuthEmail();
+    if (!email || !sessionId) return;
+    try {
+      const res = await fetch(`/api/chat-feedback?email=${encodeURIComponent(email)}&session_id=${encodeURIComponent(sessionId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFeedbackMap(data.feedback || {});
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  // Copy response text
+  const handleCopy = useCallback(async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(stripMarkdown(text));
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = stripMarkdown(text);
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }
+  }, []);
+
+  // Share response with branding
+  const handleShare = useCallback(async (text: string, index: number) => {
+    const userMsg = messages.slice(0, index).reverse().find((m) => m.role === "user");
+    const question = userMsg ? userMsg.content : "";
+    const cleanText = stripMarkdown(text);
+    // Truncate for share if very long
+    const truncated = cleanText.length > 800 ? cleanText.slice(0, 800) + "..." : cleanText;
+    const shareText = question
+      ? `I asked Edge AI: "${question}"\n\n${truncated}\n\nTry it free \u2192 edge.teeco.co`
+      : `${truncated}\n\nPowered by Edge \u2192 edge.teeco.co`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ text: shareText });
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(shareText);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }
+  }, [messages]);
+
+  // Submit feedback (like/dislike)
+  const handleFeedback = useCallback(async (rating: "up" | "down", msgIndex: number, feedbackText?: string) => {
+    const email = getAuthEmail();
+    const userMsg = messages.slice(0, msgIndex).reverse().find((m) => m.role === "user");
+    const assistantMsg = messages[msgIndex];
+
+    // Optimistic update
+    setFeedbackMap((prev) => {
+      const newMap = { ...prev };
+      if (prev[msgIndex] === rating) {
+        delete newMap[msgIndex];
+      } else {
+        newMap[msgIndex] = rating;
+      }
+      return newMap;
+    });
+
+    try {
+      const res = await fetch("/api/chat-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email || null,
+          session_id: currentSessionId || null,
+          message_index: msgIndex,
+          rating,
+          feedback_text: feedbackText || null,
+          message_content: assistantMsg?.content?.slice(0, 2000) || null,
+          user_query: userMsg?.content?.slice(0, 500) || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.rating === null) {
+          setFeedbackMap((prev) => { const m = { ...prev }; delete m[msgIndex]; return m; });
+        } else {
+          setFeedbackMap((prev) => ({ ...prev, [msgIndex]: data.rating }));
+        }
+      }
+    } catch { /* silent — optimistic update stays */ }
+  }, [messages, currentSessionId]);
+
+  const handleDislikeSubmit = useCallback((msgIndex: number) => {
+    handleFeedback("down", msgIndex, dislikeText || undefined);
+    setDislikeInputIndex(null);
+    setDislikeText("");
+  }, [handleFeedback, dislikeText]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -567,18 +682,116 @@ export function AIChatHero() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex gap-3 max-w-full">
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: "#f0fdf4" }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="#22c55e" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                      </svg>
+                  <div className="max-w-full">
+                    <div className="flex gap-3">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                        style={{ backgroundColor: "#f0fdf4" }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="#22c55e" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {formatResponse(msg.content)}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      {formatResponse(msg.content)}
+                    {/* Action buttons: Copy, Share, Like, Dislike */}
+                    <div className="flex items-center gap-1 mt-2 ml-10">
+                      {/* Copy */}
+                      <button
+                        onClick={() => handleCopy(msg.content, i)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] transition-all hover:bg-gray-100 active:scale-95"
+                        style={{ color: copiedIndex === i ? "#22c55e" : "#9a958c", minHeight: 32 }}
+                        title="Copy response"
+                        aria-label="Copy response"
+                      >
+                        {copiedIndex === i ? (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" /></svg>
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Share */}
+                      <button
+                        onClick={() => handleShare(msg.content, i)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] transition-all hover:bg-gray-100 active:scale-95"
+                        style={{ color: "#9a958c", minHeight: 32 }}
+                        title="Share response"
+                        aria-label="Share response"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+                        <span>Share</span>
+                      </button>
+
+                      <span className="mx-0.5" style={{ color: "#e5e3da" }}>|</span>
+
+                      {/* Like */}
+                      <button
+                        onClick={() => handleFeedback("up", i)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] transition-all hover:bg-gray-100 active:scale-95"
+                        style={{ color: feedbackMap[i] === "up" ? "#22c55e" : "#9a958c", minHeight: 32 }}
+                        title="Helpful response"
+                        aria-label="Mark response as helpful"
+                      >
+                        <svg className="w-3.5 h-3.5" fill={feedbackMap[i] === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" /></svg>
+                      </button>
+
+                      {/* Dislike */}
+                      <button
+                        onClick={() => {
+                          if (feedbackMap[i] === "down") {
+                            handleFeedback("down", i);
+                          } else {
+                            setDislikeInputIndex(dislikeInputIndex === i ? null : i);
+                            setDislikeText("");
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] transition-all hover:bg-gray-100 active:scale-95"
+                        style={{ color: feedbackMap[i] === "down" ? "#ef4444" : "#9a958c", minHeight: 32 }}
+                        title="Not helpful"
+                        aria-label="Mark response as not helpful"
+                      >
+                        <svg className="w-3.5 h-3.5" fill={feedbackMap[i] === "down" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ transform: "scaleY(-1)" }}><path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" /></svg>
+                      </button>
                     </div>
+
+                    {/* Dislike feedback input */}
+                    {dislikeInputIndex === i && (
+                      <div className="ml-10 mt-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={dislikeText}
+                          onChange={(e) => setDislikeText(e.target.value)}
+                          placeholder="What went wrong? (optional)"
+                          className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none focus:ring-2"
+                          style={{ backgroundColor: "#f8f7f4", border: "1px solid #e5e3da", color: "#2b2823" }}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleDislikeSubmit(i); }}
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleDislikeSubmit(i)}
+                          className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: "#2b2823", color: "#ffffff", minHeight: 32 }}
+                        >
+                          Send
+                        </button>
+                        <button
+                          onClick={() => { setDislikeInputIndex(null); setDislikeText(""); }}
+                          className="px-2 py-2 rounded-lg text-xs transition-all hover:bg-gray-100 active:scale-95"
+                          style={{ color: "#9a958c", minHeight: 32 }}
+                        >
+                          Skip
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

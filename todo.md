@@ -500,6 +500,14 @@
 - [x] No other features changed
 
 ## FIX: Match city header share button to floating share icon (February 2026)
-- [ ] Update the up-arrow share icon in city header to paper plane style matching the floating action button
-- [ ] Apply to all cities consistently
+- [x] Update the up-arrow share icon in city header to paper plane style matching the floating action button
+- [x] Apply to all cities consistently
+- [x] No other features changed
+
+## AI Response Action Buttons (February 2026)
+- [ ] Copy button on each AI response (clipboard icon, "Copied!" toast)
+- [ ] Share button on each AI response (paper plane icon, native share sheet, branded footer with edge.teeco.co)
+- [ ] Like button (thumbs up, highlights green, saves to Supabase)
+- [ ] Dislike button (thumbs down, highlights red, optional "What went wrong?" input, saves to Supabase)
+- [ ] Create chat_feedback Supabase table (user_email, session_id, message_index, rating, feedback_text, message_content, user_query, created_at)
 - [ ] No other features changed
