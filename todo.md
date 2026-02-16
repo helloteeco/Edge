@@ -447,16 +447,16 @@
 - [x] Reduce gap between hero and AI chat card for seamless flow
 
 ## FEATURE: Photo Upload to AI Chat (February 2026)
-- [ ] Add photo/image picker button next to chat input
-- [ ] Encode selected image as base64 and send to /api/chat
-- [ ] Update /api/chat to pass images to OpenAI vision API
-- [ ] Show image thumbnail preview in chat messages
-- [ ] AI analyzes property photos/listing screenshots with market data context
+- [x] Add photo/image picker button next to chat input
+- [x] Encode selected image as base64 and send to /api/chat
+- [x] Update /api/chat to pass images to OpenAI vision API
+- [x] Show image thumbnail preview in chat messages
+- [x] AI analyzes property photos/listing screenshots with market data context
 
 ## FEATURE: Saved Chat History (February 2026)
-- [ ] Create Supabase chat_sessions table (user_id, title, messages, timestamps)
-- [ ] Build API endpoints: save session, load sessions, load single session
-- [ ] Add chat history list UI (slide-out or dropdown)
-- [ ] Auto-save conversations for logged-in users
-- [ ] "New Chat" button to start fresh conversation
-- [ ] Load and continue previous conversations
+- [x] Create Supabase chat_sessions table (user_id, title, messages, timestamps)
+- [x] Build API endpoints: save session, load sessions, load single session
+- [x] Add chat history list UI (slide-out or dropdown)
+- [x] Auto-save conversations for logged-in users
+- [x] "New Chat" button to start fresh conversation
+- [x] Load and continue previous conversations
