@@ -457,7 +457,7 @@ export function USMap() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Map View Filters */}
       <div 
         ref={tabContainerRef}
@@ -496,8 +496,8 @@ export function USMap() {
       </div>
 
       {/* Filter Description */}
-      <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-        <p className="text-sm" style={{ color: '#787060' }}>{getFilterDescription()}</p>
+      <div className="px-3 py-2 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
+        <p className="text-xs" style={{ color: '#787060' }}>{getFilterDescription()}</p>
       </div>
 
       {/* Map Grid - with swipe gesture support on entire map area */}
@@ -551,15 +551,15 @@ export function USMap() {
 
       {/* State Detail Popup */}
       {selectedStateData && (
-        <div className="rounded-2xl p-5 shadow-lg border" style={{ backgroundColor: '#ffffff', borderColor: '#d8d6cd' }}>
-          <div className="flex items-start justify-between mb-4">
+        <div className="rounded-2xl p-4 shadow-lg border" style={{ backgroundColor: '#ffffff', borderColor: '#d8d6cd' }}>
+          <div className="flex items-start justify-between mb-3">
             <div>
-              <h3 className="text-xl font-bold" style={{ color: '#2b2823' }}>{selectedStateData.name}</h3>
-              <div className="flex items-center gap-2 mt-1">
+              <h3 className="text-lg font-bold" style={{ color: '#2b2823' }}>{selectedStateData.name}</h3>
+              <div className="flex items-center gap-2 mt-0.5">
                 <span className={`px-2 py-0.5 rounded text-xs font-bold ${getGradeBgColor(selectedStateData.grade)} text-white`}>
                   {selectedStateData.grade}
                 </span>
-                <span className="text-sm" style={{ color: '#787060' }}>
+                <span className="text-xs" style={{ color: '#787060' }}>
                   {getVerdictText(selectedStateData.verdict).text}
                 </span>
               </div>
@@ -575,58 +575,59 @@ export function USMap() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>Median Home</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
+          {/* All stats in one compact grid */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+              <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Home Price</div>
+              <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
                 ${(selectedStateData.medianHomeValue / 1000).toFixed(0)}K
               </div>
             </div>
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>Appreciation</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
+            <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+              <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Appreciation</div>
+              <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
                 {selectedStateData.appreciation.toFixed(1)}%
               </div>
             </div>
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>Net Migration</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
+            <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+              <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Migration</div>
+              <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
                 {selectedStateData.netMigration > 0 ? '+' : ''}{(selectedStateData.netMigration / 1000).toFixed(0)}K
               </div>
             </div>
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-              <div className="text-xs" style={{ color: '#787060' }}>STR Status</div>
-              <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                {selectedStateData.regulation === 'Legal' ? 'Friendly' : selectedStateData.regulation}
+            <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+              <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>STR Rules</div>
+              <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
+                {selectedStateData.regulation === 'Legal' ? 'Friendly' : 'Regulated'}
               </div>
             </div>
           </div>
 
-          {/* Inventory Data */}
+          {/* Inventory row */}
           {selectedInventoryData && (
-            <div className="grid grid-cols-2 gap-3 mb-4 pt-3 border-t" style={{ borderColor: '#e5e3da' }}>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Inventory Level</div>
-                <div className="text-lg font-bold capitalize" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.inventoryLevel.replace('-', ' ')}
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Inventory</div>
+                <div className="text-sm font-bold capitalize" style={{ color: '#2b2823' }}>
+                  {selectedInventoryData.inventoryLevel.replace('very-', 'V.').replace('-', ' ')}
                 </div>
               </div>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Inventory Growth</div>
-                <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.inventoryGrowthYoY > 0 ? '+' : ''}{selectedInventoryData.inventoryGrowthYoY.toFixed(1)}%
+              <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Inv. Growth</div>
+                <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
+                  {selectedInventoryData.inventoryGrowthYoY > 0 ? '+' : ''}{selectedInventoryData.inventoryGrowthYoY.toFixed(0)}%
                 </div>
               </div>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Price Cuts</div>
-                <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.priceCutPercent.toFixed(1)}%
+              <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Price Cuts</div>
+                <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
+                  {selectedInventoryData.priceCutPercent.toFixed(0)}%
                 </div>
               </div>
-              <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5f4f0' }}>
-                <div className="text-xs" style={{ color: '#787060' }}>Days on Market</div>
-                <div className="text-lg font-bold" style={{ color: '#2b2823' }}>
-                  {selectedInventoryData.daysOnMarket} days
+              <div className="px-2 py-2 rounded-lg" style={{ backgroundColor: '#f5f4f0' }}>
+                <div className="text-[10px] leading-tight" style={{ color: '#787060' }}>Days Listed</div>
+                <div className="text-sm font-bold" style={{ color: '#2b2823' }}>
+                  {selectedInventoryData.daysOnMarket}d
                 </div>
               </div>
             </div>
@@ -634,22 +635,11 @@ export function USMap() {
 
           <Link
             href={`/state/${selectedState?.toLowerCase()}`}
-            className="block w-full py-3 rounded-xl text-center font-semibold transition-colors"
+            className="block w-full py-2.5 rounded-xl text-center text-sm font-semibold transition-colors"
             style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
           >
             View {selectedStateData.name} Markets →
           </Link>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!selectedState && (
-        <div className="text-center py-8 rounded-2xl" style={{ backgroundColor: '#f5f4f0' }}>
-          <div className="text-4xl mb-3">🗺️</div>
-          <h3 className="text-lg font-semibold mb-1" style={{ color: '#2b2823' }}>Select a State to Begin</h3>
-          <p className="text-sm" style={{ color: '#787060' }}>
-            Click any state on the map above to view STR investment grades, regulations, rental income data, and detailed market analysis.
-          </p>
         </div>
       )}
     </div>

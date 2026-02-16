@@ -506,7 +506,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
                   { key: "all", label: "All" },
                   { key: "gems", label: "💎 Hidden Gems" },
                   { key: "legal", label: "Legal" },
-                  { key: "restricted", label: "Restricted" },
+                  { key: "restricted", label: "Regulated" },
                 ].map((opt) => (
                   <button
                     key={opt.key}

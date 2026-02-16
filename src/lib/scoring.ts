@@ -398,8 +398,8 @@ export function scoreAppreciation(oneYearAppreciation: number): { score: number;
 
 /** @deprecated Legality is no longer part of the score */
 export function scoreLegality(status: string, permitRequired: boolean): { score: number; rating: string } {
-  if (status === 'banned') return { score: 0, rating: 'Banned' };
-  if (status === 'restricted') return { score: 4, rating: 'Restricted' };
+  if (status === 'banned') return { score: 0, rating: 'Strict Rules' };
+  if (status === 'restricted') return { score: 4, rating: 'Regulated' };
   if (status === 'varies') return { score: 8, rating: 'Varies by Area' };
   if (status === 'legal' && permitRequired) return { score: 12, rating: 'Legal (Permit Required)' };
   return { score: 15, rating: 'Fully Legal' };

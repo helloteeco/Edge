@@ -286,7 +286,7 @@ export default function SearchPage() {
         // Regulation filter (server cities may not have regulation data)
         if (regulationFilter !== "all" && city.regulation) {
           if (regulationFilter === "legal" && city.regulation !== "Legal") return false;
-          if (regulationFilter === "restricted" && city.regulation !== "Restricted") return false;
+          if (regulationFilter === "restricted" && city.regulation === "Legal") return false;
         }
         return true;
       });
@@ -344,7 +344,7 @@ export default function SearchPage() {
       if (city.strMonthlyRevenue < revBracket.min || city.strMonthlyRevenue > revBracket.max) return false;
       // Regulation filter
       if (regulationFilter === "legal" && city.regulation !== "Legal") return false;
-      if (regulationFilter === "restricted" && city.regulation !== "Restricted") return false;
+      if (regulationFilter === "restricted" && city.regulation === "Legal") return false;
       return true;
     });
 
@@ -366,7 +366,7 @@ export default function SearchPage() {
       if (revenueIdx > 0) return false;
       // Regulation filter
       if (regulationFilter === "legal" && state.regulation !== "Legal") return false;
-      if (regulationFilter === "restricted" && state.regulation !== "Restricted") return false;
+      if (regulationFilter === "restricted" && state.regulation === "Legal") return false;
       return true;
     });
 
@@ -694,7 +694,7 @@ export default function SearchPage() {
                       {([
                         { key: "all", label: "All" },
                         { key: "legal", label: "Legal" },
-                        { key: "restricted", label: "Restricted" },
+                        { key: "restricted", label: "Regulated" },
                       ] as const).map((opt) => (
                         <button
                           key={opt.key}
@@ -811,7 +811,7 @@ export default function SearchPage() {
                     className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
                     style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                   >
-                    {regulationFilter === 'legal' ? 'Legal' : 'Restricted'} <span className="ml-0.5 opacity-70">✕</span>
+                    {regulationFilter === 'legal' ? 'Legal' : 'Regulated'} <span className="ml-0.5 opacity-70">✕</span>
                   </button>
                 )}
                 {sortBy !== "score" && (
@@ -1041,8 +1041,8 @@ export default function SearchPage() {
                     <span 
                       className="px-2.5 py-1 rounded-lg text-xs font-medium"
                       style={{ 
-                        backgroundColor: city.regulation === 'Legal' ? '#dcfce7' : city.regulation === 'Restricted' ? '#fef3c7' : '#fee2e2',
-                        color: city.regulation === 'Legal' ? '#166534' : city.regulation === 'Restricted' ? '#92400e' : '#991b1b',
+                        backgroundColor: city.regulation === 'Legal' ? '#dcfce7' : city.regulation === 'Strict Rules' ? '#fee2e2' : '#fef3c7',
+                        color: city.regulation === 'Legal' ? '#166534' : city.regulation === 'Strict Rules' ? '#991b1b' : '#92400e',
                       }}
                     >
                       {city.regulation}

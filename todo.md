@@ -628,5 +628,12 @@
 - [x] No other features changed
 
 ## REFINE: Chat bubble menu design (February 2026)
-- [ ] Clean up crowded chat bubble menu — tighter spacing, shorter text, better hierarchy
-- [ ] No feature changes
+- [x] Clean up crowded chat bubble menu — tighter spacing, shorter text, better hierarchy
+- [x] No feature changes
+
+## DESIGN: Condense map state info card + STR status wording (February 2026)
+- [ ] Condense state info card on map page — reduce vertical height so less scrolling needed on mobile
+- [ ] Change "Restricted" STR status wording to something less discouraging (Airbnbs exist everywhere)
+- [ ] Keep "Friendly" as is
+- [ ] Update STR status labels across all pages (map, search, city, state)
+- [ ] No major feature changes — design/wording only

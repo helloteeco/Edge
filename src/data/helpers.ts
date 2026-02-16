@@ -118,7 +118,7 @@ export function getAllCities(): FlatCity[] {
         occupancy: city.rental.occupancyRate,
         strMonthlyRevenue: city.rental.monthlyRevenue,
         medianHomeValue: city.rental.medianHomePrice,
-        regulation: regulationInfo.legality_status === 'legal' ? 'Legal' : regulationInfo.legality_status === 'banned' ? 'Banned' : 'Restricted',
+        regulation: regulationInfo.legality_status === 'legal' ? 'Legal' : regulationInfo.legality_status === 'banned' ? 'Strict Rules' : 'Regulated',
         marketHeadroom: scoring.roomToGrow.score, // Use new scoring (15 = excellent, 3 = crowded)
         listingsPerThousand: city.saturationRisk.listingsPerThousand,
         scores: {
@@ -225,7 +225,7 @@ export function getAllStates(): FlatState[] {
       abbreviation: code,
       name: state.name,
       marketScore: stateScore,
-      regulation: state.strRegulation.status === "legal" ? "Legal" : "Restricted",
+      regulation: state.strRegulation.status === "legal" ? "Legal" : "Regulated",
       avgADR: state.rental.avgADR,
       medianHomeValue: state.appreciation.medianValue,
       appreciation: state.appreciation.oneYear,

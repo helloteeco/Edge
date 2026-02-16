@@ -545,9 +545,9 @@ export default function CityPage({ params }: { params: { id: string } }) {
             <div className="font-semibold mb-1" style={{ color: '#2b2823' }}>THE BOTTOM LINE {verdictInfo.emoji}</div>
             <p className="text-sm" style={{ color: '#787060' }}>
               {city.scoring.regulationPenalty?.applied && city.regulationInfo?.legality_status === 'banned'
-                ? "High risk. STRs are effectively banned in this market — operating here carries significant legal and financial risk."
+                ? "This market has strict STR regulations. Some operators still succeed here, but thorough research into local ordinances and permits is essential before committing."
                 : city.scoring.regulationPenalty?.applied && city.regulationInfo?.legality_status === 'restricted'
-                ? "Proceed with extreme caution. Significant STR restrictions limit your ability to operate profitably. Research local ordinances thoroughly before committing."
+                ? "This market has STR regulations to be aware of. Many hosts operate successfully with proper permits. Research local ordinances before committing."
                 : city.grade === 'A+' || city.grade === 'A'
                 ? "Excellent opportunity! Strong cash flow potential with favorable market conditions."
                 : city.grade === 'B+' || city.grade === 'B'
@@ -717,8 +717,8 @@ export default function CityPage({ params }: { params: { id: string } }) {
                     : city.regulationInfo.legality_status === 'restricted' ? '#fcd34d' : '#86efac'}`
                 }}
               >
-                {city.regulationInfo.legality_status === 'banned' ? 'Banned' 
-                  : city.regulationInfo.legality_status === 'restricted' ? 'Restricted' : 'Legal'}
+                {city.regulationInfo.legality_status === 'banned' ? 'Strict Rules' 
+                  : city.regulationInfo.legality_status === 'restricted' ? 'Regulated' : 'Legal'}
               </span>
               {city.regulationInfo.permit_difficulty && city.regulationInfo.permit_difficulty !== 'unknown' && (
                 <span 
