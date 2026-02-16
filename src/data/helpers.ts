@@ -83,8 +83,14 @@ function calculateCityScore(city: CityData, stateCode: string): ScoringBreakdown
   });
 }
 
+// Memoization caches for expensive computations
+let _allCitiesCache: FlatCity[] | null = null;
+let _allStatesCache: FlatState[] | null = null;
+let _marketCountsCache: { total: number; withFullData: number } | null = null;
+
 // Convert city data to flat array with new scoring
 export function getAllCities(): FlatCity[] {
+  if (_allCitiesCache) return _allCitiesCache;
   const cities: FlatCity[] = [];
   
   for (const [stateCode, stateCities] of Object.entries(cityDataByState)) {
@@ -158,6 +164,7 @@ export function getAllCities(): FlatCity[] {
     return true;
   });
   
+  _allCitiesCache = deduped;
   return deduped;
 }
 
@@ -187,6 +194,7 @@ function getVerdictFromGrade(grade: string): 'strong-buy' | 'buy' | 'hold' | 'ca
 
 // Convert state data to flat array with new scoring
 export function getAllStates(): FlatState[] {
+  if (_allStatesCache) return _allStatesCache;
   const states: FlatState[] = [];
   const allCities = getAllCities();
   
@@ -235,6 +243,7 @@ export function getAllStates(): FlatState[] {
     });
   }
   
+  _allStatesCache = states;
   return states;
 }
 
@@ -555,8 +564,10 @@ export function searchUnifiedCities(query: string, limit: number = 50): UnifiedC
   return scored;
 }
 
-// Get total market counts
+// Get total market counts (memoized)
 export function getMarketCounts(): { total: number; withFullData: number } {
+  if (_marketCountsCache) return _marketCountsCache;
+  
   const fullDataCount = getAllCities().length;
   const basicCities = getAllBasicCities();
   
@@ -571,10 +582,11 @@ export function getMarketCounts(): { total: number; withFullData: number } {
     }
   }
   
-  return {
+  _marketCountsCache = {
     total: fullDataCount + uniqueBasicCount,
     withFullData: fullDataCount,
   };
+  return _marketCountsCache;
 }
 
 // Data freshness info

@@ -20,6 +20,7 @@ import {
   HomeEquityIcon,
 } from "@/components/Icons";
 import AuthModal from "@/components/AuthModal";
+import AuthHeader from "@/components/AuthHeader";
 import { StuckHelper } from "@/components/StuckHelper";
 
 // Type for saved property reports
@@ -348,51 +349,30 @@ export default function SavedPage() {
               </h1>
             </div>
             
-            {/* Auth Status */}
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-sm font-medium" style={{ color: '#2b2823' }}>{userEmail}</div>
-                  <div className="text-xs flex items-center gap-1" style={{ color: '#787060' }}>
-                    {isSyncing ? (
-                      <>
-                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Syncing...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Synced across devices
-                      </>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-gray-100"
-                  style={{ color: '#787060', border: '1px solid #d8d6cd' }}
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-                Sign In to Sync
-              </button>
-            )}
+            <AuthHeader variant="light" />
           </div>
+          
+          {/* Sync Status */}
+          {isAuthenticated && (
+            <div className="ml-13 text-xs flex items-center gap-1" style={{ color: '#787060' }}>
+              {isSyncing ? (
+                <>
+                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Synced across devices
+                </>
+              )}
+            </div>
+          )}
           <p className="ml-13" style={{ color: '#787060' }}>
             {isAuthenticated 
               ? "Your saved reports sync across all your devices" 

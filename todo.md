@@ -556,3 +556,11 @@
 - [x] Add client-side caching so switching tabs doesn't re-fetch
 - [x] Ensure caching scales well as more cities are added (LRU eviction, 5min TTL)
 - [x] No existing features or functions changed
+
+## Fix slow page navigation + consistent account icon (February 2026)
+- [x] Diagnose slow tab navigation: root cause was force-dynamic in layout + no memoization
+- [x] Fix: removed force-dynamic from root layout (API routes keep their own)
+- [x] Fix: memoized getAllCities(), getAllStates(), getMarketCounts() to avoid re-computation
+- [x] Add AuthHeader to Saved page (was the only main page missing it)
+- [x] All pages now have consistent account icon: Map, Search, Calculator, Saved, Funding, City, State
+- [x] No other features changed
