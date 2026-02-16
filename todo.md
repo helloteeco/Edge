@@ -485,3 +485,7 @@
 - [x] Show selected avatar in header circle instead of generic person icon
 - [x] 44px touch targets, accessible labels
 - [x] No other features changed
+
+## FIX: Shorten AI chat input placeholder text (February 2026)
+- [ ] Shorten placeholder so it fits on mobile without being cut off
+- [ ] No other features changed

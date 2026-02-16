@@ -633,7 +633,7 @@ export function AIChatHero() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={pendingImage ? "Describe what to analyze..." : "Ask about any market, city, or STR strategy..."}
+              placeholder={pendingImage ? "Describe this image..." : "Ask about any market or city..."}
               disabled={isLoading}
               className="flex-1 px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 disabled:opacity-60"
               style={{
