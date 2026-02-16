@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       <p style="color: rgba(255,255,255,0.4); font-size: 11px; margin: 0 0 8px 0;">Your unfair advantage in STR investing</p>
       <a href="https://edge.teeco.co" style="color: #b8a88a; font-size: 11px;">edge.teeco.co</a>
       <p style="color: rgba(255,255,255,0.25); font-size: 9px; margin: 12px 0 0 0; line-height: 1.5;">
-        This analysis is for informational purposes only and does not constitute financial advice.
+        This analysis is for informational and educational purposes only and does not constitute financial, legal, or investment advice.
       </p>
     </div>
     

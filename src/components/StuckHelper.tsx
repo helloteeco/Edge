@@ -15,7 +15,7 @@ interface StuckHelperProps {
 const TAB_BUTTON_LABELS: Record<string, { title: string; subtitle: string }> = {
   map: {
     title: "Not sure where to start?",
-    subtitle: "Get personalized help picking your first market",
+    subtitle: "Get help picking your first market",
   },
   search: {
     title: "Need help deciding?",
@@ -336,7 +336,7 @@ EDGE FEATURES & RESOURCES YOU CAN RECOMMEND:
 2. **Market Search** (Search tab) — Filter and sort cities by occupancy, ADR, revenue, home price, and more
 3. **Property Calculator** (Calculator tab) — Enter any US address to get revenue estimates, comps from real STR data, expense breakdown, and cash-on-cash return
 4. **Saved Items** (Saved tab) — Save up to 10 cities, states, and property analyses for comparison
-5. **Funding Options** (Funding tab) — 45+ financing strategies with a personalized quiz to match your situation
+5. **Funding Options** (Funding tab) — 45+ financing strategies with a quiz to find what fits your situation
 6. **Edge AI Assistant** (chat bubble, bottom-right) — Ask any STR investing question anytime
 
 TEECO SERVICES & AFFILIATES:

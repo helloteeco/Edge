@@ -170,7 +170,7 @@ export default function HomePage() {
         'Quick quiz to identify your 5 most likely funding options',
         'Links to Zillow for finding agents and lenders',
         'Edge AI Assistant can answer funding questions',
-        'Apply to our coaching program for personalized guidance'
+        'Apply to our coaching program to learn more'
       ]
     },
     'Setup': {

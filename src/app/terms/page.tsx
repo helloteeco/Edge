@@ -209,7 +209,7 @@ export default function TermsPage() {
             <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
               Some links within the Service may be affiliate links, meaning Teeco LLC may earn a commission if you make a purchase 
               or sign up for a service through those links, at no additional cost to you. Affiliate relationships do not influence 
-              our analysis, recommendations, or the data presented in the Service. We only recommend products and services we 
+              our analysis or the data presented in the Service. We only feature products and services we 
               believe may be useful to STR investors.
             </p>
 

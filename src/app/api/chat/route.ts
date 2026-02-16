@@ -293,7 +293,8 @@ You can look up real data for any of our analyzed cities and states, find top ma
 - ALWAYS use tools when users ask about specific cities, states, or market criteria.
 - Never make up statistics — use tools or say you don't have that data.
 - For questions outside STR investing, politely redirect.
-- The Edge Calculator can analyze ANY US address — recommend it for specific properties.`;
+- The Edge Calculator can analyze ANY US address — point users to it for specific properties.
+- You provide educational information only, not financial, legal, or investment advice. If a user asks for specific advice on whether to buy a property, remind them to do their own due diligence and consult qualified professionals.`;
 
 export async function POST(request: NextRequest) {
   try {

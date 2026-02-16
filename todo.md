@@ -595,7 +595,13 @@
 - [ ] No other features changed
 
 ## FIX: Coaching Survey — tracking, delivery, and legal wording (February 2026)
-- [ ] Save coaching survey submissions (email + answers) to database for admin tracking
-- [ ] Show results/info after email submission instead of doing nothing
-- [ ] Change wording from "recommendations/advice" to educational information only
+- [x] Save coaching survey submissions (email + answers) to database for admin tracking (was already working)
+- [x] Show results/info after email submission instead of doing nothing
+- [x] Change wording from "recommendations/advice" to educational information only
 - [ ] No other features changed
+
+## AUDIT: Full legal language review across entire web app (February 2026)
+- [ ] Scan all user-facing text for legally risky language (advice, recommend, guarantee, should, must, etc.)
+- [ ] Change risky wording to educational/informational framing
+- [ ] Ensure disclaimers are present where needed
+- [ ] No design or functionality changes

@@ -4163,7 +4163,7 @@ export default function CalculatorPage() {
 6. **Questions to Ask** - 3-5 specific questions they should investigate before buying.
 7. **The Wealth-Building Perspective** - Help them see how this fits into building long-term wealth.`;
     
-    const analysisPrompt = `I need a comprehensive $500-level consulting analysis of this STR ${analysisMode === "iownit" ? "homeowner conversion (I already own this property and want to know: STR or LTR?)" : analysisMode === "arbitrage" ? "rental arbitrage" : "investment"} deal. Please analyze every aspect and help me think like a sophisticated investor.
+    const analysisPrompt = `I need a comprehensive educational analysis of this STR ${analysisMode === "iownit" ? "homeowner conversion (I already own this property and want to know: STR or LTR?)" : analysisMode === "arbitrage" ? "rental arbitrage" : "investment"} deal. Please analyze every aspect and help me think like a sophisticated investor.
 
 ## PROPERTY DATA
 - **Location:** ${result.address || result.neighborhood}, ${result.city}, ${result.state}
@@ -4189,7 +4189,7 @@ Please provide:
 4. **Comparison to Benchmarks** - How does this compare to what successful STR ${analysisMode === "arbitrage" ? "arbitrage operators" : "investors"} target?
 5. **Red Flags & Green Lights** - Specific concerns or exciting opportunities in this deal.
 ${arbitrageQuestions}
-8. **Bottom Line Recommendation** - Your honest assessment and suggested next steps.
+8. **Bottom Line Assessment** - Your honest analysis and what to research next. Remind them this is educational, not financial advice.
 
 Be specific, use the actual numbers, and help them think like a sophisticated ${analysisMode === "iownit" ? "property owner maximizing their asset" : analysisMode === "arbitrage" ? "arbitrage operator" : "investor"} who's done this many times.`;
 
@@ -4208,7 +4208,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
       setAiAnalysis(data.message);
     } catch (error) {
       console.error("AI Analysis error:", error);
-      setAiAnalysis("I'm having trouble generating the analysis right now. Please try again in a moment, or reach out to hello@teeco.co for personalized guidance!");
+      setAiAnalysis("I'm having trouble generating the analysis right now. Please try again in a moment, or reach out to hello@teeco.co for help!");
     } finally {
       setIsLoadingAiAnalysis(false);
     }

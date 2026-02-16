@@ -74,7 +74,7 @@ export function Footer() {
         >
           © {new Date().getFullYear()} Teeco LLC. All rights reserved.
           <br />
-          Data provided for informational purposes only. Not financial advice.
+          For educational and informational purposes only. Not financial, legal, or investment advice.
         </p>
       </div>
     </footer>

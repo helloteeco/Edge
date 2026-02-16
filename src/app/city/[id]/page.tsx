@@ -545,7 +545,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             <div className="font-semibold mb-1" style={{ color: '#2b2823' }}>THE BOTTOM LINE {verdictInfo.emoji}</div>
             <p className="text-sm" style={{ color: '#787060' }}>
               {city.scoring.regulationPenalty?.applied && city.regulationInfo?.legality_status === 'banned'
-                ? "Not recommended. STRs are effectively banned in this market — investing here carries significant legal and financial risk."
+                ? "High risk. STRs are effectively banned in this market — operating here carries significant legal and financial risk."
                 : city.scoring.regulationPenalty?.applied && city.regulationInfo?.legality_status === 'restricted'
                 ? "Proceed with extreme caution. Significant STR restrictions limit your ability to operate profitably. Research local ordinances thoroughly before committing."
                 : city.grade === 'A+' || city.grade === 'A'
@@ -556,7 +556,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
                 ? "Marginal opportunity. Returns may be limited - consider negotiating or other markets."
                 : city.grade === 'D'
                 ? "Below average. Significant challenges may impact profitability."
-                : "Not recommended. High risk factors outweigh potential returns."}
+                : "High risk. Risk factors outweigh potential returns based on available data."}
             </p>
           </div>
         </div>
@@ -922,7 +922,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             Ready to Invest?
           </h3>
           <p className="text-sm mb-4" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-            Get personalized guidance from our STR coaching program.
+            Learn more about our STR coaching program.
           </p>
           <Link
             href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"

@@ -1083,7 +1083,7 @@ export default function FundingPage() {
                 Find Your Best Funding Options
               </h2>
               <p className="text-sm mb-6 max-w-md mx-auto" style={{ color: '#787060' }}>
-                Answer 8 quick questions about your situation and we&apos;ll recommend the funding strategies that fit you best.
+                Answer 8 quick questions about your situation and we&apos;ll show the funding strategies most relevant to you.
               </p>
               <button
                 onClick={() => setQuizStarted(true)}
@@ -1163,7 +1163,7 @@ export default function FundingPage() {
                   Your Results Are Ready!
                 </h3>
                 <p className="text-sm" style={{ color: '#787060' }}>
-                  Enter your email to unlock your personalized funding recommendations.
+                  Enter your email to see your funding results.
                 </p>
               </div>
               <div className="space-y-3">
@@ -1280,7 +1280,7 @@ export default function FundingPage() {
                 </div>
               ) : (
                 <p className="text-sm" style={{ color: '#787060' }}>
-                  Complete the quiz to see personalized recommendations.
+                  Complete the quiz to see your results.
                 </p>
               )}
 
@@ -1304,7 +1304,7 @@ export default function FundingPage() {
                         </span>
                       </div>
                       <p className="text-xs" style={{ color: '#15803d' }}>
-                        We&apos;ll email your top {recommendedMethods.slice(0, 5).length} funding recommendations shortly.
+                        We&apos;ll email your top {recommendedMethods.slice(0, 5).length} funding strategies shortly.
                       </p>
                     </div>
                   )}
