@@ -531,3 +531,8 @@
 - [x] Keep API/backend Airbnb references unchanged (they reference the actual Airbnb API)
 - [x] Keep "View on Airbnb" links unchanged (they link to actual Airbnb.com)
 - [x] No other features changed
+
+## Legal: External Links & Third-Party Services Disclaimer (February 2026)
+- [x] Add "External Links & Third-Party Services" section to Terms of Service page
+- [x] Add affiliate disclosure language (future-proofing)
+- [x] No other features changed

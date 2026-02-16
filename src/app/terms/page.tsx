@@ -23,7 +23,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="text-sm mt-2" style={{ color: "rgba(255, 255, 255, 0.7)" }}>
-            Last updated: February 2, 2026
+            Last updated: February 16, 2026
           </p>
         </div>
       </div>
@@ -184,7 +184,37 @@ export default function TermsPage() {
             </p>
 
             <h2 className="text-xl font-semibold mb-4" style={{ color: "#2b2823" }}>
-              15. Contact Information
+              15. External Links &amp; Third-Party Services
+            </h2>
+            <p className="mb-4 leading-relaxed" style={{ color: "#4a4640" }}>
+              The Service may contain links to third-party websites, applications, and services that are not owned or controlled 
+              by Teeco LLC, including but not limited to Airbnb, Zillow, PriceLabs, AirDNA, Proper Insurance, Circle community, 
+              and other real estate and financial service providers. These links are provided for your convenience and reference only.
+            </p>
+            <p className="mb-4 leading-relaxed" style={{ color: "#4a4640" }}>
+              Teeco LLC has no control over, and assumes no responsibility for, the content, privacy policies, practices, accuracy, 
+              or availability of any third-party websites or services. Inclusion of any link does not imply endorsement, sponsorship, 
+              or recommendation by Teeco LLC. You access third-party sites entirely at your own risk and subject to those sites&apos; 
+              own terms and conditions.
+            </p>
+            <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
+              We are not responsible for any transactions, losses, damages, or disputes that arise from your interactions with 
+              third-party services accessed through the Service. We encourage you to review the terms of service and privacy 
+              policies of any third-party site you visit.
+            </p>
+
+            <h2 className="text-xl font-semibold mb-4" style={{ color: "#2b2823" }}>
+              16. Affiliate Disclosure
+            </h2>
+            <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
+              Some links within the Service may be affiliate links, meaning Teeco LLC may earn a commission if you make a purchase 
+              or sign up for a service through those links, at no additional cost to you. Affiliate relationships do not influence 
+              our analysis, recommendations, or the data presented in the Service. We only recommend products and services we 
+              believe may be useful to STR investors.
+            </p>
+
+            <h2 className="text-xl font-semibold mb-4" style={{ color: "#2b2823" }}>
+              17. Contact Information
             </h2>
             <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
               If you have any questions about these Terms of Service, please contact us at:
