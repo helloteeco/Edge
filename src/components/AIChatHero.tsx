@@ -21,12 +21,12 @@ type ChatSession = {
 };
 
 const SUGGESTED_PROMPTS = [
+  { label: "What can I do on Edge?", question: "What can I do on Edge? Walk me through all the features and how they help me find, analyze, and fund a short-term rental." },
   { label: "Best markets under $250K", question: "What are the best STR markets with home prices under $250K?" },
-  { label: "Top cash-on-cash cities", question: "Show me the top cities with the highest cash-on-cash return for STR investing" },
-  { label: "Compare two markets", question: "Compare Gatlinburg, TN vs Pigeon Forge, TN for short-term rental investing" },
-  { label: "STR regulations", question: "What are the STR regulations and market data for Tennessee?" },
-  { label: "How to get started", question: "I'm a complete beginner with $50K to invest. How do I get started with short-term rental investing?" },
-  { label: "Hidden gem markets", question: "Find me hidden gem STR markets with low competition and high occupancy" },
+  { label: "Compare two cities for me", question: "Compare Gatlinburg, TN vs Pigeon Forge, TN for short-term rental investing" },
+  { label: "How do I analyze a property?", question: "How do I use the Edge Calculator to analyze a specific property? Walk me through it." },
+  { label: "How to get started with STRs", question: "I'm a complete beginner interested in short-term rentals. How do I get started and what should I look at first on Edge?" },
+  { label: "How do I fund my first STR?", question: "What are the different ways to fund a short-term rental investment? How does the Funding tab help me figure out my options?" },
 ];
 
 function stripMarkdown(text: string): string {

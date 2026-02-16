@@ -601,7 +601,11 @@
 - [ ] No other features changed
 
 ## AUDIT: Full legal language review across entire web app (February 2026)
-- [ ] Scan all user-facing text for legally risky language (advice, recommend, guarantee, should, must, etc.)
-- [ ] Change risky wording to educational/informational framing
-- [ ] Ensure disclaimers are present where needed
-- [ ] No design or functionality changes
+- [x] Scan all user-facing text for legally risky language (advice, recommend, guarantee, should, must, etc.)
+- [x] Change risky wording to educational/informational framing
+- [x] Ensure disclaimers are present where needed
+- [x] No design or functionality changes
+
+## UPDATE: Try asking prompts in ChatAssistant (February 2026)
+- [ ] Update 6 prompts to guide users through full Edge experience (Map, Search, Calculator, Funding)
+- [ ] No other features changed

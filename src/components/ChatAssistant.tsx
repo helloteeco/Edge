@@ -128,10 +128,10 @@ export function ChatAssistant() {
 
   // Suggested questions for new users
   const suggestedQuestions = [
-    "What cash-on-cash return should I aim for?",
-    "How do I find a good rural market?",
-    "Can I really manage remotely?",
-    "How much money do I need to start?",
+    "What can I do on Edge?",
+    "How do I analyze a property?",
+    "Best markets under $250K",
+    "How do I fund my first STR?",
   ];
 
   return (
