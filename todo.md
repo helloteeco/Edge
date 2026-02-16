@@ -577,3 +577,8 @@
 - [x] Account icon — code was correct (flex justify-between), broken hydration prevented proper rendering
 - [x] City counts are dynamic — getMarketCounts() reads from data files, auto-updates when cities added
 - [x] No other features changed
+
+## FIX: Inconsistent account icon positioning on Search and Funding pages (February 2026)
+- [ ] Fix account icon on Search page — should be in top-right header like Map/Calculator/Saved
+- [ ] Fix account icon on Funding page — should be in top-right header like Map/Calculator/Saved
+- [ ] No other features changed

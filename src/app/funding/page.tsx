@@ -986,26 +986,28 @@ export default function FundingPage() {
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
               <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)' }}
               >
                 <DollarIcon className="w-6 h-6" color="#ffffff" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 
                   className="text-2xl font-bold"
                   style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
                   Funding Options
                 </h1>
-                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                <p className="text-sm truncate" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                   {fundingMethods.length}+ ways to fund your STR investment
                 </p>
               </div>
             </div>
-            <AuthHeader variant="dark" />
+            <div className="flex-shrink-0">
+              <AuthHeader variant="dark" />
+            </div>
           </div>
         </div>
       </div>
