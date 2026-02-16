@@ -44,7 +44,9 @@ export default function AuthModal({
     
     try {
       // Get current page path for redirect after auth
-      const currentPath = window.location.pathname;
+      const currentPath = window.location.pathname + window.location.search;
+      // Store in localStorage as backup (in case URL param gets lost)
+      localStorage.setItem("edge_auth_return_path", currentPath);
       
       const response = await fetch("/api/auth/send-magic-link", {
         method: "POST",

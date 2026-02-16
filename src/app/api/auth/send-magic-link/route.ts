@@ -42,10 +42,12 @@ export async function POST(request: NextRequest) {
     // Build magic link URL - always use production domain
     const baseUrl = "https://edge.teeco.co";
     
-    // Always redirect to /calculator which has the token verification handler
-    // Store the original redirect path in the token if needed for future use
-    const targetPath = "/calculator";
-    const magicLink = `${baseUrl}${targetPath}?token=${encodeURIComponent(token)}`;
+    // Use /auth/callback which verifies the token and redirects to the originating page
+    const targetPath = "/auth/callback";
+    const returnToParam = redirectPath && redirectPath !== "/auth/callback" 
+      ? `&returnTo=${encodeURIComponent(redirectPath)}` 
+      : "";
+    const magicLink = `${baseUrl}${targetPath}?token=${encodeURIComponent(token)}${returnToParam}`;
 
     // Send email via Resend REST API
     try {

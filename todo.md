@@ -505,9 +505,15 @@
 - [x] No other features changed
 
 ## AI Response Action Buttons (February 2026)
-- [ ] Copy button on each AI response (clipboard icon, "Copied!" toast)
-- [ ] Share button on each AI response (paper plane icon, native share sheet, branded footer with edge.teeco.co)
-- [ ] Like button (thumbs up, highlights green, saves to Supabase)
-- [ ] Dislike button (thumbs down, highlights red, optional "What went wrong?" input, saves to Supabase)
-- [ ] Create chat_feedback Supabase table (user_email, session_id, message_index, rating, feedback_text, message_content, user_query, created_at)
-- [ ] No other features changed
+- [x] Copy button on each AI response (clipboard icon, "Copied!" toast)
+- [x] Share button on each AI response (paper plane icon, native share sheet, branded footer with edge.teeco.co)
+- [x] Like button (thumbs up, highlights green, saves to Supabase)
+- [x] Dislike button (thumbs down, highlights red, optional "What went wrong?" input, saves to Supabase)
+- [x] Create chat_feedback Supabase table (user_email, session_id, message_index, rating, feedback_text, message_content, user_query, created_at)
+- [x] No other features changed
+
+## FIX: Magic link redirect to originating page (February 2026)
+- [x] Store the current page URL when user clicks sign in (before sending magic link)
+- [x] After magic link verification, redirect to stored URL instead of always /calculator
+- [x] Works for all pages: home, search, city, state, calculator, saved, funding
+- [x] No other features changed

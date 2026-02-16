@@ -1125,10 +1125,13 @@ export default function CalculatorPage() {
     setAuthStep("verifying");
     
     try {
+      // Store return path so auth callback redirects back here
+      localStorage.setItem("edge_auth_return_path", "/calculator");
+      
       const response = await fetch("/api/auth/send-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: authEmail }),
+        body: JSON.stringify({ email: authEmail, redirectPath: "/calculator" }),
       });
       
       const data = await response.json();
