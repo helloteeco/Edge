@@ -607,5 +607,8 @@
 - [x] No design or functionality changes
 
 ## UPDATE: Try asking prompts in ChatAssistant (February 2026)
-- [ ] Update 6 prompts to guide users through full Edge experience (Map, Search, Calculator, Funding)
-- [ ] No other features changed
+- [x] Update 6 prompts to guide users through full Edge experience (Map, Search, Calculator, Funding)
+- [x] No other features changed
+
+## FIX: Try asking prompts box too tall on mobile (February 2026)
+- [ ] Make prompts layout more compact (2-column grid or wrap layout)
