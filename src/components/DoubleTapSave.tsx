@@ -125,7 +125,14 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
     }
   }, [isSaved, onToggleSave]);
 
+  const wasPinchRef = useRef(false);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // If 2+ fingers touch, it's a pinch gesture — flag it so we skip the double-tap
+    if (e.touches.length >= 2) {
+      wasPinchRef.current = true;
+      return;
+    }
     lastTapPositionRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY
@@ -133,6 +140,14 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
   }, []);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // If this touch sequence involved a pinch, ignore it entirely
+    if (wasPinchRef.current) {
+      // Reset once all fingers are lifted
+      if (e.touches.length === 0) {
+        wasPinchRef.current = false;
+      }
+      return;
+    }
     const mockEvent = {
       ...e,
       clientX: lastTapPositionRef.current.x,

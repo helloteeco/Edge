@@ -657,3 +657,7 @@
 - [x] Add charge.refunded handler to webhook — claw back credits when refund issued
 - [x] Add charge.disputed handler to webhook — claw back credits on chargeback
 - [x] Log all clawbacks in credit_transactions audit trail
+
+## Bug Fix: Pinch-to-zoom on comp map triggers heart animation (February 2026)
+- [x] Fix two-finger pinch-to-zoom on calculator comp map triggering the heart/like animation
+- [x] Keep double-tap-to-like working elsewhere
