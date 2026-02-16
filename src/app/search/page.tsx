@@ -138,6 +138,10 @@ export default function SearchPage() {
   // Get market counts for display
   const marketCounts = useMemo(() => getMarketCounts(), []);
 
+  // Client-side pagination: only render a limited number of items to keep DOM small
+  const ITEMS_PER_PAGE = 30;
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+
   // Like counts for city cards (cached to avoid re-fetching on tab switch)
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const fetchedLikeIdsRef = useRef<Set<string>>(new Set());
@@ -164,6 +168,10 @@ export default function SearchPage() {
   };
 
   // Debounced server search for allCities filter — with client-side cache
+  // Use a ref for serverCities to avoid stale closure in useCallback
+  const serverCitiesRef = useRef<ServerCity[]>([]);
+  serverCitiesRef.current = serverCities;
+
   const searchServerCities = useCallback(async (searchQuery: string, page: number, append: boolean = false) => {
     const cacheKey = `${searchQuery}||${page}`;
     const cached = serverCacheRef.current.get(cacheKey);
@@ -192,7 +200,7 @@ export default function SearchPage() {
       
       const data: SearchResponse = await response.json();
       
-      const newCities = append ? [...serverCities, ...data.cities] : data.cities;
+      const newCities = append ? [...serverCitiesRef.current, ...data.cities] : data.cities;
       
       setServerCities(newCities);
       setServerHasMore(data.pagination.hasMore);
@@ -218,7 +226,7 @@ export default function SearchPage() {
     } finally {
       setServerLoading(false);
     }
-  }, [serverCities]);
+  }, []); // stable callback — no dependency on serverCities
 
   // Effect to trigger server search when filter is allCities
   useEffect(() => {
@@ -392,9 +400,23 @@ export default function SearchPage() {
     ? results.serverCities.length 
     : results.cities.length + results.states.length;
 
+  // Reset visible count when filter/query/sort changes
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [filter, query, minScore, homeValueIdx, adrIdx, revenueIdx, regulationFilter, sortBy]);
+
+  // Paginated slices for rendering — keeps DOM small for fast hydration
+  const visibleStates = useMemo(() => results.states.slice(0, visibleCount), [results.states, visibleCount]);
+  const statesShown = visibleStates.length;
+  const remainingForCities = Math.max(0, visibleCount - results.states.length);
+  const visibleCities = useMemo(() => results.cities.slice(0, remainingForCities), [results.cities, remainingForCities]);
+  const visibleServerCities = useMemo(() => results.serverCities.slice(0, visibleCount), [results.serverCities, visibleCount]);
+  const hasMoreLocal = filter !== "allCities" && (statesShown + visibleCities.length) < totalResults;
+  const hasMoreServerLocal = filter === "allCities" && visibleServerCities.length < results.serverCities.length;
+
   // Batch fetch like counts for visible city cards — only fetch IDs not already cached
   useEffect(() => {
-    const cityIds = results.cities.map(c => c.id);
+    const cityIds = visibleCities.map(c => c.id);
     const newIds = cityIds.filter(id => !fetchedLikeIdsRef.current.has(id));
     if (newIds.length === 0) return;
     fetch(`/api/market-saves?action=batch&marketIds=${newIds.join(',')}&marketType=city`)
@@ -406,7 +428,7 @@ export default function SearchPage() {
         }
       })
       .catch(console.error);
-  }, [results.cities]);
+  }, [visibleCities]);
 
   const getVerdictStyle = (score: number) => {
     if (score >= 80) return { text: "STRONG BUY", bg: '#2b2823', color: '#ffffff' };
@@ -859,7 +881,7 @@ export default function SearchPage() {
         {/* Results List */}
         <div className="space-y-3">
           {/* States */}
-          {results.states.map((state) => (
+          {visibleStates.map((state) => (
             <Link
               key={state.abbreviation}
               href={`/state/${state.abbreviation.toLowerCase()}`}
@@ -938,7 +960,7 @@ export default function SearchPage() {
           ))}
 
           {/* Featured Cities (client-side) — now with key metrics */}
-          {results.cities.map((city) => (
+          {visibleCities.map((city) => (
             <Link
               key={city.id}
               href={`/city/${city.id}`}
@@ -1055,7 +1077,7 @@ export default function SearchPage() {
           ))}
 
           {/* Server-side Cities (All Cities filter) */}
-          {results.serverCities.map((city) => (
+          {visibleServerCities.map((city) => (
             city.hasFullData ? (
               <Link
                 key={city.id}
@@ -1211,6 +1233,17 @@ export default function SearchPage() {
             )
           ))}
 
+          {/* Load More button for client-side paginated results */}
+          {(hasMoreLocal || hasMoreServerLocal) && (
+            <button
+              onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
+              className="w-full py-4 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+              style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+            >
+              Show More ({filter === "allCities" ? visibleServerCities.length : statesShown + visibleCities.length} of {totalResults.toLocaleString()})
+            </button>
+          )}
+
           {/* Loading indicator for server search */}
           {filter === "allCities" && serverLoading && (
             <div className="flex justify-center py-8">
@@ -1221,8 +1254,8 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Load More button for server results */}
-          {filter === "allCities" && serverHasMore && !serverLoading && (
+          {/* Load More button for server-side paginated results (fetch more from API) */}
+          {filter === "allCities" && serverHasMore && !serverLoading && visibleServerCities.length >= results.serverCities.length && (
             <button
               onClick={loadMore}
               className="w-full py-4 rounded-xl text-sm font-medium transition-all hover:opacity-80"
