@@ -611,4 +611,18 @@
 - [x] No other features changed
 
 ## FIX: Try asking prompts box too tall on mobile (February 2026)
-- [ ] Make prompts layout more compact (2-column grid or wrap layout)
+- [x] Make prompts layout more compact (2-column grid or wrap layout)
+
+## AUDIT: Funding quiz flow — questions, scoring, results, admin recording (February 2026)
+- [ ] Audit all 8 quiz questions and answer options for accuracy
+- [ ] Audit scoring/matching logic for correctness
+- [ ] Audit results display for educational accuracy
+- [ ] Verify submissions are recorded in admin (not shown to users)
+- [ ] Report findings before making changes
+
+## FIX: Funding quiz — send real results email + wording fixes (February 2026)
+- [ ] Make "Email me results" button actually send a real email with quiz results
+- [ ] Include proper disclaimer in the email
+- [ ] Change "Your Top Recommendations" → "Strategies That Match Your Situation"
+- [ ] Change "Best Match" → "Top Match"
+- [ ] No other features changed

@@ -895,6 +895,8 @@ export default function FundingPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [resultEmailSent, setResultEmailSent] = useState(false);
+  const [resultEmailLoading, setResultEmailLoading] = useState(false);
+  const [resultEmailError, setResultEmailError] = useState('');
 
   const handleAnswer = (value: string, tags: string[]) => {
     const newAnswers = { ...answers, [quizQuestions[currentQuestion].id]: value };
@@ -1214,7 +1216,7 @@ export default function FundingPage() {
                   className="text-lg font-semibold flex items-center gap-2"
                   style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}
                 >
-                  <span>✅</span> Your Top Recommendations
+                  <span>✅</span> Strategies That Match Your Situation
                 </h3>
                 <button
                   onClick={resetQuiz}
@@ -1256,7 +1258,7 @@ export default function FundingPage() {
                           <span className="font-semibold" style={{ color: '#2b2823' }}>{method.name}</span>
                           {idx === 0 && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#22c55e', color: '#ffffff' }}>
-                              Best Match
+                              Top Match
                             </span>
                           )}
                           <span 
@@ -1289,24 +1291,62 @@ export default function FundingPage() {
                 <div className="mt-4 pt-4 border-t" style={{ borderColor: '#e5e3da' }}>
                   {!resultEmailSent ? (
                     <button
-                      onClick={() => setResultEmailSent(true)}
+                      onClick={async () => {
+                        setResultEmailLoading(true);
+                        setResultEmailError('');
+                        try {
+                          const res = await fetch('/api/send-quiz-results', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              email: quizEmail,
+                              results: recommendedMethods.slice(0, 5).map(m => ({
+                                name: m.name,
+                                category: m.category,
+                                riskLevel: m.riskLevel,
+                                description: m.description,
+                                typicalTerms: m.typicalTerms,
+                                bestFor: m.bestFor,
+                              })),
+                            }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setResultEmailSent(true);
+                          } else {
+                            setResultEmailError(data.error || 'Failed to send email.');
+                          }
+                        } catch {
+                          setResultEmailError('Failed to send email. Please try again.');
+                        } finally {
+                          setResultEmailLoading(false);
+                        }
+                      }}
+                      disabled={resultEmailLoading}
                       className="w-full py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all"
-                      style={{ backgroundColor: '#e5e3da', color: '#2b2823', border: '1px solid #d8d6cd' }}
+                      style={{ backgroundColor: resultEmailLoading ? '#d8d6cd' : '#e5e3da', color: '#2b2823', border: '1px solid #d8d6cd', opacity: resultEmailLoading ? 0.7 : 1 }}
                     >
-                      <span>📧</span> Email me these results so I don&apos;t forget
+                      {resultEmailLoading ? (
+                        <span>Sending...</span>
+                      ) : (
+                        <><span>📧</span> Email me these results</>
+                      )}
                     </button>
                   ) : (
                     <div className="rounded-xl p-4" style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}>
                       <div className="flex items-center gap-2 mb-1">
                         <span>✅</span>
                         <span className="text-sm font-medium" style={{ color: '#166534' }}>
-                          Results saved to {quizEmail}
+                          Results sent to {quizEmail}
                         </span>
                       </div>
                       <p className="text-xs" style={{ color: '#15803d' }}>
-                        We&apos;ll email your top {recommendedMethods.slice(0, 5).length} funding strategies shortly.
+                        Check your inbox for your top {recommendedMethods.slice(0, 5).length} funding strategies.
                       </p>
                     </div>
+                  )}
+                  {resultEmailError && (
+                    <p className="text-xs mt-2 text-center" style={{ color: '#dc2626' }}>{resultEmailError}</p>
                   )}
                 </div>
               )}
