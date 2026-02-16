@@ -83,7 +83,7 @@ const STATUS_STYLES = {
     guidanceTitle: '📞 How to Verify',
     guidanceIntro: (cityName: string) =>
       `Call the ${cityName} City Clerk or Planning & Zoning Department and ask:`,
-    guidanceFooter: 'Many cities have active Airbnbs operating legally with permits — restrictions don\'t always mean it\'s impossible.',
+    guidanceFooter: 'Many cities have active short-term rentals operating legally with permits — restrictions don\'t always mean it\'s impossible.',
     searchLabel: '🔗 Search Municipal Code',
     searchQuery: (city: string, state: string) => `${city} ${state} short term rental ordinance`,
   },

@@ -25,7 +25,7 @@ const SUGGESTED_PROMPTS = [
   { label: "Top cash-on-cash cities", question: "Show me the top cities with the highest cash-on-cash return for STR investing" },
   { label: "Compare two markets", question: "Compare Gatlinburg, TN vs Pigeon Forge, TN for short-term rental investing" },
   { label: "STR regulations", question: "What are the STR regulations and market data for Tennessee?" },
-  { label: "How to get started", question: "I'm a complete beginner with $50K to invest. How do I get started with Airbnb investing?" },
+  { label: "How to get started", question: "I'm a complete beginner with $50K to invest. How do I get started with short-term rental investing?" },
   { label: "Hidden gem markets", question: "Find me hidden gem STR markets with low competition and high occupancy" },
 ];
 

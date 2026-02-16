@@ -794,7 +794,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
               >
                 Research Comparable Listings
               </h3>
-              <p className="text-sm" style={{ color: '#787060' }}>See active Airbnb rentals in this market</p>
+              <p className="text-sm" style={{ color: '#787060' }}>See active short-term rentals in this market</p>
             </div>
           </div>
           <a
@@ -817,7 +817,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </svg>
           </a>
           <p className="text-xs text-center mt-3" style={{ color: '#787060' }}>
-            Opens Airbnb.com in a new tab to view real listings and pricing
+            Opens Airbnb.com in a new tab to view real listings and pricing in this market
           </p>
         </div>
 

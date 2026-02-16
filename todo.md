@@ -517,3 +517,17 @@
 - [x] After magic link verification, redirect to stored URL instead of always /calculator
 - [x] Works for all pages: home, search, city, state, calculator, saved, funding
 - [x] No other features changed
+
+## Rebrand: Replace "Airbnb" with "Short-Term Rental" / "STR" in user-facing text (February 2026)
+- [x] Update main headline on home page (page.tsx) → "Find, Analyze & Fund Short-Term Rentals"
+- [x] Update meta description (layout.tsx)
+- [x] Update calculator page user-facing text (calculator/page.tsx)
+- [x] Update city page user-facing text (city/[id]/page.tsx)
+- [x] Update CompMap component user-facing text (CompMap.tsx)
+- [x] Update AIChatHero suggested prompts (AIChatHero.tsx)
+- [x] Update ChatAssistant text (ChatAssistant.tsx)
+- [x] Update StuckHelper text (StuckHelper.tsx)
+- [x] Update RegulationCard text (RegulationCard.tsx)
+- [x] Keep API/backend Airbnb references unchanged (they reference the actual Airbnb API)
+- [x] Keep "View on Airbnb" links unchanged (they link to actual Airbnb.com)
+- [x] No other features changed

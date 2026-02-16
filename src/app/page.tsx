@@ -232,7 +232,7 @@ export default function HomePage() {
               className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight mb-1 sm:mb-2"
               style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
             >
-              Find Profitable Airbnbs
+              Find, Analyze & Fund Short-Term Rentals
             </h1>
             <p className="text-[11px] sm:text-sm mb-2 sm:mb-3 leading-snug sm:leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               Real data on 1,444+ markets. Built by an investor generating $1M+/yr.
@@ -592,13 +592,13 @@ export default function HomePage() {
           
           {/* Trust Badges Row */}
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mb-6 pb-6" style={{ borderBottom: '1px solid #e5e3da' }}>
-            {/* Airbnb Superhost Badge */}
+            {/* Superhost Badge */}
             <div className="flex items-center gap-2">
               <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#FF5A5F"/>
               </svg>
               <div>
-                <p className="text-sm font-semibold" style={{ color: '#FF5A5F' }}>Airbnb Superhost</p>
+                <p className="text-sm font-semibold" style={{ color: '#FF5A5F' }}>Superhost</p>
                 <div className="flex gap-0.5">
                   {[1,2,3,4,5].map(i => (
                     <svg key={i} className="w-3 h-3" viewBox="0 0 24 24" fill="#FFB400">

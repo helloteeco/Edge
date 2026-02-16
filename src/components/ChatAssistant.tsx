@@ -234,7 +234,7 @@ export function ChatAssistant() {
                     <div>
                       <div className="font-semibold" style={{ color: '#2b2823' }}>Coaching Program</div>
                       <div className="text-sm font-medium" style={{ color: '#2b2823' }}>Only ~3 hours/week once set up</div>
-                      <div className="text-xs mt-1" style={{ color: '#787060' }}>9 guided calls: Deal → Setup & Design → Live STR. We can set up your Airbnb remotely while you keep your job.</div>
+                      <div className="text-xs mt-1" style={{ color: '#787060' }}>9 guided calls: Deal → Setup & Design → Live STR. We can set up your STR remotely while you keep your job.</div>
                     </div>
                   </div>
                 </button>
@@ -394,7 +394,7 @@ export function ChatAssistant() {
 
                 {surveyStep === "timeline" && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>When do you plan to launch your Airbnb?</h4>
+                    <h4 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>When do you plan to launch your STR?</h4>
                     {["Ready now", "3-6 months", "6-12 months", "Just exploring"].map((opt) => (
                       <button
                         key={opt}
@@ -481,7 +481,7 @@ export function ChatAssistant() {
                           <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
                             <li>• Full guided experience: 9 total calls</li>
                             <li>• Deal → Setup & Design → Live STR</li>
-                            <li>• We can set up your Airbnb remotely</li>
+                            <li>• We can set up your STR remotely</li>
                             <li>• Only ~3 hours/week to manage once live</li>
                           </ul>
                         </div>

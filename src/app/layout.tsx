@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://edge.teeco.co"),
   openGraph: {
     title: "Find Your Next STR Investment",
-    description: "1000+ markets analyzed • AI-powered deal analysis • Free to start. The data-driven way to find high cash flow Airbnb investments.",
+    description: "1000+ markets analyzed • AI-powered deal analysis • Free to start. The data-driven way to find high cash flow short-term rental investments.",
     type: "website",
     url: "https://edge.teeco.co",
     siteName: "Edge by Teeco",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Find Your Next STR Investment",
-    description: "1000+ markets analyzed • AI-powered deal analysis • Free to start. The data-driven way to find high cash flow Airbnb investments.",
+    description: "1000+ markets analyzed • AI-powered deal analysis • Free to start. The data-driven way to find high cash flow short-term rental investments.",
     images: ["/og-image.png"],
   },
   robots: {

@@ -2134,10 +2134,10 @@ export default function CalculatorPage() {
 
       // If no cache hit, do the full API call
       if (!data) {
-        setLoadingStep("Finding nearby Airbnb listings...");
+        setLoadingStep("Finding nearby STR listings...");
         // Cycle through progress steps to show the user something is happening
         const steps = [
-          { delay: 5000, text: "Scanning Airbnb listings in the area..." },
+          { delay: 5000, text: "Scanning STR listings in the area..." },
           { delay: 12000, text: "Analyzing nightly rates & occupancy..." },
           { delay: 20000, text: "Calculating revenue estimates..." },
           { delay: 35000, text: "Comparing with nearby properties..." },
@@ -2600,7 +2600,7 @@ export default function CalculatorPage() {
     const aiAnalysisText = typeof window !== 'undefined' ? sessionStorage.getItem('aiAnalysisForPdf') || aiAnalysis : aiAnalysis;
     
     // Strategy label
-    const strategyLabel = analysisMode === "iownit" ? "I Own It (STR vs LTR)" : analysisMode === "arbitrage" ? "Airbnb Arbitrage" : "Investment Purchase";
+    const strategyLabel = analysisMode === "iownit" ? "I Own It (STR vs LTR)" : analysisMode === "arbitrage" ? "Rental Arbitrage" : "Investment Purchase";
     const strategyIcon = analysisMode === "iownit" ? "&#127968;" : analysisMode === "arbitrage" ? "&#128273;" : "&#127969;";
     
     // Percentile position for marker
@@ -3220,7 +3220,7 @@ export default function CalculatorPage() {
       </div>
       ${result.dataSource && result.dataSource.includes('pricelabs') 
         ? '<div class="data-badge pricelabs">&#9989; PriceLabs Verified Data</div>' 
-        : '<div class="data-badge airbnb">Airbnb Market Data</div>'}
+        : '<div class="data-badge airbnb">STR Market Data</div>'}
     </div>
     
     <!-- DEAL SCORE -->
@@ -3497,7 +3497,7 @@ export default function CalculatorPage() {
       <div class="section-number">5</div>
       <span class="section-title">Comparable Listings</span>
     </div>
-    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Active Airbnb listings near this property. Revenue estimates are based on a larger dataset of ${result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} properties.</p>
+    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Active short-term rental listings near this property. Revenue estimates are based on a larger dataset of ${result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} properties.</p>
     <div>
       ${result.comparables.filter(c => !excludedCompIds.has(c.id)).slice(0, 8).map((c, i) => `
       <div class="comp-card no-break">
@@ -3628,7 +3628,7 @@ export default function CalculatorPage() {
       <p class="footer-tagline">Your unfair advantage in STR investing</p>
       <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">STR Regulations: proper.insure/regulations</p>
       <p class="footer-date">Report generated ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-      <p class="footer-disclaimer">This analysis is for informational purposes only and does not constitute financial, legal, or investment advice. Revenue projections are based on historical market data from ${result.dataSource?.includes('pricelabs') ? 'PriceLabs' : 'Airbnb'} and comparable listings, and actual results may vary significantly based on property management quality, market conditions, seasonality, local regulations, and other factors. Past performance of comparable properties does not guarantee future results. Always conduct independent due diligence, consult with qualified professionals, and verify local STR regulations before making any investment decisions. Edge by Teeco is not responsible for investment outcomes based on this report.</p>
+      <p class="footer-disclaimer">This analysis is for informational purposes only and does not constitute financial, legal, or investment advice. Revenue projections are based on historical market data from ${result.dataSource?.includes('pricelabs') ? 'PriceLabs' : 'market data'} and comparable listings, and actual results may vary significantly based on property management quality, market conditions, seasonality, local regulations, and other factors. Past performance of comparable properties does not guarantee future results. Always conduct independent due diligence, consult with qualified professionals, and verify local STR regulations before making any investment decisions. Edge by Teeco is not responsible for investment outcomes based on this report.</p>
     </div>
     
   </div>
@@ -4171,7 +4171,7 @@ export default function CalculatorPage() {
 - **Bedrooms:** ${result.bedrooms} | **Bathrooms:** ${result.bathrooms}
 - **Square Feet:** ${result.sqft || propertySqft}
 - **Nearby STR Listings:** ${result.nearbyListings || 'Unknown'}
-- **Strategy:** ${analysisMode === "iownit" ? "I Own It (homeowner evaluating STR vs LTR)" : analysisMode === "arbitrage" ? "Rental Arbitrage (leasing property to sublease on Airbnb)" : "Buying to Own"}
+- **Strategy:** ${analysisMode === "iownit" ? "I Own It (homeowner evaluating STR vs LTR)" : analysisMode === "arbitrage" ? "Rental Arbitrage (leasing property to sublease as STR)" : "Buying to Own"}
 
 ## REVENUE PROJECTIONS
 - **Projected Annual Revenue:** $${displayRevenue.toLocaleString()}
@@ -4424,12 +4424,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <p className="text-sm font-medium" style={{ color: "#787060" }}>Short-Term Rental Calculator</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f5f4f0', color: '#787060' }}>Live Airbnb Data</span>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f5f4f0', color: '#787060' }}>Live STR Data</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: "#2b2823" }}>
-            How much could your<br />Airbnb earn?
+            How much could your<br />STR earn?
           </h1>
-          <p className="text-gray-600">Revenue estimates from 30+ real Airbnb comps near your property</p>
+          <p className="text-gray-600">Revenue estimates from 30+ real STR comps near your property</p>
         </div>
 
         {/* Search Box */}
@@ -4928,7 +4928,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') ? (
                     <>Based on PriceLabs analysis of <strong style={{ color: '#2563eb' }}>{result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} comparable properties</strong> across multiple platforms</>
                   ) : (
-                    <>Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby Airbnb listings</>
+                    <>Based on {result.percentiles?.listingsAnalyzed || result.nearbyListings || 'comparable'} nearby STR listings</>
                   )}
                 </p>
                 {revenuePercentile !== "average" && (
@@ -5412,7 +5412,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
-                    Nearby {result.bedrooms === 6 ? "6+" : result.bedrooms}BR Airbnb Listings
+                    Nearby {result.bedrooms === 6 ? "6+" : result.bedrooms}BR STR Listings
                   </h3>
                   <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: `${confidenceColor}15`, color: confidenceColor }}>
                     {confidenceLabel} Confidence
@@ -5426,7 +5426,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: "#eff6ff", border: "1px solid #dbeafe" }}>
                     <p className="text-[11px]" style={{ color: "#1e40af", lineHeight: "1.5" }}>
                       Your revenue estimates above are powered by <strong>PriceLabs</strong> ({result.percentiles?.listingsAnalyzed?.toLocaleString() || result.percentiles?.totalListingsInArea?.toLocaleString() || '300+'} listings analyzed).
-                      These Airbnb listings below are shown for reference only &mdash; they are not the same dataset used for your revenue projections.
+                      These listings below are shown for reference only &mdash; they are not the same dataset used for your revenue projections.
                     </p>
                   </div>
                 )}
@@ -5700,7 +5700,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   🎯 Upgrades to Reach 90th Percentile
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Based on 25-mile market analysis of top-performing Airbnbs. These upgrades and amenities have the highest impact on revenue.
+                  Based on 25-mile market analysis of top-performing short-term rentals. These upgrades and amenities have the highest impact on revenue.
                 </p>
                 <div className="space-y-2">
                   {result.recommendedAmenities.map((amenity, index) => (
@@ -6148,7 +6148,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-1">
-                        <span style={{ color: "#787060" }}>Platform Fee (Airbnb)</span>
+                        <span style={{ color: "#787060" }}>Platform Fee (STR)</span>
                         <span className="font-medium">{platformFeePercent}%</span>
                       </div>
                       <input type="range" min="0" max="15" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseInt(e.target.value))} className="w-full" />
@@ -6566,7 +6566,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-1">
-                        <span style={{ color: "#787060" }}>Platform Fee (Airbnb)</span>
+                        <span style={{ color: "#787060" }}>Platform Fee (STR)</span>
                         <span className="font-medium">{platformFeePercent}%</span>
                       </div>
                       <input type="range" min="0" max="15" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseInt(e.target.value))} className="w-full" />
@@ -7485,7 +7485,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </a>
             </p>
             <p className="text-xs" style={{ color: '#a0a0a0' }}>
-              Edge data: <span style={{ color: '#787060' }}>Airbnb Comps</span> · Live market data
+              Edge data: <span style={{ color: '#787060' }}>STR Comps</span> · Live market data
             </p>
           </div>
         </div>
