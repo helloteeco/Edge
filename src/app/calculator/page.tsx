@@ -3841,7 +3841,7 @@ export default function CalculatorPage() {
 
 
   // Calculate guest count multiplier based on industry data
-  // Research shows ~5-8% revenue increase per additional guest capacity above baseline
+  // Conservative estimate: ~2-4% revenue increase per additional guest capacity above baseline
   // Baseline: bedrooms * 2 guests (standard assumption)
   const getGuestCountMultiplier = () => {
     if (!bedrooms || !guestCount) return 1.0;
@@ -3851,18 +3851,18 @@ export default function CalculatorPage() {
     
     if (extraGuests <= 0) return 1.0; // No bonus if at or below baseline
     
-    // Diminishing returns per extra guest above baseline:
-    // Guest 1-2 above baseline: 6% each (bunk beds, easy wins)
-    // Guest 3-4: 4% each (sleeper sofas, air mattresses)
-    // Guest 5+: 2% each (diminishing marginal value)
-    // Capped at 40% total bonus
+    // Diminishing returns per extra guest above baseline (conservative):
+    // Guest 1-2 above baseline: 3% each (bunk beds, easy wins)
+    // Guest 3-4: 2% each (sleeper sofas, air mattresses)
+    // Guest 5+: 1% each (diminishing marginal value)
+    // Capped at 20% total bonus
     let bonus = 0;
     for (let i = 1; i <= extraGuests; i++) {
-      if (i <= 2) bonus += 0.06;
-      else if (i <= 4) bonus += 0.04;
-      else bonus += 0.02;
+      if (i <= 2) bonus += 0.03;
+      else if (i <= 4) bonus += 0.02;
+      else bonus += 0.01;
     }
-    return 1.0 + Math.min(bonus, 0.40);
+    return 1.0 + Math.min(bonus, 0.20);
   };
 
   // Teeco Strategy boost calculation
@@ -3882,11 +3882,11 @@ export default function CalculatorPage() {
     
     // 2. Smart Capacity Maximization: bunk rooms, sleeper sofas, murphy beds
     // Teeco typically adds 2 guests per bedroom above standard (2 per BR)
-    // Each extra guest = ~6% revenue boost (same as existing algorithm)
+    // Each extra guest = ~3% revenue boost (conservative, matches halved guest capacity formula)
     const standardGuests = bedrooms * 2;
     const teecoGuests = Math.min(bedrooms * 3 + 2, 16); // Teeco optimizes to ~3 per BR + 2, max 16
     const extraGuests = teecoGuests - standardGuests;
-    const capacityBoost = Math.min(extraGuests * 0.06, 0.50);
+    const capacityBoost = Math.min(extraGuests * 0.03, 0.25);
     if (capacityBoost > 0) {
       breakdown.push({ label: `Smart capacity (${teecoGuests} vs ${standardGuests} guests)`, boost: Math.round(capacityBoost * 100) });
       totalBoost += capacityBoost;

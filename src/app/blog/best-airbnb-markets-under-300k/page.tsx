@@ -57,10 +57,10 @@ export default function BestMarketsUnder300K() {
             <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff' }}>
               Market Research
             </span>
-            <span className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>February 2025 · 8 min read</span>
+            <span className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>February 2026 · 8 min read</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-            25 Best Airbnb Markets Under $300K in 2025
+            25 Best Airbnb Markets Under $300K in 2026
           </h1>
           <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
             Data-driven rankings using PriceLabs revenue data and Edge&apos;s transparent scoring system.
@@ -118,7 +118,7 @@ export default function BestMarketsUnder300K() {
               <p className="text-xs font-semibold mb-1" style={{ color: '#2b2823' }}>Methodology</p>
               <p className="text-xs leading-relaxed" style={{ color: '#787060' }}>
                 Markets are ranked by Edge&apos;s transparent 100-point scoring system. Revenue data comes from PriceLabs. 
-                Home values are median prices. Cash-on-Cash assumes 25% down, 7% interest, 30-year fixed, 35% operating expenses. 
+                Home values are median prices. Cash-on-Cash assumes 20% down, 3% closing costs, 7% interest, 30-year fixed, 35% operating expenses. 
                 All data is dynamic and updates automatically.
               </p>
             </div>
@@ -316,7 +316,7 @@ export default function BestMarketsUnder300K() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Article",
-              headline: "25 Best Airbnb Markets Under $300K in 2025",
+              headline: "25 Best Airbnb Markets Under $300K in 2026",
               description: `Data-driven analysis of the most profitable short-term rental markets under $300K. Average monthly revenue: $${avgRevenue.toLocaleString()}, average cash-on-cash return: ${avgCoC}%.`,
               author: {
                 "@type": "Organization",
@@ -328,7 +328,7 @@ export default function BestMarketsUnder300K() {
                 name: "Edge by Teeco",
                 url: "https://edge.teeco.co",
               },
-              datePublished: "2025-02-01",
+              datePublished: "2026-02-01",
               dateModified: new Date().toISOString().split('T')[0],
               mainEntityOfPage: "https://edge.teeco.co/blog/best-airbnb-markets-under-300k",
               about: {
@@ -361,7 +361,7 @@ export default function BestMarketsUnder300K() {
                   name: "What is a good cash-on-cash return for an Airbnb investment?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: `A cash-on-cash return above 8% is generally considered good for STR investments. The top 25 markets under $300K on Edge by Teeco average ${avgCoC}% cash-on-cash return. This assumes 25% down payment, 7% interest rate, 30-year fixed mortgage, and 35% operating expenses.`,
+                    text: `A cash-on-cash return above 8% is generally considered good for STR investments. The top 25 markets under $300K on Edge by Teeco average ${avgCoC}% cash-on-cash return. This assumes 20% down payment, 3% closing costs, 7% interest rate, 30-year fixed mortgage, and 35% operating expenses.`,
                   },
                 },
                 {

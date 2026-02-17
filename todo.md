@@ -723,3 +723,19 @@
 - [x] Move SEO/GEO summary text below breadcrumbs (Home / State / City) to very bottom
 - [x] Text should be the last content before the footer
 - [x] Make this the standard for all pages (city + state pages fixed, homepage already at bottom)
+
+## AUDIT: Blog methodology accuracy and dynamic data (February 2026)
+- [ ] Verify blog methodology text matches actual scoring algorithm weights
+- [ ] Verify blog data (stats, city list) is truly dynamic from live data
+- [ ] Fix any discrepancies found
+
+## ACCURACY: Cut guest capacity bonus in half (February 2026)
+- [ ] Find guest capacity bonus formula in calculator code
+- [ ] Cut the bonus multiplier in half (e.g., +24% → +12%) to prevent overestimation
+- [ ] Real-world validation: property sleeping 12 makes $65K/yr, calculator shows $77K — too high
+- [ ] Make this the standard: conservative estimates prevent bad buying decisions
+
+## FIX: Blog methodology discrepancy — down payment (February 2026)
+- [ ] Blog says "25% down" but actual scoring code uses 20% down + 3% closing costs
+- [ ] Fix methodology box to match real code (20% down, 3% closing costs)
+- [ ] Update blog year from 2025 to 2026
