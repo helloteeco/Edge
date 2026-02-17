@@ -858,6 +858,16 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           if (el) el.classList.add("selected");
         });
 
+        // Double-tap to toggle exclude/include directly from map
+        let lastTap = 0;
+        marker.on("click", () => {
+          const now = Date.now();
+          if (now - lastTap < 400) {
+            onToggleExclude?.(comp.id);
+          }
+          lastTap = now;
+        });
+
         markers.push(marker);
       });
 
@@ -955,7 +965,22 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         mapInstanceRef.current = null;
       }
     };
-  }, [targetLat, targetLng, validComps, targetAddress, onSelectComp, excludedIds]);
+  }, [targetLat, targetLng, validComps, targetAddress, onSelectComp]);
+
+  // Lightweight effect: update marker excluded/included styling without rebuilding the map
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    validComps.forEach((comp) => {
+      const el = document.querySelector(`.comp-price-tag[data-comp-id="${comp.id}"]`) as HTMLElement;
+      if (!el) return;
+      const isExcluded = excludedIds.has(comp.id);
+      if (isExcluded) {
+        el.classList.add('excluded');
+      } else {
+        el.classList.remove('excluded');
+      }
+    });
+  }, [excludedIds, validComps]);
 
   const isPriceLabs = dataSource ? dataSource.toLowerCase().includes('pricelabs') : false;
 
@@ -1054,14 +1079,18 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
           </p>
         )}
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-2.5">
+        <div className="flex items-center gap-3 mt-2.5 flex-wrap">
           <div className="flex items-center gap-1.5">
             <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: "#ef4444", border: "2px solid white", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
             <span className="text-xs" style={{ color: "#787060" }}>Your Property</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ backgroundColor: "#2b2823" }}>$</div>
-            <span className="text-xs" style={{ color: "#787060" }}>Nightly Rate</span>
+            <span className="text-xs" style={{ color: "#787060" }}>Included</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ backgroundColor: "#9ca3af", opacity: 0.6 }}>$</div>
+            <span className="text-xs" style={{ color: "#787060" }}>Excluded</span>
           </div>
         </div>
       </div>

@@ -5680,151 +5680,49 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   </span>
                 </div>
                 <p className="text-xs mb-2" style={{ color: "#787060" }}>
-                  {activeComps.length}/{allComps.length} listings {selectOnlyMode ? 'selected' : 'included'} • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
+                  {activeComps.length}/{allComps.length} comps included • {bedroomMatches} exact BR match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
                 </p>
                 
-                {/* Sort & Selection Mode Controls */}
-                <div className="mb-3 space-y-2">
-                  {/* Sort pills */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-                    <span className="text-[10px] font-semibold shrink-0" style={{ color: '#a09880' }}>Sort:</span>
-                    {[
-                      { key: 'relevance' as const, label: 'Best Match' },
-                      { key: 'revenue' as const, label: 'Revenue ↓' },
-                      { key: 'distance' as const, label: 'Closest' },
-                      { key: 'occupancy' as const, label: 'Occupancy ↓' },
-                      { key: 'rating' as const, label: 'Rating ↓' },
-                      { key: 'bedrooms' as const, label: `${result.bedrooms}BR Match` },
-                    ].map(opt => (
-                      <button
-                        key={opt.key}
-                        onClick={() => setCompSortBy(opt.key)}
-                        className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all"
-                        style={{
-                          backgroundColor: compSortBy === opt.key ? '#2b2823' : '#f5f4f0',
-                          color: compSortBy === opt.key ? '#ffffff' : '#787060',
-                          border: compSortBy === opt.key ? 'none' : '1px solid #e5e3da',
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* Distance radius filter */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-                    <span className="text-[10px] font-semibold shrink-0" style={{ color: '#a09880' }}>Radius:</span>
-                    {[
-                      { key: null, label: 'All' },
-                      { key: 1, label: '1 mi' },
-                      { key: 3, label: '3 mi' },
-                      { key: 5, label: '5 mi' },
-                      { key: 10, label: '10 mi' },
-                      { key: 25, label: '25 mi' },
-                    ].map(opt => {
-                      const count = opt.key !== null ? allComps.filter(c => (c.distance || 0) <= opt.key).length : allComps.length;
-                      return (
-                      <button
-                        key={String(opt.key)}
-                        onClick={() => setCompDistanceFilter(opt.key)}
-                        className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all"
-                        style={{
-                          backgroundColor: compDistanceFilter === opt.key ? '#1d4ed8' : '#f5f4f0',
-                          color: compDistanceFilter === opt.key ? '#ffffff' : '#787060',
-                          border: compDistanceFilter === opt.key ? 'none' : '1px solid #e5e3da',
-                          opacity: count === 0 && opt.key !== null ? 0.4 : 1,
-                        }}
-                        disabled={count === 0 && opt.key !== null}
-                      >
-                        {opt.label} ({count})
-                      </button>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Selection mode toggle + Quick Select Top 5 */}
-                  <div className="flex items-center gap-2 flex-wrap">
+                {/* Simplified Comp Controls — one clean row */}
+                <div className="mb-3 flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      // Smart Top 5: pick top 5 by revenue, auto-expand list
+                      const top5 = [...distanceFilteredComps]
+                        .sort((a, b) => (b.annualRevenue || 0) - (a.annualRevenue || 0))
+                        .slice(0, 5)
+                        .map(c => c.id);
+                      const top5Set = new Set(top5);
+                      const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
+                      setExcludedCompIds(newExcluded);
+                      setSelectOnlyMode(true);
+                      setCompSortBy('revenue');
+                      setShowAllComps(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                    style={{
+                      backgroundColor: selectOnlyMode && activeComps.length === 5 ? '#15803d' : '#f0fdf4',
+                      color: selectOnlyMode && activeComps.length === 5 ? '#ffffff' : '#15803d',
+                      border: '1px solid #bbf7d0',
+                    }}
+                  >
+                    ⚡ Top 5
+                  </button>
+                  {hasExclusions && (
                     <button
-                      onClick={() => {
-                        if (!selectOnlyMode) {
-                          // Switching TO select-only: exclude ALL comps first, user will pick which to include
-                          setSelectOnlyMode(true);
-                          setExcludedCompIds(new Set(distanceFilteredComps.map(c => c.id)));
-                          setShowAllComps(true);
-                        } else {
-                          // Switching back to normal: include all
-                          setSelectOnlyMode(false);
-                          setExcludedCompIds(new Set());
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
-                      style={{
-                        backgroundColor: selectOnlyMode ? '#fef3c7' : '#f5f4f0',
-                        color: selectOnlyMode ? '#92400e' : '#787060',
-                        border: selectOnlyMode ? '1.5px solid #f59e0b' : '1px solid #e5e3da',
-                      }}
+                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setCompSortBy('relevance'); }}
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                      style={{ backgroundColor: '#f5f4f0', color: '#787060', border: '1px solid #e5e3da' }}
                     >
-                      {selectOnlyMode ? '🎯 Select Only Mode' : '🎯 Select Only'}
+                      ↺ Reset
                     </button>
-                    {/* Quick Select Top 5 */}
-                    <button
-                      onClick={() => {
-                        // Sort by revenue descending, pick top 5
-                        const top5 = [...distanceFilteredComps]
-                          .sort((a, b) => (b.annualRevenue || 0) - (a.annualRevenue || 0))
-                          .slice(0, 5)
-                          .map(c => c.id);
-                        const top5Set = new Set(top5);
-                        // Exclude everything except top 5
-                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
-                        setExcludedCompIds(newExcluded);
-                        setSelectOnlyMode(true);
-                        setShowAllComps(true);
-                      }}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
-                      style={{
-                        backgroundColor: '#f0fdf4',
-                        color: '#15803d',
-                        border: '1px solid #bbf7d0',
-                      }}
-                    >
-                      ⚡ Top 5 Revenue
-                    </button>
-                    {/* Quick Select Top 5 Closest */}
-                    <button
-                      onClick={() => {
-                        // Sort by distance ascending, pick top 5 closest
-                        const top5 = [...distanceFilteredComps]
-                          .sort((a, b) => (a.distance || 999) - (b.distance || 999))
-                          .slice(0, 5)
-                          .map(c => c.id);
-                        const top5Set = new Set(top5);
-                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
-                        setExcludedCompIds(newExcluded);
-                        setSelectOnlyMode(true);
-                        setShowAllComps(true);
-                        setCompSortBy('distance');
-                      }}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
-                      style={{
-                        backgroundColor: '#eff6ff',
-                        color: '#1d4ed8',
-                        border: '1px solid #bfdbfe',
-                      }}
-                    >
-                      📍 Top 5 Closest
-                    </button>
-                    {selectOnlyMode && (
-                      <span className="text-[10px]" style={{ color: '#92400e' }}>
-                        Tap comps to include • {activeComps.length} selected
-                      </span>
-                    )}
-                    {hiddenByDistance > 0 && (
-                      <span className="text-[10px]" style={{ color: '#6b7280' }}>
-                        {hiddenByDistance} beyond {compDistanceFilter}mi hidden
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  <span className="flex-1" />
+                  {hasExclusions && (
+                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+                      {activeComps.length} of {distanceFilteredComps.length} selected
+                    </span>
+                  )}
                 </div>
                 {/* Data source explanation */}
                 {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') && (
@@ -5883,7 +5781,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div className="mb-4 p-3 rounded-xl border-2 border-dashed" style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-semibold" style={{ color: '#15803d' }}>Custom Comp {bannerLabel} ({activeComps.length} selected)</p>
+                        <p className="text-xs font-semibold" style={{ color: '#15803d' }}>Custom Selection — {bannerLabel} of {activeComps.length} comp{activeComps.length !== 1 ? 's' : ''}</p>
                         <p className="text-xs mt-0.5" style={{ color: '#787060' }}>
                           ${compRevenue.adr}/night avg • {compRevenue.occupancy}% avg occ
                         </p>
@@ -5893,63 +5791,17 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       </div>
                     </div>
                     <button
-                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); }}
+                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setCompSortBy('relevance'); }}
                       className="mt-2 text-xs font-medium px-3 py-1 rounded-full transition-colors"
                       style={{ backgroundColor: '#dcfce7', color: '#15803d' }}
                     >
-                      {selectOnlyMode ? 'Exit Select Only (Include All)' : 'Reset Selection (Include All)'}
+                      Reset — Include All Comps
                     </button>
                   </div>
                   );
                 })()}
                 
-                {/* Floating mini revenue summary bar — shows running stats of active comps */}
-                {activeComps.length > 0 && (() => {
-                  const revenues = activeComps.map(c => c.annualRevenue || c.monthlyRevenue * 12).filter(r => r > 0);
-                  if (revenues.length === 0) return null;
-                  const avg = Math.round(revenues.reduce((s, r) => s + r, 0) / revenues.length);
-                  const sorted = [...revenues].sort((a, b) => a - b);
-                  const median = sorted.length % 2 === 0
-                    ? Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2)
-                    : sorted[Math.floor(sorted.length / 2)];
-                  const min = sorted[0];
-                  const max = sorted[sorted.length - 1];
-                  const avgAdr = Math.round(activeComps.reduce((s, c) => s + (c.nightPrice || 0), 0) / activeComps.length);
-                  const avgOcc = Math.round(activeComps.reduce((s, c) => s + (c.occupancy || 0), 0) / activeComps.length);
-                  return (
-                    <div className="mb-3 p-3 rounded-xl" style={{ backgroundColor: '#fafaf8', border: '1px solid #e5e3da' }}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold" style={{ color: '#a09880' }}>
-                          {activeComps.length} Comp{activeComps.length !== 1 ? 's' : ''} Summary
-                        </span>
-                        <span className="text-[10px]" style={{ color: '#a09880' }}>
-                          ${avgAdr}/night • {avgOcc}% occ
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-sm font-bold" style={{ color: '#2b2823' }}>{formatCurrency(median)}</span>
-                            <span className="text-[10px]" style={{ color: '#787060' }}>median</span>
-                          </div>
-                        </div>
-                        <div className="flex-1 text-center">
-                          <div className="flex items-baseline gap-1 justify-center">
-                            <span className="text-sm font-bold" style={{ color: '#2b2823' }}>{formatCurrency(avg)}</span>
-                            <span className="text-[10px]" style={{ color: '#787060' }}>avg</span>
-                          </div>
-                        </div>
-                        <div className="flex-1 text-right">
-                          <div className="flex items-baseline gap-1 justify-end">
-                            <span className="text-[10px]" style={{ color: '#787060' }}>{formatCurrency(min)}</span>
-                            <span className="text-[9px]" style={{ color: '#a09880' }}>–</span>
-                            <span className="text-[10px]" style={{ color: '#787060' }}>{formatCurrency(max)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+
                 
                 <div className="space-y-4">
                   {comps.slice(0, showAllComps ? comps.length : 5).map((listing, index) => {
@@ -5968,7 +5820,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           toggleCompExclusion(listing.id);
                         }}
                         className="flex-shrink-0 self-center"
-                        title={selectOnlyMode ? (isExcluded ? "Select this comp" : "Deselect this comp") : (isExcluded ? "Include this comp" : "Exclude this comp")}
+                        title={isExcluded ? "Include this comp" : "Exclude this comp"}
                       >
                         <div
                           className="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors"
@@ -6057,18 +5909,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       border: showAllComps ? '1px solid #e5e3da' : 'none',
                     }}
                   >
-                    {showAllComps
-                      ? `Show Less`
-                      : `See All ${comps.length} Comps${hiddenByDistance > 0 ? ` (${hiddenByDistance} beyond ${compDistanceFilter}mi)` : ''}`
-                    }
+                    {showAllComps ? 'Show Less' : `See All ${comps.length} Comps`}
                   </button>
                 )}
                 
                 <p className="text-xs mt-3 text-center" style={{ color: '#a09880' }}>
-                  {selectOnlyMode 
-                    ? 'Tap checkboxes to select specific comps • Only selected comps affect revenue'
-                    : 'Tap checkboxes to include/exclude listings • Revenue on each card is estimated from its nightly rate'
-                  }
+                  Tap checkboxes to include/exclude comps • Revenue updates automatically
                 </p>
               </div>
               );
