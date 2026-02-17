@@ -2684,12 +2684,17 @@ export default function CalculatorPage() {
     const seasonalData = getSeasonalityData();
     const baseMonthlyRev = displayRevenue / 12;
     
-    // Calculate monthly revenues with seasonal variation
+    // Calculate percentile scaling ratio so PDF chart reflects selected percentile + bed/bath
+    // This matches the UI chart logic exactly (line ~5516)
+    const rawSeasonalTotal = seasonalData.reduce((sum, m) => sum + (m.revenue || 0), 0);
+    const pScale = (rawSeasonalTotal > 0 && displayRevenue > 0) ? (displayRevenue / rawSeasonalTotal) : 1;
+    
+    // Calculate monthly revenues with seasonal variation — using pScale to match UI
     const monthlyRevenues = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
       const monthData = seasonalData[index];
       let monthlyRev = 0;
       if (monthData?.revenue && monthData.revenue > 0) {
-        monthlyRev = Math.round(monthData.revenue * guestMultiplier);
+        monthlyRev = Math.round(monthData.revenue * pScale);
       } else if (monthData?.occupancy) {
         const baseOccupancy = result.occupancy || 55;
         const seasonalMultiplier = baseOccupancy > 0 ? (monthData.occupancy / baseOccupancy) : 1;

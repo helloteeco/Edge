@@ -711,7 +711,18 @@ export default function StatePage({ params }: { params: { id: string } }) {
             </div>
           )}
         </div>
-        {/* AI-Extractable Summary — at bottom for clean UX, still fully crawlable by search engines and AI */}
+        {/* Breadcrumb */}
+        <nav className="mt-6 px-4 pb-4" aria-label="Breadcrumb">
+          <ol className="flex items-center gap-1.5 text-xs" style={{ color: '#787060' }}>
+            <li><Link href="/" className="hover:underline">Home</Link></li>
+            <li>/</li>
+            <li><Link href="/search" className="hover:underline">States</Link></li>
+            <li>/</li>
+            <li style={{ color: '#2b2823' }}>{state.name}</li>
+          </ol>
+        </nav>
+
+        {/* AI-Extractable Summary — very bottom for clean UX, fully crawlable by search engines and AI */}
         <div className="px-4 pt-4 pb-2">
           <p className="text-xs leading-relaxed" style={{ color: '#9ca3af' }}>
             {state.name} is rated <strong>{state.grade}</strong> for Airbnb investment ({getVerdictText(state.verdict)}) with {state.cityCount} tracked STR markets. 
@@ -723,17 +734,6 @@ export default function StatePage({ params }: { params: { id: string } }) {
             Data powered by <a href="https://edge.teeco.co" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.
           </p>
         </div>
-
-        {/* Breadcrumb */}
-        <nav className="mt-6 px-4 pb-4" aria-label="Breadcrumb">
-          <ol className="flex items-center gap-1.5 text-xs" style={{ color: '#787060' }}>
-            <li><Link href="/" className="hover:underline">Home</Link></li>
-            <li>/</li>
-            <li><Link href="/search" className="hover:underline">States</Link></li>
-            <li>/</li>
-            <li style={{ color: '#2b2823' }}>{state.name}</li>
-          </ol>
-        </nav>
       </div>
     </div>
 
