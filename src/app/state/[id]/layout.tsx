@@ -38,6 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://edge.teeco.co/state/${stateCode.toLowerCase()}`,
+    },
     openGraph: {
       title: `${state.name} - $${annualRevenueK}K/yr Avg · ${cities.length} STR Markets`,
       description,

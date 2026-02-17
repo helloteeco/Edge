@@ -691,4 +691,14 @@
 - [x] Remove amenity filter pills (Hot Tub, Sauna, Pool, Game Room, Pet Friendly) — data source doesn't support them
 
 ## POLISH: Calendar estimated data disclaimer (February 2026)
-- [ ] Make it clearly visible that comp calendar data is estimated, not real-time Airbnb availability
+- [x] Make it clearly visible that comp calendar data is estimated, not real-time Airbnb availability
+
+## SEO: Dynamic meta tags, structured data, canonical URLs, sitemap (February 2026)
+- [ ] Fix stale market count in meta description (671 → dynamic count from data)
+- [ ] Fix stale market count in OG description (1000+ → dynamic)
+- [ ] Improve title tag for better keyword targeting (Airbnb, calculator, free)
+- [ ] Add canonical URLs to all pages
+- [ ] Add JSON-LD structured data (WebSite, SoftwareApplication, Organization)
+- [ ] Add dynamic sitemap.xml that auto-updates as cities/states are added
+- [ ] Make all counts dynamic so they never go stale again
+- [ ] No existing features changed
