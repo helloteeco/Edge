@@ -69,7 +69,7 @@ export async function generateMetadata(): Promise<Metadata> {
       follow: true,
     },
     other: {
-      "google-site-verification": "",
+      "google-site-verification": "eaGQmJuY6EbOYMdBtKTXNKII_KNF2FJVyLXk6VuxawM",
     },
   };
 }

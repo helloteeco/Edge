@@ -694,11 +694,18 @@
 - [x] Make it clearly visible that comp calendar data is estimated, not real-time Airbnb availability
 
 ## SEO: Dynamic meta tags, structured data, canonical URLs, sitemap (February 2026)
-- [ ] Fix stale market count in meta description (671 → dynamic count from data)
-- [ ] Fix stale market count in OG description (1000+ → dynamic)
-- [ ] Improve title tag for better keyword targeting (Airbnb, calculator, free)
-- [ ] Add canonical URLs to all pages
-- [ ] Add JSON-LD structured data (WebSite, SoftwareApplication, Organization)
-- [ ] Add dynamic sitemap.xml that auto-updates as cities/states are added
-- [ ] Make all counts dynamic so they never go stale again
-- [ ] No existing features changed
+- [x] Fix stale market count in meta description (671 → dynamic count from data)
+- [x] Fix stale market count in OG description (1000+ → dynamic)
+- [x] Improve title tag for better keyword targeting (Airbnb, calculator, free)
+- [x] Add canonical URLs to all pages
+- [x] Add JSON-LD structured data (WebSite, SoftwareApplication, Organization)
+- [x] Add dynamic sitemap.xml that auto-updates as cities/states are added
+- [x] Make all counts dynamic so they never go stale again
+- [x] No existing features changed
+
+## SEO: Get Edge indexed by Google (February 2026)
+- [ ] Check if edge.teeco.co is currently indexed by Google
+- [ ] Set up Google Search Console verification
+- [ ] Submit sitemap.xml to Google
+- [ ] Request indexing of key pages
+- [ ] Provide user with ongoing SEO roadmap
