@@ -5011,7 +5011,15 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                 downPaymentPercent: downPaymentPercent,
                                 loanAmount: investment.loanAmount,
                                 monthlyMortgage: investment.monthlyMortgage,
-                                percentiles: result.percentiles
+                                percentiles: result.percentiles,
+                                // Comp selection state for shared view
+                                compSelection: excludedCompIds.size > 0 ? {
+                                  excludedIds: Array.from(excludedCompIds),
+                                  sortBy: compSortBy,
+                                  distanceFilter: compDistanceFilter,
+                                  selectOnlyMode: selectOnlyMode,
+                                  revenuePercentile: revenuePercentile,
+                                } : undefined
                               }
                             })
                           });
@@ -5028,7 +5036,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                             });
                           } else {
                             await navigator.clipboard.writeText(shareUrl);
-                            alert('Share link copied! This link can only be viewed once and expires in 90 days.');
+                            alert(excludedCompIds.size > 0 ? 'Share link copied with your comp selections! Expires in 90 days.' : 'Share link copied! This link can only be viewed once and expires in 90 days.');
                           }
                         } catch (err: any) {
                           // Don't show error if user just dismissed the share sheet
@@ -5782,6 +5790,30 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     >
                       ⚡ Top 5 Revenue
                     </button>
+                    {/* Quick Select Top 5 Closest */}
+                    <button
+                      onClick={() => {
+                        // Sort by distance ascending, pick top 5 closest
+                        const top5 = [...distanceFilteredComps]
+                          .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+                          .slice(0, 5)
+                          .map(c => c.id);
+                        const top5Set = new Set(top5);
+                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
+                        setExcludedCompIds(newExcluded);
+                        setSelectOnlyMode(true);
+                        setShowAllComps(true);
+                        setCompSortBy('distance');
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+                      style={{
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        border: '1px solid #bfdbfe',
+                      }}
+                    >
+                      📍 Top 5 Closest
+                    </button>
                     {selectOnlyMode && (
                       <span className="text-[10px]" style={{ color: '#92400e' }}>
                         Tap comps to include • {activeComps.length} selected
@@ -5868,6 +5900,54 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       {selectOnlyMode ? 'Exit Select Only (Include All)' : 'Reset Selection (Include All)'}
                     </button>
                   </div>
+                  );
+                })()}
+                
+                {/* Floating mini revenue summary bar — shows running stats of active comps */}
+                {activeComps.length > 0 && (() => {
+                  const revenues = activeComps.map(c => c.annualRevenue || c.monthlyRevenue * 12).filter(r => r > 0);
+                  if (revenues.length === 0) return null;
+                  const avg = Math.round(revenues.reduce((s, r) => s + r, 0) / revenues.length);
+                  const sorted = [...revenues].sort((a, b) => a - b);
+                  const median = sorted.length % 2 === 0
+                    ? Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2)
+                    : sorted[Math.floor(sorted.length / 2)];
+                  const min = sorted[0];
+                  const max = sorted[sorted.length - 1];
+                  const avgAdr = Math.round(activeComps.reduce((s, c) => s + (c.nightPrice || 0), 0) / activeComps.length);
+                  const avgOcc = Math.round(activeComps.reduce((s, c) => s + (c.occupancy || 0), 0) / activeComps.length);
+                  return (
+                    <div className="mb-3 p-3 rounded-xl" style={{ backgroundColor: '#fafaf8', border: '1px solid #e5e3da' }}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-semibold" style={{ color: '#a09880' }}>
+                          {activeComps.length} Comp{activeComps.length !== 1 ? 's' : ''} Summary
+                        </span>
+                        <span className="text-[10px]" style={{ color: '#a09880' }}>
+                          ${avgAdr}/night • {avgOcc}% occ
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-bold" style={{ color: '#2b2823' }}>{formatCurrency(median)}</span>
+                            <span className="text-[10px]" style={{ color: '#787060' }}>median</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 text-center">
+                          <div className="flex items-baseline gap-1 justify-center">
+                            <span className="text-sm font-bold" style={{ color: '#2b2823' }}>{formatCurrency(avg)}</span>
+                            <span className="text-[10px]" style={{ color: '#787060' }}>avg</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <div className="flex items-baseline gap-1 justify-end">
+                            <span className="text-[10px]" style={{ color: '#787060' }}>{formatCurrency(min)}</span>
+                            <span className="text-[9px]" style={{ color: '#a09880' }}>–</span>
+                            <span className="text-[10px]" style={{ color: '#787060' }}>{formatCurrency(max)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })()}
                 
@@ -7456,7 +7536,15 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                         loanAmount: investment.loanAmount,
                                         monthlyMortgage: investment.monthlyMortgage,
                                         percentiles: result.percentiles,
-                                        aiAnalysis: aiAnalysis
+                                        aiAnalysis: aiAnalysis,
+                                        // Comp selection state for shared view
+                                        compSelection: excludedCompIds.size > 0 ? {
+                                          excludedIds: Array.from(excludedCompIds),
+                                          sortBy: compSortBy,
+                                          distanceFilter: compDistanceFilter,
+                                          selectOnlyMode: selectOnlyMode,
+                                          revenuePercentile: revenuePercentile,
+                                        } : undefined
                                       }
                                     })
                                   });
@@ -7472,7 +7560,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     });
                                   } else {
                                     await navigator.clipboard.writeText(shareUrl);
-                                    alert('Share link copied! This link can only be viewed once and expires in 90 days.');
+                                    alert(excludedCompIds.size > 0 ? 'Share link copied with your comp selections! Expires in 90 days.' : 'Share link copied! This link can only be viewed once and expires in 90 days.');
                                   }
                                 } catch (err: any) {
                                   // Don't show error if user just dismissed the share sheet

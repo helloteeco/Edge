@@ -251,6 +251,23 @@ export default function SharePage() {
           </div>
         </div>
 
+        {/* Comp Selection Info (if shared with custom selections) */}
+        {fullAnalysis.compSelection && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-amber-600 text-lg">🎯</span>
+              <h3 className="text-sm font-bold text-amber-800">Custom Comp Selection Applied</h3>
+            </div>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              This analysis was shared with a curated comp selection{fullAnalysis.compSelection.selectOnlyMode ? ' (Select Only mode)' : ''}
+              {fullAnalysis.compSelection.excludedIds?.length > 0 && ` — ${fullAnalysis.compSelection.excludedIds.length} comp${fullAnalysis.compSelection.excludedIds.length !== 1 ? 's' : ''} ${fullAnalysis.compSelection.selectOnlyMode ? 'not selected' : 'excluded'}`}
+              {fullAnalysis.compSelection.distanceFilter && ` • ${fullAnalysis.compSelection.distanceFilter}mi radius filter`}
+              {fullAnalysis.compSelection.revenuePercentile && fullAnalysis.compSelection.revenuePercentile !== 'average' && ` • ${fullAnalysis.compSelection.revenuePercentile === 'p75' ? '75th' : '90th'} percentile`}
+              . Revenue figures reflect this custom selection.
+            </p>
+          </div>
+        )}
+
         {/* CTA */}
         <div className="bg-[#3D3D3D] rounded-2xl p-6 text-center">
           <h3 className="text-white text-xl font-bold mb-2">Want to run your own analysis?</h3>
