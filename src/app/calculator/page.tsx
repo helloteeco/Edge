@@ -5693,6 +5693,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               // Bedroom filter counts
               const exactBRCount = distanceFilteredComps.filter(c => c.bedrooms === userBR).length;
               const plusMinusBRCount = distanceFilteredComps.filter(c => Math.abs((c.bedrooms || 0) - userBR) <= 1).length;
+              const br5PlusCount = distanceFilteredComps.filter(c => (c.bedrooms || 0) >= 5).length;
               
               // Apply active filters to auto-exclude comps
               const applyFilters = (filterSet: Set<string>): Set<string> => {
@@ -5711,6 +5712,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       if (c.bedrooms !== userBR) shouldExclude = true;
                     } else if (f === 'br-plusminus') {
                       if (Math.abs((c.bedrooms || 0) - userBR) > 1) shouldExclude = true;
+                    } else if (f === 'br-5plus') {
+                      if ((c.bedrooms || 0) < 5) shouldExclude = true;
                     } else {
                       // Amenity filter
                       if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
@@ -5870,14 +5873,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     <span className="flex-1" />
                     {hasExclusions && (
                       <span className="text-[10px] font-semibold px-2 py-1 rounded-md" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
-                        {activeComps.length}/{distanceFilteredComps.length}
+                        {activeComps.length} of {distanceFilteredComps.length} comps
                       </span>
                     )}
                   </div>
                   
                   {/* Row 2: Distance filters */}
                   <div className="mb-1.5">
-                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Distance</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Proximity</span>
                     <div className="flex flex-wrap gap-1">
                       {radiusOptions.map(r => {
                         const key = `radius:${r}`;
@@ -5887,7 +5890,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           <button
                             key={key}
                             onClick={() => toggleFilter(key)}
-                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                             style={{
                               backgroundColor: isActive ? '#1d4ed8' : '#f8fafc',
                               color: isActive ? '#fff' : '#64748b',
@@ -5896,7 +5899,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                               boxShadow: isActive ? '0 1px 3px rgba(29,78,216,0.3)' : 'none',
                             }}
                           >
-                            {r}mi <span style={{ opacity: isActive ? 0.85 : 0.5, fontSize: '9px' }}>{count}</span>
+                            Within {r} mi <span style={{ opacity: isActive ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{count} comps</span>
                           </button>
                         );
                       })}
@@ -5906,14 +5909,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   {/* Row 3: Guests + Bedrooms side by side */}
                   <div className="flex gap-4 mb-1.5">
                     <div className="flex-1">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Guests</span>
+                      <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Guest Capacity</span>
                       <div className="flex flex-wrap gap-1">
                         {(() => {
                           const isActive = activeCompFilters.has('guest-match');
                           return (
                             <button
                               onClick={() => toggleFilter('guest-match')}
-                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                               style={{
                                 backgroundColor: isActive ? '#7c3aed' : '#f8fafc',
                                 color: isActive ? '#fff' : '#64748b',
@@ -5922,7 +5925,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                 boxShadow: isActive ? '0 1px 3px rgba(124,58,237,0.3)' : 'none',
                               }}
                             >
-                              {userGuests}+ <span style={{ opacity: isActive ? 0.85 : 0.5, fontSize: '9px' }}>{guestMatchCount}</span>
+                              Sleeps {userGuests}+ <span style={{ opacity: isActive ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{guestMatchCount} comps</span>
                             </button>
                           );
                         })()}
@@ -5931,7 +5934,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           return (
                             <button
                               onClick={() => toggleFilter('guest-12plus')}
-                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                               style={{
                                 backgroundColor: isActive ? '#7c3aed' : '#f8fafc',
                                 color: isActive ? '#fff' : '#64748b',
@@ -5940,7 +5943,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                 boxShadow: isActive ? '0 1px 3px rgba(124,58,237,0.3)' : 'none',
                               }}
                             >
-                              12+ <span style={{ opacity: isActive ? 0.85 : 0.5, fontSize: '9px' }}>{guest12PlusCount}</span>
+                              Sleeps 12+ <span style={{ opacity: isActive ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{guest12PlusCount} comps</span>
                             </button>
                           );
                         })()}
@@ -5952,12 +5955,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         {(() => {
                           const isExact = activeCompFilters.has('br-exact');
                           const isPM = activeCompFilters.has('br-plusminus');
+                          const is5Plus = activeCompFilters.has('br-5plus');
                           return (
                             <>
                               {exactBRCount > 0 && (
                                 <button
                                   onClick={() => toggleFilter('br-exact')}
-                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                                   style={{
                                     backgroundColor: isExact ? '#0369a1' : '#f8fafc',
                                     color: isExact ? '#fff' : '#64748b',
@@ -5966,13 +5970,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     boxShadow: isExact ? '0 1px 3px rgba(3,105,161,0.3)' : 'none',
                                   }}
                                 >
-                                  {userBR}BR <span style={{ opacity: isExact ? 0.85 : 0.5, fontSize: '9px' }}>{exactBRCount}</span>
+                                  Exact {userBR} BR <span style={{ opacity: isExact ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{exactBRCount}</span>
                                 </button>
                               )}
                               {plusMinusBRCount > 0 && (
                                 <button
                                   onClick={() => toggleFilter('br-plusminus')}
-                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                                   style={{
                                     backgroundColor: isPM ? '#0369a1' : '#f8fafc',
                                     color: isPM ? '#fff' : '#64748b',
@@ -5981,7 +5985,22 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     boxShadow: isPM ? '0 1px 3px rgba(3,105,161,0.3)' : 'none',
                                   }}
                                 >
-                                  {userBR - 1}-{userBR + 1}BR <span style={{ opacity: isPM ? 0.85 : 0.5, fontSize: '9px' }}>{plusMinusBRCount}</span>
+                                  {userBR - 1}–{userBR + 1} BR <span style={{ opacity: isPM ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{plusMinusBRCount}</span>
+                                </button>
+                              )}
+                              {br5PlusCount > 0 && (
+                                <button
+                                  onClick={() => toggleFilter('br-5plus')}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
+                                  style={{
+                                    backgroundColor: is5Plus ? '#0369a1' : '#f8fafc',
+                                    color: is5Plus ? '#fff' : '#64748b',
+                                    border: `1.5px solid ${is5Plus ? '#0369a1' : '#e2e8f0'}`,
+                                    fontWeight: is5Plus ? 700 : 500,
+                                    boxShadow: is5Plus ? '0 1px 3px rgba(3,105,161,0.3)' : 'none',
+                                  }}
+                                >
+                                  5+ BR <span style={{ opacity: is5Plus ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{br5PlusCount}</span>
                                 </button>
                               )}
                             </>
@@ -5993,7 +6012,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   
                   {/* Row 4: Amenity filters */}
                   <div>
-                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Amenities</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Premium Amenities</span>
                     <div className="flex flex-wrap gap-1">
                       {amenityCounts.map(f => {
                         const isActive = activeCompFilters.has(f.key);
@@ -6002,7 +6021,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           <button
                             key={f.key}
                             onClick={() => !isDisabled && toggleFilter(f.key)}
-                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                             style={{
                               backgroundColor: isActive ? '#b45309' : isDisabled ? '#f1f5f9' : '#f8fafc',
                               color: isActive ? '#fff' : isDisabled ? '#cbd5e1' : '#64748b',
@@ -6014,7 +6033,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                             }}
                             disabled={isDisabled}
                           >
-                            {f.label} <span style={{ opacity: isActive ? 0.85 : 0.4, fontSize: '9px' }}>{f.count}</span>
+                            {f.label} <span style={{ opacity: isActive ? 0.9 : 0.4, fontSize: '9px', fontWeight: 600 }}>{f.count}</span>
                           </button>
                         );
                       })}
@@ -6111,6 +6130,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     if (c.bedrooms !== userBR) shouldExclude = true;
                                   } else if (f === 'br-plusminus') {
                                     if (Math.abs((c.bedrooms || 0) - userBR) > 1) shouldExclude = true;
+                                  } else if (f === 'br-5plus') {
+                                    if ((c.bedrooms || 0) < 5) shouldExclude = true;
                                   } else {
                                     if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
                                   }

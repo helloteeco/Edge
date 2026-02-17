@@ -671,3 +671,15 @@
 - [ ] Diagnose why initial load shows revenue across ALL bedroom sizes (91 comps) instead of filtering by property's bedroom count
 - [ ] Fix initial display to pre-filter by bedroom count so revenue doesn't jump dramatically when user adjusts
 - [ ] No major feature changes
+
+## FIX: Confusing guest filter pill labels (February 2026)
+- [ ] Fix guest filter pills showing confusing "6+ 16" label — make labels intuitive and self-explanatory
+- [ ] Add 5+ BR filter pill to bedroom filters for large property analysis
+
+## POLISH: Investor-grade comp filter UX (February 2026)
+- [ ] Rethink filter labels from $100K investor perspective — every label must be instantly self-explanatory
+- [ ] Fix count display format — parenthesized counts should read as "X of Y comps match" not random numbers
+- [ ] Make filter groupings logical for investment analysis (proximity → property match → amenity premium)
+- [ ] Ensure active/inactive states are unmistakable at a glance
+- [ ] Add 5+ BR filter for large property investors
+- [ ] No features deleted
