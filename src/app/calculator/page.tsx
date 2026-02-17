@@ -5671,6 +5671,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 { key: 'hot tub', label: '🛁 Hot Tub', icon: '' },
                 { key: 'sauna', label: '🧖 Sauna', icon: '' },
                 { key: 'pool', label: '🏊 Pool', icon: '' },
+                { key: 'game room', label: '🎮 Game Room', icon: '' },
               ];
               // Guest count options
               const guest12PlusCount = distanceFilteredComps.filter(c => (c.accommodates || 0) >= 12).length;
@@ -5809,6 +5810,32 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     >
                       ⚡ Top 5 Earners
                     </button>
+                    <button
+                      onClick={() => {
+                        const bestFilters = new Set<string>();
+                        bestFilters.add('radius:5');
+                        bestFilters.add('br-exact');
+                        setActiveCompFilters(bestFilters);
+                        const newExcluded = new Set<number>();
+                        distanceFilteredComps.forEach(c => {
+                          let shouldExclude = false;
+                          if ((c.distance || 0) > 5) shouldExclude = true;
+                          if (c.bedrooms !== userBR) shouldExclude = true;
+                          if (shouldExclude) newExcluded.add(c.id);
+                        });
+                        setExcludedCompIds(newExcluded);
+                        setSelectOnlyMode(true);
+                        setShowAllComps(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                      style={{
+                        backgroundColor: activeCompFilters.has('radius:5') && activeCompFilters.has('br-exact') && activeCompFilters.size === 2 ? '#0369a1' : '#eff6ff',
+                        color: activeCompFilters.has('radius:5') && activeCompFilters.has('br-exact') && activeCompFilters.size === 2 ? '#fff' : '#0369a1',
+                        border: '1px solid #bfdbfe',
+                      }}
+                    >
+                      🎯 Best Comps
+                    </button>
                     {(hasExclusions || activeCompFilters.size > 0) && (
                       <button
                         onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setActiveCompFilters(new Set()); setCompSortBy('relevance'); }}
@@ -5826,9 +5853,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     )}
                   </div>
                   
-                  {/* Row 2: Filter pills — horizontally scrollable */}
-                  <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {/* Radius filters */}
+                  {/* Row 2: Filter pills — horizontally scrollable with category dividers */}
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 items-center" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {/* Distance category */}
+                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Dist</span>
                     {radiusOptions.map(r => {
                       const key = `radius:${r}`;
                       const isActive = activeCompFilters.has(key);
@@ -5851,6 +5879,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       );
                     })}
                     
+                    {/* Divider */}
+                    <span className="flex-shrink-0 w-px h-5" style={{ backgroundColor: '#e5e7eb' }} />
+                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Guests</span>
                     {/* Guest count filters */}
                     {(() => {
                       const isActive = activeCompFilters.has('guest-match');
@@ -5891,6 +5922,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       );
                     })()}
                     
+                    {/* Divider */}
+                    <span className="flex-shrink-0 w-px h-5" style={{ backgroundColor: '#e5e7eb' }} />
+                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Beds</span>
                     {/* Bedroom filters */}
                     {(() => {
                       const isExact = activeCompFilters.has('br-exact');
@@ -5931,6 +5965,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       );
                     })()}
                     
+                    {/* Divider */}
+                    <span className="flex-shrink-0 w-px h-5" style={{ backgroundColor: '#e5e7eb' }} />
+                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Amenities</span>
                     {/* Amenity filters */}
                     {amenityCounts.map(f => {
                       const isActive = activeCompFilters.has(f.key);
