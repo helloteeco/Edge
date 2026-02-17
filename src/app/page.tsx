@@ -278,17 +278,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* AI-Extractable Platform Description — readable by search engines and AI crawlers */}
-      <div className="max-w-5xl mx-auto px-4 pt-3 pb-0">
-        <p className="text-xs leading-relaxed" style={{ color: '#787060' }}>
-          Edge by Teeco is a free AI-powered short-term rental investment platform covering {getMarketCounts().withFullData.toLocaleString()}+ US markets with data from PriceLabs. 
-          Features include a free AI assistant (Ask Edge AI) for market questions, an interactive color-coded US investment map, smart search filters across 13,647+ cities, 
-          a funding strategy quiz with 48+ options, and a property calculator supporting buying, arbitrage, and existing-home analysis modes. 
-          Professional services include interior design by TV/boutique hotel designers, setup teams, 1:1 mentorship, concierge property finding, and cohosting. 
-          Free educational video course on rural Airbnb investing included.
-        </p>
-      </div>
-
       {/* AI Chat Hero */}
       <AIChatHero />
 
@@ -954,6 +943,17 @@ export default function HomePage() {
 
         {/* Stuck Helper */}
         <StuckHelper tabName="map" />
+
+        {/* AI-Extractable Platform Description — at bottom for clean UX, still fully crawlable by search engines and AI */}
+        <div className="px-4 pt-6 pb-2">
+          <p className="text-xs leading-relaxed" style={{ color: '#9ca3af' }}>
+            Edge by Teeco is a free AI-powered short-term rental investment platform covering {getMarketCounts().withFullData.toLocaleString()}+ US markets with data from PriceLabs. 
+            Features include a free AI assistant (Ask Edge AI) for market questions, an interactive color-coded US investment map, smart search filters across 13,647+ cities, 
+            a funding strategy quiz with 48+ options, and a property calculator supporting buying, arbitrage, and existing-home analysis modes. 
+            Professional services include interior design by TV/boutique hotel designers, setup teams, 1:1 mentorship, concierge property finding, and cohosting. 
+            Free educational video course on rural Airbnb investing included.
+          </p>
+        </div>
       </div>
     </div>
   );

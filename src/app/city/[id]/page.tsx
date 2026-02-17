@@ -346,17 +346,6 @@ export default function CityPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* AI-Extractable Summary — hidden visually but readable by search engines and AI crawlers */}
-      <div className="max-w-4xl mx-auto px-4 pt-4 pb-0">
-        <p className="text-sm leading-relaxed" style={{ color: '#787060' }}>
-          {city.name}, {getStateByCode(city.stateCode)?.name || city.stateCode} is rated <strong>{city.grade}</strong> for Airbnb investment with a score of {city.marketScore}/100 ({verdictInfo.text}). 
-          The market has an average daily rate (ADR) of ${city.avgADR}, {city.occupancy}% occupancy, and estimated monthly STR revenue of ${city.strMonthlyRevenue.toLocaleString()}. 
-          Median home value is ${city.medianHomeValue.toLocaleString()} with a cash-on-cash return of {city.cashOnCash.toFixed(1)}%. 
-          STR regulation status: {city.regulation}. 
-          Data powered by <a href="https://edge.teeco.co" style={{ color: '#787060', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.
-        </p>
-      </div>
-
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Overall Grade & Score */}
         <div 
@@ -925,6 +914,17 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </a>
           </div>
           <p className="text-xs text-center mt-3" style={{ color: '#9ca3af' }}>Opens Zillow.com in a new tab</p>
+        </div>
+
+        {/* AI-Extractable Summary — at bottom for clean UX, still fully crawlable by search engines and AI */}
+        <div className="pt-4 pb-2">
+          <p className="text-xs leading-relaxed" style={{ color: '#9ca3af' }}>
+            {city.name}, {getStateByCode(city.stateCode)?.name || city.stateCode} is rated <strong>{city.grade}</strong> for Airbnb investment with a score of {city.marketScore}/100 ({verdictInfo.text}). 
+            The market has an average daily rate (ADR) of ${city.avgADR}, {city.occupancy}% occupancy, and estimated monthly STR revenue of ${city.strMonthlyRevenue.toLocaleString()}. 
+            Median home value is ${city.medianHomeValue.toLocaleString()} with a cash-on-cash return of {city.cashOnCash.toFixed(1)}%. 
+            STR regulation status: {city.regulation}. 
+            Data powered by <a href="https://edge.teeco.co" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.
+          </p>
         </div>
 
         {/* Explore More Markets — Dynamic Internal Links */}
