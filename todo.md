@@ -685,4 +685,7 @@
 - [x] No features deleted
 
 ## FIX: Sleeps 12+ guest filter pill not visible (February 2026)
-- [ ] Show Sleeps 12+ pill always, grayed out when 0 comps match (same pattern as amenity pills)
+- [x] Show Sleeps 12+ pill always, grayed out when 0 comps match (same pattern as amenity pills)
+
+## CLEANUP: Remove amenity filter pills (February 2026)
+- [ ] Remove amenity filter pills (Hot Tub, Sauna, Pool, Game Room, Pet Friendly) — data source doesn't support them

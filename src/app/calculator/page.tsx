@@ -5664,30 +5664,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 : allComps;
               const hiddenByDistance = allComps.length - distanceFilteredComps.length;
               
-              // Amenity matching helper (inline to avoid import)
-              const compHasAmenity = (compAmenities: string[], key: string): boolean => {
-                const normalized = compAmenities.map(a => a.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim());
-                return normalized.some(a =>
-                  (key === 'hot tub' && (a.includes('hot tub') || a.includes('jacuzzi') || a.includes('spa'))) ||
-                  (key === 'sauna' && a.includes('sauna')) ||
-                  (key === 'pool' && a.includes('pool') && !a.includes('pool table')) ||
-                  (key === 'fireplace' && a.includes('fireplace')) ||
-                  (key === 'game room' && (a.includes('game') || a.includes('arcade') || a.includes('ping pong') || a.includes('pool table'))) ||
-                  (key === 'pet' && (a.includes('pet') || a.includes('dog') || a.includes('cat') || a.includes('animal')))
-                );
-              };
-              
               // Count comps matching each filter (for badge counts)
               const userGuests = guestCount || (result.bedrooms || 3) * 2;
               const userBR = result.bedrooms || 3;
               const radiusOptions = [1, 3, 5, 10, 25] as const;
-              const amenityFilters = [
-                { key: 'hot tub', label: '🛁 Hot Tub', icon: '' },
-                { key: 'sauna', label: '🧖 Sauna', icon: '' },
-                { key: 'pool', label: '🏊 Pool', icon: '' },
-                { key: 'game room', label: '🎮 Game Room', icon: '' },
-                { key: 'pet', label: '🐾 Pet Friendly', icon: '' },
-              ];
+
               // Guest count options
               const guest12PlusCount = distanceFilteredComps.filter(c => (c.accommodates || 0) >= 12).length;
               // Bedroom filter counts
@@ -5714,9 +5695,6 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       if (Math.abs((c.bedrooms || 0) - userBR) > 1) shouldExclude = true;
                     } else if (f === 'br-5plus') {
                       if ((c.bedrooms || 0) < 5) shouldExclude = true;
-                    } else {
-                      // Amenity filter
-                      if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
                     }
                   });
                   if (shouldExclude) newExcluded.add(String(c.id));
@@ -5754,11 +5732,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 }
               };
               
-              // Count matches for each amenity filter
-              const amenityCounts = amenityFilters.map(f => ({
-                ...f,
-                count: distanceFilteredComps.filter(c => compHasAmenity(c.amenities || [], f.key)).length,
-              }));
+
               const guestMatchCount = distanceFilteredComps.filter(c => (c.accommodates || 0) >= userGuests).length;
 
               // Sort comps based on selected sort option
@@ -6013,36 +5987,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Row 4: Amenity filters */}
-                  <div>
-                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Premium Amenities</span>
-                    <div className="flex flex-wrap gap-1">
-                      {amenityCounts.map(f => {
-                        const isActive = activeCompFilters.has(f.key);
-                        const isDisabled = f.count === 0;
-                        return (
-                          <button
-                            key={f.key}
-                            onClick={() => !isDisabled && toggleFilter(f.key)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
-                            style={{
-                              backgroundColor: isActive ? '#b45309' : isDisabled ? '#f1f5f9' : '#f8fafc',
-                              color: isActive ? '#fff' : isDisabled ? '#cbd5e1' : '#64748b',
-                              border: `1.5px solid ${isActive ? '#b45309' : isDisabled ? '#e2e8f0' : '#e2e8f0'}`,
-                              fontWeight: isActive ? 700 : 500,
-                              boxShadow: isActive ? '0 1px 3px rgba(180,83,9,0.3)' : 'none',
-                              cursor: isDisabled ? 'not-allowed' : 'pointer',
-                              opacity: isDisabled ? 0.5 : 1,
-                            }}
-                            disabled={isDisabled}
-                          >
-                            {f.label} <span style={{ opacity: isActive ? 0.9 : 0.4, fontSize: '9px', fontWeight: 600 }}>{f.count}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+
                   
                   {/* Active filter summary + Save This View */}
                   {activeCompFilters.size > 0 && (
@@ -6136,8 +6081,6 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     if (Math.abs((c.bedrooms || 0) - userBR) > 1) shouldExclude = true;
                                   } else if (f === 'br-5plus') {
                                     if ((c.bedrooms || 0) < 5) shouldExclude = true;
-                                  } else {
-                                    if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
                                   }
                                 });
                                 if (shouldExclude) newExcluded.add(String(c.id));
