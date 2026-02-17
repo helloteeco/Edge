@@ -37,13 +37,21 @@ export default function BestMarketsUnder300K() {
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
-            <Link href="/blog" className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2.5">
               <Image src="/teeco-icon-black.png" alt="Teeco" width={28} height={28} className="w-7 h-7 invert" />
               <span className="text-lg font-bold" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
-                Edge Blog
+                Edge
               </span>
             </Link>
             <AuthHeader variant="dark" />
+          </div>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1.5 mb-3 text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+            <Link href="/" className="hover:underline" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Home</Link>
+            <span>/</span>
+            <Link href="/blog" className="hover:underline" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Market Insights</Link>
+            <span>/</span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Best Markets Under $300K</span>
           </div>
           <div className="flex items-center gap-2 mb-3">
             <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff' }}>

@@ -28,6 +28,7 @@ import {
   ContractIcon,
   SetupIcon,
   RocketIcon,
+  ChartIcon,
 } from "@/components/Icons";
 
 // Force dynamic rendering
@@ -886,6 +887,24 @@ export default function HomePage() {
                   <p className="text-sm font-medium" style={{ color: '#ffffff' }}>Coaching</p>
                 </Link>
               </div>
+
+              {/* Market Insights Blog */}
+              <Link 
+                href="/blog"
+                className="block rounded-xl p-4 mt-3 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
+                    <ChartIcon className="w-6 h-6" color="#ffffff" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-base" style={{ color: '#ffffff' }}>Market Insights</p>
+                    <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Data-driven STR market reports and investment research</p>
+                  </div>
+                  <ChevronRightIcon className="w-5 h-5" color="rgba(255,255,255,0.7)" />
+                </div>
+              </Link>
             </div>
           </div>
         </div>

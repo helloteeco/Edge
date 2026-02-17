@@ -65,6 +65,13 @@ export function Footer() {
           >
             Contact Us
           </Link>
+          <Link
+            href="/blog"
+            className="text-xs font-medium transition-opacity hover:opacity-70"
+            style={{ color: "#787060" }}
+          >
+            Market Insights
+          </Link>
         </div>
 
         {/* Copyright */}
