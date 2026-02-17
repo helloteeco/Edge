@@ -711,15 +711,15 @@
 - [ ] Provide user with ongoing SEO roadmap
 
 ## BUG: PDF monthly forecast does not match annual revenue estimate (February 2026)
-- [ ] Audit PDF generation to ensure monthly forecast numbers add up to annual revenue
-- [ ] Ensure PDF captures most recently adjusted inputs/outputs from calculator
-- [ ] Make this the standard: PDF must always reflect current calculator state
+- [x] Audit PDF generation to ensure monthly forecast numbers add up to annual revenue
+- [x] Ensure PDF captures most recently adjusted inputs/outputs from calculator (fixed: uses pScale ratio matching UI chart)
+- [x] Make this the standard: PDF must always reflect current calculator state
 
 ## UI: City card spacing between More Markets and Ready to Invest (February 2026)
-- [ ] Add proper spacing between "More Markets in [State]" section and "Ready to Invest?" CTA
-- [ ] Make this the standard for all city pages
+- [x] Add proper spacing (mt-4) between "More Markets in [State]" section and "Ready to Invest?" CTA
+- [x] Make this the standard for all city pages
 
 ## UI: SEO/GEO text must be at very bottom of city pages (February 2026)
-- [ ] Move SEO/GEO summary text below breadcrumbs (Home / State / City) to very bottom
-- [ ] Text should be the last content before the footer
-- [ ] Make this the standard for all pages
+- [x] Move SEO/GEO summary text below breadcrumbs (Home / State / City) to very bottom
+- [x] Text should be the last content before the footer
+- [x] Make this the standard for all pages (city + state pages fixed, homepage already at bottom)
