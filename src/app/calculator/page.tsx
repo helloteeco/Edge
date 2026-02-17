@@ -290,6 +290,8 @@ export default function CalculatorPage() {
   const [compSortBy, setCompSortBy] = useState<'relevance' | 'revenue' | 'distance' | 'bedrooms' | 'occupancy' | 'rating'>('relevance');
   // Select-only mode: when true, only selected (non-excluded) comps are used; user picks specific comps
   const [selectOnlyMode, setSelectOnlyMode] = useState(false);
+  // Distance radius filter: null = show all, number = max miles
+  const [compDistanceFilter, setCompDistanceFilter] = useState<number | null>(null);
   
   // Full unfiltered comp set from API — used for local bedroom re-filtering
   const [allComps, setAllComps] = useState<ComparableListing[]>([]);
@@ -420,6 +422,7 @@ export default function CalculatorPage() {
     setShowAllComps(false);
     setCompSortBy('relevance');
     setSelectOnlyMode(false);
+    setCompDistanceFilter(null);
     // Reset the initial refilter flag so the next analysis gets auto-filtered too
     hasInitialRefiltered.current = false;
   }, [result?.address]);
@@ -491,6 +494,7 @@ export default function CalculatorPage() {
         setExcludedCompIds(new Set());
         setCompSortBy('relevance');
         setSelectOnlyMode(false);
+        setCompDistanceFilter(null);
         
         console.log(`[InitialRefilter] Done: ${filtered.filteredListings} comps, ADR $${filtered.avgAdr}, Rev $${annualRevenue}/yr`);
       } catch (err) {
@@ -5626,8 +5630,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               // Calculate confidence score based on ACTIVE comp quality
               const allComps = result.comparables;
               const activeComps = allComps.filter(c => !excludedCompIds.has(c.id));
+              // Apply distance filter to visible comps
+              const distanceFilteredComps = compDistanceFilter !== null
+                ? allComps.filter(c => (c.distance || 0) <= compDistanceFilter)
+                : allComps;
+              const hiddenByDistance = allComps.length - distanceFilteredComps.length;
               // Sort comps based on selected sort option
-              const sortedComps = [...allComps].sort((a, b) => {
+              const sortedComps = [...distanceFilteredComps].sort((a, b) => {
                 switch (compSortBy) {
                   case 'revenue': return (b.annualRevenue || 0) - (a.annualRevenue || 0);
                   case 'distance': return (a.distance || 999) - (b.distance || 999);
@@ -5694,14 +5703,45 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     ))}
                   </div>
                   
-                  {/* Selection mode toggle */}
-                  <div className="flex items-center gap-2">
+                  {/* Distance radius filter */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                    <span className="text-[10px] font-semibold shrink-0" style={{ color: '#a09880' }}>Radius:</span>
+                    {[
+                      { key: null, label: 'All' },
+                      { key: 1, label: '1 mi' },
+                      { key: 3, label: '3 mi' },
+                      { key: 5, label: '5 mi' },
+                      { key: 10, label: '10 mi' },
+                      { key: 25, label: '25 mi' },
+                    ].map(opt => {
+                      const count = opt.key !== null ? allComps.filter(c => (c.distance || 0) <= opt.key).length : allComps.length;
+                      return (
+                      <button
+                        key={String(opt.key)}
+                        onClick={() => setCompDistanceFilter(opt.key)}
+                        className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all"
+                        style={{
+                          backgroundColor: compDistanceFilter === opt.key ? '#1d4ed8' : '#f5f4f0',
+                          color: compDistanceFilter === opt.key ? '#ffffff' : '#787060',
+                          border: compDistanceFilter === opt.key ? 'none' : '1px solid #e5e3da',
+                          opacity: count === 0 && opt.key !== null ? 0.4 : 1,
+                        }}
+                        disabled={count === 0 && opt.key !== null}
+                      >
+                        {opt.label} ({count})
+                      </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Selection mode toggle + Quick Select Top 5 */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => {
                         if (!selectOnlyMode) {
                           // Switching TO select-only: exclude ALL comps first, user will pick which to include
                           setSelectOnlyMode(true);
-                          setExcludedCompIds(new Set(allComps.map(c => c.id)));
+                          setExcludedCompIds(new Set(distanceFilteredComps.map(c => c.id)));
                           setShowAllComps(true);
                         } else {
                           // Switching back to normal: include all
@@ -5718,9 +5758,38 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     >
                       {selectOnlyMode ? '🎯 Select Only Mode' : '🎯 Select Only'}
                     </button>
+                    {/* Quick Select Top 5 */}
+                    <button
+                      onClick={() => {
+                        // Sort by revenue descending, pick top 5
+                        const top5 = [...distanceFilteredComps]
+                          .sort((a, b) => (b.annualRevenue || 0) - (a.annualRevenue || 0))
+                          .slice(0, 5)
+                          .map(c => c.id);
+                        const top5Set = new Set(top5);
+                        // Exclude everything except top 5
+                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
+                        setExcludedCompIds(newExcluded);
+                        setSelectOnlyMode(true);
+                        setShowAllComps(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+                      style={{
+                        backgroundColor: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #bbf7d0',
+                      }}
+                    >
+                      ⚡ Top 5 Revenue
+                    </button>
                     {selectOnlyMode && (
                       <span className="text-[10px]" style={{ color: '#92400e' }}>
                         Tap comps to include • {activeComps.length} selected
+                      </span>
+                    )}
+                    {hiddenByDistance > 0 && (
+                      <span className="text-[10px]" style={{ color: '#6b7280' }}>
+                        {hiddenByDistance} beyond {compDistanceFilter}mi hidden
                       </span>
                     )}
                   </div>
@@ -5910,7 +5979,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   >
                     {showAllComps
                       ? `Show Less`
-                      : `See All ${comps.length} Comps`
+                      : `See All ${comps.length} Comps${hiddenByDistance > 0 ? ` (${hiddenByDistance} beyond ${compDistanceFilter}mi)` : ''}`
                     }
                   </button>
                 )}
