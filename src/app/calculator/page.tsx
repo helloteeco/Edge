@@ -5873,143 +5873,137 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     )}
                   </div>
                   
-                  {/* Row 2: Filter pills — horizontally scrollable with category dividers */}
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 items-center" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {/* Distance category */}
-                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Dist</span>
-                    {radiusOptions.map(r => {
-                      const key = `radius:${r}`;
-                      const isActive = activeCompFilters.has(key);
-                      const count = distanceFilteredComps.filter(c => (c.distance || 0) <= r).length;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => toggleFilter(key)}
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                          style={{
-                            backgroundColor: isActive ? '#1d4ed8' : '#fff',
-                            color: isActive ? '#fff' : '#4b5563',
-                            border: `1px solid ${isActive ? '#1d4ed8' : '#d1d5db'}`,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          📍 {r}mi
-                          <span style={{ opacity: 0.7 }}>({count})</span>
-                        </button>
-                      );
-                    })}
-                    
-                    {/* Divider */}
-                    <span className="flex-shrink-0 w-px h-5" style={{ backgroundColor: '#e5e7eb' }} />
-                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Guests</span>
-                    {/* Guest count filters */}
-                    {(() => {
-                      const isActive = activeCompFilters.has('guest-match');
-                      return (
-                        <button
-                          onClick={() => toggleFilter('guest-match')}
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                          style={{
-                            backgroundColor: isActive ? '#7c3aed' : '#fff',
-                            color: isActive ? '#fff' : '#4b5563',
-                            border: `1px solid ${isActive ? '#7c3aed' : '#d1d5db'}`,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          👥 {userGuests}+ guests
-                          <span style={{ opacity: 0.7 }}>({guestMatchCount})</span>
-                        </button>
-                      );
-                    })()}
-                    {(() => {
-                      const isActive = activeCompFilters.has('guest-12plus');
-                      return (
-                        <button
-                          onClick={() => guest12PlusCount > 0 ? toggleFilter('guest-12plus') : undefined}
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                          style={{
-                            backgroundColor: isActive ? '#7c3aed' : '#fff',
-                            color: isActive ? '#fff' : guest12PlusCount > 0 ? '#4b5563' : '#9ca3af',
-                            border: `1px solid ${isActive ? '#7c3aed' : guest12PlusCount > 0 ? '#d1d5db' : '#e5e7eb'}`,
-                            whiteSpace: 'nowrap',
-                            cursor: guest12PlusCount > 0 ? 'pointer' : 'default',
-                            opacity: guest12PlusCount > 0 ? 1 : 0.5,
-                          }}
-                        >
-                          👥 12+ guests
-                          <span style={{ opacity: 0.7 }}>({guest12PlusCount})</span>
-                        </button>
-                      );
-                    })()}
-                    
-                    {/* Divider */}
-                    <span className="flex-shrink-0 w-px h-5" style={{ backgroundColor: '#e5e7eb' }} />
-                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Beds</span>
-                    {/* Bedroom filters */}
-                    {(() => {
-                      const isExact = activeCompFilters.has('br-exact');
-                      const isPM = activeCompFilters.has('br-plusminus');
-                      return (
-                        <>
+                  {/* Row 2: Distance filters */}
+                  <div className="mb-1.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Distance</span>
+                    <div className="flex flex-wrap gap-1">
+                      {radiusOptions.map(r => {
+                        const key = `radius:${r}`;
+                        const isActive = activeCompFilters.has(key);
+                        const count = distanceFilteredComps.filter(c => (c.distance || 0) <= r).length;
+                        return (
                           <button
-                            onClick={() => exactBRCount > 0 ? toggleFilter('br-exact') : undefined}
-                            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                            key={key}
+                            onClick={() => toggleFilter(key)}
+                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
                             style={{
-                              backgroundColor: isExact ? '#0369a1' : '#fff',
-                              color: isExact ? '#fff' : exactBRCount > 0 ? '#4b5563' : '#9ca3af',
-                              border: `1px solid ${isExact ? '#0369a1' : exactBRCount > 0 ? '#d1d5db' : '#e5e7eb'}`,
-                              whiteSpace: 'nowrap',
-                              cursor: exactBRCount > 0 ? 'pointer' : 'default',
-                              opacity: exactBRCount > 0 ? 1 : 0.5,
+                              backgroundColor: isActive ? '#1d4ed8' : '#fff',
+                              color: isActive ? '#fff' : '#4b5563',
+                              border: `1px solid ${isActive ? '#1d4ed8' : '#d1d5db'}`,
                             }}
                           >
-                            🛏️ {userBR}BR only
-                            <span style={{ opacity: 0.7 }}>({exactBRCount})</span>
+                            {r}mi <span style={{ opacity: 0.6, fontSize: '9px' }}>{count}</span>
                           </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Row 3: Guests + Bedrooms side by side */}
+                  <div className="flex gap-4 mb-1.5">
+                    <div className="flex-1">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Guests</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const isActive = activeCompFilters.has('guest-match');
+                          return (
+                            <button
+                              onClick={() => toggleFilter('guest-match')}
+                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                              style={{
+                                backgroundColor: isActive ? '#7c3aed' : '#fff',
+                                color: isActive ? '#fff' : '#4b5563',
+                                border: `1px solid ${isActive ? '#7c3aed' : '#d1d5db'}`,
+                              }}
+                            >
+                              {userGuests}+ <span style={{ opacity: 0.6, fontSize: '9px' }}>{guestMatchCount}</span>
+                            </button>
+                          );
+                        })()}
+                        {guest12PlusCount > 0 && (() => {
+                          const isActive = activeCompFilters.has('guest-12plus');
+                          return (
+                            <button
+                              onClick={() => toggleFilter('guest-12plus')}
+                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                              style={{
+                                backgroundColor: isActive ? '#7c3aed' : '#fff',
+                                color: isActive ? '#fff' : '#4b5563',
+                                border: `1px solid ${isActive ? '#7c3aed' : '#d1d5db'}`,
+                              }}
+                            >
+                              12+ <span style={{ opacity: 0.6, fontSize: '9px' }}>{guest12PlusCount}</span>
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Bedrooms</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const isExact = activeCompFilters.has('br-exact');
+                          const isPM = activeCompFilters.has('br-plusminus');
+                          return (
+                            <>
+                              {exactBRCount > 0 && (
+                                <button
+                                  onClick={() => toggleFilter('br-exact')}
+                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                                  style={{
+                                    backgroundColor: isExact ? '#0369a1' : '#fff',
+                                    color: isExact ? '#fff' : '#4b5563',
+                                    border: `1px solid ${isExact ? '#0369a1' : '#d1d5db'}`,
+                                  }}
+                                >
+                                  {userBR}BR <span style={{ opacity: 0.6, fontSize: '9px' }}>{exactBRCount}</span>
+                                </button>
+                              )}
+                              {plusMinusBRCount > 0 && (
+                                <button
+                                  onClick={() => toggleFilter('br-plusminus')}
+                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                                  style={{
+                                    backgroundColor: isPM ? '#0369a1' : '#fff',
+                                    color: isPM ? '#fff' : '#4b5563',
+                                    border: `1px solid ${isPM ? '#0369a1' : '#d1d5db'}`,
+                                  }}
+                                >
+                                  {userBR - 1}-{userBR + 1}BR <span style={{ opacity: 0.6, fontSize: '9px' }}>{plusMinusBRCount}</span>
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Row 4: Amenity filters */}
+                  <div>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Amenities</span>
+                    <div className="flex flex-wrap gap-1">
+                      {amenityCounts.filter(f => f.count > 0).map(f => {
+                        const isActive = activeCompFilters.has(f.key);
+                        return (
                           <button
-                            onClick={() => plusMinusBRCount > 0 ? toggleFilter('br-plusminus') : undefined}
-                            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                            key={f.key}
+                            onClick={() => toggleFilter(f.key)}
+                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
                             style={{
-                              backgroundColor: isPM ? '#0369a1' : '#fff',
-                              color: isPM ? '#fff' : plusMinusBRCount > 0 ? '#4b5563' : '#9ca3af',
-                              border: `1px solid ${isPM ? '#0369a1' : plusMinusBRCount > 0 ? '#d1d5db' : '#e5e7eb'}`,
-                              whiteSpace: 'nowrap',
-                              cursor: plusMinusBRCount > 0 ? 'pointer' : 'default',
-                              opacity: plusMinusBRCount > 0 ? 1 : 0.5,
+                              backgroundColor: isActive ? '#b45309' : '#fff',
+                              color: isActive ? '#fff' : '#4b5563',
+                              border: `1px solid ${isActive ? '#b45309' : '#d1d5db'}`,
                             }}
                           >
-                            🛏️ {userBR - 1}-{userBR + 1}BR
-                            <span style={{ opacity: 0.7 }}>({plusMinusBRCount})</span>
+                            {f.label} <span style={{ opacity: 0.6, fontSize: '9px' }}>{f.count}</span>
                           </button>
-                        </>
-                      );
-                    })()}
-                    
-                    {/* Divider */}
-                    <span className="flex-shrink-0 w-px h-5" style={{ backgroundColor: '#e5e7eb' }} />
-                    <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Amenities</span>
-                    {/* Amenity filters */}
-                    {amenityCounts.map(f => {
-                      const isActive = activeCompFilters.has(f.key);
-                      return (
-                        <button
-                          key={f.key}
-                          onClick={() => f.count > 0 ? toggleFilter(f.key) : undefined}
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                          style={{
-                            backgroundColor: isActive ? '#b45309' : '#fff',
-                            color: isActive ? '#fff' : f.count > 0 ? '#4b5563' : '#9ca3af',
-                            border: `1px solid ${isActive ? '#b45309' : f.count > 0 ? '#d1d5db' : '#e5e7eb'}`,
-                            whiteSpace: 'nowrap',
-                            cursor: f.count > 0 ? 'pointer' : 'default',
-                            opacity: f.count > 0 ? 1 : 0.5,
-                          }}
-                        >
-                          {f.label}
-                          <span style={{ opacity: 0.7 }}>({f.count})</span>
-                        </button>
-                      );
-                    })}
+                        );
+                      })}
+                      {amenityCounts.every(f => f.count === 0) && (
+                        <span className="text-[10px]" style={{ color: '#9ca3af' }}>No amenity data available</span>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Active filter summary + Save This View */}
