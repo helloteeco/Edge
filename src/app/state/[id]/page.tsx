@@ -766,7 +766,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
               name: `Is ${state.name} a good state for Airbnb investment?`,
               acceptedAnswer: {
                 "@type": "Answer",
-                text: `${state.name} has an investment grade of ${state.grade} (${state.score}/100) with a verdict of ${state.verdict.replace('-', ' ').toUpperCase()}. The state has ${cities.length} tracked STR markets. Average median home value across markets is $${Math.round(cities.reduce((s, c) => s + c.medianHomeValue, 0) / (cities.length || 1)).toLocaleString()}.`,
+                text: `${state.name} has an investment grade of ${state.grade} (${state.marketScore}/100) with a verdict of ${state.verdict.replace('-', ' ').toUpperCase()}. The state has ${cities.length} tracked STR markets. Average median home value across markets is $${Math.round(cities.reduce((s, c) => s + c.medianHomeValue, 0) / (cities.length || 1)).toLocaleString()}.`,
               },
             },
             {
