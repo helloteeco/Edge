@@ -1354,7 +1354,41 @@ export default function FundingPage() {
           )}
         </div>
 
-        {/* Stuck Helper - placed after quiz, before all methods */}
+        {/* CTA - placed after quiz, before AI helper */}
+        <div 
+          className="mt-8 mb-8 rounded-2xl p-8 text-center"
+          style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)', boxShadow: '0 8px 32px -8px rgba(43, 40, 35, 0.4)' }}
+        >
+          <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
+            <BuildingIcon className="w-7 h-7" color="#ffffff" />
+          </div>
+          <h3 
+            className="font-semibold text-xl mb-2"
+            style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
+          >
+            Need Help Finding the Right Financing?
+          </h3>
+          <p className="text-sm mb-6 max-w-md mx-auto leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
+            Our network includes STR-friendly lenders, attorneys, and CPAs who can help you implement these strategies safely.
+          </p>
+          <a
+            href="https://www.zillow.com/homeloans/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ 
+              backgroundColor: '#ffffff', 
+              color: '#2b2823',
+              boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
+            }}
+          >
+            <BuildingIcon className="w-5 h-5" color="#2b2823" />
+            Connect with STR Lender
+            <ArrowRightIcon className="w-4 h-4" color="#2b2823" />
+          </a>
+        </div>
+
+        {/* Stuck Helper - placed after CTA, before all methods */}
         <StuckHelper tabName="funding" />
 
         {/* Browse All Methods */}
@@ -1607,40 +1641,6 @@ export default function FundingPage() {
             </button>
           </div>
         )}
-
-        {/* CTA */}
-        <div 
-          className="mt-8 rounded-2xl p-8 text-center"
-          style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)', boxShadow: '0 8px 32px -8px rgba(43, 40, 35, 0.4)' }}
-        >
-          <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
-            <BuildingIcon className="w-7 h-7" color="#ffffff" />
-          </div>
-          <h3 
-            className="font-semibold text-xl mb-2"
-            style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}
-          >
-            Need Help Finding the Right Financing?
-          </h3>
-          <p className="text-sm mb-6 max-w-md mx-auto leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-            Our network includes STR-friendly lenders, attorneys, and CPAs who can help you implement these strategies safely.
-          </p>
-          <a
-            href="https://www.zillow.com/homeloans/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ 
-              backgroundColor: '#ffffff', 
-              color: '#2b2823',
-              boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
-            }}
-          >
-            <BuildingIcon className="w-5 h-5" color="#2b2823" />
-            Connect with STR Lender
-            <ArrowRightIcon className="w-4 h-4" color="#2b2823" />
-          </a>
-        </div>
 
         {/* Final Disclaimer */}
 

@@ -725,17 +725,29 @@
 - [x] Make this the standard for all pages (city + state pages fixed, homepage already at bottom)
 
 ## AUDIT: Blog methodology accuracy and dynamic data (February 2026)
-- [ ] Verify blog methodology text matches actual scoring algorithm weights
-- [ ] Verify blog data (stats, city list) is truly dynamic from live data
-- [ ] Fix any discrepancies found
+- [x] Verified blog methodology text matches actual scoring algorithm weights
+- [x] Verified blog data (stats, city list) is truly dynamic from live data
+- [x] Fixed discrepancies found
 
 ## ACCURACY: Cut guest capacity bonus in half (February 2026)
-- [ ] Find guest capacity bonus formula in calculator code
-- [ ] Cut the bonus multiplier in half (e.g., +24% → +12%) to prevent overestimation
-- [ ] Real-world validation: property sleeping 12 makes $65K/yr, calculator shows $77K — too high
-- [ ] Make this the standard: conservative estimates prevent bad buying decisions
+- [x] Found guest capacity bonus formula in calculator code
+- [x] Cut the bonus multiplier in half (e.g., +24% → +12%) to prevent overestimation
+- [x] Real-world validation: property sleeping 12 makes $65K/yr, calculator shows $77K — too high
+- [x] Make this the standard: conservative estimates prevent bad buying decisions
 
 ## FIX: Blog methodology discrepancy — down payment (February 2026)
-- [ ] Blog says "25% down" but actual scoring code uses 20% down + 3% closing costs
-- [ ] Fix methodology box to match real code (20% down, 3% closing costs)
-- [ ] Update blog year from 2025 to 2026
+- [x] Blog says "25% down" but actual scoring code uses 20% down + 3% closing costs
+- [x] Fixed methodology box to match real code (20% down, 3% closing costs)
+- [x] Updated blog year from 2025 to 2026
+
+## UI: Move funding CTA higher on page (February 2026)
+- [x] Moved "Need Help Finding the Right Financing?" CTA section up between quiz results and AI helper
+- [x] Did not change any links or content, just reposition the section
+- [x] Made this the standard placement going forward
+
+## BUG: Bottom tab bar missing on blog pages (February 2026)
+- [x] Removed duplicate Footer from blog listing page (root layout already renders it)
+- [x] Removed duplicate Footer from individual blog post page
+- [x] Added pb-20 to blog pages so content doesn't overlap fixed tab bar
+- [x] Updated blog listing + layout metadata year from 2025 to 2026
+- [x] Tab bar now persists on all blog pages (root layout handles Navigation globally)

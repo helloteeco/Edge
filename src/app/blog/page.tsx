@@ -3,14 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
-import { Footer } from "@/components/Footer";
 
 const blogPosts = [
   {
     slug: "best-airbnb-markets-under-300k",
-    title: "25 Best Airbnb Markets Under $300K in 2025",
+    title: "25 Best Airbnb Markets Under $300K in 2026",
     description: "Data-driven analysis of the most profitable short-term rental markets where median home prices are under $300,000. Ranked by STR investment grade using PriceLabs data.",
-    date: "February 2025",
+    date: "February 2026",
     readTime: "8 min read",
     category: "Market Research",
     emoji: "📊",
@@ -19,7 +18,7 @@ const blogPosts = [
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 py-6">
@@ -130,7 +129,6 @@ export default function BlogPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

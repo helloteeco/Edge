@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
-import { Footer } from "@/components/Footer";
 import { getAllCities } from "@/data/helpers";
 
 export default function BestMarketsUnder300K() {
@@ -32,7 +31,7 @@ export default function BestMarketsUnder300K() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 py-6">
@@ -386,7 +385,6 @@ export default function BestMarketsUnder300K() {
         />
       </article>
 
-      <Footer />
     </div>
   );
 }
