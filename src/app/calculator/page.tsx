@@ -5929,21 +5929,25 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                             </button>
                           );
                         })()}
-                        {guest12PlusCount > 0 && (() => {
+                        {(() => {
                           const isActive = activeCompFilters.has('guest-12plus');
+                          const isDisabled = guest12PlusCount === 0;
                           return (
                             <button
-                              onClick={() => toggleFilter('guest-12plus')}
+                              onClick={() => !isDisabled && toggleFilter('guest-12plus')}
                               className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] transition-all"
                               style={{
-                                backgroundColor: isActive ? '#7c3aed' : '#f8fafc',
-                                color: isActive ? '#fff' : '#64748b',
+                                backgroundColor: isActive ? '#7c3aed' : isDisabled ? '#f1f5f9' : '#f8fafc',
+                                color: isActive ? '#fff' : isDisabled ? '#cbd5e1' : '#64748b',
                                 border: `1.5px solid ${isActive ? '#7c3aed' : '#e2e8f0'}`,
                                 fontWeight: isActive ? 700 : 500,
                                 boxShadow: isActive ? '0 1px 3px rgba(124,58,237,0.3)' : 'none',
+                                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                opacity: isDisabled ? 0.5 : 1,
                               }}
+                              disabled={isDisabled}
                             >
-                              Sleeps 12+ <span style={{ opacity: isActive ? 0.9 : 0.5, fontSize: '9px', fontWeight: 600 }}>{guest12PlusCount} comps</span>
+                              Sleeps 12+ <span style={{ opacity: isActive ? 0.9 : 0.4, fontSize: '9px', fontWeight: 600 }}>{guest12PlusCount} comps</span>
                             </button>
                           );
                         })()}

@@ -673,13 +673,16 @@
 - [ ] No major feature changes
 
 ## FIX: Confusing guest filter pill labels (February 2026)
-- [ ] Fix guest filter pills showing confusing "6+ 16" label — make labels intuitive and self-explanatory
-- [ ] Add 5+ BR filter pill to bedroom filters for large property analysis
+- [x] Fix guest filter pills showing confusing "6+ 16" label — make labels intuitive and self-explanatory
+- [x] Add 5+ BR filter pill to bedroom filters for large property analysis
 
 ## POLISH: Investor-grade comp filter UX (February 2026)
-- [ ] Rethink filter labels from $100K investor perspective — every label must be instantly self-explanatory
-- [ ] Fix count display format — parenthesized counts should read as "X of Y comps match" not random numbers
-- [ ] Make filter groupings logical for investment analysis (proximity → property match → amenity premium)
-- [ ] Ensure active/inactive states are unmistakable at a glance
-- [ ] Add 5+ BR filter for large property investors
-- [ ] No features deleted
+- [x] Rethink filter labels from $100K investor perspective — every label must be instantly self-explanatory
+- [x] Fix count display format — parenthesized counts should read as "X of Y comps match" not random numbers
+- [x] Make filter groupings logical for investment analysis (proximity → property match → amenity premium)
+- [x] Ensure active/inactive states are unmistakable at a glance
+- [x] Add 5+ BR filter for large property investors
+- [x] No features deleted
+
+## FIX: Sleeps 12+ guest filter pill not visible (February 2026)
+- [ ] Show Sleeps 12+ pill always, grayed out when 0 comps match (same pattern as amenity pills)
