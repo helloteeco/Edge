@@ -294,6 +294,9 @@ export default function CalculatorPage() {
   const [compDistanceFilter, setCompDistanceFilter] = useState<number | null>(null);
   // Active comp filters: each filter auto-excludes comps that don't match
   const [activeCompFilters, setActiveCompFilters] = useState<Set<string>>(new Set());
+  const [savedFilterPresets, setSavedFilterPresets] = useState<Array<{ name: string; filters: string[] }>>([]);
+  const [showSavePresetInput, setShowSavePresetInput] = useState(false);
+  const [presetName, setPresetName] = useState('');
   
   // Full unfiltered comp set from API — used for local bedroom re-filtering
   const [allComps, setAllComps] = useState<ComparableListing[]>([]);
@@ -416,6 +419,14 @@ export default function CalculatorPage() {
       .catch(() => setFmrError("Failed to fetch rent data"))
       .finally(() => setIsLoadingFmr(false));
   }, [result?.state, result?.city]);
+
+  // Load saved filter presets from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('compFilterPresets');
+      if (saved) setSavedFilterPresets(JSON.parse(saved));
+    } catch {}
+  }, []);
 
   // Reset excluded comps and collapse comp list when a new analysis is run
   useEffect(() => {
@@ -5659,7 +5670,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   (key === 'sauna' && a.includes('sauna')) ||
                   (key === 'pool' && a.includes('pool') && !a.includes('pool table')) ||
                   (key === 'fireplace' && a.includes('fireplace')) ||
-                  (key === 'game room' && (a.includes('game') || a.includes('arcade') || a.includes('ping pong') || a.includes('pool table')))
+                  (key === 'game room' && (a.includes('game') || a.includes('arcade') || a.includes('ping pong') || a.includes('pool table'))) ||
+                  (key === 'pet' && (a.includes('pet') || a.includes('dog') || a.includes('cat') || a.includes('animal')))
                 );
               };
               
@@ -5672,6 +5684,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 { key: 'sauna', label: '🧖 Sauna', icon: '' },
                 { key: 'pool', label: '🏊 Pool', icon: '' },
                 { key: 'game room', label: '🎮 Game Room', icon: '' },
+                { key: 'pet', label: '🐾 Pet Friendly', icon: '' },
               ];
               // Guest count options
               const guest12PlusCount = distanceFilteredComps.filter(c => (c.accommodates || 0) >= 12).length;
@@ -5772,9 +5785,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               return (
               <div className="rounded-2xl p-6" style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
-                    Nearby {result.bedrooms === 6 ? "6+" : result.bedrooms}BR STR Listings
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold" style={{ color: "#2b2823" }}>
+                      Nearby {result.bedrooms === 6 ? "6+" : result.bedrooms}BR STR Listings
+                    </h3>
+                    {activeCompFilters.size > 0 && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+                        {activeCompFilters.size} filter{activeCompFilters.size !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: `${confidenceColor}15`, color: confidenceColor }}>
                     {confidenceLabel} Confidence
                   </span>
@@ -5992,11 +6012,131 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                     })}
                   </div>
                   
-                  {/* Active filter summary */}
+                  {/* Active filter summary + Save This View */}
                   {activeCompFilters.size > 0 && (
-                    <p className="text-[10px] mt-1.5 pt-1.5" style={{ color: '#92400e', borderTop: '1px solid #e5e3da' }}>
-                      Showing only comps that match <strong>all</strong> selected filters. Revenue updates automatically.
-                    </p>
+                    <div className="mt-1.5 pt-1.5 flex items-center justify-between" style={{ borderTop: '1px solid #e5e3da' }}>
+                      <p className="text-[10px]" style={{ color: '#92400e' }}>
+                        Showing only comps that match <strong>all</strong> selected filters. Revenue updates automatically.
+                      </p>
+                      {!showSavePresetInput ? (
+                        <button
+                          onClick={() => { setShowSavePresetInput(true); setPresetName(''); }}
+                          className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-md transition-all ml-2"
+                          style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}
+                        >
+                          💾 Save View
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 ml-2">
+                          <input
+                            type="text"
+                            value={presetName}
+                            onChange={e => setPresetName(e.target.value)}
+                            placeholder="Name this view..."
+                            className="text-[10px] px-2 py-0.5 rounded-md border"
+                            style={{ width: '110px', borderColor: '#d1d5db' }}
+                            autoFocus
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && presetName.trim()) {
+                                const newPreset = { name: presetName.trim(), filters: Array.from(activeCompFilters) };
+                                const updated = [...savedFilterPresets, newPreset];
+                                setSavedFilterPresets(updated);
+                                localStorage.setItem('compFilterPresets', JSON.stringify(updated));
+                                setShowSavePresetInput(false);
+                                setPresetName('');
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              if (presetName.trim()) {
+                                const newPreset = { name: presetName.trim(), filters: Array.from(activeCompFilters) };
+                                const updated = [...savedFilterPresets, newPreset];
+                                setSavedFilterPresets(updated);
+                                localStorage.setItem('compFilterPresets', JSON.stringify(updated));
+                                setShowSavePresetInput(false);
+                                setPresetName('');
+                              }
+                            }}
+                            className="text-[10px] font-medium px-2 py-0.5 rounded-md"
+                            style={{ backgroundColor: '#16a34a', color: '#fff' }}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            onClick={() => setShowSavePresetInput(false)}
+                            className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                            style={{ backgroundColor: '#f3f4f6', color: '#6b7280' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Saved filter presets */}
+                  {savedFilterPresets.length > 0 && (
+                    <div className="mt-1.5 pt-1.5 flex items-center gap-1.5 overflow-x-auto" style={{ borderTop: activeCompFilters.size > 0 ? 'none' : '1px solid #e5e3da', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      <span className="flex-shrink-0 text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#9ca3af' }}>Saved</span>
+                      {savedFilterPresets.map((preset, i) => {
+                        const isActive = preset.filters.length === activeCompFilters.size && preset.filters.every(f => activeCompFilters.has(f));
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              const newFilters = new Set(preset.filters);
+                              setActiveCompFilters(newFilters);
+                              // Apply the filters
+                              const newExcluded = new Set<number>();
+                              distanceFilteredComps.forEach(c => {
+                                let shouldExclude = false;
+                                newFilters.forEach(f => {
+                                  if (f.startsWith('radius:')) {
+                                    const miles = parseFloat(f.split(':')[1]);
+                                    if ((c.distance || 0) > miles) shouldExclude = true;
+                                  } else if (f === 'guest-match') {
+                                    if ((c.accommodates || 0) < userGuests) shouldExclude = true;
+                                  } else if (f === 'guest-12plus') {
+                                    if ((c.accommodates || 0) < 12) shouldExclude = true;
+                                  } else if (f === 'br-exact') {
+                                    if (c.bedrooms !== userBR) shouldExclude = true;
+                                  } else if (f === 'br-plusminus') {
+                                    if (Math.abs((c.bedrooms || 0) - userBR) > 1) shouldExclude = true;
+                                  } else {
+                                    if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
+                                  }
+                                });
+                                if (shouldExclude) newExcluded.add(c.id);
+                              });
+                              setExcludedCompIds(newExcluded);
+                              setSelectOnlyMode(true);
+                              setShowAllComps(true);
+                            }}
+                            className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all"
+                            style={{
+                              backgroundColor: isActive ? '#1d4ed8' : '#fff',
+                              color: isActive ? '#fff' : '#4b5563',
+                              border: `1px solid ${isActive ? '#1d4ed8' : '#d1d5db'}`,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {preset.name}
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = savedFilterPresets.filter((_, idx) => idx !== i);
+                                setSavedFilterPresets(updated);
+                                localStorage.setItem('compFilterPresets', JSON.stringify(updated));
+                              }}
+                              className="ml-0.5 opacity-50 hover:opacity-100 cursor-pointer"
+                              style={{ fontSize: '8px' }}
+                            >
+                              ✕
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
                 {/* Data source explanation */}
