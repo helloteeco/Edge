@@ -16,7 +16,7 @@ export default function AirbnbCalculatorLanding() {
       >
         <div className="max-w-2xl mx-auto">
           <Link href="/" className="inline-flex items-center gap-2 mb-6 opacity-80 hover:opacity-100 transition-opacity">
-            <Image src="/teeco-icon.png" alt="Edge by Teeco" width={28} height={28} className="w-7 h-7" />
+            <Image src="/teeco-icon-black.png" alt="Edge by Teeco" width={32} height={32} className="w-8 h-8 invert" />
             <span style={{ color: '#e5e3da', fontFamily: 'Source Serif Pro, Georgia, serif', fontWeight: 600, fontSize: '1.1rem' }}>
               Edge by Teeco
             </span>

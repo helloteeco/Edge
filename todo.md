@@ -751,3 +751,8 @@
 - [x] Added pb-20 to blog pages so content doesn't overlap fixed tab bar
 - [x] Updated blog listing + layout metadata year from 2025 to 2026
 - [x] Tab bar now persists on all blog pages (root layout handles Navigation globally)
+
+## UI: Update /airbnb-calculator logo to match homepage (February 2026)
+- [x] Find the logo component/image used on the homepage and map (teeco-icon-black.png with invert)
+- [x] Update the /airbnb-calculator SEO landing page to use the same logo
+- [x] Do not change anything else on the page (only 1 line changed)
