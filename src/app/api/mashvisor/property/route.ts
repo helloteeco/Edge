@@ -751,14 +751,31 @@ function getMarketType(lat: number, lng: number): string {
       (lat >= 43 && lat <= 48 && lng >= -115 && lng <= -110) || // Idaho/Montana (ski)
       (lat >= 34 && lat <= 37 && lng >= -112 && lng <= -109))   // Arizona mountains (Sedona, Flagstaff — winter escape)
     return "mountain";
-  if ((lat >= 24 && lat <= 31 && lng >= -88 && lng <= -80) ||
-      (lat >= 32 && lat <= 38 && lng >= -124 && lng <= -117)) return "beach";
+  // Beach markets — Florida coastal + California coastal
+  // For Florida: exclude inland areas (Gainesville, Orlando, Ocala, etc.)
+  // Coastal FL is roughly within 0.25 degrees (~17mi) of the coast
+  const isFloridaCoastal = (() => {
+    if (lat < 24 || lat > 31 || lng < -88 || lng > -80) return false;
+    // South FL (Miami, Fort Lauderdale, Keys) — always coastal
+    if (lat < 26.5) return true;
+    // Gulf coast (Tampa, Naples, Sarasota) — west of -81.5
+    if (lng < -81.5 && lat < 28.5) return true;
+    // Atlantic coast — east of -81.0 (Jacksonville, Daytona, Palm Coast)
+    if (lng > -81.0) return true;
+    // Panhandle coast (Destin, Panama City) — north FL, close to coast
+    if (lat > 29.5 && lng < -85) return true;
+    // Everything else in FL is inland (Gainesville, Orlando, Ocala, Tallahassee interior)
+    return false;
+  })();
+  if (isFloridaCoastal || (lat >= 32 && lat <= 38 && lng >= -124 && lng <= -117)) return "beach";
   if ((lat >= 35 && lat <= 37 && lng >= -86 && lng <= -84) ||
       (lat >= 42 && lat <= 47 && lng >= -90 && lng <= -82)) return "lake";
   if (lat >= 31 && lat <= 37 && lng >= -115 && lng <= -109) return "desert";
   if ((lat >= 40.5 && lat <= 41 && lng >= -74.5 && lng <= -73.5) ||
       (lat >= 33.5 && lat <= 34.5 && lng >= -118.5 && lng <= -117.5) ||
       (lat >= 41.5 && lat <= 42 && lng >= -88 && lng <= -87)) return "urban";
+  // Inland Florida (Gainesville, Orlando, Ocala, etc.) — suburban/college market
+  if (lat >= 24 && lat <= 31 && lng >= -88 && lng <= -80) return "suburban";
   return "rural";
 }
 
@@ -810,6 +827,13 @@ function getRecommendedAmenities(lat: number, lng: number): any[] {
       { name: "Gym Access", boost: 10, priority: "HIGH IMPACT", icon: "🏋️" },
       { name: "Rooftop/Balcony", boost: 12, priority: "HIGH IMPACT", icon: "🌆" },
       { name: "Washer/Dryer", boost: 8, priority: "NICE TO HAVE", icon: "🧺" },
+    ],
+    suburban: [
+      { name: "Pool", boost: 25, priority: "MUST HAVE", icon: "🏊" },
+      { name: "Hot Tub", boost: 18, priority: "MUST HAVE", icon: "♨️" },
+      { name: "Game Room", boost: 12, priority: "HIGH IMPACT", icon: "🎮" },
+      { name: "Fire Pit", boost: 10, priority: "HIGH IMPACT", icon: "🪵" },
+      { name: "Pet-Friendly", boost: 8, priority: "NICE TO HAVE", icon: "🐾" },
     ],
     rural: [
       { name: "Hot Tub", boost: 18, priority: "MUST HAVE", icon: "♨️" },

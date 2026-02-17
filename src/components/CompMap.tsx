@@ -286,9 +286,9 @@ function ensureAllStyles(): void {
     .leaflet-bar a {
       background-color: #fff;
       border-bottom: 1px solid #ccc;
-      width: 26px;
-      height: 26px;
-      line-height: 26px;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
       display: block;
       text-align: center;
       text-decoration: none;
@@ -319,9 +319,9 @@ function ensureAllStyles(): void {
       color: #bbb;
     }
     .leaflet-touch .leaflet-bar a {
-      width: 30px;
-      height: 30px;
-      line-height: 30px;
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
     }
     .leaflet-touch .leaflet-bar a:first-child {
       border-top-left-radius: 2px;
@@ -335,12 +335,12 @@ function ensureAllStyles(): void {
     /* Zoom control */
     .leaflet-control-zoom-in,
     .leaflet-control-zoom-out {
-      font: bold 18px 'Lucida Console', Monaco, monospace;
+      font: bold 20px 'Lucida Console', Monaco, monospace;
       text-indent: 1px;
     }
     .leaflet-touch .leaflet-control-zoom-in,
     .leaflet-touch .leaflet-control-zoom-out {
-      font-size: 22px;
+      font-size: 24px;
     }
 
     /* Attribution */
@@ -468,16 +468,32 @@ function ensureAllStyles(): void {
       color: white;
       padding: 4px 8px;
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       font-family: system-ui, -apple-system, sans-serif;
       white-space: nowrap;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
       position: relative;
       text-align: center;
       line-height: 1;
+    }
+    .comp-price-tag.hidden-at-zoom {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .comp-price-tag.dot-mode {
+      width: 10px;
+      height: 10px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 0;
+      min-width: 10px;
+      min-height: 10px;
+    }
+    .comp-price-tag.dot-mode::after {
+      display: none;
     }
     .comp-price-tag:hover {
       transform: scale(1.1);
@@ -847,30 +863,83 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
 
       markersRef.current = markers;
 
-      // ===== FIT BOUNDS — zoom to show all markers =====
+      // ===== ZOOM-DEPENDENT MARKER VISIBILITY =====
+      // At low zoom levels, convert distant/overlapping markers to dots
+      const updateMarkerVisibility = () => {
+        if (!map) return;
+        const zoom = map.getZoom();
+        const bounds = map.getBounds();
+        
+        validComps.forEach((comp, i) => {
+          const el = document.querySelector(`.comp-price-tag[data-comp-id="${comp.id}"]`) as HTMLElement;
+          if (!el) return;
+          
+          const isInView = bounds.contains([comp.latitude, comp.longitude]);
+          
+          if (!isInView) {
+            // Out of view — hide completely
+            el.classList.add('hidden-at-zoom');
+            el.classList.remove('dot-mode');
+          } else if (zoom <= 10) {
+            // Very zoomed out — show dots only
+            el.classList.remove('hidden-at-zoom');
+            el.classList.add('dot-mode');
+          } else if (zoom <= 12 && validComps.length > 15) {
+            // Medium zoom with many comps — show dots for lower-relevance comps
+            if (i >= 10) {
+              el.classList.remove('hidden-at-zoom');
+              el.classList.add('dot-mode');
+            } else {
+              el.classList.remove('hidden-at-zoom');
+              el.classList.remove('dot-mode');
+            }
+          } else {
+            // Zoomed in enough — show all price tags
+            el.classList.remove('hidden-at-zoom');
+            el.classList.remove('dot-mode');
+          }
+        });
+      };
+      
+      map.on('zoomend', updateMarkerVisibility);
+      map.on('moveend', updateMarkerVisibility);
+
+      // ===== FIT BOUNDS — smart outlier exclusion =====
       const doFitBounds = () => {
         if (!map || !mapRef.current) return;
         
         if (validComps.length > 0) {
-          // Show ALL comps the backend returned (only 0/0 coords filtered out)
-          const allPoints = [
-            [targetLat, targetLng],
-            ...validComps.map((c) => [c.latitude, c.longitude]),
-          ];
-          const bounds = L.latLngBounds(allPoints as [number, number][]);
-
-          // fitBounds to show target + all comps; maxZoom 15 for tight clusters
-          map.invalidateSize({ animate: false });
-          map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15, animate: false });
+          // Calculate distances from target to detect outliers
+          const compsWithDist = validComps.map(c => ({
+            lat: c.latitude,
+            lng: c.longitude,
+            dist: Math.sqrt(Math.pow(c.latitude - targetLat, 2) + Math.pow(c.longitude - targetLng, 2)),
+          }));
           
-          // Don't clamp zoom — comps may span a wide area and that's OK
+          // Sort by distance and use IQR to detect outliers
+          const sorted = [...compsWithDist].sort((a, b) => a.dist - b.dist);
+          const q75Idx = Math.floor(sorted.length * 0.75);
+          const q75Dist = sorted[q75Idx]?.dist || 0;
+          const outlierThreshold = q75Dist * 2.5; // 2.5x the 75th percentile distance
+          
+          // Include target + non-outlier comps for initial bounds
+          const corePoints: [number, number][] = [[targetLat, targetLng]];
+          compsWithDist.forEach(c => {
+            if (c.dist <= outlierThreshold || validComps.length <= 5) {
+              corePoints.push([c.lat, c.lng]);
+            }
+          });
+          
+          const bounds = L.latLngBounds(corePoints);
+          map.invalidateSize({ animate: false });
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
         }
       };
 
       // Run fitBounds after map is ready and container is fully laid out
       doFitBounds();
-      setTimeout(doFitBounds, 300);
-      setTimeout(doFitBounds, 600);
+      setTimeout(() => { doFitBounds(); updateMarkerVisibility(); }, 300);
+      setTimeout(() => { doFitBounds(); updateMarkerVisibility(); }, 600);
 
       setIsMapReady(true);
     };
@@ -929,9 +998,47 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
               Nearby STR Listings
             </h3>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: "#f5f4f0", color: "#787060" }}>
-            {validComps.length} listings
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: "#f5f4f0", color: "#787060" }}>
+              {validComps.length} listings
+            </span>
+            {isMapReady && (
+              <button
+                onClick={() => {
+                  const map = mapInstanceRef.current;
+                  if (!map) return;
+                  // Refit bounds using same outlier logic
+                  const compsWithDist = validComps.map(c => ({
+                    lat: c.latitude, lng: c.longitude,
+                    dist: Math.sqrt(Math.pow(c.latitude - targetLat, 2) + Math.pow(c.longitude - targetLng, 2)),
+                  }));
+                  const sorted = [...compsWithDist].sort((a, b) => a.dist - b.dist);
+                  const q75Idx = Math.floor(sorted.length * 0.75);
+                  const q75Dist = sorted[q75Idx]?.dist || 0;
+                  const outlierThreshold = q75Dist * 2.5;
+                  const L = (window as any).L || map.options?._L;
+                  const corePoints: [number, number][] = [[targetLat, targetLng]];
+                  compsWithDist.forEach(c => {
+                    if (c.dist <= outlierThreshold || validComps.length <= 5) corePoints.push([c.lat, c.lng]);
+                  });
+                  try {
+                    // Use dynamic import since L may not be on window
+                    import('leaflet').then(leaflet => {
+                      const bounds = leaflet.default.latLngBounds(corePoints);
+                      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+                    });
+                  } catch {
+                    map.setView([targetLat, targetLng], 13, { animate: true });
+                  }
+                }}
+                className="text-xs px-2 py-1 rounded-full font-medium transition-opacity hover:opacity-80"
+                style={{ backgroundColor: "#2b2823", color: "white" }}
+                title="Re-center map"
+              >
+                ⟳ Fit
+              </button>
+            )}
+          </div>
         </div>
         {/* Data source explanation */}
         {isPriceLabs && listingsAnalyzed ? (
@@ -1017,7 +1124,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
       <div
         style={{
           width: "100%",
-          height: "300px",
+          height: "420px",
           position: "relative",
           overflow: "hidden",
           isolation: "isolate",

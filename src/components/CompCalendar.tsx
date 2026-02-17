@@ -24,9 +24,10 @@ interface CompCalendarProps {
     lowMonths: string[];
     dailyCalendar?: CalendarDay[];
   }>;
+  excludedCompIds?: Set<number | string>;
 }
 
-export default function CompCalendar({ comparables, occupancyData }: CompCalendarProps) {
+export default function CompCalendar({ comparables, occupancyData, excludedCompIds = new Set() }: CompCalendarProps) {
   const [selectedCompIdx, setSelectedCompIdx] = useState(0);
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
@@ -152,6 +153,10 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
       </div>
 
       {/* Comp selector pills */}
+      <div className="relative">
+      {compsWithCalendar.length > 3 && (
+        <div className="absolute right-0 top-0 bottom-3 w-8 pointer-events-none z-10" style={{ background: 'linear-gradient(to right, transparent, white)' }} />
+      )}
       <div className="flex gap-2 overflow-x-auto pb-3 mb-3 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
         {compsWithCalendar.map((comp, i) => (
           <button
@@ -159,14 +164,20 @@ export default function CompCalendar({ comparables, occupancyData }: CompCalenda
             onClick={() => setSelectedCompIdx(i)}
             className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
             style={{
-              backgroundColor: selectedCompIdx === i ? "#2b2823" : "#f5f4f0",
-              color: selectedCompIdx === i ? "#ffffff" : "#787060",
-              border: selectedCompIdx === i ? "none" : "1px solid #e5e3da",
+              backgroundColor: selectedCompIdx === i ? "#2b2823" : (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) ? "#f9fafb" : "#f5f4f0",
+              color: selectedCompIdx === i ? "#ffffff" : (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) ? "#d1d5db" : "#787060",
+              border: selectedCompIdx === i ? "none" : (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) ? "1px dashed #d1d5db" : "1px solid #e5e3da",
+              opacity: (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) && selectedCompIdx !== i ? 0.6 : 1,
             }}
           >
+            {excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId) ? '✕ ' : ''}
             #{comp.idx + 1} {comp.name.length > 20 ? comp.name.slice(0, 20) + "…" : comp.name}
           </button>
         ))}
+      </div>
+      {compsWithCalendar.length > 3 && (
+        <p className="text-[10px] text-center -mt-2 mb-2" style={{ color: '#9ca3af' }}>Swipe to see all {compsWithCalendar.length} comps →</p>
+      )}
       </div>
 
       {/* Month navigation */}

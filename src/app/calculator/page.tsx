@@ -5909,6 +5909,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   occupancy: c.occupancy,
                 }))}
                 occupancyData={realOccupancyData}
+                excludedCompIds={excludedCompIds}
               />
             )}
 
