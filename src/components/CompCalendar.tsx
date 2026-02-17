@@ -24,7 +24,7 @@ interface CompCalendarProps {
     lowMonths: string[];
     dailyCalendar?: CalendarDay[];
   }>;
-  excludedCompIds?: Set<number | string>;
+  excludedCompIds?: Set<string>;
 }
 
 export default function CompCalendar({ comparables, occupancyData, excludedCompIds = new Set() }: CompCalendarProps) {
@@ -164,13 +164,13 @@ export default function CompCalendar({ comparables, occupancyData, excludedCompI
             onClick={() => setSelectedCompIdx(i)}
             className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
             style={{
-              backgroundColor: selectedCompIdx === i ? "#2b2823" : (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) ? "#f9fafb" : "#f5f4f0",
-              color: selectedCompIdx === i ? "#ffffff" : (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) ? "#d1d5db" : "#787060",
-              border: selectedCompIdx === i ? "none" : (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) ? "1px dashed #d1d5db" : "1px solid #e5e3da",
-              opacity: (excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId)) && selectedCompIdx !== i ? 0.6 : 1,
+              backgroundColor: selectedCompIdx === i ? "#2b2823" : excludedCompIds.has(String(comp.roomId)) ? "#f9fafb" : "#f5f4f0",
+              color: selectedCompIdx === i ? "#ffffff" : excludedCompIds.has(String(comp.roomId)) ? "#d1d5db" : "#787060",
+              border: selectedCompIdx === i ? "none" : excludedCompIds.has(String(comp.roomId)) ? "1px dashed #d1d5db" : "1px solid #e5e3da",
+              opacity: excludedCompIds.has(String(comp.roomId)) && selectedCompIdx !== i ? 0.6 : 1,
             }}
           >
-            {excludedCompIds.has(Number(comp.roomId)) || excludedCompIds.has(comp.roomId) ? '✕ ' : ''}
+            {excludedCompIds.has(String(comp.roomId)) ? '✕ ' : ''}
             #{comp.idx + 1} {comp.name.length > 20 ? comp.name.slice(0, 20) + "…" : comp.name}
           </button>
         ))}

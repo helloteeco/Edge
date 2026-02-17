@@ -69,7 +69,7 @@ interface PercentileData {
 }
 
 interface ComparableListing {
-  id: number;
+  id: string;
   name: string;
   url: string;
   image: string | null;
@@ -283,7 +283,7 @@ export default function CalculatorPage() {
   const [isCreatingShareLink, setIsCreatingShareLink] = useState(false);
   
   // Custom comp selection: track excluded comp IDs
-  const [excludedCompIds, setExcludedCompIds] = useState<Set<number | string>>(new Set());
+  const [excludedCompIds, setExcludedCompIds] = useState<Set<string>>(new Set());
   // Expandable comp cards: show 5 initially, expand to all
   const [showAllComps, setShowAllComps] = useState(false);
   // Comp sorting: 'relevance' (default), 'revenue', 'distance', 'bedrooms', 'occupancy', 'rating'
@@ -311,13 +311,15 @@ export default function CalculatorPage() {
   
   
   // Toggle a comp in/out of the selection
-  const toggleCompExclusion = (compId: number | string) => {
+  // Normalize all IDs to strings for consistent Set comparison
+  const toggleCompExclusion = (compId: string | number) => {
+    const id = String(compId);
     setExcludedCompIds(prev => {
-      const next = new Set(prev);
-      if (next.has(compId)) {
-        next.delete(compId);
+      const next = new Set(Array.from(prev).map(String));
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(compId);
+        next.add(id);
       }
       return next;
     });
@@ -342,7 +344,7 @@ export default function CalculatorPage() {
   // Get the active (included) comps
   const getActiveComps = (): ComparableListing[] => {
     if (!result?.comparables) return [];
-    return result.comparables.filter(c => !excludedCompIds.has(c.id));
+    return result.comparables.filter(c => !excludedCompIds.has(String(c.id)));
   };
   
   // Recalculate revenue from active comps only, with percentile support
@@ -1030,7 +1032,7 @@ export default function CalculatorPage() {
                   listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
                   nearbyListings: parseNum(neighborhood?.listingsCount),
                   percentiles: percentiles as AnalysisResult["percentiles"] || null,
-                  comparables: (data.comparables as ComparableListing[]) || [],
+                  comparables: ((data.comparables as any[]) || []).map((c: any) => ({ ...c, id: String(c.id) })) as ComparableListing[],
                   revenueChange: (neighborhood?.revenueChange as string) || "stable",
                   revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
                   occupancyChange: (neighborhood?.occupancyChange as string) || "stable",
@@ -1604,7 +1606,7 @@ export default function CalculatorPage() {
       listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
       nearbyListings: parseNum(neighborhood?.listingsCount),
       percentiles: percentiles || null,
-      comparables: (data.comparables as ComparableListing[]) || [],
+      comparables: ((data.comparables as any[]) || []).map((c: any) => ({ ...c, id: String(c.id) })) as ComparableListing[],
       revenueChange: (neighborhood?.revenueChange as string) || "stable",
       revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
       occupancyChange: (neighborhood?.occupancyChange as string) || "stable",
@@ -2434,7 +2436,7 @@ export default function CalculatorPage() {
         listPrice: parseNum(property?.listPrice) || parseNum(property?.lastSalePrice) || parseNum(neighborhood?.medianPrice),
         nearbyListings: parseNum(neighborhood?.listingsCount),
         percentiles: percentiles || null,
-        comparables: comparables || [],
+        comparables: (comparables || []).map((c: any) => ({ ...c, id: String(c.id) })),
         revenueChange: neighborhood?.revenueChange || "stable",
         revenueChangePercent: parseNum(neighborhood?.revenueChangePercent),
         occupancyChange: neighborhood?.occupancyChange || "stable",
@@ -3675,7 +3677,7 @@ export default function CalculatorPage() {
     </div>
     <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Active short-term rental listings near this property. Revenue estimates are based on a larger dataset of ${result.percentiles?.listingsAnalyzed || result.nearbyListings || '300+'} properties.</p>
     <div>
-      ${result.comparables.filter(c => !excludedCompIds.has(c.id)).slice(0, 8).map((c, i) => `
+      ${result.comparables.filter(c => !excludedCompIds.has(String(c.id))).slice(0, 8).map((c, i) => `
       <div class="comp-card no-break">
         <div class="comp-rank">${i + 1}</div>
         <div class="comp-info">
@@ -5131,7 +5133,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {(() => {
                 const compRevForDisplay = excludedCompIds.size > 0 ? getCompBasedRevenue() : null;
                 const gmForDisplay = getGuestCountMultiplier();
-                const activeCount = result.comparables ? result.comparables.filter(c => !excludedCompIds.has(c.id)).length : 0;
+                const activeCount = result.comparables ? result.comparables.filter(c => !excludedCompIds.has(String(c.id))).length : 0;
                 const totalCount = result.comparables?.length || 0;
                 
                 // Range values: use comp-based when exclusions active, otherwise PriceLabs
@@ -5655,7 +5657,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             {result.comparables && result.comparables.length > 0 && (() => {
               // Calculate confidence score based on ACTIVE comp quality
               const allComps = result.comparables;
-              const activeComps = allComps.filter(c => !excludedCompIds.has(c.id));
+              const activeComps = allComps.filter(c => !excludedCompIds.has(String(c.id)));
               // Apply distance filter to visible comps
               const distanceFilteredComps = compDistanceFilter !== null
                 ? allComps.filter(c => (c.distance || 0) <= compDistanceFilter)
@@ -5693,8 +5695,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               const plusMinusBRCount = distanceFilteredComps.filter(c => Math.abs((c.bedrooms || 0) - userBR) <= 1).length;
               
               // Apply active filters to auto-exclude comps
-              const applyFilters = (filterSet: Set<string>): Set<number> => {
-                const newExcluded = new Set<number>();
+              const applyFilters = (filterSet: Set<string>): Set<string> => {
+                const newExcluded = new Set<string>();
                 distanceFilteredComps.forEach(c => {
                   let shouldExclude = false;
                   filterSet.forEach(f => {
@@ -5714,7 +5716,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
                     }
                   });
-                  if (shouldExclude) newExcluded.add(c.id);
+                  if (shouldExclude) newExcluded.add(String(c.id));
                 });
                 return newExcluded;
               };
@@ -5812,9 +5814,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         const top5 = [...distanceFilteredComps]
                           .sort((a, b) => (b.annualRevenue || 0) - (a.annualRevenue || 0))
                           .slice(0, 5)
-                          .map(c => c.id);
+                          .map(c => String(c.id));
                         const top5Set = new Set(top5);
-                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
+                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(String(c.id))).map(c => String(c.id)));
                         setExcludedCompIds(newExcluded);
                         setSelectOnlyMode(true);
                         setActiveCompFilters(new Set());
@@ -5836,12 +5838,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         bestFilters.add('radius:5');
                         bestFilters.add('br-exact');
                         setActiveCompFilters(bestFilters);
-                        const newExcluded = new Set<number>();
+                        const newExcluded = new Set<string>();
                         distanceFilteredComps.forEach(c => {
                           let shouldExclude = false;
                           if ((c.distance || 0) > 5) shouldExclude = true;
                           if (c.bedrooms !== userBR) shouldExclude = true;
-                          if (shouldExclude) newExcluded.add(c.id);
+                          if (shouldExclude) newExcluded.add(String(c.id));
                         });
                         setExcludedCompIds(newExcluded);
                         setSelectOnlyMode(true);
@@ -5885,14 +5887,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           <button
                             key={key}
                             onClick={() => toggleFilter(key)}
-                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
                             style={{
-                              backgroundColor: isActive ? '#1d4ed8' : '#fff',
-                              color: isActive ? '#fff' : '#4b5563',
-                              border: `1px solid ${isActive ? '#1d4ed8' : '#d1d5db'}`,
+                              backgroundColor: isActive ? '#1d4ed8' : '#f8fafc',
+                              color: isActive ? '#fff' : '#64748b',
+                              border: `1.5px solid ${isActive ? '#1d4ed8' : '#e2e8f0'}`,
+                              fontWeight: isActive ? 700 : 500,
+                              boxShadow: isActive ? '0 1px 3px rgba(29,78,216,0.3)' : 'none',
                             }}
                           >
-                            {r}mi <span style={{ opacity: 0.6, fontSize: '9px' }}>{count}</span>
+                            {r}mi <span style={{ opacity: isActive ? 0.85 : 0.5, fontSize: '9px' }}>{count}</span>
                           </button>
                         );
                       })}
@@ -5909,14 +5913,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           return (
                             <button
                               onClick={() => toggleFilter('guest-match')}
-                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
                               style={{
-                                backgroundColor: isActive ? '#7c3aed' : '#fff',
-                                color: isActive ? '#fff' : '#4b5563',
-                                border: `1px solid ${isActive ? '#7c3aed' : '#d1d5db'}`,
+                                backgroundColor: isActive ? '#7c3aed' : '#f8fafc',
+                                color: isActive ? '#fff' : '#64748b',
+                                border: `1.5px solid ${isActive ? '#7c3aed' : '#e2e8f0'}`,
+                                fontWeight: isActive ? 700 : 500,
+                                boxShadow: isActive ? '0 1px 3px rgba(124,58,237,0.3)' : 'none',
                               }}
                             >
-                              {userGuests}+ <span style={{ opacity: 0.6, fontSize: '9px' }}>{guestMatchCount}</span>
+                              {userGuests}+ <span style={{ opacity: isActive ? 0.85 : 0.5, fontSize: '9px' }}>{guestMatchCount}</span>
                             </button>
                           );
                         })()}
@@ -5925,14 +5931,16 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           return (
                             <button
                               onClick={() => toggleFilter('guest-12plus')}
-                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                              className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
                               style={{
-                                backgroundColor: isActive ? '#7c3aed' : '#fff',
-                                color: isActive ? '#fff' : '#4b5563',
-                                border: `1px solid ${isActive ? '#7c3aed' : '#d1d5db'}`,
+                                backgroundColor: isActive ? '#7c3aed' : '#f8fafc',
+                                color: isActive ? '#fff' : '#64748b',
+                                border: `1.5px solid ${isActive ? '#7c3aed' : '#e2e8f0'}`,
+                                fontWeight: isActive ? 700 : 500,
+                                boxShadow: isActive ? '0 1px 3px rgba(124,58,237,0.3)' : 'none',
                               }}
                             >
-                              12+ <span style={{ opacity: 0.6, fontSize: '9px' }}>{guest12PlusCount}</span>
+                              12+ <span style={{ opacity: isActive ? 0.85 : 0.5, fontSize: '9px' }}>{guest12PlusCount}</span>
                             </button>
                           );
                         })()}
@@ -5949,27 +5957,31 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                               {exactBRCount > 0 && (
                                 <button
                                   onClick={() => toggleFilter('br-exact')}
-                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
                                   style={{
-                                    backgroundColor: isExact ? '#0369a1' : '#fff',
-                                    color: isExact ? '#fff' : '#4b5563',
-                                    border: `1px solid ${isExact ? '#0369a1' : '#d1d5db'}`,
+                                    backgroundColor: isExact ? '#0369a1' : '#f8fafc',
+                                    color: isExact ? '#fff' : '#64748b',
+                                    border: `1.5px solid ${isExact ? '#0369a1' : '#e2e8f0'}`,
+                                    fontWeight: isExact ? 700 : 500,
+                                    boxShadow: isExact ? '0 1px 3px rgba(3,105,161,0.3)' : 'none',
                                   }}
                                 >
-                                  {userBR}BR <span style={{ opacity: 0.6, fontSize: '9px' }}>{exactBRCount}</span>
+                                  {userBR}BR <span style={{ opacity: isExact ? 0.85 : 0.5, fontSize: '9px' }}>{exactBRCount}</span>
                                 </button>
                               )}
                               {plusMinusBRCount > 0 && (
                                 <button
                                   onClick={() => toggleFilter('br-plusminus')}
-                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                                  className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
                                   style={{
-                                    backgroundColor: isPM ? '#0369a1' : '#fff',
-                                    color: isPM ? '#fff' : '#4b5563',
-                                    border: `1px solid ${isPM ? '#0369a1' : '#d1d5db'}`,
+                                    backgroundColor: isPM ? '#0369a1' : '#f8fafc',
+                                    color: isPM ? '#fff' : '#64748b',
+                                    border: `1.5px solid ${isPM ? '#0369a1' : '#e2e8f0'}`,
+                                    fontWeight: isPM ? 700 : 500,
+                                    boxShadow: isPM ? '0 1px 3px rgba(3,105,161,0.3)' : 'none',
                                   }}
                                 >
-                                  {userBR - 1}-{userBR + 1}BR <span style={{ opacity: 0.6, fontSize: '9px' }}>{plusMinusBRCount}</span>
+                                  {userBR - 1}-{userBR + 1}BR <span style={{ opacity: isPM ? 0.85 : 0.5, fontSize: '9px' }}>{plusMinusBRCount}</span>
                                 </button>
                               )}
                             </>
@@ -5983,26 +5995,29 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   <div>
                     <span className="text-[9px] font-semibold uppercase tracking-wide mb-1 block" style={{ color: '#9ca3af' }}>Amenities</span>
                     <div className="flex flex-wrap gap-1">
-                      {amenityCounts.filter(f => f.count > 0).map(f => {
+                      {amenityCounts.map(f => {
                         const isActive = activeCompFilters.has(f.key);
+                        const isDisabled = f.count === 0;
                         return (
                           <button
                             key={f.key}
-                            onClick={() => toggleFilter(f.key)}
-                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all"
+                            onClick={() => !isDisabled && toggleFilter(f.key)}
+                            className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] transition-all"
                             style={{
-                              backgroundColor: isActive ? '#b45309' : '#fff',
-                              color: isActive ? '#fff' : '#4b5563',
-                              border: `1px solid ${isActive ? '#b45309' : '#d1d5db'}`,
+                              backgroundColor: isActive ? '#b45309' : isDisabled ? '#f1f5f9' : '#f8fafc',
+                              color: isActive ? '#fff' : isDisabled ? '#cbd5e1' : '#64748b',
+                              border: `1.5px solid ${isActive ? '#b45309' : isDisabled ? '#e2e8f0' : '#e2e8f0'}`,
+                              fontWeight: isActive ? 700 : 500,
+                              boxShadow: isActive ? '0 1px 3px rgba(180,83,9,0.3)' : 'none',
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
+                              opacity: isDisabled ? 0.5 : 1,
                             }}
+                            disabled={isDisabled}
                           >
-                            {f.label} <span style={{ opacity: 0.6, fontSize: '9px' }}>{f.count}</span>
+                            {f.label} <span style={{ opacity: isActive ? 0.85 : 0.4, fontSize: '9px' }}>{f.count}</span>
                           </button>
                         );
                       })}
-                      {amenityCounts.every(f => f.count === 0) && (
-                        <span className="text-[10px]" style={{ color: '#9ca3af' }}>No amenity data available</span>
-                      )}
                     </div>
                   </div>
                   
@@ -6081,7 +6096,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                               const newFilters = new Set(preset.filters);
                               setActiveCompFilters(newFilters);
                               // Apply the filters
-                              const newExcluded = new Set<number>();
+                              const newExcluded = new Set<string>();
                               distanceFilteredComps.forEach(c => {
                                 let shouldExclude = false;
                                 newFilters.forEach(f => {
@@ -6100,7 +6115,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                     if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
                                   }
                                 });
-                                if (shouldExclude) newExcluded.add(c.id);
+                                if (shouldExclude) newExcluded.add(String(c.id));
                               });
                               setExcludedCompIds(newExcluded);
                               setSelectOnlyMode(true);
@@ -6214,7 +6229,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 
                 <div className="space-y-4">
                   {comps.slice(0, showAllComps ? comps.length : 5).map((listing, index) => {
-                    const isExcluded = excludedCompIds.has(listing.id);
+                    const isExcluded = excludedCompIds.has(String(listing.id));
                     return (
                     <div
                       key={listing.id || index}

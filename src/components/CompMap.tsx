@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 
 // Types matching the calculator's ComparableListing
 interface CompListing {
-  id: number;
+  id: string;
   name: string;
   url: string;
   image: string | null;
@@ -31,8 +31,8 @@ interface CompMapProps {
   targetLng: number;
   targetAddress?: string;
   onSelectComp?: (comp: CompListing) => void;
-  onToggleExclude?: (compId: number | string) => void;
-  excludedIds?: Set<number | string>;
+  onToggleExclude?: (compId: string) => void;
+  excludedIds?: Set<string>;
   dataSource?: string; // e.g. "pricelabs (366 listings)" or "airbnb-direct"
   listingsAnalyzed?: number; // Number of listings PriceLabs analyzed
   searchRadiusMiles?: number; // Radius used for Airbnb search
@@ -655,7 +655,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   const markersRef = useRef<any[]>([]);
   const [selectedComp, setSelectedComp] = useState<CompListing | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [imgErrors, setImgErrors] = useState<Set<number | string>>(new Set());
+  const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
 
   // Filter comps to only those with valid (non-zero) coordinates
   // Show ALL comps the backend returned — they are the ones used for the calculation
@@ -669,7 +669,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   }, [comparables]);
 
   // Track image load errors
-  const handleImgError = useCallback((compId: number | string) => {
+  const handleImgError = useCallback((compId: string) => {
     setImgErrors(prev => {
       const next = new Set(prev);
       next.add(compId);
@@ -779,7 +779,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
       // ===== COMPARABLE LISTING MARKERS =====
       const markers: any[] = [];
       validComps.forEach((comp) => {
-        const isExcluded = excludedIds.has(comp.id);
+        const isExcluded = excludedIds.has(String(comp.id));
         const priceLabel = formatNightPrice(comp.nightPrice);
         const extraClass = isExcluded ? " excluded" : "";
 
@@ -863,7 +863,7 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
         marker.on("click", () => {
           const now = Date.now();
           if (now - lastTap < 400) {
-            onToggleExclude?.(comp.id);
+            onToggleExclude?.(String(comp.id));
           }
           lastTap = now;
         });
@@ -968,19 +968,24 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
   }, [targetLat, targetLng, validComps, targetAddress, onSelectComp]);
 
   // Lightweight effect: update marker excluded/included styling without rebuilding the map
+  // Convert excludedIds to a serializable value so React detects changes (Set identity doesn't trigger re-render)
+  const excludedIdsArray = useMemo(() => Array.from(excludedIds).map(String).sort(), [excludedIds]);
+  const excludedIdsKey = excludedIdsArray.join(',');
   useEffect(() => {
     if (!mapInstanceRef.current) return;
+    // Build a string set for reliable comparison (API returns string IDs)
+    const excludedStrSet = new Set(excludedIdsArray);
     validComps.forEach((comp) => {
       const el = document.querySelector(`.comp-price-tag[data-comp-id="${comp.id}"]`) as HTMLElement;
       if (!el) return;
-      const isExcluded = excludedIds.has(comp.id);
+      const isExcluded = excludedStrSet.has(String(comp.id));
       if (isExcluded) {
         el.classList.add('excluded');
       } else {
         el.classList.remove('excluded');
       }
     });
-  }, [excludedIds, validComps]);
+  }, [excludedIdsKey, validComps, excludedIdsArray]);
 
   const isPriceLabs = dataSource ? dataSource.toLowerCase().includes('pricelabs') : false;
 
@@ -1127,16 +1132,16 @@ export function CompMap({ comparables, targetLat, targetLng, targetAddress, onSe
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onToggleExclude?.(selectedComp.id);
+              onToggleExclude?.(String(selectedComp.id));
             }}
             className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
             style={
-              excludedIds.has(selectedComp.id)
+              (excludedIds.has(String(selectedComp.id)))
                 ? { backgroundColor: "#22c55e", color: "white" }
                 : { backgroundColor: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }
             }
           >
-            {excludedIds.has(selectedComp.id) ? "✓ Include" : "✕ Exclude"}
+            {(excludedIds.has(String(selectedComp.id))) ? "✓ Include" : "✕ Exclude"}
           </button>
           {/* Close button */}
           <button
