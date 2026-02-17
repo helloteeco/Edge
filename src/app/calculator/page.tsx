@@ -5665,12 +5665,18 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               
               // Count comps matching each filter (for badge counts)
               const userGuests = guestCount || (result.bedrooms || 3) * 2;
+              const userBR = result.bedrooms || 3;
               const radiusOptions = [1, 3, 5, 10, 25] as const;
               const amenityFilters = [
                 { key: 'hot tub', label: '🛁 Hot Tub', icon: '' },
                 { key: 'sauna', label: '🧖 Sauna', icon: '' },
                 { key: 'pool', label: '🏊 Pool', icon: '' },
               ];
+              // Guest count options
+              const guest12PlusCount = distanceFilteredComps.filter(c => (c.accommodates || 0) >= 12).length;
+              // Bedroom filter counts
+              const exactBRCount = distanceFilteredComps.filter(c => c.bedrooms === userBR).length;
+              const plusMinusBRCount = distanceFilteredComps.filter(c => Math.abs((c.bedrooms || 0) - userBR) <= 1).length;
               
               // Apply active filters to auto-exclude comps
               const applyFilters = (filterSet: Set<string>): Set<number> => {
@@ -5683,6 +5689,12 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       if ((c.distance || 0) > miles) shouldExclude = true;
                     } else if (f === 'guest-match') {
                       if ((c.accommodates || 0) < userGuests) shouldExclude = true;
+                    } else if (f === 'guest-12plus') {
+                      if ((c.accommodates || 0) < 12) shouldExclude = true;
+                    } else if (f === 'br-exact') {
+                      if (c.bedrooms !== userBR) shouldExclude = true;
+                    } else if (f === 'br-plusminus') {
+                      if (Math.abs((c.bedrooms || 0) - userBR) > 1) shouldExclude = true;
                     } else {
                       // Amenity filter
                       if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
@@ -5699,6 +5711,14 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 // For radius, remove any existing radius filter first
                 if (filterKey.startsWith('radius:')) {
                   newFilters.forEach(f => { if (f.startsWith('radius:')) newFilters.delete(f); });
+                  if (!activeCompFilters.has(filterKey)) newFilters.add(filterKey);
+                } else if (filterKey.startsWith('guest-')) {
+                  // Guest filters are mutually exclusive
+                  newFilters.forEach(f => { if (f.startsWith('guest-')) newFilters.delete(f); });
+                  if (!activeCompFilters.has(filterKey)) newFilters.add(filterKey);
+                } else if (filterKey.startsWith('br-')) {
+                  // Bedroom filters are mutually exclusive
+                  newFilters.forEach(f => { if (f.startsWith('br-')) newFilters.delete(f); });
                   if (!activeCompFilters.has(filterKey)) newFilters.add(filterKey);
                 } else {
                   if (newFilters.has(filterKey)) newFilters.delete(filterKey);
@@ -5831,7 +5851,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       );
                     })}
                     
-                    {/* Guest count filter */}
+                    {/* Guest count filters */}
                     {(() => {
                       const isActive = activeCompFilters.has('guest-match');
                       return (
@@ -5848,6 +5868,66 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           👥 {userGuests}+ guests
                           <span style={{ opacity: 0.7 }}>({guestMatchCount})</span>
                         </button>
+                      );
+                    })()}
+                    {(() => {
+                      const isActive = activeCompFilters.has('guest-12plus');
+                      return (
+                        <button
+                          onClick={() => guest12PlusCount > 0 ? toggleFilter('guest-12plus') : undefined}
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: isActive ? '#7c3aed' : '#fff',
+                            color: isActive ? '#fff' : guest12PlusCount > 0 ? '#4b5563' : '#9ca3af',
+                            border: `1px solid ${isActive ? '#7c3aed' : guest12PlusCount > 0 ? '#d1d5db' : '#e5e7eb'}`,
+                            whiteSpace: 'nowrap',
+                            cursor: guest12PlusCount > 0 ? 'pointer' : 'default',
+                            opacity: guest12PlusCount > 0 ? 1 : 0.5,
+                          }}
+                        >
+                          👥 12+ guests
+                          <span style={{ opacity: 0.7 }}>({guest12PlusCount})</span>
+                        </button>
+                      );
+                    })()}
+                    
+                    {/* Bedroom filters */}
+                    {(() => {
+                      const isExact = activeCompFilters.has('br-exact');
+                      const isPM = activeCompFilters.has('br-plusminus');
+                      return (
+                        <>
+                          <button
+                            onClick={() => exactBRCount > 0 ? toggleFilter('br-exact') : undefined}
+                            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                            style={{
+                              backgroundColor: isExact ? '#0369a1' : '#fff',
+                              color: isExact ? '#fff' : exactBRCount > 0 ? '#4b5563' : '#9ca3af',
+                              border: `1px solid ${isExact ? '#0369a1' : exactBRCount > 0 ? '#d1d5db' : '#e5e7eb'}`,
+                              whiteSpace: 'nowrap',
+                              cursor: exactBRCount > 0 ? 'pointer' : 'default',
+                              opacity: exactBRCount > 0 ? 1 : 0.5,
+                            }}
+                          >
+                            🛏️ {userBR}BR only
+                            <span style={{ opacity: 0.7 }}>({exactBRCount})</span>
+                          </button>
+                          <button
+                            onClick={() => plusMinusBRCount > 0 ? toggleFilter('br-plusminus') : undefined}
+                            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                            style={{
+                              backgroundColor: isPM ? '#0369a1' : '#fff',
+                              color: isPM ? '#fff' : plusMinusBRCount > 0 ? '#4b5563' : '#9ca3af',
+                              border: `1px solid ${isPM ? '#0369a1' : plusMinusBRCount > 0 ? '#d1d5db' : '#e5e7eb'}`,
+                              whiteSpace: 'nowrap',
+                              cursor: plusMinusBRCount > 0 ? 'pointer' : 'default',
+                              opacity: plusMinusBRCount > 0 ? 1 : 0.5,
+                            }}
+                          >
+                            🛏️ {userBR - 1}-{userBR + 1}BR
+                            <span style={{ opacity: 0.7 }}>({plusMinusBRCount})</span>
+                          </button>
+                        </>
                       );
                     })()}
                     
