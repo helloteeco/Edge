@@ -688,4 +688,7 @@
 - [x] Show Sleeps 12+ pill always, grayed out when 0 comps match (same pattern as amenity pills)
 
 ## CLEANUP: Remove amenity filter pills (February 2026)
-- [ ] Remove amenity filter pills (Hot Tub, Sauna, Pool, Game Room, Pet Friendly) — data source doesn't support them
+- [x] Remove amenity filter pills (Hot Tub, Sauna, Pool, Game Room, Pet Friendly) — data source doesn't support them
+
+## POLISH: Calendar estimated data disclaimer (February 2026)
+- [ ] Make it clearly visible that comp calendar data is estimated, not real-time Airbnb availability

@@ -143,6 +143,10 @@ export default function CompCalendar({ comparables, occupancyData, excludedCompI
         <div>
           <h3 className="text-base font-semibold" style={{ color: "#2b2823" }}>Comp Calendar</h3>
           <p className="text-xs" style={{ color: "#787060" }}>Estimated availability based on reviews &amp; seasonality</p>
+          <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: "#b0a890" }}>
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Not live Airbnb data — patterns are directional, not date-accurate
+          </p>
         </div>
         <div className="flex items-center gap-1 text-xs">
           <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: "#dcfce7", border: "1px solid #86efac" }}></span>
@@ -294,6 +298,13 @@ export default function CompCalendar({ comparables, occupancyData, excludedCompI
             View Listing
           </a>
         )}
+      </div>
+
+      {/* Estimated data disclaimer footer */}
+      <div className="mt-3 px-3 py-2 rounded-lg text-center" style={{ backgroundColor: "#fefce8", border: "1px solid #fef08a" }}>
+        <p className="text-[10px] font-medium" style={{ color: "#a16207" }}>
+          ⚠️ Calendar shows estimated patterns, not real-time availability. Tap &quot;View Listing&quot; to see actual Airbnb calendar.
+        </p>
       </div>
 
       {/* Peak/Low season tags */}
