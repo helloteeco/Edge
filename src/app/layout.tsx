@@ -31,10 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
       interactiveWidget: "resizes-visual",
     },
     title: {
-      default: "Edge by Teeco | Free Airbnb Investment Calculator & STR Market Analysis",
+      default: "Edge by Teeco | Airbnb Investment Calculator & STR Market Data for 1,600+ Cities",
       template: "%s | Edge by Teeco",
     },
-    description: `Analyze any US property for Airbnb revenue, cash-on-cash return, and deal score. ${totalMarkets}+ markets tracked with real comp data. Built by an investor generating $1M+/yr.`,
+    description: `Free AI-powered STR market analysis for ${totalMarkets}+ US cities. Browse revenue, occupancy & investment grades. Property calculator with real Airbnb comps. Funding quiz with 48+ strategies. Built by investors, for investors.`,
     icons: {
       icon: "/favicon.ico",
     },
@@ -43,8 +43,8 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: "https://edge.teeco.co",
     },
     openGraph: {
-      title: "Free Airbnb Investment Calculator & STR Market Analysis",
-      description: `${totalMarkets}+ markets analyzed \u2022 AI-powered deal analysis \u2022 Free to start. The data-driven way to find high cash flow short-term rental investments.`,
+      title: `Airbnb Investment Calculator & STR Market Data for ${totalMarkets}+ Cities`,
+      description: `Free AI agent, market data for ${totalMarkets}+ cities, funding quiz with 48+ strategies, and property calculator with real Airbnb comps. The data-driven way to find STR investments.`,
       type: "website",
       url: "https://edge.teeco.co",
       siteName: "Edge by Teeco",
@@ -60,8 +60,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Free Airbnb Investment Calculator & STR Market Analysis",
-      description: `${totalMarkets}+ markets analyzed \u2022 AI-powered deal analysis \u2022 Free to start. The data-driven way to find high cash flow short-term rental investments.`,
+      title: `Airbnb Investment Calculator & STR Market Data for ${totalMarkets}+ Cities`,
+      description: `Free AI agent, market data for ${totalMarkets}+ cities, funding quiz with 48+ strategies, and property calculator with real Airbnb comps. The data-driven way to find STR investments.`,
       images: ["/og-image.png"],
     },
     robots: {

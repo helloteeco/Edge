@@ -711,8 +711,63 @@ export default function StatePage({ params }: { params: { id: string } }) {
             </div>
           )}
         </div>
+        {/* Breadcrumb */}
+        <nav className="mt-6 px-4 pb-4" aria-label="Breadcrumb">
+          <ol className="flex items-center gap-1.5 text-xs" style={{ color: '#787060' }}>
+            <li><Link href="/" className="hover:underline">Home</Link></li>
+            <li>/</li>
+            <li><Link href="/search" className="hover:underline">States</Link></li>
+            <li>/</li>
+            <li style={{ color: '#2b2823' }}>{state.name}</li>
+          </ol>
+        </nav>
       </div>
     </div>
+
+    {/* Breadcrumb Schema */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://edge.teeco.co" },
+            { "@type": "ListItem", position: 2, name: "States", item: "https://edge.teeco.co/search" },
+            { "@type": "ListItem", position: 3, name: state.name, item: `https://edge.teeco.co/state/${state.abbreviation.toLowerCase()}` },
+          ],
+        }),
+      }}
+    />
+
+    {/* State FAQ Schema */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: `Is ${state.name} a good state for Airbnb investment?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `${state.name} has an investment grade of ${state.grade} (${state.score}/100) with a verdict of ${state.verdict.replace('-', ' ').toUpperCase()}. The state has ${cities.length} tracked STR markets. Average median home value across markets is $${Math.round(cities.reduce((s, c) => s + c.medianHomeValue, 0) / (cities.length || 1)).toLocaleString()}.`,
+              },
+            },
+            {
+              "@type": "Question",
+              name: `How many Airbnb markets are in ${state.name}?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `Edge tracks ${cities.length} STR markets in ${state.name} with full data including revenue projections, occupancy rates, ADR, investment grades, and regulation status.`,
+              },
+            },
+          ],
+        }),
+      }}
+    />
     
     {/* Floating Action Pill - Heart + Share */}
     <FloatingActionPill isSaved={isSaved} onToggleSave={toggleSave} marketLikeCount={saveCount} />

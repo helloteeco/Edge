@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getCityById } from "@/data/helpers";
+import { getCityById, getCitiesByState, getStateByCode } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
 import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 import RegulationCard from "@/components/RegulationCard";
@@ -804,7 +804,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </div>
           </div>
           <a
-            href={`https://www.airbnb.com/s/${encodeURIComponent(city.name + ', ' + city.stateCode)}/homes`}
+            href={`https://www.airbnb.com/s/${encodeURIComponent(city.name + ', ' + (getStateByCode(city.stateCode)?.name || city.stateCode))}/homes`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold transition-all hover:opacity-90"
@@ -916,6 +916,54 @@ export default function CityPage({ params }: { params: { id: string } }) {
           <p className="text-xs text-center mt-3" style={{ color: '#9ca3af' }}>Opens Zillow.com in a new tab</p>
         </div>
 
+        {/* Explore More Markets — Dynamic Internal Links */}
+        {(() => {
+          const stateCities = getCitiesByState(city.stateCode);
+          const relatedCities = stateCities
+            .filter(c => c.id !== city.id)
+            .sort((a, b) => b.marketScore - a.marketScore)
+            .slice(0, 6);
+          if (relatedCities.length === 0) return null;
+          return (
+            <div className="rounded-2xl p-5" style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}>
+              <h3 className="font-semibold text-base mb-3" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
+                More Markets in {city.stateCode}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {relatedCities.map(rc => (
+                  <Link
+                    key={rc.id}
+                    href={`/city/${rc.id}`}
+                    className="flex items-center gap-2 p-3 rounded-xl transition-all hover:opacity-80"
+                    style={{ backgroundColor: '#f5f4f0', border: '1px solid #e5e3da' }}
+                  >
+                    <span
+                      className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                      style={{
+                        backgroundColor: rc.grade === 'A+' || rc.grade === 'A' ? '#2b2823' : rc.grade === 'B+' ? '#3d3a34' : '#787060',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {rc.grade}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: '#2b2823' }}>{rc.name}</p>
+                      <p className="text-[10px]" style={{ color: '#787060' }}>${rc.strMonthlyRevenue.toLocaleString()}/mo</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <Link
+                href={`/state/${city.stateCode.toLowerCase()}`}
+                className="block text-center mt-3 text-xs font-medium transition-opacity hover:opacity-70"
+                style={{ color: '#787060' }}
+              >
+                View all {stateCities.length} markets in {city.stateCode} →
+              </Link>
+            </div>
+          );
+        })()}
+
         {/* CTA */}
         <div 
           className="rounded-2xl p-6 text-center"
@@ -944,8 +992,72 @@ export default function CityPage({ params }: { params: { id: string } }) {
             Apply Now
           </Link>
         </div>
+
+        {/* Breadcrumb */}
+        <nav className="mt-4" aria-label="Breadcrumb">
+          <ol className="flex items-center gap-1.5 text-xs" style={{ color: '#787060' }}>
+            <li><Link href="/" className="hover:underline">Home</Link></li>
+            <li>/</li>
+            <li><Link href={`/state/${city.stateCode.toLowerCase()}`} className="hover:underline">{city.stateCode}</Link></li>
+            <li>/</li>
+            <li style={{ color: '#2b2823' }}>{city.name}</li>
+          </ol>
+        </nav>
       </div>
     </div>
+
+    {/* Breadcrumb Schema */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://edge.teeco.co" },
+            { "@type": "ListItem", position: 2, name: city.stateCode, item: `https://edge.teeco.co/state/${city.stateCode.toLowerCase()}` },
+            { "@type": "ListItem", position: 3, name: `${city.name}, ${city.stateCode}`, item: `https://edge.teeco.co/city/${city.id}` },
+          ],
+        }),
+      }}
+    />
+
+    {/* City FAQ Schema */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: `Is ${city.name}, ${city.stateCode} a good market for Airbnb investment?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `${city.name}, ${city.stateCode} has an investment grade of ${city.grade} (${city.marketScore}/100) with a verdict of ${city.verdict.replace('-', ' ').toUpperCase()}. Average monthly STR revenue is $${city.strMonthlyRevenue.toLocaleString()} with ${city.occupancy}% occupancy and $${Math.round(city.avgADR)} ADR. Median home price is $${city.medianHomeValue.toLocaleString()}.`,
+              },
+            },
+            {
+              "@type": "Question",
+              name: `What is the average Airbnb revenue in ${city.name}?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `The average monthly Airbnb revenue in ${city.name}, ${city.stateCode} is $${city.strMonthlyRevenue.toLocaleString()}, which translates to approximately $${(city.strMonthlyRevenue * 12).toLocaleString()} per year. The average daily rate (ADR) is $${Math.round(city.avgADR)} with an occupancy rate of ${city.occupancy}%.`,
+              },
+            },
+            {
+              "@type": "Question",
+              name: `Are short-term rentals legal in ${city.name}, ${city.stateCode}?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `Short-term rentals in ${city.name}, ${city.stateCode} are classified as "${city.regulation}". ${city.permitRequired ? 'A permit is required to operate.' : 'No specific permit requirement has been identified.'} Always verify current local regulations before investing.`,
+              },
+            },
+          ],
+        }),
+      }}
+    />
     
     {/* Floating Action Pill - Heart + Share */}
     <FloatingActionPill 
