@@ -766,3 +766,8 @@
 ## BUG: /airbnb-calculator tab bar not flush/fixed at bottom (February 2026)
 - [x] Add pb-20 to the airbnb-calculator page so content clears the fixed tab bar
 - [x] Ensure tab bar appears flush and fixed like all other pages
+
+## FEATURE: CSV download in Admin Dashboard (February 2026)
+- [x] Add CSV download button to Users tab (Email, Signed up, Credits Limit, Credits Used, Last Login)
+- [x] Add CSV download button to Coaching Leads section in Leads tab (Email, Budget, Timeline, Experience, Qualified, Date)
+- [x] Do not change any other features or UI elements (only admin dashboard touched)

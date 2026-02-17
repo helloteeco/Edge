@@ -136,6 +136,15 @@ export default function AdminDashboard() {
     return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${(c ?? "").toString().replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Login screen
   if (!authenticated) {
     return (
@@ -768,7 +777,10 @@ export default function AdminDashboard() {
           <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
             <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#e5e3da' }}>
               <h3 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>All Users</h3>
-              <span className="text-sm" style={{ color: '#787060' }}>{data.users.count} total</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm" style={{ color: '#787060' }}>{data.users.count} total</span>
+                <button onClick={() => downloadCSV(`edge-users-${new Date().toISOString().slice(0,10)}.csv`, ["Email", "Credits Used", "Credits Limit", "Unlimited", "Signed Up", "Last Login"], data.users.data.map(u => [u.email, String(u.credits_used ?? 0), String(u.credits_limit ?? 3), u.is_unlimited ? "Yes" : "No", fmt(u.created_at), fmt(u.last_login_at)]))} className="px-3 py-1 rounded-lg text-xs font-medium transition-colors" style={{ backgroundColor: '#2b2823', color: '#fff' }}>⬇ CSV</button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -867,11 +879,16 @@ export default function AdminDashboard() {
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
               <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#e5e3da' }}>
                 <h3 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Coaching Leads ({data.coachingLeads.count})</h3>
-                {data.coachingLeads.data.filter(l => l.qualified).length > 0 && (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>
-                    🔥 {data.coachingLeads.data.filter(l => l.qualified).length} Qualified
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {data.coachingLeads.data.filter(l => l.qualified).length > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>
+                      🔥 {data.coachingLeads.data.filter(l => l.qualified).length} Qualified
+                    </span>
+                  )}
+                  {data.coachingLeads.data.length > 0 && (
+                    <button onClick={() => downloadCSV(`edge-coaching-leads-${new Date().toISOString().slice(0,10)}.csv`, ["Email", "Budget", "Timeline", "Experience", "Qualified", "Date"], data.coachingLeads.data.map(l => [l.email, l.budget, l.timeline, l.experience, l.qualified ? "Yes" : "No", fmt(l.created_at)]))} className="px-3 py-1 rounded-lg text-xs font-medium transition-colors" style={{ backgroundColor: '#2b2823', color: '#fff' }}>⬇ CSV</button>
+                  )}
+                </div>
               </div>
               {data.coachingLeads.data.length === 0 ? (
                 <div className="p-8 text-center" style={{ color: '#787060' }}>No coaching leads yet</div>
