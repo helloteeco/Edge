@@ -350,7 +350,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-0">
         <p className="text-sm leading-relaxed" style={{ color: '#787060' }}>
           {city.name}, {getStateByCode(city.stateCode)?.name || city.stateCode} is rated <strong>{city.grade}</strong> for Airbnb investment with a score of {city.marketScore}/100 ({verdictInfo.text}). 
-          The market has an average daily rate (ADR) of ${city.avgADR}, {Math.round(city.occupancy * 100)}% occupancy, and estimated monthly STR revenue of ${city.strMonthlyRevenue.toLocaleString()}. 
+          The market has an average daily rate (ADR) of ${city.avgADR}, {city.occupancy}% occupancy, and estimated monthly STR revenue of ${city.strMonthlyRevenue.toLocaleString()}. 
           Median home value is ${city.medianHomeValue.toLocaleString()} with a cash-on-cash return of {city.cashOnCash.toFixed(1)}%. 
           STR regulation status: {city.regulation}. 
           Data powered by <a href="https://edge.teeco.co" style={{ color: '#787060', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.

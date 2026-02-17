@@ -17,7 +17,7 @@ export default function BestMarketsUnder300K() {
   const avgRevenue = Math.round(under300k.reduce((sum, c) => sum + c.strMonthlyRevenue, 0) / under300k.length);
   const avgHomeValue = Math.round(under300k.reduce((sum, c) => sum + c.medianHomeValue, 0) / under300k.length);
   const avgCoC = (under300k.reduce((sum, c) => sum + c.cashOnCash, 0) / under300k.length).toFixed(1);
-  const avgOccupancy = Math.round(under300k.reduce((sum, c) => sum + c.occupancy, 0) / under300k.length * 100);
+  const avgOccupancy = Math.round(under300k.reduce((sum, c) => sum + c.occupancy, 0) / under300k.length);
 
   const getGradeStyle = (grade: string) => {
     switch (grade) {
@@ -174,7 +174,7 @@ export default function BestMarketsUnder300K() {
                     <div>
                       <div className="text-xs" style={{ color: '#9a9488' }}>Occupancy</div>
                       <div className="text-sm font-semibold" style={{ color: '#2b2823' }}>
-                        {Math.round(city.occupancy * 100)}%
+                        {city.occupancy}%
                       </div>
                     </div>
                   </div>
