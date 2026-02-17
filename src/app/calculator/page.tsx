@@ -292,6 +292,8 @@ export default function CalculatorPage() {
   const [selectOnlyMode, setSelectOnlyMode] = useState(false);
   // Distance radius filter: null = show all, number = max miles
   const [compDistanceFilter, setCompDistanceFilter] = useState<number | null>(null);
+  // Active comp filters: each filter auto-excludes comps that don't match
+  const [activeCompFilters, setActiveCompFilters] = useState<Set<string>>(new Set());
   
   // Full unfiltered comp set from API — used for local bedroom re-filtering
   const [allComps, setAllComps] = useState<ComparableListing[]>([]);
@@ -423,6 +425,7 @@ export default function CalculatorPage() {
     setCompSortBy('relevance');
     setSelectOnlyMode(false);
     setCompDistanceFilter(null);
+    setActiveCompFilters(new Set());
     // Reset the initial refilter flag so the next analysis gets auto-filtered too
     hasInitialRefiltered.current = false;
   }, [result?.address]);
@@ -495,6 +498,7 @@ export default function CalculatorPage() {
         setCompSortBy('relevance');
         setSelectOnlyMode(false);
         setCompDistanceFilter(null);
+        setActiveCompFilters(new Set());
         
         console.log(`[InitialRefilter] Done: ${filtered.filteredListings} comps, ADR $${filtered.avgAdr}, Rev $${annualRevenue}/yr`);
       } catch (err) {
@@ -2101,6 +2105,7 @@ export default function CalculatorPage() {
       });
       
       setExcludedCompIds(new Set());
+      setActiveCompFilters(new Set());
       setUseCustomIncome(false);
       setCustomAnnualIncome("");
       
@@ -2165,6 +2170,7 @@ export default function CalculatorPage() {
       
       // Reset excluded comps for new bedroom selection
       setExcludedCompIds(new Set());
+      setActiveCompFilters(new Set());
       setUseCustomIncome(false);
       setCustomAnnualIncome("");
       
@@ -5019,6 +5025,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                   distanceFilter: compDistanceFilter,
                                   selectOnlyMode: selectOnlyMode,
                                   revenuePercentile: revenuePercentile,
+                                  activeFilters: Array.from(activeCompFilters),
                                 } : undefined
                               }
                             })
@@ -5643,6 +5650,78 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 ? allComps.filter(c => (c.distance || 0) <= compDistanceFilter)
                 : allComps;
               const hiddenByDistance = allComps.length - distanceFilteredComps.length;
+              
+              // Amenity matching helper (inline to avoid import)
+              const compHasAmenity = (compAmenities: string[], key: string): boolean => {
+                const normalized = compAmenities.map(a => a.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim());
+                return normalized.some(a =>
+                  (key === 'hot tub' && (a.includes('hot tub') || a.includes('jacuzzi') || a.includes('spa'))) ||
+                  (key === 'sauna' && a.includes('sauna')) ||
+                  (key === 'pool' && a.includes('pool') && !a.includes('pool table')) ||
+                  (key === 'fireplace' && a.includes('fireplace')) ||
+                  (key === 'game room' && (a.includes('game') || a.includes('arcade') || a.includes('ping pong') || a.includes('pool table')))
+                );
+              };
+              
+              // Count comps matching each filter (for badge counts)
+              const userGuests = guestCount || (result.bedrooms || 3) * 2;
+              const radiusOptions = [1, 3, 5, 10, 25] as const;
+              const amenityFilters = [
+                { key: 'hot tub', label: '🛁 Hot Tub', icon: '' },
+                { key: 'sauna', label: '🧖 Sauna', icon: '' },
+                { key: 'pool', label: '🏊 Pool', icon: '' },
+              ];
+              
+              // Apply active filters to auto-exclude comps
+              const applyFilters = (filterSet: Set<string>): Set<number> => {
+                const newExcluded = new Set<number>();
+                distanceFilteredComps.forEach(c => {
+                  let shouldExclude = false;
+                  filterSet.forEach(f => {
+                    if (f.startsWith('radius:')) {
+                      const miles = parseFloat(f.split(':')[1]);
+                      if ((c.distance || 0) > miles) shouldExclude = true;
+                    } else if (f === 'guest-match') {
+                      if ((c.accommodates || 0) < userGuests) shouldExclude = true;
+                    } else {
+                      // Amenity filter
+                      if (!compHasAmenity(c.amenities || [], f)) shouldExclude = true;
+                    }
+                  });
+                  if (shouldExclude) newExcluded.add(c.id);
+                });
+                return newExcluded;
+              };
+              
+              // Toggle a filter on/off
+              const toggleFilter = (filterKey: string) => {
+                const newFilters = new Set(activeCompFilters);
+                // For radius, remove any existing radius filter first
+                if (filterKey.startsWith('radius:')) {
+                  newFilters.forEach(f => { if (f.startsWith('radius:')) newFilters.delete(f); });
+                  if (!activeCompFilters.has(filterKey)) newFilters.add(filterKey);
+                } else {
+                  if (newFilters.has(filterKey)) newFilters.delete(filterKey);
+                  else newFilters.add(filterKey);
+                }
+                setActiveCompFilters(newFilters);
+                if (newFilters.size > 0) {
+                  setExcludedCompIds(applyFilters(newFilters));
+                  setSelectOnlyMode(true);
+                  setShowAllComps(true);
+                } else {
+                  setExcludedCompIds(new Set());
+                  setSelectOnlyMode(false);
+                }
+              };
+              
+              // Count matches for each amenity filter
+              const amenityCounts = amenityFilters.map(f => ({
+                ...f,
+                count: distanceFilteredComps.filter(c => compHasAmenity(c.amenities || [], f.key)).length,
+              }));
+              const guestMatchCount = distanceFilteredComps.filter(c => (c.accommodates || 0) >= userGuests).length;
+
               // Sort comps based on selected sort option
               const sortedComps = [...distanceFilteredComps].sort((a, b) => {
                 switch (compSortBy) {
@@ -5683,45 +5762,124 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   {activeComps.length}/{allComps.length} comps included • {bedroomMatches} exact BR match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
                 </p>
                 
-                {/* Simplified Comp Controls — one clean row */}
-                <div className="mb-3 flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      // Smart Top 5: pick top 5 by revenue, auto-expand list
-                      const top5 = [...distanceFilteredComps]
-                        .sort((a, b) => (b.annualRevenue || 0) - (a.annualRevenue || 0))
-                        .slice(0, 5)
-                        .map(c => c.id);
-                      const top5Set = new Set(top5);
-                      const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
-                      setExcludedCompIds(newExcluded);
-                      setSelectOnlyMode(true);
-                      setCompSortBy('revenue');
-                      setShowAllComps(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
-                    style={{
-                      backgroundColor: selectOnlyMode && activeComps.length === 5 ? '#15803d' : '#f0fdf4',
-                      color: selectOnlyMode && activeComps.length === 5 ? '#ffffff' : '#15803d',
-                      border: '1px solid #bbf7d0',
-                    }}
-                  >
-                    ⚡ Top 5
-                  </button>
-                  {hasExclusions && (
+                {/* Comp Filter Controls */}
+                <div className="mb-3" style={{ borderRadius: '12px', backgroundColor: '#fafaf8', border: '1px solid #e5e3da', padding: '10px 12px' }}>
+                  {/* Row 1: Top 5 + Reset + Selected count */}
+                  <div className="flex items-center gap-2 mb-2">
                     <button
-                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setCompSortBy('relevance'); }}
-                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all"
-                      style={{ backgroundColor: '#f5f4f0', color: '#787060', border: '1px solid #e5e3da' }}
+                      onClick={() => {
+                        const top5 = [...distanceFilteredComps]
+                          .sort((a, b) => (b.annualRevenue || 0) - (a.annualRevenue || 0))
+                          .slice(0, 5)
+                          .map(c => c.id);
+                        const top5Set = new Set(top5);
+                        const newExcluded = new Set(distanceFilteredComps.filter(c => !top5Set.has(c.id)).map(c => c.id));
+                        setExcludedCompIds(newExcluded);
+                        setSelectOnlyMode(true);
+                        setActiveCompFilters(new Set());
+                        setCompSortBy('revenue');
+                        setShowAllComps(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                      style={{
+                        backgroundColor: selectOnlyMode && activeCompFilters.size === 0 && activeComps.length === 5 ? '#15803d' : '#f0fdf4',
+                        color: selectOnlyMode && activeCompFilters.size === 0 && activeComps.length === 5 ? '#fff' : '#15803d',
+                        border: '1px solid #bbf7d0',
+                      }}
                     >
-                      ↺ Reset
+                      ⚡ Top 5 Earners
                     </button>
-                  )}
-                  <span className="flex-1" />
-                  {hasExclusions && (
-                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
-                      {activeComps.length} of {distanceFilteredComps.length} selected
-                    </span>
+                    {(hasExclusions || activeCompFilters.size > 0) && (
+                      <button
+                        onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setActiveCompFilters(new Set()); setCompSortBy('relevance'); }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                        style={{ backgroundColor: '#fff', color: '#787060', border: '1px solid #e5e3da' }}
+                      >
+                        ↺ Clear All
+                      </button>
+                    )}
+                    <span className="flex-1" />
+                    {hasExclusions && (
+                      <span className="text-[10px] font-semibold px-2 py-1 rounded-md" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+                        {activeComps.length}/{distanceFilteredComps.length}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Row 2: Filter pills — horizontally scrollable */}
+                  <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {/* Radius filters */}
+                    {radiusOptions.map(r => {
+                      const key = `radius:${r}`;
+                      const isActive = activeCompFilters.has(key);
+                      const count = distanceFilteredComps.filter(c => (c.distance || 0) <= r).length;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => toggleFilter(key)}
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: isActive ? '#1d4ed8' : '#fff',
+                            color: isActive ? '#fff' : '#4b5563',
+                            border: `1px solid ${isActive ? '#1d4ed8' : '#d1d5db'}`,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          📍 {r}mi
+                          <span style={{ opacity: 0.7 }}>({count})</span>
+                        </button>
+                      );
+                    })}
+                    
+                    {/* Guest count filter */}
+                    {(() => {
+                      const isActive = activeCompFilters.has('guest-match');
+                      return (
+                        <button
+                          onClick={() => toggleFilter('guest-match')}
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: isActive ? '#7c3aed' : '#fff',
+                            color: isActive ? '#fff' : '#4b5563',
+                            border: `1px solid ${isActive ? '#7c3aed' : '#d1d5db'}`,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          👥 {userGuests}+ guests
+                          <span style={{ opacity: 0.7 }}>({guestMatchCount})</span>
+                        </button>
+                      );
+                    })()}
+                    
+                    {/* Amenity filters */}
+                    {amenityCounts.map(f => {
+                      const isActive = activeCompFilters.has(f.key);
+                      return (
+                        <button
+                          key={f.key}
+                          onClick={() => f.count > 0 ? toggleFilter(f.key) : undefined}
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                          style={{
+                            backgroundColor: isActive ? '#b45309' : '#fff',
+                            color: isActive ? '#fff' : f.count > 0 ? '#4b5563' : '#9ca3af',
+                            border: `1px solid ${isActive ? '#b45309' : f.count > 0 ? '#d1d5db' : '#e5e7eb'}`,
+                            whiteSpace: 'nowrap',
+                            cursor: f.count > 0 ? 'pointer' : 'default',
+                            opacity: f.count > 0 ? 1 : 0.5,
+                          }}
+                        >
+                          {f.label}
+                          <span style={{ opacity: 0.7 }}>({f.count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Active filter summary */}
+                  {activeCompFilters.size > 0 && (
+                    <p className="text-[10px] mt-1.5 pt-1.5" style={{ color: '#92400e', borderTop: '1px solid #e5e3da' }}>
+                      Showing only comps that match <strong>all</strong> selected filters. Revenue updates automatically.
+                    </p>
                   )}
                 </div>
                 {/* Data source explanation */}
@@ -5791,7 +5949,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       </div>
                     </div>
                     <button
-                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setCompSortBy('relevance'); }}
+                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); setActiveCompFilters(new Set()); setCompSortBy('relevance'); }}
                       className="mt-2 text-xs font-medium px-3 py-1 rounded-full transition-colors"
                       style={{ backgroundColor: '#dcfce7', color: '#15803d' }}
                     >
@@ -7390,6 +7548,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                                           distanceFilter: compDistanceFilter,
                                           selectOnlyMode: selectOnlyMode,
                                           revenuePercentile: revenuePercentile,
+                                          activeFilters: Array.from(activeCompFilters),
                                         } : undefined
                                       }
                                     })
