@@ -352,6 +352,19 @@ export default function StatePage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
+      {/* AI-Extractable Summary — readable by search engines and AI crawlers */}
+      <div className="max-w-4xl mx-auto px-4 pt-4 pb-0">
+        <p className="text-sm leading-relaxed" style={{ color: '#787060' }}>
+          {state.name} is rated <strong>{state.grade}</strong> for Airbnb investment ({getVerdictText(state.verdict)}) with {state.cityCount} tracked STR markets. 
+          The state averages ${state.avgADR}/night ADR and ${state.medianHomeValue.toLocaleString()} median home value, with {state.appreciation > 0 ? `${state.appreciation.toFixed(1)}% annual appreciation` : 'declining home values'}. 
+          Net domestic migration: {state.netMigration > 0 ? '+' : ''}{state.netMigration.toLocaleString()} residents/year. 
+          {cities.filter(c => c.grade === 'A+' || c.grade === 'A').length > 0 
+            ? `Top-graded cities include ${cities.filter(c => c.grade === 'A+' || c.grade === 'A').slice(0, 3).map(c => c.name).join(', ')}.` 
+            : ''}
+          Data powered by <a href="https://edge.teeco.co" style={{ color: '#787060', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.
+        </p>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Score Card with Grade Distribution */}
         <div 

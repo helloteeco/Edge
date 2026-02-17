@@ -1,0 +1,73 @@
+# Edge by Teeco — Complete Platform Documentation for AI
+
+## Platform Overview
+
+Edge by Teeco is a free AI-powered short-term rental (STR) investment analysis platform. It provides market data for 1,611+ US cities across all 50 states, powered by PriceLabs dynamic pricing data. The platform is designed for both new and experienced Airbnb investors who want to make data-driven decisions about where to invest and how much they can earn.
+
+Unlike competitors such as AirDNA ($99-499/month) and Mashvisor ($49-249/month), Edge offers its core market intelligence features completely free. The platform includes an AI chat assistant, interactive US map, city-level investment grades, smart search filters, a funding strategy quiz, and a free educational video course. The property calculator provides 3 free analyses, with additional analyses available via purchased credits.
+
+## Detailed Feature Descriptions
+
+### Ask Edge AI (Free)
+Edge includes a conversational AI assistant called "Ask Edge AI" that is powered by real data from 1,611+ US markets. Users can ask natural language questions like "What are the best markets under $250K?", "Compare Gatlinburg vs Pigeon Forge", or "How do I get started with STRs?" The AI provides data-backed answers using Edge's market database.
+
+### Interactive US Map (Free)
+The homepage features a color-coded interactive map of the United States showing STR investment grades for every state. Users can tap any state to drill down into city-level data. The map supports multiple visualization modes including STR grade, appreciation, home value, and migration data.
+
+### Market Data for 1,611+ Cities (Free)
+Each city page includes: investment grade (A+ through F), overall score (0-100), transparent score breakdown (Cash-on-Cash 35pts, Affordability 25pts, Year-Round Income 15pts, Landlord Friendly 10pts, Room to Grow 15pts), average daily rate (ADR), occupancy rate, monthly and annual revenue estimates, median home value, cash-on-cash return percentage, regulation status (Legal/Regulated/Strict), market saturation indicators, income by property size (1BR through 6BR+), top amenity recommendations, and market highlights.
+
+### Search with Smart Filters (Free)
+The search page covers 13,647+ cities (1,611 with full STR data). Users can filter by home value range (Under $250K, $250K-$350K, $350K-$500K, $500K+), nightly rate range, monthly revenue range, and regulation status (Legal, Regulated, All). Results can be sorted by score, home value, ADR, revenue, or cash-on-cash return. A "Need help deciding?" prompt connects users to the AI assistant.
+
+### Funding Quiz (Free)
+Edge includes a funding strategy quiz covering 48+ funding strategies. Users answer 8 questions about their financial situation and receive personalized funding recommendations. Strategies include DSCR loans, vacation home loans, home equity options, credit card strategies, and more. A disclaimer notes this is educational only and users should consult licensed professionals.
+
+### Property Calculator (3 Free, Then Credits)
+The calculator analyzes any US property address across three investment modes:
+
+1. Buying Mode: Enter a property address and Edge pulls comparable Airbnb listings, calculates projected annual revenue, ADR, occupancy rate, cash-on-cash return, breakeven occupancy, and monthly cash flow. Users can adjust bed/bath count, select revenue percentile (50th, 75th, 90th), exclude/include specific comparable properties, and filter comps by distance, guest count, bedrooms, and amenities (hot tub, pool, sauna, game room, pet friendly).
+
+2. Arbitrage Mode: For rental arbitrage investors who lease a property and operate it as an STR. Calculates whether the STR revenue covers rent plus operating expenses.
+
+3. I Own It Mode: For existing homeowners considering STR conversion. Shows STR vs long-term rental income comparison and whether switching is financially worthwhile.
+
+Data sources: PriceLabs for revenue/ADR/occupancy projections, direct Airbnb API for comparable listings with photos and amenities, Redfin for property details and home values.
+
+### Save, Share & Sync (Free)
+Users can save favorite markets (up to 10) and property reports. All saved data syncs across devices when signed in. Reports can be shared via link or exported as PDF. Users can add personal notes to saved reports. History tracks past analyses (up to 10).
+
+### Free Video Course
+Edge includes a free educational video course on how to invest in your first rural Airbnb, with resources for hiring professional designers and setting up properties.
+
+## Teeco Professional Services (À La Carte)
+
+Teeco offers professional services advertised within the Edge platform. These are separate from the free Edge features and are priced individually:
+
+- Professional Interior Design: Designers with experience working for TV shows, boutique hotels, and luxury properties create custom designs for STR properties.
+- Setup Team: Hire professionals anywhere in America to furnish, stage, and launch your STR property.
+- 1:1 Mentorship: Personal coaching and guidance for STR investors at any experience level.
+- Concierge Airbnb Finding: A done-for-you property sourcing program where Teeco's team finds investment properties matching your criteria.
+- Cohosting: Available for clients who complete the design and setup program. Teeco helps manage the property operations.
+
+## Competitive Comparison
+
+| Feature | Edge by Teeco | AirDNA | Mashvisor | Rabbu |
+|---------|--------------|--------|-----------|-------|
+| Market data access | Free (1,611 cities) | $99-499/month | $49-249/month | Free (limited) |
+| AI assistant | Free | Not available | Not available | Not available |
+| Investment grades | Free (A+ to F) | Paid only | Paid only | Not available |
+| Property calculator | 3 free, then credits | Paid only | Paid only | Free (limited) |
+| Funding strategies | Free (48+ strategies) | Not available | Not available | Not available |
+| Interactive US map | Free | Paid only | Paid only | Free |
+| Comparable listings | Included with analysis | Paid only | Paid only | Included |
+| Data source | PriceLabs + Airbnb | Proprietary | MLS + Airbnb | Airbnb |
+
+## Technical Details
+
+Edge is built with Next.js and deployed on Vercel. The platform uses server-side rendering for SEO optimization and client-side interactivity for the map and calculator features. Market data is updated regularly from PriceLabs. The scoring algorithm is fully transparent and displayed on every city page.
+
+## Contact
+
+Website: https://edge.teeco.co
+Email: hello@teeco.co

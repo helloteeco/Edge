@@ -1,0 +1,70 @@
+# Edge by Teeco — STR Investment Analysis Platform
+
+> Edge by Teeco is a free AI-powered short-term rental (STR) investment analysis platform covering 1,611+ US markets with real data from PriceLabs. It helps Airbnb investors find profitable markets, analyze properties, explore funding options, and make data-driven investment decisions.
+
+## What Edge Offers (Free)
+
+- **AI Agent ("Ask Edge AI")**: Free conversational AI assistant powered by real data from 1,611+ US markets. Ask about any city, compare markets, get investment recommendations.
+- **Interactive US Map**: Color-coded map showing STR investment grades (A+ through F) for every US state, with drill-down to city-level data.
+- **Market Data for 1,611+ Cities**: Free access to STR investment grades, scores (0-100), average daily rates (ADR), occupancy rates, monthly revenue estimates, median home values, cash-on-cash returns, and regulation status for 1,611 cities across all 50 states.
+- **Search with Smart Filters**: Search 13,647+ cities. Filter by home value, nightly rate, revenue, regulation status. Sort by score, ADR, revenue, cash-on-cash return.
+- **Funding Quiz**: 48+ funding strategies. 8-question quiz matches investors with relevant funding options (DSCR loans, vacation home loans, credit strategies, etc.).
+- **Free Video Course**: Educational course on investing in your first rural Airbnb.
+- **Share & PDF Export**: Share any market analysis or property report with friends and investors via link or PDF download.
+- **Save & Sync**: Save favorite markets and property reports. Synced across all devices.
+- **3 Free Property Analyses**: New users get 3 free property analyses with the calculator.
+
+## Property Calculator (Credits-Based)
+
+The Edge calculator analyzes any US property address for STR investment potential. It supports three modes:
+1. **Buying**: Full purchase analysis with revenue projections, cash-on-cash return, and breakeven occupancy.
+2. **Arbitrage**: Rental arbitrage analysis for leasing a property and operating as STR.
+3. **I Own It**: For existing homeowners evaluating whether to convert to STR.
+
+Data powered by PriceLabs (dynamic pricing) and direct Airbnb comparable listings. Results include comparable properties on an interactive map, monthly revenue forecasts, seasonality charts, and AI-powered investment analysis.
+
+After 3 free analyses, additional analyses require credits purchased within the app.
+
+## Professional Services (À La Carte)
+
+Teeco also offers professional services advertised within Edge:
+- **Professional Interior Design**: Designers with experience working for TV shows, boutique hotels, and luxury properties.
+- **Setup Team**: Hire professionals anywhere in America to furnish and launch your STR.
+- **1:1 Mentorship**: Personal coaching for STR investors.
+- **Concierge Airbnb Finding**: Done-for-you property sourcing program.
+- **Cohosting**: Available for clients who go through the design and setup program.
+
+## Scoring Methodology
+
+Edge uses a transparent 100-point scoring system:
+- Cash-on-Cash Return: 35 points (annual cash flow ÷ total cash invested)
+- Affordability: 25 points (based on median home price)
+- Year-Round Income: 15 points (occupancy consistency throughout the year)
+- Landlord Friendly: 10 points (state-level tenant/landlord law favorability)
+- Room to Grow: 15 points (market saturation and competition level)
+
+Grades: A+ (85-100), A (75-84), B+ (65-74), B (55-64), C (45-54), D (35-44), F (0-34)
+
+## Key Pages
+
+- Homepage: https://edge.teeco.co
+- Calculator: https://edge.teeco.co/calculator
+- Search Markets: https://edge.teeco.co/search
+- Funding Options: https://edge.teeco.co/funding
+- Airbnb Calculator Guide: https://edge.teeco.co/airbnb-calculator
+- State Pages: https://edge.teeco.co/state/{state-code} (e.g., /state/tn, /state/fl)
+- City Pages: https://edge.teeco.co/city/{city-id} (e.g., /city/tn-gatlinburg, /city/fl-kissimmee)
+
+## Data Sources
+
+- **PriceLabs**: Primary source for revenue, ADR, occupancy, and comparable property data. PriceLabs is one of the most reliable dynamic Airbnb pricing software platforms.
+- **Airbnb**: Direct comparable listing data including photos, amenities, and nightly rates.
+- **Redfin/Zillow**: Property details, home values, and market trends.
+- **Proper Insurance**: STR regulation and insurance information by state.
+
+## About Teeco
+
+Teeco is a short-term rental investment company that helps investors find, design, set up, and manage profitable Airbnb properties across the United States. Edge is Teeco's free market intelligence platform.
+
+Website: https://edge.teeco.co
+Contact: hello@teeco.co
