@@ -286,6 +286,10 @@ export default function CalculatorPage() {
   const [excludedCompIds, setExcludedCompIds] = useState<Set<number | string>>(new Set());
   // Expandable comp cards: show 5 initially, expand to all
   const [showAllComps, setShowAllComps] = useState(false);
+  // Comp sorting: 'relevance' (default), 'revenue', 'distance', 'bedrooms', 'occupancy', 'rating'
+  const [compSortBy, setCompSortBy] = useState<'relevance' | 'revenue' | 'distance' | 'bedrooms' | 'occupancy' | 'rating'>('relevance');
+  // Select-only mode: when true, only selected (non-excluded) comps are used; user picks specific comps
+  const [selectOnlyMode, setSelectOnlyMode] = useState(false);
   
   // Full unfiltered comp set from API — used for local bedroom re-filtering
   const [allComps, setAllComps] = useState<ComparableListing[]>([]);
@@ -414,6 +418,8 @@ export default function CalculatorPage() {
     setExcludedCompIds(new Set());
     setRealOccupancyData({});
     setShowAllComps(false);
+    setCompSortBy('relevance');
+    setSelectOnlyMode(false);
     // Reset the initial refilter flag so the next analysis gets auto-filtered too
     hasInitialRefiltered.current = false;
   }, [result?.address]);
@@ -483,6 +489,8 @@ export default function CalculatorPage() {
         } : prev);
         
         setExcludedCompIds(new Set());
+        setCompSortBy('relevance');
+        setSelectOnlyMode(false);
         
         console.log(`[InitialRefilter] Done: ${filtered.filteredListings} comps, ADR $${filtered.avgAdr}, Rev $${annualRevenue}/yr`);
       } catch (err) {
@@ -5618,7 +5626,18 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               // Calculate confidence score based on ACTIVE comp quality
               const allComps = result.comparables;
               const activeComps = allComps.filter(c => !excludedCompIds.has(c.id));
-              const comps = allComps; // Show all, but mark excluded
+              // Sort comps based on selected sort option
+              const sortedComps = [...allComps].sort((a, b) => {
+                switch (compSortBy) {
+                  case 'revenue': return (b.annualRevenue || 0) - (a.annualRevenue || 0);
+                  case 'distance': return (a.distance || 999) - (b.distance || 999);
+                  case 'bedrooms': return Math.abs((a.bedrooms || 0) - result.bedrooms) - Math.abs((b.bedrooms || 0) - result.bedrooms);
+                  case 'occupancy': return (b.occupancy || 0) - (a.occupancy || 0);
+                  case 'rating': return (b.rating || 0) - (a.rating || 0);
+                  default: return (b.relevanceScore || 0) - (a.relevanceScore || 0);
+                }
+              });
+              const comps = sortedComps;
               const bedroomMatches = activeComps.filter(c => c.bedrooms === result.bedrooms).length;
               const bedroomMatchPct = activeComps.length > 0 ? (bedroomMatches / activeComps.length) * 100 : 0;
               const avgDistance = activeComps.reduce((sum, c) => sum + (c.distance || 0), 0) / (activeComps.length || 1);
@@ -5644,8 +5663,68 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                   </span>
                 </div>
                 <p className="text-xs mb-2" style={{ color: "#787060" }}>
-                  {activeComps.length}/{allComps.length} listings shown • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
+                  {activeComps.length}/{allComps.length} listings {selectOnlyMode ? 'selected' : 'included'} • {bedroomMatches} exact bedroom match{bedroomMatches !== 1 ? "es" : ""} • {avgDistance.toFixed(1)}mi avg distance
                 </p>
+                
+                {/* Sort & Selection Mode Controls */}
+                <div className="mb-3 space-y-2">
+                  {/* Sort pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                    <span className="text-[10px] font-semibold shrink-0" style={{ color: '#a09880' }}>Sort:</span>
+                    {[
+                      { key: 'relevance' as const, label: 'Best Match' },
+                      { key: 'revenue' as const, label: 'Revenue ↓' },
+                      { key: 'distance' as const, label: 'Closest' },
+                      { key: 'occupancy' as const, label: 'Occupancy ↓' },
+                      { key: 'rating' as const, label: 'Rating ↓' },
+                      { key: 'bedrooms' as const, label: `${result.bedrooms}BR Match` },
+                    ].map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setCompSortBy(opt.key)}
+                        className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all"
+                        style={{
+                          backgroundColor: compSortBy === opt.key ? '#2b2823' : '#f5f4f0',
+                          color: compSortBy === opt.key ? '#ffffff' : '#787060',
+                          border: compSortBy === opt.key ? 'none' : '1px solid #e5e3da',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Selection mode toggle */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (!selectOnlyMode) {
+                          // Switching TO select-only: exclude ALL comps first, user will pick which to include
+                          setSelectOnlyMode(true);
+                          setExcludedCompIds(new Set(allComps.map(c => c.id)));
+                          setShowAllComps(true);
+                        } else {
+                          // Switching back to normal: include all
+                          setSelectOnlyMode(false);
+                          setExcludedCompIds(new Set());
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+                      style={{
+                        backgroundColor: selectOnlyMode ? '#fef3c7' : '#f5f4f0',
+                        color: selectOnlyMode ? '#92400e' : '#787060',
+                        border: selectOnlyMode ? '1.5px solid #f59e0b' : '1px solid #e5e3da',
+                      }}
+                    >
+                      {selectOnlyMode ? '🎯 Select Only Mode' : '🎯 Select Only'}
+                    </button>
+                    {selectOnlyMode && (
+                      <span className="text-[10px]" style={{ color: '#92400e' }}>
+                        Tap comps to include • {activeComps.length} selected
+                      </span>
+                    )}
+                  </div>
+                </div>
                 {/* Data source explanation */}
                 {result.dataSource && result.dataSource.toLowerCase().includes('pricelabs') && (
                   <div className="rounded-lg px-3 py-2 mb-3" style={{ backgroundColor: "#eff6ff", border: "1px solid #dbeafe" }}>
@@ -5713,11 +5792,11 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       </div>
                     </div>
                     <button
-                      onClick={() => setExcludedCompIds(new Set())}
+                      onClick={() => { setExcludedCompIds(new Set()); setSelectOnlyMode(false); }}
                       className="mt-2 text-xs font-medium px-3 py-1 rounded-full transition-colors"
                       style={{ backgroundColor: '#dcfce7', color: '#15803d' }}
                     >
-                      Reset Selection (Include All)
+                      {selectOnlyMode ? 'Exit Select Only (Include All)' : 'Reset Selection (Include All)'}
                     </button>
                   </div>
                   );
@@ -5740,7 +5819,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                           toggleCompExclusion(listing.id);
                         }}
                         className="flex-shrink-0 self-center"
-                        title={isExcluded ? "Include this comp" : "Exclude this comp"}
+                        title={selectOnlyMode ? (isExcluded ? "Select this comp" : "Deselect this comp") : (isExcluded ? "Include this comp" : "Exclude this comp")}
                       >
                         <div
                           className="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors"
@@ -5837,7 +5916,10 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 )}
                 
                 <p className="text-xs mt-3 text-center" style={{ color: '#a09880' }}>
-                  Tap checkboxes to include/exclude listings • Revenue on each card is estimated from its nightly rate
+                  {selectOnlyMode 
+                    ? 'Tap checkboxes to select specific comps • Only selected comps affect revenue'
+                    : 'Tap checkboxes to include/exclude listings • Revenue on each card is estimated from its nightly rate'
+                  }
                 </p>
               </div>
               );
