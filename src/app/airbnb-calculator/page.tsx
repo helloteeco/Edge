@@ -8,7 +8,7 @@ export default function AirbnbCalculatorLanding() {
   const counts = getMarketCounts();
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#e5e3da' }}>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: '#e5e3da' }}>
       {/* Hero Section */}
       <section 
         className="relative px-4 pt-12 pb-16 text-center"

@@ -756,3 +756,13 @@
 - [x] Find the logo component/image used on the homepage and map (teeco-icon-black.png with invert)
 - [x] Update the /airbnb-calculator SEO landing page to use the same logo
 - [x] Do not change anything else on the page (only 1 line changed)
+
+## SYNC: Mirror latest code to backup GitHub repo (February 2026)
+- [x] Verify Vercel deployment passes for latest commit (8555887 — Ready, 1m 24s)
+- [x] Find backup GitHub repo name (helloteeco/edge-backup)
+- [x] Push latest code to backup repo (force-pushed main, both repos at 8555887)
+- [x] Do not delete or change anything in the main Edge repo (confirmed identical)
+
+## BUG: /airbnb-calculator tab bar not flush/fixed at bottom (February 2026)
+- [x] Add pb-20 to the airbnb-calculator page so content clears the fixed tab bar
+- [x] Ensure tab bar appears flush and fixed like all other pages
