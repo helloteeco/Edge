@@ -785,3 +785,22 @@
 - [x] Fix: Added .page-header-row class with !important overrides + :not(.page-header-row) exclusions on mobile CSS rules
 - [x] Applied page-header-row to blog listing, blog post, state, city, and calculator page headers
 - [x] Do not change any links, content, or other features
+
+## Supabase Security Vulnerabilities — 7 ERRORS fixed (February 2026)
+- [x] Investigate 7 security errors flagged by Supabase Security Advisor
+- [x] Root cause: 11 tables had RLS disabled, 5 functions had mutable search_path
+- [x] Enable RLS on all 11 unprotected tables (shared_analyses, credit_transactions, free_previews, chat_feedback, project_context, rate_limit_entries, quiz_leads, market_data, airbnb_occupancy_cache, limited_data_locations, coaching_leads)
+- [x] Add anon-role RLS policies matching exact app usage patterns (SELECT/INSERT/UPDATE/DELETE per table)
+- [x] Fix search_path on 5 functions (deduct_credit, refund_credit, check_rate_limit, cleanup_rate_limit_entries, get_daily_free_preview_count)
+- [x] Verified: 0 ERRORS remaining (down from 7), all tables accessible as anon role, RPC functions working, live site returning 200s
+- [x] No app code changes — database-only fixes via Supabase migrations
+
+## Supabase: Switch to service_role key + tighten RLS policies (February 2026)
+- [ ] Create git branch for service_role key change
+- [ ] Change src/lib/supabase.ts to use SUPABASE_SERVICE_ROLE_KEY (server-side only)
+- [ ] Verify TypeScript build passes
+- [ ] Test service_role key works against real Supabase
+- [ ] Merge to main, verify Vercel deployment succeeds
+- [ ] Tighten RLS policies: restrict anon role on all tables
+- [ ] Re-run security advisor, verify 0 errors and 0 warnings
+- [ ] No UX/design changes — database + one env var reference only
