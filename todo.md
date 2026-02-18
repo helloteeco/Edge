@@ -771,3 +771,8 @@
 - [x] Add CSV download button to Users tab (Email, Signed up, Credits Limit, Credits Used, Last Login)
 - [x] Add CSV download button to Coaching Leads section in Leads tab (Email, Budget, Timeline, Experience, Qualified, Date)
 - [x] Do not change any other features or UI elements (only admin dashboard touched)
+
+## BUG: Homepage hero subtitle shows hardcoded "1,444+" instead of dynamic count (February 2026)
+- [x] Find hardcoded "1,444+" in homepage hero subtitle (line 239 of page.tsx)
+- [x] Make it dynamic using getMarketCounts().withFullData.toLocaleString()
+- [x] Do not change anything else on the page (only 1 line changed)

@@ -236,7 +236,7 @@ export default function HomePage() {
               Find, Analyze & Fund Short-Term Rentals
             </h1>
             <p className="text-[11px] sm:text-sm mb-2 sm:mb-3 leading-snug sm:leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Real data on 1,444+ markets. Built by an investor generating $1M+/yr.
+              Real data on {getMarketCounts().withFullData.toLocaleString()}+ markets. Built by an investor generating $1M+/yr.
             </p>
 
           </div>
