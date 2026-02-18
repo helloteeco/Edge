@@ -776,3 +776,12 @@
 - [x] Find hardcoded "1,444+" in homepage hero subtitle (line 239 of page.tsx)
 - [x] Make it dynamic using getMarketCounts().withFullData.toLocaleString()
 - [x] Do not change anything else on the page (only 1 line changed)
+
+## UI: Account icon not consistently placed on blog pages (February 2026)
+- [x] Blog listing page (/blog) has account icon floating below header, not in header row
+- [x] Individual blog post pages have same issue
+- [x] Fix to match homepage: account icon in top-right of header bar, inline with logo
+- [x] Root cause: globals.css mobile overrides (.flex.items-center.gap-2, .flex.justify-between, .flex.items-center.justify-between.mb-4) were too broad, affecting page headers
+- [x] Fix: Added .page-header-row class with !important overrides + :not(.page-header-row) exclusions on mobile CSS rules
+- [x] Applied page-header-row to blog listing, blog post, state, city, and calculator page headers
+- [x] Do not change any links, content, or other features

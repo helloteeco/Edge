@@ -4493,7 +4493,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               <p className="text-xs text-white/60 hidden sm:block">Your unfair advantage in STR investing</p>
             </div>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 page-header-row">
             <AuthHeader variant="dark" />
             <Link href="/" className="text-sm text-white/70 hover:text-white">
               ← Back to Map
