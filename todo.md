@@ -813,21 +813,26 @@
 - [x] Audit existing blog structure and user data in Edge codebase
 - [x] Draft comprehensive implementation proposal
 - [x] Present proposal to user for approval
-- [ ] Create blog_posts table in Supabase
-- [ ] Create email_preferences table in Supabase
-- [ ] Build /api/admin/generate-blog endpoint using built-in LLM
-- [ ] Build dynamic /blog/[slug] page for database posts
-- [ ] Update /blog listing page to show database posts alongside hardcoded ones
-- [ ] Build draft review email notification to jeff@teeco.co
-- [ ] Build /api/admin/publish-blog and /api/admin/reject-blog endpoints
-- [ ] Build email preferences + unsubscribe endpoint
-- [ ] Build biweekly newsletter sending cron
-- [ ] Add Vercel cron entries for daily generation + biweekly sending
-- [ ] Generate first 7 seed posts as drafts (popular market city deep dives)
-- [ ] Use ALL available cities dynamically (13,381+ and growing), not just full-data cities
-- [ ] Conversational/educational tone with data support
-- [ ] CAN-SPAM compliant: 30 N. Gould St. Ste R, Sheridan WY 82801
-- [ ] SEO-optimized: city/state in title, slug, meta description, OG tags, canonical URL
-- [ ] Geo-targeted: structured data (Article + Place schema), internal links to city/state pages
-- [ ] Long-tail keyword targeting (e.g., "[city] airbnb investment 2026")
-- [ ] Zero changes to existing app functionality
+- [x] Create blog_posts table in Supabase
+- [x] Create email_preferences table in Supabase
+- [x] Build /api/admin/generate-blog endpoint using OpenAI (built-in LLM)
+- [x] Build dynamic /blog/[slug] page for database posts
+- [x] Update /blog listing page to show database posts alongside hardcoded ones
+- [x] Build draft review email notification to jeff@teeco.co
+- [x] Build /api/admin/blog-review endpoint (publish/reject actions)
+- [x] Build email preferences + unsubscribe endpoint + /unsubscribe page
+- [x] Build biweekly newsletter sending cron (1st/15th of month)
+- [x] Add Vercel cron entries: daily generation (8am UTC) + biweekly newsletter (1st/15th 2pm UTC)
+- [ ] Generate first 7 seed posts as drafts (popular market city deep dives) — ready to trigger
+- [x] Use ALL available cities dynamically (13,381+ and growing), not just full-data cities
+- [x] Conversational/educational tone with data support (configured in LLM prompt)
+- [x] CAN-SPAM compliant: 30 N. Gould St. Ste R, Sheridan WY 82801
+- [x] SEO-optimized: city/state in title, slug, meta description, OG tags, canonical URL
+- [x] Geo-targeted: structured data (Article + Place schema), internal links to city/state pages
+- [x] Long-tail keyword targeting (e.g., "[city] airbnb investment 2026")
+- [x] Zero changes to existing app functionality — verified all pages return 200
+
+## BUG: Double-tap on input fields triggers save heart animation (February 2026)
+- [ ] DoubleTapSave intercepts double-taps on input/select fields in calculator
+- [ ] Fix: exclude input, select, textarea elements from double-tap detection
+- [ ] No other features changed

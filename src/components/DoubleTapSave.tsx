@@ -66,6 +66,13 @@ export function DoubleTapSave({ children, isSaved, onToggleSave, className = "" 
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleDoubleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Skip double-tap detection on interactive form elements (inputs, selects, textareas, buttons)
+    const target = e.target as HTMLElement;
+    const tagName = target?.tagName?.toLowerCase();
+    if (tagName === 'input' || tagName === 'select' || tagName === 'textarea' || tagName === 'button' || tagName === 'label' || target?.closest('input, select, textarea, button, label, [contenteditable]')) {
+      return;
+    }
+
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
 
