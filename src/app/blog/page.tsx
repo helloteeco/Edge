@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AuthHeader from "@/components/AuthHeader";
 
-const blogPosts = [
+// Existing hardcoded post — kept as-is
+const staticPosts = [
   {
     slug: "best-airbnb-markets-under-300k",
     title: "25 Best Airbnb Markets Under $300K in 2026",
@@ -13,10 +15,55 @@ const blogPosts = [
     readTime: "8 min read",
     category: "Market Research",
     emoji: "📊",
+    isStatic: true,
   },
 ];
 
+interface DynamicPost {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  featured_data: {
+    cityName?: string;
+    stateName?: string;
+    marketScore?: number;
+    strMonthlyRevenue?: string;
+  };
+  status: string;
+  published_at: string | null;
+  created_at: string;
+}
+
+const categoryConfig: Record<string, { emoji: string; label: string }> = {
+  "city-dive": { emoji: "🏙️", label: "City Deep Dive" },
+  "roundup": { emoji: "📊", label: "Market Roundup" },
+  "guide": { emoji: "📚", label: "Investment Guide" },
+};
+
 export default function BlogPage() {
+  const [dynamicPosts, setDynamicPosts] = useState<DynamicPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        const res = await fetch("/api/blog-posts?limit=50");
+        if (res.ok) {
+          const data = await res.json();
+          setDynamicPosts(data.posts || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch blog posts:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPosts();
+  }, []);
+
   return (
     <div className="min-h-screen pb-20" style={{ backgroundColor: '#e5e3da' }}>
       {/* Header */}
@@ -51,14 +98,14 @@ export default function BlogPage() {
       {/* Blog Posts */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="space-y-4">
-          {blogPosts.map((post) => (
+          {/* Static (hardcoded) posts first */}
+          {staticPosts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
               className="block rounded-2xl overflow-hidden transition-all hover:shadow-md active:scale-[0.99]"
               style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
             >
-              {/* Category Banner */}
               <div className="px-5 pt-4 pb-0 flex items-center gap-2">
                 <span className="text-lg">{post.emoji}</span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#2b2823', color: '#ffffff' }}>
@@ -68,8 +115,6 @@ export default function BlogPage() {
                 <span className="text-xs" style={{ color: '#9a9488' }}>·</span>
                 <span className="text-xs" style={{ color: '#787060' }}>{post.readTime}</span>
               </div>
-
-              {/* Content */}
               <div className="px-5 py-4">
                 <h2 className="text-lg font-bold mb-1.5" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
                   {post.title}
@@ -86,14 +131,75 @@ export default function BlogPage() {
               </div>
             </Link>
           ))}
+
+          {/* Dynamic (database) posts */}
+          {dynamicPosts.map((post) => {
+            const cat = categoryConfig[post.category] || { emoji: "📝", label: post.category };
+            const dateStr = post.published_at
+              ? new Date(post.published_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+              : new Date(post.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+            const wordCount = 900; // Approximate — actual content not loaded in listing
+            const readTime = `${Math.max(3, Math.ceil(wordCount / 200))} min read`;
+
+            return (
+              <Link
+                key={post.id}
+                href={`/blog/${post.slug}`}
+                className="block rounded-2xl overflow-hidden transition-all hover:shadow-md active:scale-[0.99]"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd', boxShadow: '0 2px 8px -2px rgba(43, 40, 35, 0.08)' }}
+              >
+                <div className="px-5 pt-4 pb-0 flex items-center gap-2">
+                  <span className="text-lg">{cat.emoji}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#2b2823', color: '#ffffff' }}>
+                    {cat.label}
+                  </span>
+                  <span className="text-xs" style={{ color: '#787060' }}>{dateStr}</span>
+                  <span className="text-xs" style={{ color: '#9a9488' }}>·</span>
+                  <span className="text-xs" style={{ color: '#787060' }}>{readTime}</span>
+                </div>
+                <div className="px-5 py-4">
+                  <h2 className="text-lg font-bold mb-1.5" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
+                    {post.title}
+                  </h2>
+                  <p className="text-sm leading-relaxed" style={{ color: '#787060' }}>
+                    {post.description}
+                  </p>
+                  {/* Inline data teaser for city dives */}
+                  {post.featured_data?.marketScore && (
+                    <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: '#9a9488' }}>
+                      <span>Edge Score: {post.featured_data.marketScore}/100</span>
+                      {post.featured_data.strMonthlyRevenue && (
+                        <span>${Number(post.featured_data.strMonthlyRevenue).toLocaleString()}/mo revenue</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 mt-3 text-sm font-medium" style={{ color: '#2b2823' }}>
+                    Read article
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Loading state */}
+          {loading && (
+            <div className="text-center py-4">
+              <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#2b2823', borderTopColor: 'transparent' }} />
+            </div>
+          )}
         </div>
 
-        {/* More Coming Soon */}
-        <div className="mt-6 rounded-xl p-4 text-center" style={{ backgroundColor: 'rgba(43, 40, 35, 0.04)', border: '1px dashed #d8d6cd' }}>
-          <p className="text-sm" style={{ color: '#9a9488' }}>
-            More reports coming soon — covering top markets by cash flow, best states for STR investing, seasonal vs. year-round markets, and more.
-          </p>
-        </div>
+        {/* More Coming Soon — only show if no dynamic posts yet */}
+        {!loading && dynamicPosts.length === 0 && (
+          <div className="mt-6 rounded-xl p-4 text-center" style={{ backgroundColor: 'rgba(43, 40, 35, 0.04)', border: '1px dashed #d8d6cd' }}>
+            <p className="text-sm" style={{ color: '#9a9488' }}>
+              More reports coming soon — covering top markets by cash flow, best states for STR investing, seasonal vs. year-round markets, and more.
+            </p>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-8 rounded-2xl p-6 text-center" style={{ backgroundColor: '#2b2823' }}>

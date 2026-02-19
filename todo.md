@@ -796,11 +796,38 @@
 - [x] No app code changes — database-only fixes via Supabase migrations
 
 ## Supabase: Switch to service_role key + tighten RLS policies (February 2026)
-- [ ] Create git branch for service_role key change
-- [ ] Change src/lib/supabase.ts to use SUPABASE_SERVICE_ROLE_KEY (server-side only)
-- [ ] Verify TypeScript build passes
-- [ ] Test service_role key works against real Supabase
-- [ ] Merge to main, verify Vercel deployment succeeds
-- [ ] Tighten RLS policies: restrict anon role on all tables
-- [ ] Re-run security advisor, verify 0 errors and 0 warnings
-- [ ] No UX/design changes — database + one env var reference only
+- [x] Create git branch for service_role key change
+- [x] Change src/lib/supabase.ts to use SUPABASE_SERVICE_ROLE_KEY (server-side only)
+- [x] Merge to main, verify Vercel deployment succeeds (all pages returning 200)
+- [x] Add SUPABASE_SERVICE_ROLE_KEY env var to Vercel
+- [x] Trigger redeploy with new env var
+- [x] Drop all permissive anon/public policies on all tables
+- [x] Add service_role-only policies on all tables
+- [x] Re-run security advisor — **0 errors, 0 warnings** (was 7 errors + 34 warnings)
+- [x] Final smoke test: all pages returning 200, no user-facing changes
+- [x] No UX/design changes — database + one env var reference only
+
+## FEATURE: Automated daily blog content + email newsletter system (February 2026)
+- [x] Research best practices for automated SEO blog content generation
+- [x] Research email opt-in/out systems (CAN-SPAM compliance)
+- [x] Audit existing blog structure and user data in Edge codebase
+- [x] Draft comprehensive implementation proposal
+- [x] Present proposal to user for approval
+- [ ] Create blog_posts table in Supabase
+- [ ] Create email_preferences table in Supabase
+- [ ] Build /api/admin/generate-blog endpoint using built-in LLM
+- [ ] Build dynamic /blog/[slug] page for database posts
+- [ ] Update /blog listing page to show database posts alongside hardcoded ones
+- [ ] Build draft review email notification to jeff@teeco.co
+- [ ] Build /api/admin/publish-blog and /api/admin/reject-blog endpoints
+- [ ] Build email preferences + unsubscribe endpoint
+- [ ] Build biweekly newsletter sending cron
+- [ ] Add Vercel cron entries for daily generation + biweekly sending
+- [ ] Generate first 7 seed posts as drafts (popular market city deep dives)
+- [ ] Use ALL available cities dynamically (13,381+ and growing), not just full-data cities
+- [ ] Conversational/educational tone with data support
+- [ ] CAN-SPAM compliant: 30 N. Gould St. Ste R, Sheridan WY 82801
+- [ ] SEO-optimized: city/state in title, slug, meta description, OG tags, canonical URL
+- [ ] Geo-targeted: structured data (Article + Place schema), internal links to city/state pages
+- [ ] Long-tail keyword targeting (e.g., "[city] airbnb investment 2026")
+- [ ] Zero changes to existing app functionality
