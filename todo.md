@@ -861,5 +861,7 @@
 - [x] Blog generation: explain all financial concepts in plain language so anyone can follow
 - [x] Add delete button to blog review dashboard
 - [x] Ensure deleted posts excluded from newsletter (already safe — deleted rows removed from DB)
-- [ ] Regenerate NYC blog post with new editorial guidelines
-- [ ] Send review email to Jeff for new NYC post
+- [x] Regenerate NYC blog post with new editorial guidelines
+- [x] Send review email to Jeff for new NYC post
+- [x] Turn review notification email into admin hub email with quick links (dashboard, analytics, blog review)
+- [x] Make admin email recipients configurable via ADMIN_EMAILS env var
