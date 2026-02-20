@@ -145,9 +145,9 @@ async function sendReviewNotifications() {
              style="display: inline-block; padding: 8px 16px; background: #2b2823; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
             Preview Post
           </a>
-          <a href="https://edge.teeco.co/api/admin/blog-review?password=${ADMIN_PASSWORD}" 
+          <a href="https://edge.teeco.co/blog/review?password=${ADMIN_PASSWORD}" 
              style="display: inline-block; padding: 8px 16px; background: #22c55e; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
-            Approve via API
+            Review & Approve
           </a>
         </div>
       </div>
@@ -164,10 +164,7 @@ async function sendReviewNotifications() {
         ${postsHtml}
         <div style="margin-top: 20px; padding: 16px; background: rgba(43,40,35,0.04); border-radius: 8px; text-align: center;">
           <p style="margin: 0; color: #787060; font-size: 13px;">
-            To publish: POST to <code>/api/admin/blog-review?password=YOUR_PASSWORD</code> with <code>{"action":"publish","post_id":"ID"}</code>
-          </p>
-          <p style="margin: 8px 0 0 0; color: #787060; font-size: 13px;">
-            To reject: Same endpoint with <code>{"action":"reject","post_id":"ID"}</code>
+            Click "Review & Approve" above to manage all drafts from the review dashboard.
           </p>
         </div>
       </div>

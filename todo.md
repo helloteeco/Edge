@@ -836,3 +836,12 @@
 - [x] DoubleTapSave intercepts double-taps on input/select fields in calculator
 - [x] Fix: exclude input, select, textarea, button, label elements from double-tap detection
 - [x] No other features changed
+
+## BUG: Blog approve link shows raw JSON instead of confirmation page (February 2026)
+- [ ] Approve link in review email goes to API endpoint, shows raw JSON
+- [ ] Post status stays "draft" — approve action didn't actually publish
+- [ ] Create proper /blog/review page with clean approve/reject UI
+- [ ] Update email template to link to the new review page
+- [ ] Manually publish the existing NYC draft post
+- [ ] Change newsletter cron from 1st/15th (bimonthly) to Tuesday/Thursday 10am EST (twice weekly)
+- [ ] No changes to existing app features
