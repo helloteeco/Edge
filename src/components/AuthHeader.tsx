@@ -17,6 +17,8 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
   const [showDropdown, setShowDropdown] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [newsletterOptedIn, setNewsletterOptedIn] = useState<boolean | null>(null);
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
 
   // Check localStorage for auth state
   const checkAuthState = useCallback(() => {
@@ -78,6 +80,18 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email, avatarId: localAvatar }),
             }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+      // Fetch newsletter preference
+      fetch(`/api/email-preferences?email=${encodeURIComponent(email)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.preferences) {
+            setNewsletterOptedIn(data.preferences.newsletter_opted_in);
+          } else {
+            // No preferences record yet — default to not subscribed
+            setNewsletterOptedIn(null);
           }
         })
         .catch(() => {});
@@ -211,6 +225,44 @@ export default function AuthHeader({ className = "", variant = "light" }: AuthHe
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
                   </svg>
                   Change Avatar
+                </button>
+                {/* Newsletter toggle */}
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!userEmail || newsletterLoading) return;
+                    setNewsletterLoading(true);
+                    const newValue = !newsletterOptedIn;
+                    try {
+                      const res = await fetch('/api/email-preferences', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: userEmail, newsletter_opted_in: newValue }),
+                      });
+                      if (res.ok) {
+                        setNewsletterOptedIn(newValue);
+                      }
+                    } catch { /* silent */ }
+                    setNewsletterLoading(false);
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-all hover:bg-gray-50 min-h-[44px]"
+                  style={{ color: '#4a4640', borderBottom: '1px solid #f0efe9' }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                    <span>Email Updates</span>
+                  </div>
+                  <div
+                    className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0"
+                    style={{ backgroundColor: newsletterOptedIn ? '#22c55e' : '#d1d5db' }}
+                  >
+                    <div
+                      className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform"
+                      style={{ left: newsletterOptedIn ? '18px' : '2px' }}
+                    />
+                  </div>
                 </button>
                 {/* Sign out button */}
                 <button

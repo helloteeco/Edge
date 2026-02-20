@@ -850,3 +850,10 @@
 - [x] One-click approve from email: clicking Approve in review email directly publishes the post
 - [x] Update review email template to use direct approve link (not API instructions)
 - [x] Show clean confirmation page after email approve (not raw JSON)
+
+## Blog listing improvements + newsletter opt-out (February 2026)
+- [x] Blog listing: most recent posts shown first (newest at top)
+- [x] Blog listing: show full dates (e.g., "February 20, 2026" not "February 2026")
+- [x] Blog listing: add search bar to filter/search blog posts
+- [x] Newsletter opt-out: signed-in users can opt out of email list
+- [x] Verify newsletter was NOT auto-sent to subscribers (only review email to Jeff)
