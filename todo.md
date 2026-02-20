@@ -858,3 +858,4 @@
 - [x] Newsletter opt-out: signed-in users can opt out of email list
 - [x] Verify newsletter was NOT auto-sent to subscribers (only review email to Jeff)
 - [x] Embed editorial quality guidelines into blog generation AI prompt (capital-allocator standards)
+- [x] Blog generation: explain all financial concepts in plain language so anyone can follow
