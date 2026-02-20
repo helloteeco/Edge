@@ -865,3 +865,4 @@
 - [x] Send review email to Jeff for new NYC post
 - [x] Turn review notification email into admin hub email with quick links (dashboard, analytics, blog review)
 - [x] Make admin email recipients configurable via ADMIN_EMAILS env var
+- [x] Add Stephanie@teeco.co to admin email recipients

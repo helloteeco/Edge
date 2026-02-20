@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Admin email recipients - comma-separated in env var, defaults to jeff@teeco.co
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "jeff@teeco.co")
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "jeff@teeco.co,stephanie@teeco.co")
   .split(",")
   .map((e) => e.trim())
   .filter(Boolean);
