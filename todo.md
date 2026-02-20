@@ -833,6 +833,6 @@
 - [x] Zero changes to existing app functionality — verified all pages return 200
 
 ## BUG: Double-tap on input fields triggers save heart animation (February 2026)
-- [ ] DoubleTapSave intercepts double-taps on input/select fields in calculator
-- [ ] Fix: exclude input, select, textarea elements from double-tap detection
-- [ ] No other features changed
+- [x] DoubleTapSave intercepts double-taps on input/select fields in calculator
+- [x] Fix: exclude input, select, textarea, button, label elements from double-tap detection
+- [x] No other features changed

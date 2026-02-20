@@ -50,8 +50,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, post_id } = body;
 
-    if (!action || !post_id) {
-      return NextResponse.json({ error: "Missing action or post_id" }, { status: 400 });
+    if (!action) {
+      return NextResponse.json({ error: "Missing action" }, { status: 400 });
+    }
+
+    // notify-review doesn't need a post_id
+    if (action === "notify-review") {
+      return await sendReviewNotifications();
+    }
+
+    if (!post_id) {
+      return NextResponse.json({ error: "Missing post_id" }, { status: 400 });
     }
 
     if (action === "publish") {
@@ -87,11 +96,6 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true, action: "rejected" });
-    }
-
-    if (action === "notify-review") {
-      // Send review notification email for all un-notified drafts
-      return await sendReviewNotifications();
     }
 
     return NextResponse.json({ error: "Invalid action. Use: publish, reject, notify-review" }, { status: 400 });
