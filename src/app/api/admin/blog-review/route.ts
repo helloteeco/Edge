@@ -59,6 +59,15 @@ export async function POST(request: NextRequest) {
       return await sendReviewNotifications();
     }
 
+    // resend-notification: reset review_notified flag and re-send
+    if (action === "resend-notification") {
+      await supabase
+        .from("blog_posts")
+        .update({ review_notified: false })
+        .eq("status", "draft");
+      return await sendReviewNotifications();
+    }
+
     if (!post_id) {
       return NextResponse.json({ error: "Missing post_id" }, { status: 400 });
     }
