@@ -845,3 +845,8 @@
 - [ ] Manually publish the existing NYC draft post
 - [ ] Change newsletter cron from 1st/15th (bimonthly) to Tuesday/Thursday 10am EST (twice weekly)
 - [ ] No changes to existing app features
+
+## One-click approve from email (February 2026)
+- [x] One-click approve from email: clicking Approve in review email directly publishes the post
+- [x] Update review email template to use direct approve link (not API instructions)
+- [x] Show clean confirmation page after email approve (not raw JSON)

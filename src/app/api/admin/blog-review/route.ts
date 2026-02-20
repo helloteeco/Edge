@@ -135,20 +135,32 @@ async function sendReviewNotifications() {
       <div style="border: 1px solid #e5e3da; border-radius: 12px; padding: 20px; margin-bottom: 16px; background: #ffffff;">
         <h3 style="margin: 0 0 8px 0; color: #2b2823; font-family: Georgia, serif;">${post.title}</h3>
         <p style="margin: 0 0 12px 0; color: #787060; font-size: 14px;">${post.description}</p>
-        <div style="display: flex; gap: 12px; font-size: 13px; color: #9a9488;">
+        <div style="display: flex; gap: 12px; font-size: 13px; color: #9a9488; margin-bottom: 4px;">
           <span>📍 ${cityName}, ${stateName}</span>
           ${score ? `<span>📊 Score: ${score}/100</span>` : ""}
           <span>📁 ${post.category}</span>
         </div>
-        <div style="margin-top: 16px; display: flex; gap: 8px;">
-          <a href="https://edge.teeco.co/blog/${post.slug}?preview=true&password=${ADMIN_PASSWORD}" 
-             style="display: inline-block; padding: 8px 16px; background: #2b2823; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
-            Preview Post
-          </a>
-          <a href="https://edge.teeco.co/blog/review?password=${ADMIN_PASSWORD}" 
-             style="display: inline-block; padding: 8px 16px; background: #22c55e; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
-            Review & Approve
-          </a>
+        <div style="margin-top: 16px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="padding-right: 8px;">
+              <a href="https://edge.teeco.co/blog/${post.slug}?preview=true&password=${ADMIN_PASSWORD}" 
+                 style="display: inline-block; padding: 10px 18px; background: #2b2823; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                Preview Post
+              </a>
+            </td>
+            <td style="padding-right: 8px;">
+              <a href="https://edge.teeco.co/api/admin/quick-approve?password=${ADMIN_PASSWORD}&post_id=${post.id}" 
+                 style="display: inline-block; padding: 10px 18px; background: #22c55e; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                ✅ Approve & Publish
+              </a>
+            </td>
+            <td>
+              <a href="https://edge.teeco.co/blog/review?password=${ADMIN_PASSWORD}" 
+                 style="display: inline-block; padding: 10px 18px; background: #ffffff; color: #787060; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid #e5e3da;">
+                View Dashboard
+              </a>
+            </td>
+          </tr></table>
         </div>
       </div>
     `;
@@ -164,7 +176,7 @@ async function sendReviewNotifications() {
         ${postsHtml}
         <div style="margin-top: 20px; padding: 16px; background: rgba(43,40,35,0.04); border-radius: 8px; text-align: center;">
           <p style="margin: 0; color: #787060; font-size: 13px;">
-            Click "Review & Approve" above to manage all drafts from the review dashboard.
+            Tap "Approve & Publish" to publish instantly, or "View Dashboard" to manage all drafts.
           </p>
         </div>
       </div>
