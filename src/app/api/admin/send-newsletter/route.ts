@@ -7,10 +7,10 @@ export const maxDuration = 120;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 /**
- * Biweekly newsletter sender
+ * Twice-weekly newsletter sender
  * Sends recent published blog posts to opted-in subscribers
  * 
- * Triggered by Vercel cron every other Monday at 9am EST (14:00 UTC)
+ * Triggered by Vercel cron every Tuesday and Thursday at 10am EST (15:00 UTC)
  */
 async function handleSendNewsletter(request: NextRequest) {
   try {

@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * Biweekly cron job: Send newsletter to subscribers
- * Runs every other Monday at 14:00 UTC (9am EST) via Vercel cron
+ * Twice-weekly cron job: Send newsletter to subscribers
+ * Runs Tuesday and Thursday at 15:00 UTC (10am EST) via Vercel cron
  */
 export async function GET(request: NextRequest) {
   try {
