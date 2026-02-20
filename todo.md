@@ -857,3 +857,4 @@
 - [x] Blog listing: add search bar to filter/search blog posts
 - [x] Newsletter opt-out: signed-in users can opt out of email list
 - [x] Verify newsletter was NOT auto-sent to subscribers (only review email to Jeff)
+- [x] Embed editorial quality guidelines into blog generation AI prompt (capital-allocator standards)

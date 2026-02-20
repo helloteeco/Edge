@@ -166,14 +166,14 @@ async function generateContent(city: CityData, comparisons: CityData[]): Promise
   let angle = "";
   if (city.has_full_data && city.market_score) {
     if (city.market_score >= 70) {
-      angle = `This is a HIGH-SCORING market. Frame it as a hidden gem or strong opportunity. Explain WHY the numbers are strong and what makes this market special.`;
+      angle = `This is a HIGH-SCORING market. Explain WHY the numbers are strong with specific data points. Show what makes this market special relative to comparable markets.`;
     } else if (city.market_score >= 50) {
-      angle = `This is a MODERATE market. Give a balanced take — what's promising, what to watch out for. Be honest about both the upside and the risks.`;
+      angle = `This is a MODERATE market. Give a balanced, honest take — quantify both the upside and the risks. Be specific about what works and what doesn't.`;
     } else {
-      angle = `This is a LOWER-SCORING market. Take a contrarian angle — maybe it's overhyped, or maybe there's a niche play most people miss. Be honest about why the numbers are what they are, but look for the silver lining or the lesson.`;
+      angle = `This is a LOWER-SCORING market. Do NOT label it "contrarian" or "under-the-radar" unless you can demonstrate clear quantitative mispricing (e.g., revenue-to-price ratio is better than higher-scored peers). Be honest about why the numbers are what they are. If there is a niche play, quantify it specifically. If the numbers don't work, say so clearly and explain what would need to change.`;
     }
   } else {
-    angle = `This city has limited STR data. Focus on what makes the location interesting for Airbnb investors to research further — tourism, economy, growth trends, nearby attractions. Encourage readers to explore it on Edge.`;
+    angle = `This city has limited STR data. Focus on what makes the location interesting for Airbnb investors to research further — tourism, economy, growth trends, nearby attractions. Be clear about what data is missing and what investors need to verify before committing capital. Encourage readers to explore it on Edge.`;
   }
 
   const systemPrompt = `You are a knowledgeable, conversational real estate writer who specializes in Airbnb and short-term rental (STR) investing. You write for Edge by Teeco (edge.teeco.co), a platform that helps investors find and analyze STR markets across the US.
@@ -190,7 +190,16 @@ Your writing style:
 - NEVER make up statistics. Only use the data provided. If data is limited, say so honestly.
 - Focus on Airbnb/STR investing over traditional long-term rentals
 - Do NOT use excessive bold formatting or markdown headers. Use them sparingly for readability.
-- Do NOT include disclaimers about "not financial advice" in the body — that's handled elsewhere.`;
+- Do NOT include disclaimers about "not financial advice" in the body — that's handled elsewhere.
+
+EDITORIAL QUALITY STANDARDS (mandatory for every article):
+1. NEVER label a market "contrarian" or "under-the-radar" unless you demonstrate clear quantitative mispricing with specific numbers (e.g., revenue-to-price ratio exceeds higher-scored peers).
+2. ALWAYS distinguish revenue metrics from return metrics. Monthly revenue is not the same as cash-on-cash return. If revenue is high but returns are low, explain why (high home prices, taxes, management costs, etc.).
+3. If cash-on-cash return is negative or below 5%, explicitly explain why and whether it is structurally fixable (e.g., lower purchase price, better management, seasonal optimization) or a fundamental issue with the market.
+4. If STR regulations materially affect viability (e.g., permit caps, zoning restrictions, licensing moratoriums), clearly explain how they impact real underwriting — not just mention them in passing.
+5. Do NOT give generic STR advice ("furnish well", "get good photos") unless backed by a quantified niche opportunity specific to this market.
+6. The conclusion MUST logically match the numbers presented. If the data shows a weak market, do not end with an optimistic recommendation. If the data is strong, don't hedge unnecessarily.
+7. Write for capital allocators, not lifestyle investors. Assume the reader is evaluating this market against 20 alternatives and needs to know: what is the risk-adjusted return, what are the structural advantages or disadvantages, and what would make this a clear yes or no.`;
 
   const userPrompt = `Write a blog article about ${city.name}, ${stateName} as an Airbnb/STR investment market in ${currentMonth} ${currentYear}.
 
@@ -243,7 +252,7 @@ Respond in this exact JSON format:
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.8,
+        temperature: 0.7,
         max_tokens: 3000,
         response_format: { type: "json_object" },
       }),
