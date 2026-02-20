@@ -96,7 +96,10 @@ export default function BlogReviewPage() {
     }
   }, [password, filter]);
 
-  const handleAction = async (postId: string, action: "publish" | "reject") => {
+  const handleAction = async (postId: string, action: "publish" | "reject" | "delete") => {
+    if (action === "delete" && !window.confirm("Permanently delete this post? This cannot be undone.")) {
+      return;
+    }
     setActionLoading(postId);
     setMessage(null);
     try {
@@ -107,12 +110,12 @@ export default function BlogReviewPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({
-          type: "success",
-          text: action === "publish"
-            ? `"${data.post?.title || "Post"}" is now live on the blog!`
-            : "Post rejected and archived.",
-        });
+        const msgs: Record<string, string> = {
+          publish: `"${data.post?.title || "Post"}" is now live on the blog!`,
+          reject: "Post rejected and archived.",
+          delete: "Post permanently deleted.",
+        };
+        setMessage({ type: "success", text: msgs[action] || "Done." });
         // Remove from list
         setPosts((prev) => prev.filter((p) => p.id !== postId));
       } else {
@@ -387,6 +390,25 @@ export default function BlogReviewPage() {
                       View Live →
                     </a>
                   )}
+
+                  {/* Delete button — available on all tabs */}
+                  <button
+                    onClick={() => handleAction(post.id, "delete")}
+                    disabled={actionLoading === post.id}
+                    style={{
+                      padding: "10px 20px",
+                      background: "#ffffff",
+                      color: "#9a9488",
+                      border: "1px solid #e5e3da",
+                      borderRadius: "10px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: actionLoading === post.id ? "wait" : "pointer",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
                 </div>
               </div>
             ))}

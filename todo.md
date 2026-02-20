@@ -859,3 +859,7 @@
 - [x] Verify newsletter was NOT auto-sent to subscribers (only review email to Jeff)
 - [x] Embed editorial quality guidelines into blog generation AI prompt (capital-allocator standards)
 - [x] Blog generation: explain all financial concepts in plain language so anyone can follow
+- [x] Add delete button to blog review dashboard
+- [x] Ensure deleted posts excluded from newsletter (already safe — deleted rows removed from DB)
+- [ ] Regenerate NYC blog post with new editorial guidelines
+- [ ] Send review email to Jeff for new NYC post

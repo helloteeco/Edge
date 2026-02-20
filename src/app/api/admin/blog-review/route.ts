@@ -107,7 +107,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, action: "rejected" });
     }
 
-    return NextResponse.json({ error: "Invalid action. Use: publish, reject, notify-review" }, { status: 400 });
+    if (action === "delete") {
+      const { error } = await supabase
+        .from("blog_posts")
+        .delete()
+        .eq("id", post_id);
+
+      if (error) {
+        return NextResponse.json({ error: "Failed to delete post" }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, action: "deleted" });
+    }
+
+    return NextResponse.json({ error: "Invalid action. Use: publish, reject, delete, notify-review" }, { status: 400 });
   } catch (error) {
     console.error("[BlogReview] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
