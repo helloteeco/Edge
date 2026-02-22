@@ -16,6 +16,6 @@
 ## Home Value Data Accuracy - Feb 22
 - [x] Audit home value accuracy across city-data.ts (Vista, Fresno flagged as way off)
 - [x] Research scalable/affordable sources — Zillow ZHVI free CSV is the gold standard (21K+ cities, updated monthly)
-- [ ] Apply Zillow ZHVI corrections to 852 cities in city-data.ts
-- [ ] Recalculate dependent metrics (mortgage, DSI, cash-on-cash) with corrected prices
-- [ ] Re-sync corrected data to Supabase
+- [x] Apply Zillow ZHVI corrections to 1,364 cities in city-data.ts (Jan 2026 ZHVI data)
+- [x] Recalculate dependent metrics (RPR, DSI mortgage/expenses/net, rprRating) with corrected prices
+- [x] Re-sync corrected data to Supabase (all 1,626 cities verified)
