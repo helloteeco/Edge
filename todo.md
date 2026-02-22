@@ -870,3 +870,6 @@
 - [x] Fix AI prompt to avoid misleading market comparisons (e.g. saying higher Edge Score = better investment without checking actual cash-on-cash)
 - [x] Fix blog comparison query to filter has_full_data (one-line fix)
 - [ ] Audit data sources, scoring pipeline, and data gaps across all cities
+- [x] Expand sync-scores to also sync STR data columns (ADR, occupancy, revenue, home value, etc.) for 723 missing cities
+- [x] Add monthly cron (1st of month) to auto-refresh city data from city-data.ts
+- [x] Investigate Airbnb explore_tabs API for city-level aggregate STR data feasibility
