@@ -124,6 +124,7 @@ async function getNearbyComparisons(city: CityData): Promise<CityData[]> {
     .eq("state", city.state)
     .neq("id", city.id)
     .not("market_score", "is", null)
+    .eq("has_full_data", true)
     .order("market_score", { ascending: false })
     .limit(5);
 

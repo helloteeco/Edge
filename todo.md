@@ -868,3 +868,5 @@
 - [x] Add Stephanie@teeco.co to admin email recipients
 - [x] Add regenerate article button to blog review dashboard
 - [x] Fix AI prompt to avoid misleading market comparisons (e.g. saying higher Edge Score = better investment without checking actual cash-on-cash)
+- [x] Fix blog comparison query to filter has_full_data (one-line fix)
+- [ ] Audit data sources, scoring pipeline, and data gaps across all cities
