@@ -436,7 +436,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-1">
           {[
             { label: "STR Rules", value: "View →", highlight: false, link: "https://www.proper.insure/regulations/" },
             { label: "Avg ADR", value: `$${state.avgADR}`, highlight: false },
@@ -474,6 +474,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
             )
           ))}
         </div>
+        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated Feb 2026</p>
 
         {/* Sort & Filter */}
         <div 
@@ -731,7 +732,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
             {cities.filter(c => c.grade === 'A+' || c.grade === 'A').length > 0 
               ? `Top-graded cities include ${cities.filter(c => c.grade === 'A+' || c.grade === 'A').slice(0, 3).map(c => c.name).join(', ')}.` 
               : ''}
-            Data powered by <a href="https://edge.teeco.co" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.
+            Data powered by <a href="https://edge.teeco.co" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Edge by Teeco</a> using estimated market data.
           </p>
         </div>
       </div>

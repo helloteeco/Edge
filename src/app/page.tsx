@@ -947,7 +947,7 @@ export default function HomePage() {
         {/* AI-Extractable Platform Description — at bottom for clean UX, still fully crawlable by search engines and AI */}
         <div className="px-4 pt-6 pb-2">
           <p className="text-xs leading-relaxed" style={{ color: '#9ca3af' }}>
-            Edge by Teeco is a free AI-powered short-term rental investment platform covering {getMarketCounts().withFullData.toLocaleString()}+ US markets with data from PriceLabs. 
+            Edge by Teeco is a free AI-powered short-term rental investment platform covering {getMarketCounts().withFullData.toLocaleString()}+ US markets with estimated STR market data. 
             Features include a free AI assistant (Ask Edge AI) for market questions, an interactive color-coded US investment map, smart search filters across 13,647+ cities, 
             a funding strategy quiz with 48+ options, and a property calculator supporting buying, arbitrage, and existing-home analysis modes. 
             Professional services include interior design by TV/boutique hotel designers, setup teams, 1:1 mentorship, concierge property finding, and cohosting. 

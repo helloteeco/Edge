@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // SEO-optimized description with key metrics
   const regulationLabel = state.regulation === 'Legal' ? 'STR-friendly state' : 'Regulated STR state';
-  const description = `${state.name} short-term rental investment analysis. ${cities.length} markets analyzed · ${gradeA > 0 ? `${gradeA} A-rated markets · ` : ''}$${avgRevenue.toLocaleString()}/mo avg revenue · ${avgOccupancy}% avg occupancy · $${state.medianHomeValue.toLocaleString()} median home · ${regulationLabel}. Top markets: ${topCities.slice(0, 3).join(', ')}. Free data powered by PriceLabs.`;
+  const description = `${state.name} short-term rental investment analysis. ${cities.length} markets analyzed · ${gradeA > 0 ? `${gradeA} A-rated markets · ` : ''}$${avgRevenue.toLocaleString()}/mo avg revenue · ${avgOccupancy}% avg occupancy · $${state.medianHomeValue.toLocaleString()} median home · ${regulationLabel}. Top markets: ${topCities.slice(0, 3).join(', ')}. Free estimated market data.`;
 
   // Dynamic keywords
   const keywords = [

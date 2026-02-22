@@ -203,7 +203,7 @@ export default function SharePage() {
         </div>
 
         {/* Market Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-4 gap-3 mb-1">
           <div className="bg-white rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-[#3D3D3D]">{formatCurrency(analysis.adr)}</p>
             <p className="text-xs text-gray-500 uppercase">Avg Nightly Rate</p>
@@ -221,6 +221,7 @@ export default function SharePage() {
             <p className="text-xs text-gray-500 uppercase">Peak Month</p>
           </div>
         </div>
+        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated Feb 2026</p>
 
         {/* Investment Analysis */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">

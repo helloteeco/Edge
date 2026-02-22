@@ -180,7 +180,7 @@ export function HighROIMarkets() {
       {/* Bottom CTA */}
       <div className="flex items-center justify-between">
         <p className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-          Showing markets with 8%+ cash-on-cash return and home prices under $350K
+          Showing markets with 8%+ cash-on-cash return and home prices under $350K · Estimated data
         </p>
         <Link 
           href="/search?sort=cashOnCash" 

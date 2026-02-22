@@ -10,7 +10,7 @@ const staticPosts = [
   {
     slug: "best-airbnb-markets-under-300k",
     title: "25 Best Airbnb Markets Under $300K in 2026",
-    description: "Data-driven analysis of the most profitable short-term rental markets where median home prices are under $300,000. Ranked by STR investment grade using PriceLabs data.",
+    description: "Data-driven analysis of the most profitable short-term rental markets where median home prices are under $300,000. Ranked by STR investment grade using estimated market data.",
     date: "February 2026",
     fullDate: "February 1, 2026",
     sortDate: "2026-02-01T00:00:00Z",
@@ -175,7 +175,7 @@ export default function BlogPage() {
             Market Insights
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            Original data reports and STR investment research powered by PriceLabs data. Every report uses live data from Edge&apos;s database of {new Date().getFullYear() >= 2025 ? '1,611' : '1,600'}+ US markets.
+            Original data reports and STR investment research using estimated market data. Every report draws from Edge&apos;s database of {new Date().getFullYear() >= 2025 ? '1,611' : '1,600'}+ US markets.
           </p>
         </div>
       </div>

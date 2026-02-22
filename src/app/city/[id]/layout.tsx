@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // SEO-optimized description: includes key metrics investors search for, all dynamic
   const regulationLabel = city.regulation === 'Legal' ? 'STR-friendly' : city.regulation === 'Strict Rules' ? 'Strict STR rules' : 'Regulated STR market';
-  const description = `${city.name}, ${stateFull} short-term rental market analysis. $${city.strMonthlyRevenue.toLocaleString()}/mo avg revenue · ${city.occupancy}% occupancy · $${Math.round(city.avgADR)} ADR · $${city.medianHomeValue.toLocaleString()} median home · ${regulationLabel}. Investment grade: ${city.grade} (${city.marketScore}/100). Powered by PriceLabs data.`;
+  const description = `${city.name}, ${stateFull} short-term rental market analysis. $${city.strMonthlyRevenue.toLocaleString()}/mo avg revenue · ${city.occupancy}% occupancy · $${Math.round(city.avgADR)} ADR · $${city.medianHomeValue.toLocaleString()} median home · ${regulationLabel}. Investment grade: ${city.grade} (${city.marketScore}/100). Estimated market data.`;
 
   const ogImageUrl = `https://edge.teeco.co/api/og/city?name=${encodeURIComponent(city.name)}&state=${encodeURIComponent(city.stateCode)}&grade=${encodeURIComponent(city.grade)}&revenue=${Math.round(city.strMonthlyRevenue)}&occupancy=${city.occupancy}&adr=${Math.round(city.avgADR)}&score=${city.marketScore}&medianPrice=${Math.round(city.medianHomeValue)}&county=${encodeURIComponent(city.county)}`;
 
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     openGraph: {
       title: `${city.name}, ${city.stateCode} — $${annualRevenueK}K/yr STR Market · Grade ${city.grade}`,
-      description: `Analyze the ${city.name} short-term rental market. $${city.strMonthlyRevenue.toLocaleString()}/mo revenue · ${city.occupancy}% occupancy · Grade ${city.grade}. Free market data powered by PriceLabs.`,
+      description: `Analyze the ${city.name} short-term rental market. $${city.strMonthlyRevenue.toLocaleString()}/mo revenue · ${city.occupancy}% occupancy · Grade ${city.grade}. Free estimated market data.`,
       type: 'website',
       url: `https://edge.teeco.co/city/${cityId}`,
       siteName: 'Edge by Teeco',
@@ -89,7 +89,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: `${city.name}, ${city.stateCode} — $${annualRevenueK}K/yr STR Market · Grade ${city.grade}`,
-      description: `Analyze the ${city.name} short-term rental market. $${city.strMonthlyRevenue.toLocaleString()}/mo revenue · ${city.occupancy}% occupancy · Grade ${city.grade}. Free market data powered by PriceLabs.`,
+      description: `Analyze the ${city.name} short-term rental market. $${city.strMonthlyRevenue.toLocaleString()}/mo revenue · ${city.occupancy}% occupancy · Grade ${city.grade}. Free estimated market data.`,
       images: [ogImageUrl],
     },
   };

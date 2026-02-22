@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const counts = getMarketCounts();
 
   const title = 'Airbnb Investment Calculator — Analyze Any US Property for STR Revenue';
-  const description = `Analyze any US property for Airbnb revenue, cash-on-cash return, and deal score — whether buying, arbitraging, or evaluating a home you already own. Powered by PriceLabs data across ${counts.total.toLocaleString()}+ markets. Free AI agent, market data for 1,600+ cities, and funding quiz with 48+ strategies.`;
+  const description = `Analyze any US property for Airbnb revenue, cash-on-cash return, and deal score — whether buying, arbitraging, or evaluating a home you already own. Estimated market data across ${counts.total.toLocaleString()}+ markets. Free AI agent, market data for 1,600+ cities, and funding quiz with 48+ strategies.`;
 
   return {
     title,
@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       title: 'Airbnb Investment Calculator — Analyze Any US Property',
-      description: `PriceLabs-powered STR analysis for ${counts.total.toLocaleString()}+ markets. Revenue projections, cash-on-cash return, deal scores, and free AI agent. Built by investors, for investors.`,
+      description: `Data-driven STR analysis for ${counts.total.toLocaleString()}+ markets. Revenue projections, cash-on-cash return, deal scores, and free AI agent. Built by investors, for investors.`,
       type: 'website',
       url: 'https://edge.teeco.co/airbnb-calculator',
       siteName: 'Edge by Teeco',
@@ -49,7 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'Airbnb Investment Calculator — Analyze Any US Property',
-      description: `PriceLabs-powered STR analysis for ${counts.total.toLocaleString()}+ markets. Revenue projections, cash-on-cash return, deal scores, and free AI agent.`,
+      description: `Data-driven STR analysis for ${counts.total.toLocaleString()}+ markets. Revenue projections, cash-on-cash return, deal scores, and free AI agent.`,
       images: ['/og-image.png'],
     },
   };

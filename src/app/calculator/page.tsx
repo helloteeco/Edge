@@ -3403,7 +3403,7 @@ export default function CalculatorPage() {
       </div>
       ${result.dataSource && result.dataSource.includes('pricelabs') 
         ? '<div class="data-badge pricelabs">&#9989; PriceLabs Verified Data</div>' 
-        : '<div class="data-badge airbnb">STR Market Data</div>'}
+        : '<div class="data-badge airbnb">Estimated Market Data</div>'}
     </div>
     
     <!-- DEAL SCORE -->

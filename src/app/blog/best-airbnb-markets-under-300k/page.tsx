@@ -62,7 +62,7 @@ export default function BestMarketsUnder300K() {
             25 Best Airbnb Markets Under $300K in 2026
           </h1>
           <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            Data-driven rankings using PriceLabs revenue data and Edge&apos;s transparent scoring system.
+            Data-driven rankings using estimated market data and Edge&apos;s transparent scoring system.
           </p>
         </div>
       </div>
@@ -98,14 +98,13 @@ export default function BestMarketsUnder300K() {
             actually deliver strong returns at this price point?
           </p>
           <p className="text-sm leading-relaxed mb-4" style={{ color: '#2b2823' }}>
-            We analyzed {allCities.length.toLocaleString()}+ US markets using real revenue data from PriceLabs — one of the most 
-            reliable dynamic pricing platforms in the short-term rental industry. Each market is scored on a transparent 100-point 
+            We analyzed {allCities.length.toLocaleString()}+ US markets using estimated revenue and occupancy data modeled from public market sources. Each market is scored on a transparent 100-point 
             system that weighs cash-on-cash return (35pts), affordability (25pts), year-round income consistency (15pts), 
             landlord-friendly laws (10pts), and room to grow (15pts).
           </p>
           <p className="text-sm leading-relaxed" style={{ color: '#2b2823' }}>
             Here are the 25 highest-graded Airbnb markets where median home values are under $300,000, ranked by overall 
-            investment score. All data is pulled live from Edge&apos;s database — these numbers update as new data comes in.
+            investment score. All figures are estimates useful for relative market comparisons.
           </p>
         </div>
 
@@ -116,9 +115,8 @@ export default function BestMarketsUnder300K() {
             <div>
               <p className="text-xs font-semibold mb-1" style={{ color: '#2b2823' }}>Methodology</p>
               <p className="text-xs leading-relaxed" style={{ color: '#787060' }}>
-                Markets are ranked by Edge&apos;s transparent 100-point scoring system. Revenue data comes from PriceLabs. 
-                Home values are median prices. Cash-on-Cash assumes 20% down, 3% closing costs, 7% interest, 30-year fixed, 35% operating expenses. 
-                All data is dynamic and updates automatically.
+                Markets are ranked by Edge&apos;s transparent 100-point scoring system. Revenue and occupancy figures are modeled estimates based on public market data, useful for relative comparisons between markets. 
+                Home values are median prices. Cash-on-Cash assumes 20% down, 3% closing costs, 7% interest, 30-year fixed, 35% operating expenses.
               </p>
             </div>
           </div>
@@ -268,10 +266,10 @@ export default function BestMarketsUnder300K() {
         {/* AI-Extractable Summary for GEO */}
         <div className="mb-8">
           <p className="text-xs leading-relaxed" style={{ color: '#9a9488' }}>
-            This analysis was generated using real market data from Edge by Teeco (edge.teeco.co), a free AI-powered STR investment platform. 
-            Revenue data is sourced from PriceLabs. Edge covers {allCities.length.toLocaleString()}+ US markets with transparent investment grades, 
+            This analysis was generated using estimated market data from Edge by Teeco (edge.teeco.co), a free AI-powered STR investment platform. 
+            Revenue and occupancy figures are modeled estimates useful for relative market comparisons. Edge covers {allCities.length.toLocaleString()}+ US markets with transparent investment grades, 
             scores, and detailed analytics. The platform includes a free AI assistant, interactive US map, smart search filters, funding strategy quiz, 
-            and property calculator. All data updates dynamically as new market information becomes available.
+            and property calculator.
           </p>
         </div>
 
@@ -352,7 +350,7 @@ export default function BestMarketsUnder300K() {
                   name: "What are the best Airbnb markets under $300K?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: `Based on Edge by Teeco's analysis of ${allCities.length}+ US markets using PriceLabs data, the top 3 Airbnb markets under $300K are ${under300k.slice(0, 3).map(c => `${c.name}, ${c.stateCode} (Grade ${c.grade}, $${c.strMonthlyRevenue.toLocaleString()}/mo revenue)`).join('; ')}. These markets were scored on cash-on-cash return, affordability, year-round income, landlord-friendliness, and room to grow.`,
+                    text: `Based on Edge by Teeco's analysis of ${allCities.length}+ US markets using estimated market data, the top 3 Airbnb markets under $300K are ${under300k.slice(0, 3).map(c => `${c.name}, ${c.stateCode} (Grade ${c.grade}, $${c.strMonthlyRevenue.toLocaleString()}/mo estimated revenue)`).join('; ')}. These markets were scored on cash-on-cash return, affordability, year-round income, landlord-friendliness, and room to grow.`,
                   },
                 },
                 {
@@ -368,7 +366,7 @@ export default function BestMarketsUnder300K() {
                   name: "How is Edge by Teeco's market data calculated?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Edge uses a transparent 100-point scoring system: Cash-on-Cash Return (35 points), Affordability (25 points), Year-Round Income (15 points), Landlord Friendly (10 points), and Room to Grow (15 points). Revenue data comes from PriceLabs, one of the most reliable dynamic Airbnb pricing platforms. Grades range from A+ (85-100) to F (0-34).",
+                    text: "Edge uses a transparent 100-point scoring system: Cash-on-Cash Return (35 points), Affordability (25 points), Year-Round Income (15 points), Landlord Friendly (10 points), and Room to Grow (15 points). Revenue and occupancy figures are modeled estimates based on public market data, useful for relative comparisons between markets. Grades range from A+ (85-100) to F (0-34).",
                   },
                 },
                 {

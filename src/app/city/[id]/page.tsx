@@ -568,7 +568,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-1">
           {[
             { label: "Avg ADR", value: `$${city.avgADR}`, icon: "💵", highlight: false },
             { label: "Occupancy", value: `${city.occupancy}%`, icon: "📅", highlight: false },
@@ -591,6 +591,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </div>
           ))}
         </div>
+        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated Feb 2026</p>
 
         {/* Income by Property Size */}
         <div 
@@ -1011,7 +1012,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             The market has an average daily rate (ADR) of ${city.avgADR}, {city.occupancy}% occupancy, and estimated monthly STR revenue of ${city.strMonthlyRevenue.toLocaleString()}. 
             Median home value is ${city.medianHomeValue.toLocaleString()} with a cash-on-cash return of {city.cashOnCash.toFixed(1)}%. 
             STR regulation status: {city.regulation}. 
-            Data powered by <a href="https://edge.teeco.co" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Edge by Teeco</a> using PriceLabs market data.
+            Data powered by <a href="https://edge.teeco.co" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Edge by Teeco</a> using estimated market data.
           </p>
         </div>
       </div>

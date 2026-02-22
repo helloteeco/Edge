@@ -111,7 +111,7 @@ export default function TermsPage() {
               7. Data Accuracy and Sources
             </h2>
             <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
-              Our property analysis data is sourced from third-party providers including PriceLabs and Airbnb. While we strive 
+              Our platform includes modeled market estimates as well as data sourced from third-party providers including PriceLabs and Airbnb. Market-level revenue and occupancy figures displayed on city and state pages are estimates useful for relative comparisons between markets. Property-specific calculator analyses may use live PriceLabs data when available. While we strive 
               for accuracy, we do not guarantee the completeness, accuracy, or reliability of any data or projections. Market 
               conditions, property management quality, and other factors can significantly impact actual performance.
             </p>
