@@ -9,7 +9,10 @@ export const maxDuration = 60;
  * Syncs market scores AND STR data columns from static data to Supabase.
  * 
  * Columns synced: market_score, avg_adr, occupancy, str_monthly_revenue,
- * median_home_value, cash_on_cash, regulation, has_full_data
+ * median_home_value, cash_on_cash, regulation, has_full_data, full_data (JSON)
+ * 
+ * Uses UPSERT to handle cities that exist in city-data.ts but not yet in
+ * the Supabase cities table (previously these were silently skipped).
  * 
  * Runs automatically via Vercel cron (daily at 7am UTC) and can also be
  * triggered manually via POST.
@@ -36,10 +39,11 @@ async function syncData(request: NextRequest) {
 
     const cities = getAllCities();
     let updated = 0;
+    let inserted = 0;
     let skipped = 0;
     let errors = 0;
     let dataFilled = 0; // Cities that got STR data filled for the first time
-    const changes: Array<{ id: string; name: string; oldScore: number | null; newScore: number; dataFilled: boolean }> = [];
+    const changes: Array<{ id: string; name: string; oldScore: number | null; newScore: number; action: 'updated' | 'inserted' | 'data-filled' }> = [];
 
     // Process in batches of 50
     const batchSize = 50;
@@ -67,9 +71,77 @@ async function syncData(request: NextRequest) {
         const newCashOnCash = city.cashOnCash;
         const newRegulation = city.regulation;
 
-        // Check if anything has changed
-        const scoreChanged = !current || current.market_score !== newScore;
-        const dataChanged = !current || 
+        // Build the full_data JSON for the JSONB column
+        const fullDataJson = {
+          id: city.id,
+          name: city.name,
+          county: city.county,
+          stateCode: city.stateCode,
+          population: city.population,
+          dsi: city.dsi,
+          grade: city.grade,
+          verdict: city.verdict,
+          avgADR: city.avgADR,
+          occupancy: city.occupancy,
+          strMonthlyRevenue: city.strMonthlyRevenue,
+          medianHomeValue: city.medianHomeValue,
+          cashOnCash: city.cashOnCash,
+          regulation: city.regulation,
+          marketScore: city.marketScore,
+          marketHeadroom: city.marketHeadroom,
+          listingsPerThousand: city.listingsPerThousand,
+          scores: city.scores,
+          scoring: city.scoring,
+          incomeBySize: city.incomeBySize,
+          amenityDelta: city.amenityDelta,
+          marketType: city.marketType,
+          highlights: city.highlights,
+          strStatus: city.strStatus,
+          permitRequired: city.permitRequired,
+        };
+
+        if (!current) {
+          // City doesn't exist in Supabase — INSERT it
+          const { error } = await supabase
+            .from('cities')
+            .insert({
+              id: city.id,
+              name: city.name,
+              state: city.stateCode,
+              county: city.county,
+              population: city.population,
+              market_score: newScore,
+              avg_adr: newAdr,
+              occupancy: newOccupancy,
+              str_monthly_revenue: newRevenue,
+              median_home_value: newHomeValue,
+              cash_on_cash: newCashOnCash,
+              regulation: newRegulation,
+              has_full_data: true,
+              full_data: fullDataJson,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (error) {
+            errors++;
+            console.error(`Failed to insert ${city.id}:`, error.message);
+          } else {
+            inserted++;
+            changes.push({
+              id: city.id,
+              name: `${city.name}, ${city.stateCode}`,
+              oldScore: null,
+              newScore,
+              action: 'inserted',
+            });
+          }
+          continue;
+        }
+
+        // City exists — check if anything has changed
+        const scoreChanged = current.market_score !== newScore;
+        const dataChanged = 
           Number(current.avg_adr) !== newAdr ||
           Number(current.occupancy) !== newOccupancy ||
           Number(current.str_monthly_revenue) !== newRevenue ||
@@ -81,7 +153,7 @@ async function syncData(request: NextRequest) {
           continue;
         }
 
-        const wasDataMissing = current && !current.has_full_data && newAdr > 0;
+        const wasDataMissing = !current.has_full_data && newAdr > 0;
 
         const { error } = await supabase
           .from('cities')
@@ -94,6 +166,7 @@ async function syncData(request: NextRequest) {
             cash_on_cash: newCashOnCash,
             regulation: newRegulation,
             has_full_data: true,
+            full_data: fullDataJson,
             updated_at: new Date().toISOString(),
           })
           .eq('id', city.id);
@@ -107,9 +180,9 @@ async function syncData(request: NextRequest) {
           changes.push({
             id: city.id,
             name: `${city.name}, ${city.stateCode}`,
-            oldScore: current?.market_score ?? null,
+            oldScore: current.market_score ?? null,
             newScore,
-            dataFilled: !!wasDataMissing,
+            action: wasDataMissing ? 'data-filled' : 'updated',
           });
         }
       }
@@ -119,6 +192,7 @@ async function syncData(request: NextRequest) {
       success: true,
       summary: {
         total: cities.length,
+        inserted,  // NEW: cities that didn't exist in Supabase before
         updated,
         skipped,
         errors,
