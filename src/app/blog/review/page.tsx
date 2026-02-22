@@ -40,6 +40,7 @@ export default function BlogReviewPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [filter, setFilter] = useState<"draft" | "published" | "rejected">("draft");
+  const [regenerating, setRegenerating] = useState<string | null>(null);
 
   // Handle redirect params from quick-approve
   useEffect(() => {
@@ -95,6 +96,32 @@ export default function BlogReviewPage() {
       }
     }
   }, [password, filter]);
+
+  const handleRegenerate = async (postId: string) => {
+    if (!window.confirm("Regenerate this article? The current draft will be replaced with a fresh AI-written version for the same city.")) {
+      return;
+    }
+    setRegenerating(postId);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/blog-review?password=${password}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "regenerate", post_id: postId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: "success", text: `Article regenerated: "${data.post?.title || "New draft"}" is ready for review.` });
+        // Refresh the list
+        fetchPosts(filter);
+      } else {
+        setMessage({ type: "error", text: data.error || "Failed to regenerate article" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to connect to server" });
+    }
+    setRegenerating(null);
+  };
 
   const handleAction = async (postId: string, action: "publish" | "reject" | "delete") => {
     if (action === "delete" && !window.confirm("Permanently delete this post? This cannot be undone.")) {
@@ -337,7 +364,7 @@ export default function BlogReviewPage() {
                     <>
                       <button
                         onClick={() => handleAction(post.id, "publish")}
-                        disabled={actionLoading === post.id}
+                        disabled={actionLoading === post.id || regenerating === post.id}
                         style={{
                           padding: "10px 20px",
                           background: actionLoading === post.id ? "#86efac" : "#22c55e",
@@ -353,8 +380,25 @@ export default function BlogReviewPage() {
                         {actionLoading === post.id ? "Publishing..." : "✅ Approve & Publish"}
                       </button>
                       <button
+                        onClick={() => handleRegenerate(post.id)}
+                        disabled={actionLoading === post.id || regenerating === post.id}
+                        style={{
+                          padding: "10px 20px",
+                          background: regenerating === post.id ? "#fef3c7" : "#fbbf24",
+                          color: "#78350f",
+                          border: "none",
+                          borderRadius: "10px",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          cursor: regenerating === post.id ? "wait" : "pointer",
+                          opacity: regenerating === post.id ? 0.7 : 1,
+                        }}
+                      >
+                        {regenerating === post.id ? "♻️ Regenerating..." : "♻️ Regenerate"}
+                      </button>
+                      <button
                         onClick={() => handleAction(post.id, "reject")}
-                        disabled={actionLoading === post.id}
+                        disabled={actionLoading === post.id || regenerating === post.id}
                         style={{
                           padding: "10px 20px",
                           background: "#ffffff",

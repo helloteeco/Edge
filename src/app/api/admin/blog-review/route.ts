@@ -124,7 +124,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, action: "deleted" });
     }
 
-    return NextResponse.json({ error: "Invalid action. Use: publish, reject, delete, notify-review" }, { status: 400 });
+    if (action === "regenerate") {
+      // Get the old post to find its city_id
+      const { data: oldPost, error: fetchErr } = await supabase
+        .from("blog_posts")
+        .select("city_ids")
+        .eq("id", post_id)
+        .single();
+
+      if (fetchErr || !oldPost) {
+        return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      }
+
+      const cityId = oldPost.city_ids?.[0];
+      if (!cityId) {
+        return NextResponse.json({ error: "No city associated with this post" }, { status: 400 });
+      }
+
+      // Delete the old post
+      await supabase.from("blog_posts").delete().eq("id", post_id);
+
+      // Call the generate-blog endpoint to create a fresh article for the same city
+      const baseUrl = request.nextUrl.origin;
+      const genRes = await fetch(
+        `${baseUrl}/api/admin/generate-blog?password=${ADMIN_PASSWORD}&city_id=${cityId}`,
+        { method: "GET" }
+      );
+
+      if (!genRes.ok) {
+        const errData = await genRes.json().catch(() => ({}));
+        return NextResponse.json({ error: errData.error || "Failed to regenerate article" }, { status: 500 });
+      }
+
+      const genData = await genRes.json();
+      return NextResponse.json({
+        success: true,
+        action: "regenerated",
+        post: genData.post,
+      });
+    }
+
+    return NextResponse.json({ error: "Invalid action. Use: publish, reject, delete, regenerate, notify-review" }, { status: 400 });
   } catch (error) {
     console.error("[BlogReview] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

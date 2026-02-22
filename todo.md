@@ -866,3 +866,5 @@
 - [x] Turn review notification email into admin hub email with quick links (dashboard, analytics, blog review)
 - [x] Make admin email recipients configurable via ADMIN_EMAILS env var
 - [x] Add Stephanie@teeco.co to admin email recipients
+- [x] Add regenerate article button to blog review dashboard
+- [x] Fix AI prompt to avoid misleading market comparisons (e.g. saying higher Edge Score = better investment without checking actual cash-on-cash)

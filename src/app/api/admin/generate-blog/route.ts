@@ -153,8 +153,11 @@ async function generateContent(city: CityData, comparisons: CityData[]): Promise
     comparisonContext = "\n\nNearby markets in " + stateName + " for comparison:\n";
     for (const comp of comparisons) {
       comparisonContext += `- ${comp.name}: Score ${comp.market_score || "N/A"}`;
+      if (comp.cash_on_cash) comparisonContext += `, Cash-on-Cash: ${comp.cash_on_cash}%`;
       if (comp.str_monthly_revenue) comparisonContext += `, $${Number(comp.str_monthly_revenue).toLocaleString()}/mo revenue`;
       if (comp.median_home_value) comparisonContext += `, $${Number(comp.median_home_value).toLocaleString()} median home`;
+      if (comp.avg_adr) comparisonContext += `, ADR: $${comp.avg_adr}`;
+      if (comp.occupancy) comparisonContext += `, Occupancy: ${comp.occupancy}%`;
       comparisonContext += "\n";
     }
   }
@@ -216,7 +219,7 @@ REQUIREMENTS:
 3. Content: Write 800-1200 words of article content in HTML format. Structure:
    - Opening hook (why this market matters or is interesting right now)
    - The numbers (if available) — what the data tells us, explained conversationally
-   - Comparison to nearby markets (use the comparison data provided)
+   - Comparison to nearby markets (use the comparison data provided). CRITICAL: When comparing markets, compare ALL metrics — score, cash-on-cash, revenue, home value, ADR, occupancy. A higher Edge Score does NOT automatically mean "better investment." The Edge Score weights multiple factors. If a comparison market has a higher score but lower revenue or worse cash-on-cash, say so explicitly. Never claim a market is "better" without showing which specific metrics are actually better.
    - What type of investor this market suits (budget-conscious, experienced, etc.)
    - Practical next steps (what to research, what to look for)
    - Brief mention of exploring the market on Edge (link to /city/${city.id})
