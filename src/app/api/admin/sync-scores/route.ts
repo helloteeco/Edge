@@ -20,11 +20,17 @@ export const maxDuration = 60;
  */
 async function syncData(request: NextRequest) {
   try {
-    // Auth check
+    // Auth check — supports both CRON_SECRET (Bearer) and ADMIN_PASSWORD (query param)
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
+    const password = request.nextUrl.searchParams.get('password');
+    const adminPassword = process.env.ADMIN_PASSWORD || 'teeco-edge-2026';
+    const isAuthed = 
+      !cronSecret ||
+      authHeader === `Bearer ${cronSecret}` ||
+      password === adminPassword;
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!isAuthed) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
