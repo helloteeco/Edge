@@ -12,3 +12,10 @@
 - [x] Fix address display to always show user's entered address, not API response market name
 - [x] Implement Market Mismatch Warning system (per-user localStorage)
 - [x] Implement Informed Choice System for Limited Data Locations
+
+## Home Value Data Accuracy - Feb 22
+- [x] Audit home value accuracy across city-data.ts (Vista, Fresno flagged as way off)
+- [x] Research scalable/affordable sources — Zillow ZHVI free CSV is the gold standard (21K+ cities, updated monthly)
+- [ ] Apply Zillow ZHVI corrections to 852 cities in city-data.ts
+- [ ] Recalculate dependent metrics (mortgage, DSI, cash-on-cash) with corrected prices
+- [ ] Re-sync corrected data to Supabase
