@@ -371,10 +371,10 @@ export default function AdminDashboard() {
                         <td className="p-3 font-medium" style={{ color: '#16a34a' }}>{log.annual_revenue ? `$${(log.annual_revenue / 1000).toFixed(0)}k` : "—"}</td>
                         <td className="p-3">
                           <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{
-                            backgroundColor: (log.data_provider === 'pricelabs' || log.revenue_source === 'pricelabs') ? '#dbeafe' : log.is_instant ? '#dcfce7' : '#fef3c7',
-                            color: (log.data_provider === 'pricelabs' || log.revenue_source === 'pricelabs') ? '#1e40af' : log.is_instant ? '#166534' : '#92400e'
+                            backgroundColor: (log.data_provider?.startsWith('pricelabs') || log.revenue_source === 'pricelabs') ? '#dbeafe' : (log.is_instant || log.data_provider === 'cache') ? '#dcfce7' : '#fef3c7',
+                            color: (log.data_provider?.startsWith('pricelabs') || log.revenue_source === 'pricelabs') ? '#1e40af' : (log.is_instant || log.data_provider === 'cache') ? '#166534' : '#92400e'
                           }}>
-                            {log.is_instant ? 'cached' : (log.data_provider || log.revenue_source || 'unknown')}
+                            {(log.is_instant || log.data_provider === 'cache') ? 'cached' : (log.data_provider || log.revenue_source || 'unknown')}
                           </span>
                         </td>
                         <td className="p-3 max-w-[150px] truncate" style={{ color: '#787060' }}>{log.user_email || "anon"}</td>
@@ -853,10 +853,10 @@ export default function AdminDashboard() {
                       <td className="p-3" style={{ color: '#787060' }}>{log.occupancy ? `${log.occupancy}%` : "—"}</td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{
-                          backgroundColor: (log.data_provider === 'pricelabs' || log.revenue_source === 'pricelabs') ? '#dbeafe' : log.is_instant ? '#dcfce7' : '#fef3c7',
-                          color: (log.data_provider === 'pricelabs' || log.revenue_source === 'pricelabs') ? '#1e40af' : log.is_instant ? '#166534' : '#92400e'
+                          backgroundColor: (log.data_provider?.startsWith('pricelabs') || log.revenue_source === 'pricelabs') ? '#dbeafe' : (log.is_instant || log.data_provider === 'cache') ? '#dcfce7' : '#fef3c7',
+                          color: (log.data_provider?.startsWith('pricelabs') || log.revenue_source === 'pricelabs') ? '#1e40af' : (log.is_instant || log.data_provider === 'cache') ? '#166534' : '#92400e'
                         }}>
-                          {log.is_instant ? 'cached' : (log.data_provider || log.revenue_source || '—')}
+                          {(log.is_instant || log.data_provider === 'cache') ? 'cached' : (log.data_provider || log.revenue_source || '—')}
                         </span>
                       </td>
                       <td className="p-3 text-xs" style={{ color: '#787060' }}>{log.analysis_type || "—"}</td>

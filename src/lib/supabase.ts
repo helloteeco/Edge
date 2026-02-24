@@ -1241,12 +1241,12 @@ export async function getAdminDashboardData() {
 
   // --- Data Source Breakdown ---
   const priceLabsAnalyses = analyses.filter((a: Record<string, string>) =>
-    a.data_provider === 'pricelabs' || a.revenue_source === 'pricelabs'
+    (a.data_provider && a.data_provider.startsWith('pricelabs')) || a.revenue_source === 'pricelabs'
   ).length;
   const airbnbAnalyses = analyses.filter((a: Record<string, string>) =>
     a.data_provider === 'airbnb-direct' || a.revenue_source === 'airbnb-direct' || a.data_provider === 'airbnb'
   ).length;
-  const cachedAnalyses = analyses.filter((a: Record<string, boolean>) => a.is_instant).length;
+  const cachedAnalyses = analyses.filter((a: Record<string, string | boolean>) => a.is_instant || a.data_provider === 'cache').length;
 
   // --- Cost Estimates ---
   const estimatedPriceLabsCost = priceLabsAnalyses * 0.50;
@@ -1340,12 +1340,12 @@ export async function getAdminDashboardData() {
     a.created_at && new Date(a.created_at) >= billingCycleStart
   );
   const cyclePriceLabsCalls = cycleAnalyses.filter((a: Record<string, string>) =>
-    a.data_provider === 'pricelabs' || a.revenue_source === 'pricelabs'
+    (a.data_provider && a.data_provider.startsWith('pricelabs')) || a.revenue_source === 'pricelabs'
   ).length;
   const cycleAirbnbCalls = cycleAnalyses.filter((a: Record<string, string>) =>
     a.data_provider === 'airbnb-direct' || a.revenue_source === 'airbnb-direct' || a.data_provider === 'airbnb'
   ).length;
-  const cycleCachedCalls = cycleAnalyses.filter((a: Record<string, boolean>) => a.is_instant).length;
+  const cycleCachedCalls = cycleAnalyses.filter((a: Record<string, string | boolean>) => a.is_instant || a.data_provider === 'cache').length;
   const cycleTotalAnalyses = cycleAnalyses.length;
 
   const cycleFreePreviewCount = freePreviewsAll.filter((fp: Record<string, string>) =>
@@ -1383,9 +1383,9 @@ export async function getAdminDashboardData() {
     const dayAnalyses = cycleAnalyses.filter((a: Record<string, string>) => a.created_at && a.created_at.startsWith(key));
     cycleDailyBreakdown.push({
       date: key,
-      pricelabs: dayAnalyses.filter((a: Record<string, string>) => a.data_provider === 'pricelabs' || a.revenue_source === 'pricelabs').length,
+      pricelabs: dayAnalyses.filter((a: Record<string, string>) => (a.data_provider && a.data_provider.startsWith('pricelabs')) || a.revenue_source === 'pricelabs').length,
       airbnb: dayAnalyses.filter((a: Record<string, string>) => a.data_provider === 'airbnb-direct' || a.revenue_source === 'airbnb-direct' || a.data_provider === 'airbnb').length,
-      cached: dayAnalyses.filter((a: Record<string, boolean>) => a.is_instant).length,
+      cached: dayAnalyses.filter((a: Record<string, string | boolean>) => a.is_instant || a.data_provider === 'cache').length,
       freePreview: freePreviewsAll.filter((fp: Record<string, string>) => fp.created_at && fp.created_at.startsWith(key)).length,
       paid: creditTxAll.filter((tx: Record<string, string>) => tx.action === 'deduct' && tx.created_at && tx.created_at.startsWith(key)).length,
     });
