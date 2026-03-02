@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getCityById, getCitiesByState, getStateByCode } from "@/data/helpers";
+import { getCityById, getCitiesByState, getStateByCode, getAllCities } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
 import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 import RegulationCard from "@/components/RegulationCard";
@@ -964,6 +964,73 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </div>
           );
         })()}
+
+        {/* Similar Markets Nationwide — Cross-state internal linking for SEO */}
+        {(() => {
+          const allCities = getAllCities();
+          // Find similar markets: same grade, different state, similar price range (±30%)
+          const priceLow = city.medianHomeValue * 0.7;
+          const priceHigh = city.medianHomeValue * 1.3;
+          const similarMarkets = allCities
+            .filter(c => c.id !== city.id && c.stateCode !== city.stateCode)
+            .filter(c => c.grade === city.grade || c.grade === (city.grade === 'A+' ? 'A' : city.grade === 'A' ? 'B+' : city.grade === 'B+' ? 'A' : city.grade === 'B' ? 'B+' : city.grade === 'C' ? 'B' : 'C'))
+            .filter(c => c.medianHomeValue >= priceLow && c.medianHomeValue <= priceHigh)
+            .sort((a, b) => b.marketScore - a.marketScore)
+            .slice(0, 6);
+          if (similarMarkets.length === 0) return null;
+          return (
+            <div className="rounded-2xl p-5 mt-4" style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}>
+              <h3 className="font-semibold text-base mb-1" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
+                Similar Markets Nationwide
+              </h3>
+              <p className="text-xs mb-3" style={{ color: '#787060' }}>Markets with similar grade and price range in other states</p>
+              <div className="grid grid-cols-2 gap-2">
+                {similarMarkets.map(sm => (
+                  <Link
+                    key={sm.id}
+                    href={`/city/${sm.id}`}
+                    className="flex items-center gap-2 p-3 rounded-xl transition-all hover:opacity-80"
+                    style={{ backgroundColor: '#f5f4f0', border: '1px solid #e5e3da' }}
+                  >
+                    <span
+                      className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                      style={{
+                        backgroundColor: sm.grade === 'A+' || sm.grade === 'A' ? '#2b2823' : sm.grade === 'B+' ? '#3d3a34' : '#787060',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {sm.grade}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: '#2b2823' }}>{sm.name}, {sm.stateCode}</p>
+                      <p className="text-[10px]" style={{ color: '#787060' }}>${sm.strMonthlyRevenue.toLocaleString()}/mo</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Calculator CTA — Contextual internal link */}
+        <Link
+          href="/calculator"
+          className="block rounded-2xl p-5 mt-4 transition-all hover:opacity-90"
+          style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#22c55e' }}>
+              <span className="text-white text-lg">📊</span>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm" style={{ color: '#166534' }}>Run the Numbers on a Property</p>
+              <p className="text-xs" style={{ color: '#4ade80' }}>Free STR calculator with comp data for any address</p>
+            </div>
+            <svg className="w-5 h-5 flex-shrink-0" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
 
         {/* CTA */}
         <div 

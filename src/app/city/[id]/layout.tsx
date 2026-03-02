@@ -71,6 +71,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical: `https://edge.teeco.co/city/${cityId}`,
     },
+    other: {
+      'geo.region': `US-${city.stateCode.toUpperCase()}`,
+      'geo.placename': `${city.name}, ${stateFull}`,
+      'content-language': 'en-US',
+    },
     openGraph: {
       title: `${city.name}, ${city.stateCode} — $${annualRevenueK}K/yr STR Market · Grade ${city.grade}`,
       description: `Analyze the ${city.name} short-term rental market. $${city.strMonthlyRevenue.toLocaleString()}/mo revenue · ${city.occupancy}% occupancy · Grade ${city.grade}. Free estimated market data.`,

@@ -69,6 +69,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Notify search engines via IndexNow for instant indexing
+  try {
+    const blogUrl = `${request.nextUrl.origin}/blog/${post.slug}`;
+    await fetch(`${request.nextUrl.origin}/api/indexnow`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${ADMIN_PASSWORD}`,
+      },
+      body: JSON.stringify({ urls: [blogUrl, `${request.nextUrl.origin}/blog`, `${request.nextUrl.origin}/sitemap.xml`] }),
+    }).catch(() => {}); // Non-blocking
+  } catch {} // Silently fail — don't block approval
+
   // Redirect to confirmation page
   const url = new URL("/blog/review", request.nextUrl.origin);
   url.searchParams.set("password", password);

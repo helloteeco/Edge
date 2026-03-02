@@ -92,6 +92,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to publish post" }, { status: 500 });
       }
 
+      // Notify search engines via IndexNow for instant indexing
+      if (data?.slug) {
+        try {
+          const baseUrl = request.nextUrl.origin;
+          await fetch(`${baseUrl}/api/indexnow`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${ADMIN_PASSWORD}`,
+            },
+            body: JSON.stringify({ urls: [`${baseUrl}/blog/${data.slug}`, `${baseUrl}/blog`, `${baseUrl}/sitemap.xml`] }),
+          }).catch(() => {});
+        } catch {} // Non-blocking
+      }
+
       return NextResponse.json({ success: true, action: "published", post: data });
     }
 
