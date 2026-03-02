@@ -1,8 +1,15 @@
 User-agent: *
 Allow: /
-
+Allow: /api/sitemap
 Disallow: /api/
 Disallow: /share/
 Disallow: /admin/
 
 Sitemap: https://edge.teeco.co/sitemap.xml
+Sitemap: https://edge.teeco.co/sitemap-pages.xml
+Sitemap: https://edge.teeco.co/sitemap-states.xml
+Sitemap: https://edge.teeco.co/sitemap-blog.xml
+Sitemap: https://edge.teeco.co/sitemap-cities-1.xml
+Sitemap: https://edge.teeco.co/sitemap-cities-2.xml
+Sitemap: https://edge.teeco.co/sitemap-cities-3.xml
+Sitemap: https://edge.teeco.co/sitemap-cities-4.xml
