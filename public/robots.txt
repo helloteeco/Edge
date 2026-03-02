@@ -5,6 +5,7 @@ Disallow: /api/
 Disallow: /share/
 Disallow: /admin/
 
+# Static sitemaps (updated periodically)
 Sitemap: https://edge.teeco.co/sitemap.xml
 Sitemap: https://edge.teeco.co/sitemap-pages.xml
 Sitemap: https://edge.teeco.co/sitemap-states.xml
@@ -13,3 +14,6 @@ Sitemap: https://edge.teeco.co/sitemap-cities-1.xml
 Sitemap: https://edge.teeco.co/sitemap-cities-2.xml
 Sitemap: https://edge.teeco.co/sitemap-cities-3.xml
 Sitemap: https://edge.teeco.co/sitemap-cities-4.xml
+
+# Dynamic sitemap (always up-to-date, auto-includes new cities & blog posts)
+Sitemap: https://edge.teeco.co/api/sitemap

@@ -65,7 +65,7 @@
       ]
     },
     {
-      "source": "/((?!sitemap|robots\\.txt|api/sitemap).*)",
+      "source": "/((?!sitemap|robots\\.txt|api/sitemap|api/regenerate-sitemap).*)",
       "headers": [
         {
           "key": "X-Content-Type-Options",
