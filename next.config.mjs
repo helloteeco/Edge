@@ -14,8 +14,18 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Apply to all routes
-        source: "/:path*",
+        // Sitemap and robots — serve with minimal headers for maximum crawler compatibility
+        source: "/(sitemap.xml|robots.txt|api/sitemap)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, s-maxage=86400",
+          },
+        ],
+      },
+      {
+        // Apply security headers to all OTHER routes
+        source: "/((?!sitemap\\.xml|robots\\.txt|api/sitemap).*)",
         headers: [
           {
             key: "X-DNS-Prefetch-Control",

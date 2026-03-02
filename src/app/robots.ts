@@ -5,10 +5,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        allow: ['/', '/api/sitemap'],
         disallow: ['/api/', '/share/', '/admin/'],
       },
     ],
-    sitemap: 'https://edge.teeco.co/sitemap.xml',
+    sitemap: [
+      'https://edge.teeco.co/sitemap.xml',
+      'https://edge.teeco.co/api/sitemap',
+    ],
   };
 }
