@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /share/
+Disallow: /admin/
+
+Sitemap: https://edge.teeco.co/sitemap.xml
