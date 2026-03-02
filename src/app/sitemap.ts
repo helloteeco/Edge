@@ -1,7 +1,12 @@
 import { MetadataRoute } from 'next';
 import { getAllCities, getAllStates } from '@/data/helpers';
+import { createClient } from '@supabase/supabase-js';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Supabase client for fetching published blog posts
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://edge.teeco.co';
   const now = new Date();
 
@@ -64,9 +69,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${baseUrl}/blog`,
       lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.7,
+      changeFrequency: 'daily',
+      priority: 0.8,
     },
+    // Static blog post (hardcoded)
     {
       url: `${baseUrl}/blog/best-airbnb-markets-under-300k`,
       lastModified: now,
@@ -74,6 +80,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
   ];
+
+  // Dynamic blog posts from Supabase
+  let blogPages: MetadataRoute.Sitemap = [];
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data: posts } = await supabase
+      .from('blog_posts')
+      .select('slug, published_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false });
+
+    if (posts) {
+      blogPages = posts
+        .filter(p => p.slug !== 'best-airbnb-markets-under-300k') // Avoid duplicate with static
+        .map(post => ({
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: post.published_at ? new Date(post.published_at) : now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.7,
+        }));
+    }
+  } catch (e) {
+    // Silently fail — static sitemap still works without dynamic blog posts
+    console.error('[Sitemap] Failed to fetch blog posts:', e);
+  }
 
   // Dynamic state pages — auto-updates as states are added
   const states = getAllStates();
@@ -93,5 +124,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticPages, ...statePages, ...cityPages];
+  return [...staticPages, ...blogPages, ...statePages, ...cityPages];
 }

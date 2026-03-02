@@ -217,6 +217,55 @@ export default function DynamicBlogPost() {
         </div>
       </article>
 
+      {/* Article Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: post.title,
+            description: post.description,
+            datePublished: post.published_at || post.created_at,
+            dateModified: post.published_at || post.created_at,
+            author: {
+              "@type": "Organization",
+              name: "Edge by Teeco",
+              url: "https://edge.teeco.co",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Edge by Teeco",
+              url: "https://edge.teeco.co",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://edge.teeco.co/og-image.png",
+              },
+            },
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": `https://edge.teeco.co/blog/${slug}`,
+            },
+          }),
+        }}
+      />
+
+      {/* Breadcrumb Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://edge.teeco.co" },
+              { "@type": "ListItem", position: 2, name: "Market Insights", item: "https://edge.teeco.co/blog" },
+              { "@type": "ListItem", position: 3, name: post.title, item: `https://edge.teeco.co/blog/${slug}` },
+            ],
+          }),
+        }}
+      />
+
       {/* Blog content styles */}
       <style jsx global>{`
         .blog-content p { margin-bottom: 16px; font-size: 15px; }

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getCitiesByState, getStateByCode } from "@/data/helpers";
+import { getCitiesByState, getStateByCode, getAllStates } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
 import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 
@@ -712,6 +712,90 @@ export default function StatePage({ params }: { params: { id: string } }) {
             </div>
           )}
         </div>
+        {/* Analyze a Specific Property CTA */}
+        <div className="px-4 mt-4">
+          <Link
+            href="/calculator"
+            className="block rounded-2xl p-5 transition-all hover:opacity-90"
+            style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#22c55e' }}>
+                <span className="text-white text-lg">📊</span>
+              </div>
+              <div>
+                <p className="font-semibold text-sm" style={{ color: '#166534' }}>Analyze a Specific Property</p>
+                <p className="text-xs" style={{ color: '#4ade80' }}>Use our free STR calculator for any address in {state.name}</p>
+              </div>
+              <svg className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+        </div>
+
+        {/* Explore Other States — Cross-state internal linking for SEO */}
+        {(() => {
+          const allStates = getAllStates().filter(s => s.abbreviation !== state.abbreviation && s.cityCount > 0);
+          // Get states with similar grade
+          const similarGradeStates = allStates
+            .filter(s => s.grade === state.grade)
+            .sort((a, b) => b.marketScore - a.marketScore)
+            .slice(0, 4);
+          // Get top-performing states overall
+          const topStates = allStates
+            .sort((a, b) => b.marketScore - a.marketScore)
+            .slice(0, 4);
+          // Merge and deduplicate
+          const seen = new Set<string>();
+          const relatedStates = [...similarGradeStates, ...topStates].filter(s => {
+            if (seen.has(s.abbreviation)) return false;
+            seen.add(s.abbreviation);
+            return true;
+          }).slice(0, 6);
+          if (relatedStates.length === 0) return null;
+          return (
+            <div className="px-4 mt-4">
+              <div className="rounded-2xl p-5" style={{ backgroundColor: '#ffffff', border: '1px solid #d8d6cd' }}>
+                <h3 className="font-semibold text-base mb-3" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
+                  Explore Other States
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {relatedStates.map(rs => (
+                    <Link
+                      key={rs.abbreviation}
+                      href={`/state/${rs.abbreviation.toLowerCase()}`}
+                      className="flex items-center gap-2 p-3 rounded-xl transition-all hover:opacity-80"
+                      style={{ backgroundColor: '#f5f4f0', border: '1px solid #e5e3da' }}
+                    >
+                      <span
+                        className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                        style={{
+                          backgroundColor: rs.grade === 'A+' || rs.grade === 'A' ? '#2b2823' : rs.grade === 'B+' ? '#3d3a34' : '#787060',
+                          color: '#ffffff',
+                        }}
+                      >
+                        {rs.grade}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate" style={{ color: '#2b2823' }}>{rs.name}</p>
+                        <p className="text-[10px]" style={{ color: '#787060' }}>{rs.cityCount} markets</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <Link
+                  href="/search"
+                  className="block text-center mt-3 text-xs font-medium transition-opacity hover:opacity-70"
+                  style={{ color: '#787060' }}
+                >
+                  View all 50 states →
+                </Link>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Breadcrumb */}
         <nav className="mt-6 px-4 pb-4" aria-label="Breadcrumb">
           <ol className="flex items-center gap-1.5 text-xs" style={{ color: '#787060' }}>
