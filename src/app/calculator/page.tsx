@@ -1344,6 +1344,15 @@ export default function CalculatorPage() {
   
   // Handle analyze button click - check auth and credits first
   const handleAnalyzeClick = async () => {
+    // Validate address is a real street address before proceeding
+    if (!isStreetAddress(address)) {
+      setAddressError("Please enter a full street address (e.g., \"123 Main St, Nashville, TN\")");
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => setAddressError(null), 5000);
+      return;
+    }
+    setAddressError(null);
+
     // Double-check auth from localStorage in case state is stale
     const authToken = localStorage.getItem("edge_auth_token");
     const authExpiry = localStorage.getItem("edge_auth_expiry");
@@ -2056,6 +2065,23 @@ export default function CalculatorPage() {
     setShowSuggestions(false);
     setSuggestions([]);
   };
+
+  // Validate that address looks like a real street address (not just a city/state name)
+  // Must contain a comma (e.g., "123 Main St, City, ST") to indicate street + location
+  const isStreetAddress = (addr: string): boolean => {
+    const trimmed = addr.trim();
+    if (!trimmed) return false;
+    // Must have at least one comma (street, city format)
+    if (!trimmed.includes(',')) return false;
+    // The part before the first comma should have a number (street number) or be a known place name
+    const streetPart = trimmed.split(',')[0].trim();
+    // Street addresses typically start with a number or contain common street words
+    const hasStreetNumber = /\d/.test(streetPart);
+    const hasStreetWord = /\b(st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|ct|court|way|pl|place|cir|circle|pkwy|parkway|hwy|highway|loop|trail|ter|terrace)\b/i.test(streetPart);
+    return hasStreetNumber || hasStreetWord;
+  };
+
+  const [addressError, setAddressError] = useState<string | null>(null);
 
   // Check if form is valid for analysis
   const canAnalyze = address.trim().length > 0;
@@ -4662,8 +4688,8 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 ref={inputRef}
                 type="text"
                 value={address}
-                onChange={(e) => { userIsTypingRef.current = true; setAddress(e.target.value); }}
-                onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyze()}
+                onChange={(e) => { userIsTypingRef.current = true; setAddress(e.target.value); if (addressError) setAddressError(null); }}
+                onKeyDown={(e) => e.key === "Enter" && canAnalyze && handleAnalyzeClick()}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 placeholder="Enter address..."
                 autoComplete="off"
@@ -4737,6 +4763,13 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               )}
             </button>
           </div>
+          
+          {/* Address validation error */}
+          {addressError && (
+            <p className="text-xs mt-2 font-medium" style={{ color: '#ef4444' }}>
+              {addressError}
+            </p>
+          )}
           
           <p className="text-xs text-gray-400 mt-2">STR revenue analysis for any US address</p>
           <p className="text-xs text-gray-400 mt-1">Defaults: 3 bed / 2 bath — you can refine after results</p>
