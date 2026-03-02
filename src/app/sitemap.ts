@@ -10,78 +10,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://edge.teeco.co';
   const now = new Date();
 
-  // Static pages
+  // ═══════════════════════════════════════════════════════════
+  // STATIC PAGES — Core pages with highest priority
+  // ═══════════════════════════════════════════════════════════
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/calculator`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/airbnb-calculator`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/search`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/funding`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/terms`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${baseUrl}/privacy`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${baseUrl}/cookies`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${baseUrl}/contact`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.8,
-    },
+    { url: baseUrl, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${baseUrl}/calculator`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/airbnb-calculator`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/search`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    { url: `${baseUrl}/funding`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/cookies`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     // Static blog post (hardcoded)
-    {
-      url: `${baseUrl}/blog/best-airbnb-markets-under-300k`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
+    { url: `${baseUrl}/blog/best-airbnb-markets-under-300k`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
   ];
 
-  // Dynamic blog posts from Supabase
+  // ═══════════════════════════════════════════════════════════
+  // DYNAMIC BLOG POSTS — Fetched from Supabase
+  // ═══════════════════════════════════════════════════════════
   let blogPages: MetadataRoute.Sitemap = [];
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -106,16 +55,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('[Sitemap] Failed to fetch blog posts:', e);
   }
 
-  // Dynamic state pages — auto-updates as states are added
+  // ═══════════════════════════════════════════════════════════
+  // STATE PAGES — 50 states, high priority for geo-targeting
+  // ═══════════════════════════════════════════════════════════
   const states = getAllStates();
   const statePages: MetadataRoute.Sitemap = states.map((state) => ({
     url: `${baseUrl}/state/${state.abbreviation.toLowerCase()}`,
     lastModified: now,
     changeFrequency: 'monthly' as const,
-    priority: 0.7,
+    priority: 0.8, // Increased from 0.7 — state pages are important geo landing pages
   }));
 
-  // Dynamic city pages — auto-updates as cities are added
+  // ═══════════════════════════════════════════════════════════
+  // CITY PAGES — 1,611 cities, the core of the site
+  // ═══════════════════════════════════════════════════════════
   const cities = getAllCities();
   const cityPages: MetadataRoute.Sitemap = cities.map((city) => ({
     url: `${baseUrl}/city/${city.id}`,
