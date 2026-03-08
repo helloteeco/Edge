@@ -8015,9 +8015,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🎓</span>
                   <div className="flex-1">
-                    <p className="font-semibold" style={{ color: "#92400e" }}>Need help with steps 2-5?</p>
+                    <p className="font-semibold" style={{ color: "#92400e" }}>Ready to Make This Happen?</p>
                     <p className="text-sm mt-1" style={{ color: "#a16207" }}>
-                      Teeco&apos;s 1:1 coaching walks you through everything - from finding STR-friendly lenders and agents in our community, to designing and launching your property. Only ~3 hours/week once set up.
+                      Our students go from analysis to $2K–$4K/mo cash flow in 6 months. Jeff walks you through every step — finding deals, funding, design, and launch. 97% of coaching students hit their income targets.
                     </p>
                     <a 
                       href="https://teeco.co/fund-your-financial-freedom"

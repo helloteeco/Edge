@@ -1642,6 +1642,33 @@ export default function FundingPage() {
           </div>
         )}
 
+        {/* Coaching CTA */}
+        <div className="mt-6 p-5 rounded-2xl" style={{ background: 'linear-gradient(135deg, #2b2823 0%, #3d3a34 100%)' }}>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <span className="text-lg">🎯</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-base mb-1" style={{ color: '#ffffff', fontFamily: 'Source Serif Pro, Georgia, serif' }}>
+                Found Your Funding Strategy?
+              </h3>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
+                Our coaching students get connected with STR-friendly lenders, agents, and a step-by-step plan to close their first deal. Most go from zero to $2K–$4K/mo cash flow within 6 months.
+              </p>
+              <a
+                href="https://teeco.co/fund-your-financial-freedom"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
+              >
+                See How Coaching Works
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Final Disclaimer */}
 
         <div className="mt-6 p-4 rounded-xl text-center" style={{ backgroundColor: 'rgba(43, 40, 35, 0.04)' }}>

@@ -264,7 +264,16 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <Link 
+                href="https://teeco.co/fund-your-financial-freedom"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.25)' }}
+              >
+                Apply for Coaching
+              </Link>
               <Link 
                 href="/calculator"
                 className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
