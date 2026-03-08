@@ -483,26 +483,30 @@ export function ChatAssistant() {
                       <div className="space-y-3">
                         <div 
                           className="rounded-xl p-3 text-left"
-                          style={{ backgroundColor: 'rgba(43, 40, 35, 0.06)', border: '1px solid #d8d6cd' }}
+                          style={{ backgroundColor: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)' }}
                         >
-                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ Based on your answers, our Coaching Program may be a good fit:</p>
+                          <p className="text-sm font-medium mb-2" style={{ color: '#2b2823' }}>✅ You look like a great fit for our coaching program.</p>
+                          <p className="text-xs mb-2" style={{ color: '#787060' }}>
+                            Our students go from zero to $2K–$4K/mo cash flow within 6 months. Jeff walks you through every step — finding deals, funding, design, and launch.
+                          </p>
                           <ul className="text-xs space-y-1" style={{ color: '#787060' }}>
-                            <li>• Full guided experience: 9 total calls</li>
-                            <li>• Deal → Setup & Design → Live STR</li>
-                            <li>• We can set up your STR remotely</li>
+                            <li>• 97% of students hit their income targets</li>
+                            <li>• Full 1:1 guided experience with Jeff</li>
                             <li>• Only ~3 hours/week to manage once live</li>
                           </ul>
                         </div>
-                        <p className="text-sm" style={{ color: '#787060' }}>
-                          Reach out to learn more:
-                        </p>
                         <a
-                          href="mailto:hello@teeco.co"
+                          href="https://teeco.co/fund-your-financial-freedom"
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="block w-full py-3 rounded-xl font-semibold transition-colors text-center"
-                          style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
+                          style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
                         >
-                          Email hello@teeco.co
+                          See Full Program Details →
                         </a>
+                        <p className="text-xs text-center" style={{ color: '#9a9488' }}>
+                          Or email <a href="mailto:hello@teeco.co" className="underline">hello@teeco.co</a> with questions
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -518,6 +522,15 @@ export function ChatAssistant() {
                             <li>• Ask the <strong>Edge Assistant</strong> any STR questions</li>
                           </ul>
                         </div>
+                        <a
+                          href="https://teeco.co/fund-your-financial-freedom"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-xs text-center underline"
+                          style={{ color: '#787060' }}
+                        >
+                          Interested in 1:1 coaching? Learn more →
+                        </a>
                         <p className="text-xs" style={{ color: '#9a9488' }}>
                           Have questions? Email hello@teeco.co
                         </p>
