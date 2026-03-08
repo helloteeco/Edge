@@ -204,7 +204,8 @@ export default function HomePage() {
           <div className="flex items-center justify-center gap-2">
             
             <p className="text-[11px] sm:text-sm" style={{ color: '#2b2823' }}>
-              Most students successfully launch their first STR with just <span className="font-semibold">$65K</span>.
+              Our students earn <span className="font-semibold">$2K–$4K/mo</span> from rural Airbnbs — even with no real estate experience.{' '}
+              <a href="https://teeco.co/fund-your-financial-freedom" target="_blank" rel="noopener noreferrer" className="underline font-semibold" style={{ color: '#2b2823' }}>See how →</a>
             </p>
           </div>
         </div>
@@ -236,7 +237,7 @@ export default function HomePage() {
               Find, Analyze & Fund Short-Term Rentals
             </h1>
             <p className="text-[11px] sm:text-sm mb-2 sm:mb-3 leading-snug sm:leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Real data on {getMarketCounts().withFullData.toLocaleString()}+ markets. Built by an investor generating $1M+/yr.
+              Real data on {getMarketCounts().withFullData.toLocaleString()}+ markets. Built by Jeff Chheuy, pharmacist-turned-investor generating $1M+/yr from rural Airbnbs.
             </p>
 
           </div>
