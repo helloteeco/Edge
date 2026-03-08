@@ -1371,21 +1371,36 @@ export default function FundingPage() {
           <p className="text-sm mb-6 max-w-md mx-auto leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
             Our network includes STR-friendly lenders, attorneys, and CPAs who can help you implement these strategies safely.
           </p>
-          <a
-            href="https://www.zillow.com/homeloans/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ 
-              backgroundColor: '#ffffff', 
-              color: '#2b2823',
-              boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
-            }}
-          >
-            <BuildingIcon className="w-5 h-5" color="#2b2823" />
-            Connect with STR Lender
-            <ArrowRightIcon className="w-4 h-4" color="#2b2823" />
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="https://teeco.co/fund-your-financial-freedom"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{ 
+                backgroundColor: '#22c55e', 
+                color: '#ffffff',
+                boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
+              }}
+            >
+              Get Matched with Our Lenders
+              <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
+            </a>
+            <a
+              href="https://www.zillow.com/homeloans/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all hover:opacity-90"
+              style={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+                color: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}
+            >
+              <BuildingIcon className="w-4 h-4" color="rgba(255,255,255,0.85)" />
+              Or Browse Zillow Lenders
+            </a>
+          </div>
         </div>
 
         {/* Stuck Helper - placed after CTA, before all methods */}
