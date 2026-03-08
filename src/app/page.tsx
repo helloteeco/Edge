@@ -851,7 +851,7 @@ export default function HomePage() {
                 </Link>
                 
                 <Link 
-                  href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
+                  href="https://teeco.co/book-our-design-services"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -864,7 +864,7 @@ export default function HomePage() {
                 </Link>
                 
                 <Link 
-                  href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
+                  href="https://teeco.co/fund-your-financial-freedom"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98]"

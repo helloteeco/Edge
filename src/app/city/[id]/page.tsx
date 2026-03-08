@@ -1044,10 +1044,10 @@ export default function CityPage({ params }: { params: { id: string } }) {
             Ready to Invest?
           </h3>
           <p className="text-sm mb-4" style={{ color: 'rgba(255, 255, 255, 0.75)' }}>
-            Learn more about our STR coaching program.
+            See how our students earn $2K–$4K/mo from rural Airbnbs — even as first-time investors.
           </p>
           <Link
-            href="https://app.usemotion.com/meet/stephanie-tran-6vk2/aa-coaching-interview"
+            href="https://teeco.co/fund-your-financial-freedom"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
