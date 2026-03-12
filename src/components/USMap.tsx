@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { getStateByCode } from "@/data/helpers";
+import { getStateByCode, DATA_LAST_UPDATED } from "@/data/helpers";
 import { getInventoryByState } from "@/data/inventory-data";
 
 type MapView = "appreciation" | "migration" | "homeValue" | "strScore" | "inventoryLevel" | "inventoryGrowth" | "priceCuts" | "daysOnMarket";
@@ -545,7 +545,7 @@ export function USMap() {
       <div className="flex justify-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs" style={{ backgroundColor: '#f5f4f0', color: '#787060' }}>
           <span className="w-2 h-2 rounded-full bg-green-500" />
-          Data last updated: February 2026
+          Data last updated: {DATA_LAST_UPDATED}
         </div>
       </div>
 

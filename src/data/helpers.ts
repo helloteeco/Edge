@@ -590,4 +590,4 @@ export function getMarketCounts(): { total: number; withFullData: number } {
 }
 
 // Data freshness info
-export const DATA_LAST_UPDATED = 'February 2026';
+export const DATA_LAST_UPDATED = 'March 2026';
