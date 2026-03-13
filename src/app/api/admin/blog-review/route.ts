@@ -304,9 +304,13 @@ async function sendReviewNotifications() {
             <span style="font-size: 14px; font-weight: 600; color: #2b2823;">Market Search</span><br/>
             <span style="font-size: 12px; color: #9a9488;">Browse all 1,011+ US markets</span>
           </a>
-          <a href="https://edge.teeco.co/calculator" style="display: block; padding: 14px 18px; text-decoration: none;">
+          <a href="https://edge.teeco.co/calculator" style="display: block; padding: 14px 18px; text-decoration: none; border-bottom: 1px solid #f0efe9;">
             <span style="font-size: 14px; font-weight: 600; color: #2b2823;">STR Calculator</span><br/>
             <span style="font-size: 12px; color: #9a9488;">Run property analysis with AI</span>
+          </a>
+          <a href="https://photolab.teeco.co/teeco-admin" style="display: block; padding: 14px 18px; text-decoration: none;">
+            <span style="font-size: 14px; font-weight: 600; color: #2b2823;">Teeco Admin</span><br/>
+            <span style="font-size: 12px; color: #9a9488;">PhotoLab admin dashboard</span>
           </a>
         </div>
       </div>
