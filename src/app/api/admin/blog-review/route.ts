@@ -309,8 +309,8 @@ async function sendReviewNotifications() {
             <span style="font-size: 12px; color: #9a9488;">Run property analysis with AI</span>
           </a>
           <a href="https://photolab.teeco.co/teeco-admin" style="display: block; padding: 14px 18px; text-decoration: none;">
-            <span style="font-size: 14px; font-weight: 600; color: #2b2823;">Teeco Admin</span><br/>
-            <span style="font-size: 12px; color: #9a9488;">PhotoLab admin dashboard</span>
+            <span style="font-size: 14px; font-weight: 600; color: #2b2823;">Photo Lab Dashboard</span><br/>
+            <span style="font-size: 12px; color: #9a9488;">Manage Photo Lab app &amp; admin tools</span>
           </a>
         </div>
       </div>
