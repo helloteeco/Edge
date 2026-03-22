@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
     viewport: {
       width: "device-width",
       initialScale: 1,
-      maximumScale: 1,
+      maximumScale: 5,
       interactiveWidget: "resizes-visual",
     },
     title: {

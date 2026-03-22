@@ -1,4 +1,4 @@
-# State-Level Housing Inventory Data (Dec 2024 to Dec 2025 YoY Change)
+# State-Level Housing Inventory Data (Dec 2025 to Dec 2026 YoY Change)
 
 Source: ResiClub analysis of Realtor.com data
 

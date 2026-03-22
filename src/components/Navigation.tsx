@@ -80,9 +80,11 @@ export function Navigation() {
   }, []);
 
   return (
-    <nav 
+    <nav
       className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom"
-      style={{ 
+      role="navigation"
+      aria-label="Main navigation"
+      style={{
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid #d8d6cd',
@@ -91,31 +93,34 @@ export function Navigation() {
       }}
     >
       <div className="max-w-screen-xl mx-auto px-2">
-        <div className="flex justify-around items-center h-16">
+        <div className="flex justify-around items-center h-16" role="tablist">
           {tabs.map((tab) => {
-            const isActive = pathname === tab.href || 
+            const isActive = pathname === tab.href ||
               (tab.href !== "/" && pathname?.startsWith(tab.href));
-            
+
             return (
               <Link
                 key={tab.name}
                 href={tab.href}
-                className="flex flex-col items-center justify-center flex-1 h-full py-2 transition-all duration-200"
-                style={{ 
+                role="tab"
+                aria-selected={isActive}
+                aria-label={`Navigate to ${tab.name}`}
+                className="flex flex-col items-center justify-center flex-1 h-full py-2 transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2b2823] rounded-lg"
+                style={{
                   color: isActive ? '#2b2823' : '#9a9488'
                 }}
               >
-                <div 
+                <div
                   className="relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200"
-                  style={{ 
+                  style={{
                     backgroundColor: isActive ? 'rgba(43, 40, 35, 0.06)' : 'transparent'
                   }}
                 >
                   <tab.Icon active={isActive} />
                 </div>
-                <span 
-                  className="text-[10px] mt-0.5 transition-all duration-200"
-                  style={{ 
+                <span
+                  className="text-[11px] mt-0.5 transition-all duration-200"
+                  style={{
                     color: isActive ? '#2b2823' : '#9a9488',
                     fontWeight: isActive ? 600 : 500
                   }}

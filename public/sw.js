@@ -1,7 +1,7 @@
 // Edge App Service Worker — Offline-first caching for analysis results
-const CACHE_NAME = 'edge-v1';
-const ANALYSIS_CACHE = 'edge-analysis-v1';
-const STATIC_CACHE = 'edge-static-v1';
+const CACHE_NAME = 'edge-v2';
+const ANALYSIS_CACHE = 'edge-analysis-v2';
+const STATIC_CACHE = 'edge-static-v2';
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = [
@@ -14,6 +14,11 @@ const PRECACHE_URLS = [
 const CACHEABLE_API_PATTERNS = [
   /\/api\/property-cache/,
   /\/api\/credits/,
+  /\/api\/mashvisor\/property/,
+  /\/api\/airbnb-occupancy/,
+  /\/api\/cities\/search/,
+  /\/api\/hud-fmr/,
+  /\/api\/str-regulations/,
 ];
 
 // Install: pre-cache shell

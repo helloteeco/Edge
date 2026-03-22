@@ -3,7 +3,7 @@
 
 export interface InventoryData {
   inventoryLevel: 'low' | 'moderate' | 'high' | 'very-high';
-  inventoryGrowthYoY: number; // Year-over-year % change (Dec 2024 to Dec 2025)
+  inventoryGrowthYoY: number; // Year-over-year % change (Dec 2025 to Dec 2026)
   inventoryVs2019: number; // % change vs pre-pandemic Dec 2019
   priceCutPercent: number; // % of listings with price cuts
   daysOnMarket: number; // Median days on market

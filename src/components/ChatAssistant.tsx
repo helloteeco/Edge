@@ -139,8 +139,9 @@ export function ChatAssistant() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close chat assistant" : "Open chat assistant"}
         className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all z-50"
-        style={{ 
+        style={{
           backgroundColor: isOpen ? '#9a9488' : '#787060',
           color: '#ffffff',
           boxShadow: '0 4px 20px rgba(120, 112, 96, 0.35)'
@@ -334,6 +335,7 @@ export function ChatAssistant() {
                   {isLoading && (
                     <div className="flex justify-start">
                       <div className="px-4 py-3 rounded-2xl" style={{ backgroundColor: '#e5e3da' }}>
+                        <p className="text-xs mb-1.5" style={{ color: '#787060' }}>Thinking...</p>
                         <div className="flex gap-1">
                           <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: '0ms' }} />
                           <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#787060', animationDelay: '150ms' }} />
@@ -362,6 +364,7 @@ export function ChatAssistant() {
                     <button
                       onClick={handleSendMessage}
                       disabled={isLoading}
+                      aria-label="Send message"
                       className="px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
                       style={{ backgroundColor: '#2b2823', color: '#ffffff' }}
                     >
