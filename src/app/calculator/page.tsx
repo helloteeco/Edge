@@ -1428,6 +1428,7 @@ export default function CalculatorPage() {
     
     // Check if user has credits
     if (creditsRemaining !== null && creditsRemaining <= 0) {
+      setPendingAnalysis(address);
       setShowPaywall(true);
       return;
     }
@@ -1524,11 +1525,12 @@ export default function CalculatorPage() {
       
       if (!creditData.success) {
         if (creditData.needsUpgrade) {
+          // Keep pendingAnalysis so user can retry after dismissing paywall
           setShowPaywall(true);
         } else {
           setError(creditData.error || "Failed to process credit. Please try again.");
+          setPendingAnalysis(null);
         }
-        setPendingAnalysis(null);
         return;
       }
       
@@ -8546,7 +8548,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             paddingTop: 'max(16px, env(safe-area-inset-top))',
             paddingBottom: 'max(80px, calc(env(safe-area-inset-bottom) + 70px))',
           }}
-          onClick={() => setShowPaywall(false)}
+          onClick={() => { setShowPaywall(false); setPendingAnalysis(null); }}
         >
           <div 
             className="bg-white rounded-2xl w-full max-w-sm overflow-y-auto"
@@ -8560,7 +8562,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
             {/* Close button */}
             <div className="flex justify-end -mt-1 -mr-1 mb-2">
               <button
-                onClick={() => setShowPaywall(false)}
+                onClick={() => { setShowPaywall(false); setPendingAnalysis(null); }}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-all"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -8688,7 +8690,30 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </p>
               
               <button
-                onClick={() => setShowPaywall(false)}
+                onClick={async () => {
+                  setShowPaywall(false);
+                  // If there's a pending analysis and user has credits, retry
+                  if (pendingAnalysis && creditsRemaining !== null && creditsRemaining > 0) {
+                    setShowCreditConfirm(true);
+                  } else if (pendingAnalysis) {
+                    // Re-fetch credits in case user purchased in Stripe tab
+                    const savedEmail = localStorage.getItem('edge_auth_email');
+                    if (savedEmail) {
+                      try {
+                        const res = await fetch(`/api/credits?email=${encodeURIComponent(savedEmail)}`);
+                        const data = await res.json();
+                        if (data.success && data.credits.remaining > 0) {
+                          setCreditsRemaining(data.credits.remaining);
+                          setCreditsLimit(data.credits.limit);
+                          setCreditsUsed(data.credits.used);
+                          setShowCreditConfirm(true);
+                          return;
+                        }
+                      } catch (e) { console.error('[Credits] Re-fetch error:', e); }
+                    }
+                    setPendingAnalysis(null);
+                  }
+                }}
                 className="w-full py-3 rounded-xl font-medium text-sm"
                 style={{ backgroundColor: '#e5e3da', color: '#787060' }}
               >
