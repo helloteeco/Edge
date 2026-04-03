@@ -1524,9 +1524,27 @@ export default function CalculatorPage() {
       const creditData = await creditResponse.json();
       
       if (!creditData.success) {
+        // If server says no credits but client shows free credits remaining,
+        // proceed with analysis anyway (server may not have the user row yet)
+        if (creditData.needsUpgrade && freeCreditsRemaining > 0) {
+          console.log("[Credits] Server returned needsUpgrade but user has free credits - proceeding");
+          setCreditsUsed(prev => prev + 1);
+          setCreditsRemaining(prev => prev !== null ? Math.max(0, prev - 1) : null);
+          addCreditEvent({
+            type: 'deduct',
+            address: pendingAnalysis || address,
+            creditsAfter: (creditsRemaining ?? 1) - 1,
+            note: 'Free analysis (server fallback)',
+          });
+          setCreditLog(getCreditLog());
+          handleAnalyze(pendingAnalysis || undefined);
+          setPendingAnalysis(null);
+          setForceRefresh(false);
+          return;
+        }
         if (creditData.needsUpgrade) {
-          // Keep pendingAnalysis so user can retry after dismissing paywall
           setShowPaywall(true);
+          setPendingAnalysis(null);
         } else {
           setError(creditData.error || "Failed to process credit. Please try again.");
           setPendingAnalysis(null);
@@ -8690,29 +8708,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               </p>
               
               <button
-                onClick={async () => {
+                onClick={() => {
                   setShowPaywall(false);
-                  // If there's a pending analysis and user has credits, retry
-                  if (pendingAnalysis && creditsRemaining !== null && creditsRemaining > 0) {
-                    setShowCreditConfirm(true);
-                  } else if (pendingAnalysis) {
-                    // Re-fetch credits in case user purchased in Stripe tab
-                    const savedEmail = localStorage.getItem('edge_auth_email');
-                    if (savedEmail) {
-                      try {
-                        const res = await fetch(`/api/credits?email=${encodeURIComponent(savedEmail)}`);
-                        const data = await res.json();
-                        if (data.success && data.credits.remaining > 0) {
-                          setCreditsRemaining(data.credits.remaining);
-                          setCreditsLimit(data.credits.limit);
-                          setCreditsUsed(data.credits.used);
-                          setShowCreditConfirm(true);
-                          return;
-                        }
-                      } catch (e) { console.error('[Credits] Re-fetch error:', e); }
-                    }
-                    setPendingAnalysis(null);
-                  }
+                  setPendingAnalysis(null);
                 }}
                 className="w-full py-3 rounded-xl font-medium text-sm"
                 style={{ backgroundColor: '#e5e3da', color: '#787060' }}
