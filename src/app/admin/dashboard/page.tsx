@@ -98,6 +98,35 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const [creditEmail, setCreditEmail] = useState("");
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditAction, setCreditAction] = useState<"add" | "set">("add");
+  const [creditMsg, setCreditMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [creditLoading, setCreditLoading] = useState(false);
+
+  const handleManageCredits = async () => {
+    if (!creditEmail.trim() || !creditAmount.trim()) return;
+    const amt = parseInt(creditAmount);
+    if (isNaN(amt) || amt < 0 || amt > 10000) { setCreditMsg({ type: "error", text: "Invalid amount (0-10000)" }); return; }
+    setCreditLoading(true);
+    setCreditMsg(null);
+    try {
+      const res = await fetch("/api/admin/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action: creditAction === "add" ? "add_credits" : "set_credits", email: creditEmail.trim(), amount: amt }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCreditMsg({ type: "success", text: `${creditAction === "add" ? "Added" : "Set"} ${amt} credits for ${creditEmail}. Remaining: ${result.credits_remaining}` });
+        setCreditAmount("");
+        fetchData(password);
+      } else {
+        setCreditMsg({ type: "error", text: result.error || "Failed" });
+      }
+    } catch { setCreditMsg({ type: "error", text: "Request failed" }); }
+    setCreditLoading(false);
+  };
 
   const fetchData = useCallback(async (pw: string) => {
     setLoading(true);
@@ -775,6 +804,34 @@ export default function AdminDashboard() {
         {/* ===== USERS TAB ===== */}
         {activeTab === "users" && (
           <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #d8d6cd' }}>
+            {/* Manage Credits Card */}
+            <div className="p-4 border-b" style={{ borderColor: '#e5e3da' }}>
+              <h3 className="font-semibold mb-3" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>Manage Credits</h3>
+              <div className="flex flex-wrap items-end gap-2">
+                <div>
+                  <label className="text-xs block mb-1" style={{ color: '#787060' }}>Email</label>
+                  <input type="email" value={creditEmail} onChange={(e) => setCreditEmail(e.target.value)} placeholder="user@example.com" className="px-3 py-2 rounded-lg text-sm w-64 focus:outline-none focus:ring-2" style={{ backgroundColor: '#f5f5f0', border: '1px solid #d8d6cd', color: '#2b2823' }} />
+                </div>
+                <div>
+                  <label className="text-xs block mb-1" style={{ color: '#787060' }}>Action</label>
+                  <select value={creditAction} onChange={(e) => setCreditAction(e.target.value as "add" | "set")} className="px-3 py-2 rounded-lg text-sm focus:outline-none" style={{ backgroundColor: '#f5f5f0', border: '1px solid #d8d6cd', color: '#2b2823' }}>
+                    <option value="add">Add Credits</option>
+                    <option value="set">Set Remaining To</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs block mb-1" style={{ color: '#787060' }}>Amount</label>
+                  <input type="number" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="25" min="0" max="10000" className="px-3 py-2 rounded-lg text-sm w-24 focus:outline-none focus:ring-2" style={{ backgroundColor: '#f5f5f0', border: '1px solid #d8d6cd', color: '#2b2823' }} />
+                </div>
+                <button onClick={handleManageCredits} disabled={creditLoading || !creditEmail.trim() || !creditAmount.trim()} className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
+                  {creditLoading ? "..." : "Apply"}
+                </button>
+              </div>
+              {creditMsg && (
+                <p className="text-xs mt-2 font-medium" style={{ color: creditMsg.type === "success" ? '#16a34a' : '#dc2626' }}>{creditMsg.text}</p>
+              )}
+            </div>
+
             <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#e5e3da' }}>
               <h3 className="font-semibold" style={{ color: '#2b2823', fontFamily: 'Source Serif Pro, Georgia, serif' }}>All Users</h3>
               <div className="flex items-center gap-3">
@@ -791,7 +848,9 @@ export default function AdminDashboard() {
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Credits Limit</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Unlimited</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Signed Up</th>
+                    <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Remaining</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Last Login</th>
+                    <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: '#e5e3da' }}>
@@ -800,6 +859,7 @@ export default function AdminDashboard() {
                       <td className="p-3 font-medium" style={{ color: '#2b2823' }}>{user.email}</td>
                       <td className="p-3" style={{ color: '#9333ea' }}>{user.credits_used ?? 0}</td>
                       <td className="p-3" style={{ color: '#787060' }}>{user.credits_limit ?? 3}</td>
+                      <td className="p-3 font-medium" style={{ color: '#16a34a' }}>{(user.credits_limit ?? 3) - (user.credits_used ?? 0)}</td>
                       <td className="p-3">
                         {user.is_unlimited ? (
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>Yes</span>
@@ -809,6 +869,9 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-3 whitespace-nowrap" style={{ color: '#9a9488' }}>{fmt(user.created_at)}</td>
                       <td className="p-3 whitespace-nowrap" style={{ color: '#9a9488' }}>{fmt(user.last_login_at)}</td>
+                      <td className="p-3">
+                        <button onClick={() => { setCreditEmail(user.email); setCreditAction("add"); setCreditAmount("25"); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#f0ede8', color: '#2b2823', border: '1px solid #d8d6cd' }}>+ Credits</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -3676,7 +3676,7 @@ export default function CalculatorPage() {
     <div class="expense-grid no-break">
       <div class="expense-category">
         <div class="expense-category-title">Utilities</div>
-        <div class="expense-line"><span class="name">Electric</span><span class="amount">${formatCurrency(electricMonthly)}</span></div>
+        <div class="expense-line"><span class="name">Electric/Gas</span><span class="amount">${formatCurrency(electricMonthly)}</span></div>
         <div class="expense-line"><span class="name">Water/Sewer</span><span class="amount">${formatCurrency(waterMonthly)}</span></div>
         <div class="expense-line"><span class="name">Internet/WiFi</span><span class="amount">${formatCurrency(internetMonthly)}</span></div>
         <div class="expense-line"><span class="name">Trash</span><span class="amount">${formatCurrency(trashMonthly)}</span></div>
@@ -6669,9 +6669,9 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
               {(!result || userEditedExpenses.current) && <div className="mb-2" />}
               
               <div className="grid grid-cols-2 gap-4">
-                {/* Row 1: Electric & Water */}
+                {/* Row 1: Electric/Gas & Water */}
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Electric</label>
+                  <label className="text-xs text-gray-500 block mb-1">Electric/Gas</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -6913,7 +6913,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <span style={{ color: "#787060" }}>Platform Fee (STR)</span>
                         <span className="font-medium">{platformFeePercent}%</span>
                       </div>
-                      <input type="range" min="0" max="15" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseInt(e.target.value))} className="w-full" />
+                      <input type="range" min="0" max="20" step="0.5" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseFloat(e.target.value))} className="w-full" />
                     </div>
                   </div>
                   
@@ -7331,7 +7331,7 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                         <span style={{ color: "#787060" }}>Platform Fee (STR)</span>
                         <span className="font-medium">{platformFeePercent}%</span>
                       </div>
-                      <input type="range" min="0" max="15" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseInt(e.target.value))} className="w-full" />
+                      <input type="range" min="0" max="20" step="0.5" value={platformFeePercent} onChange={(e) => setPlatformFeePercent(parseFloat(e.target.value))} className="w-full" />
                     </div>
                   </div>
                   
