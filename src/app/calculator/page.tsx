@@ -46,6 +46,37 @@ interface RecentSearch {
   cachedBedrooms?: number;
   cachedBathrooms?: number;
   cachedGuestCount?: number;
+  // Cached expense values so they persist when restoring a search
+  cachedExpenses?: {
+    electric: number;
+    water: number;
+    internet: number;
+    trash: number;
+    lawnCare: number;
+    pestControl: number;
+    maintenance: number;
+    houseSupplies: number;
+    consumables: number;
+    rentalSoftware: number;
+  };
+  // Cached calculator settings
+  cachedSettings?: {
+    analysisMode: string;
+    managementFeePercent: number;
+    platformFeePercent: number;
+    purchasePrice: string;
+    downPaymentPercent: number;
+    interestRate: number;
+    loanTerm: number;
+    propertyTaxRate: number;
+    monthlyRent: string;
+    securityDeposit: string;
+    firstLastMonth: boolean;
+    furnishingsCost: number;
+    revenuePercentile: string;
+    useCustomIncome: boolean;
+    customAnnualIncome: string;
+  };
   // From Supabase cross-device sync
   analyzedAt?: string;
   expiresAt?: string;
@@ -879,6 +910,25 @@ export default function CalculatorPage() {
           if (ci.customAnnualIncome) setCustomAnnualIncome(ci.customAnnualIncome);
           if (ci.monthlyRent) setMonthlyRent(ci.monthlyRent);
           if (ci.securityDeposit) setSecurityDeposit(ci.securityDeposit);
+          if (ci.platformFeePercent !== undefined) setPlatformFeePercent(ci.platformFeePercent);
+          if (ci.loanTerm !== undefined) setLoanTerm(ci.loanTerm);
+          if (ci.propertyTaxRate !== undefined) setPropertyTaxRate(ci.propertyTaxRate);
+          if (ci.furnishingsCost !== undefined) setFurnishingsCost(ci.furnishingsCost);
+          if (ci.analysisMode) setAnalysisMode(ci.analysisMode as "buying" | "arbitrage" | "iownit");
+          // Restore expenses from saved report
+          if (ci.expenses) {
+            setElectricMonthly(ci.expenses.electric);
+            setWaterMonthly(ci.expenses.water);
+            setInternetMonthly(ci.expenses.internet);
+            setTrashMonthly(ci.expenses.trash);
+            setLawnCareMonthly(ci.expenses.lawnCare);
+            setPestControlMonthly(ci.expenses.pestControl);
+            setMaintenanceMonthly(ci.expenses.maintenance);
+            setHouseSuppliesMonthly(ci.expenses.houseSupplies);
+            setSuppliesConsumablesMonthly(ci.expenses.consumables);
+            setRentalSoftwareMonthly(ci.expenses.rentalSoftware);
+            userEditedExpenses.current = true; // Prevent auto-recalculation
+          }
           console.log('[FromSaved] Restored custom inputs:', ci);
         } catch (e) {
           console.warn('[FromSaved] Failed to parse custom inputs:', e);
@@ -933,6 +983,39 @@ export default function CalculatorPage() {
           if (cachedSearch.cachedResult.sqft > 0) {
             setPropertySqft(cachedSearch.cachedResult.sqft);
             setFurnishingsCost(Math.round(cachedSearch.cachedResult.sqft * 15));
+          }
+          // Restore cached expenses so user adjustments persist
+          if (cachedSearch.cachedExpenses) {
+            setElectricMonthly(cachedSearch.cachedExpenses.electric);
+            setWaterMonthly(cachedSearch.cachedExpenses.water);
+            setInternetMonthly(cachedSearch.cachedExpenses.internet);
+            setTrashMonthly(cachedSearch.cachedExpenses.trash);
+            setLawnCareMonthly(cachedSearch.cachedExpenses.lawnCare);
+            setPestControlMonthly(cachedSearch.cachedExpenses.pestControl);
+            setMaintenanceMonthly(cachedSearch.cachedExpenses.maintenance);
+            setHouseSuppliesMonthly(cachedSearch.cachedExpenses.houseSupplies);
+            setSuppliesConsumablesMonthly(cachedSearch.cachedExpenses.consumables);
+            setRentalSoftwareMonthly(cachedSearch.cachedExpenses.rentalSoftware);
+            userEditedExpenses.current = true; // Prevent auto-recalculation
+          }
+          // Restore cached calculator settings
+          if (cachedSearch.cachedSettings) {
+            const cs = cachedSearch.cachedSettings;
+            setAnalysisMode(cs.analysisMode as "buying" | "arbitrage" | "iownit");
+            setManagementFeePercent(cs.managementFeePercent);
+            setPlatformFeePercent(cs.platformFeePercent);
+            if (cs.purchasePrice) setPurchasePrice(cs.purchasePrice);
+            setDownPaymentPercent(cs.downPaymentPercent);
+            setInterestRate(cs.interestRate);
+            setLoanTerm(cs.loanTerm);
+            setPropertyTaxRate(cs.propertyTaxRate);
+            if (cs.monthlyRent) setMonthlyRent(cs.monthlyRent);
+            if (cs.securityDeposit) setSecurityDeposit(cs.securityDeposit);
+            setFirstLastMonth(cs.firstLastMonth);
+            setFurnishingsCost(cs.furnishingsCost);
+            setRevenuePercentile(cs.revenuePercentile as "average" | "75th" | "90th");
+            setUseCustomIncome(cs.useCustomIncome);
+            if (cs.customAnnualIncome) setCustomAnnualIncome(cs.customAnnualIncome);
           }
           // Enrich with Zillow property details (sqft + estimated value) in background
           if (!cachedSearch.cachedResult.sqft || cachedSearch.cachedResult.sqft === 0) {
@@ -1818,7 +1901,38 @@ export default function CalculatorPage() {
   };
 
   // Save recent search (localStorage + Supabase sync for signed-in users)
+  // Automatically captures current expenses and settings so they persist on restore
   const saveRecentSearch = (search: RecentSearch) => {
+    // Attach current expense values and calculator settings to the search
+    search.cachedExpenses = {
+      electric: electricMonthly,
+      water: waterMonthly,
+      internet: internetMonthly,
+      trash: trashMonthly,
+      lawnCare: lawnCareMonthly,
+      pestControl: pestControlMonthly,
+      maintenance: maintenanceMonthly,
+      houseSupplies: houseSuppliesMonthly,
+      consumables: suppliesConsumablesMonthly,
+      rentalSoftware: rentalSoftwareMonthly,
+    };
+    search.cachedSettings = {
+      analysisMode,
+      managementFeePercent,
+      platformFeePercent,
+      purchasePrice,
+      downPaymentPercent,
+      interestRate,
+      loanTerm,
+      propertyTaxRate,
+      monthlyRent,
+      securityDeposit,
+      firstLastMonth,
+      furnishingsCost,
+      revenuePercentile,
+      useCustomIncome,
+      customAnnualIncome,
+    };
     const updated = [search, ...recentSearches.filter(s => s.address !== search.address)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem("edge_recent_searches", JSON.stringify(updated));
@@ -1876,6 +1990,7 @@ export default function CalculatorPage() {
         downPaymentPercent,
         interestRate,
         managementFeePercent,
+        platformFeePercent,
         cleaningCostPerStay: cleaningMonthly,
         revenuePercentile,
         useCustomIncome,
@@ -1884,6 +1999,22 @@ export default function CalculatorPage() {
         securityDeposit,
         firstLastMonth,
         startupBudget: 0,
+        loanTerm,
+        propertyTaxRate,
+        furnishingsCost,
+        analysisMode,
+        expenses: {
+          electric: electricMonthly,
+          water: waterMonthly,
+          internet: internetMonthly,
+          trash: trashMonthly,
+          lawnCare: lawnCareMonthly,
+          pestControl: pestControlMonthly,
+          maintenance: maintenanceMonthly,
+          houseSupplies: houseSuppliesMonthly,
+          consumables: suppliesConsumablesMonthly,
+          rentalSoftware: rentalSoftwareMonthly,
+        },
       },
     };
     
@@ -1997,9 +2128,55 @@ export default function CalculatorPage() {
       }
       
       // Generate the full report HTML (same as PDF)
-      // We need to call downloadPDFReport logic but capture the HTML instead of printing
-      // The reportHTML is generated inside downloadPDFReport, so we extract it
       const reportHtml = generateReportHTML();
+      
+      // Build rich inline data for the email body
+      const monthlyExpenses = calculateMonthlyExpenses();
+      const seasonalData = getSeasonalityData();
+      const annualRev = displayRevenue;
+      const rawSeasonalTotal = seasonalData.reduce((sum: number, m: any) => sum + (m.revenue || 0), 0);
+      const pScale = (rawSeasonalTotal > 0 && annualRev > 0) ? (annualRev / rawSeasonalTotal) : 1;
+      const monthlyRevenues = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+        const monthData = seasonalData[index];
+        let monthlyRev = 0;
+        if (monthData?.revenue && monthData.revenue > 0) {
+          monthlyRev = Math.round(monthData.revenue * pScale);
+        } else {
+          monthlyRev = Math.round(annualRev / 12);
+        }
+        return { month, revenue: monthlyRev || Math.round(annualRev / 12) };
+      });
+      
+      // Deal score calculation (same as report)
+      let totalScore = 0;
+      const effectiveOccupancy = result.occupancy || 55;
+      const effectiveAdr = effectiveOccupancy > 0 ? Math.round(displayRevenue / (365 * effectiveOccupancy / 100)) : result.adr;
+      if (analysisMode === "iownit") {
+        const advantageScore = Math.min(40, Math.max(0, (own.monthlyDifference / 500) * 40));
+        const cashFlowScore = Math.min(30, Math.max(0, (own.strMonthlyCashFlow / 500) * 30));
+        const occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20));
+        const dataScore = (result.percentiles ? 5 : 2.5) + (hudFmrData ? 5 : 2.5);
+        totalScore = Math.round(advantageScore + cashFlowScore + occupancyScore + dataScore);
+      } else {
+        const activeCalc = analysisMode === "buying" ? inv : arb;
+        const cocScore = Math.min(40, Math.max(0, activeCalc.cashOnCashReturn * 4));
+        const cashFlowScore = Math.min(30, Math.max(0, (activeCalc.monthlyCashFlow / 500) * 30));
+        const occupancyScore = Math.min(20, Math.max(0, ((result.occupancy - 40) / 30) * 20));
+        const dataScore = result.percentiles ? 10 : 5;
+        totalScore = Math.round(cocScore + cashFlowScore + occupancyScore + dataScore);
+      }
+      let verdict = "PASS";
+      if (analysisMode === "iownit") {
+        if (totalScore >= 75) verdict = "GO STR";
+        else if (totalScore >= 60) verdict = "STR FAVORED";
+        else if (totalScore >= 45) verdict = "CLOSE CALL";
+        else verdict = own.strWins ? "MARGINAL STR" : "LTR BETTER";
+      } else {
+        if (totalScore >= 75) verdict = "STRONG BUY";
+        else if (totalScore >= 60) verdict = "GOOD DEAL";
+        else if (totalScore >= 45) verdict = "CONSIDER";
+        else verdict = "CAUTION";
+      }
       
       const senderEmail = localStorage.getItem('edge_auth_email') || undefined;
       
@@ -2013,6 +2190,63 @@ export default function CalculatorPage() {
           propertyAddress: result.address || result.neighborhood,
           strategy: strategyLabel,
           summary: summaryLines,
+          // Rich inline data for beautiful email body
+          inlineData: {
+            city: result.city,
+            state: result.state,
+            bedrooms: bedrooms || result.bedrooms,
+            bathrooms: bathrooms || result.bathrooms,
+            guestCount: guestCount || (bedrooms || 3) * 2,
+            sqft: result.sqft || propertySqft,
+            propertyType: result.propertyType || 'Single Family',
+            annualRevenue: displayRevenue,
+            monthlyAvg: Math.round(displayRevenue / 12),
+            adr: effectiveAdr,
+            occupancy: effectiveOccupancy,
+            dealScore: totalScore,
+            verdict,
+            analysisMode,
+            monthlyRevenues,
+            expenses: {
+              electric: electricMonthly,
+              water: waterMonthly,
+              internet: internetMonthly,
+              trash: trashMonthly,
+              lawnCare: lawnCareMonthly,
+              pestControl: pestControlMonthly,
+              maintenance: maintenanceMonthly,
+              houseSupplies: houseSuppliesMonthly,
+              consumables: suppliesConsumablesMonthly,
+              rentalSoftware: rentalSoftwareMonthly,
+              totalMonthly: monthlyExpenses,
+            },
+            managementFeePercent,
+            platformFeePercent,
+            buying: analysisMode === "buying" ? {
+              purchasePrice: parseFloat(purchasePrice) || 0,
+              downPayment: inv.downPayment,
+              monthlyMortgage: inv.monthlyMortgage,
+              cashOnCashReturn: inv.cashOnCashReturn,
+              monthlyCashFlow: inv.monthlyCashFlow,
+              totalCashNeeded: inv.totalCashNeeded,
+              cashFlow: inv.cashFlow,
+            } : undefined,
+            arbitrage: analysisMode === "arbitrage" ? {
+              monthlyRent: parseFloat(monthlyRent) || 0,
+              cashOnCashReturn: arb.cashOnCashReturn,
+              monthlyCashFlow: arb.monthlyCashFlow,
+              totalCashNeeded: arb.totalCashNeeded,
+              cashFlow: arb.cashFlow,
+            } : undefined,
+            iownit: analysisMode === "iownit" ? {
+              strMonthlyCashFlow: own.strMonthlyCashFlow,
+              ltrMonthlyCashFlow: own.ltrMonthlyCashFlow,
+              monthlyDifference: own.monthlyDifference,
+              strWins: own.strWins,
+              startupCosts: own.startupCosts,
+            } : undefined,
+            dataSource: result.dataSource,
+          },
         }),
       });
       
@@ -8214,6 +8448,39 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                       if (search.cachedResult.sqft > 0) {
                         setPropertySqft(search.cachedResult.sqft);
                         setFurnishingsCost(Math.round(search.cachedResult.sqft * 15));
+                      }
+                      // Restore cached expenses so user adjustments persist
+                      if (search.cachedExpenses) {
+                        setElectricMonthly(search.cachedExpenses.electric);
+                        setWaterMonthly(search.cachedExpenses.water);
+                        setInternetMonthly(search.cachedExpenses.internet);
+                        setTrashMonthly(search.cachedExpenses.trash);
+                        setLawnCareMonthly(search.cachedExpenses.lawnCare);
+                        setPestControlMonthly(search.cachedExpenses.pestControl);
+                        setMaintenanceMonthly(search.cachedExpenses.maintenance);
+                        setHouseSuppliesMonthly(search.cachedExpenses.houseSupplies);
+                        setSuppliesConsumablesMonthly(search.cachedExpenses.consumables);
+                        setRentalSoftwareMonthly(search.cachedExpenses.rentalSoftware);
+                        userEditedExpenses.current = true; // Prevent auto-recalculation
+                      }
+                      // Restore cached calculator settings
+                      if (search.cachedSettings) {
+                        const cs = search.cachedSettings;
+                        setAnalysisMode(cs.analysisMode as "buying" | "arbitrage" | "iownit");
+                        setManagementFeePercent(cs.managementFeePercent);
+                        setPlatformFeePercent(cs.platformFeePercent);
+                        if (cs.purchasePrice) setPurchasePrice(cs.purchasePrice);
+                        setDownPaymentPercent(cs.downPaymentPercent);
+                        setInterestRate(cs.interestRate);
+                        setLoanTerm(cs.loanTerm);
+                        setPropertyTaxRate(cs.propertyTaxRate);
+                        if (cs.monthlyRent) setMonthlyRent(cs.monthlyRent);
+                        if (cs.securityDeposit) setSecurityDeposit(cs.securityDeposit);
+                        setFirstLastMonth(cs.firstLastMonth);
+                        setFurnishingsCost(cs.furnishingsCost);
+                        setRevenuePercentile(cs.revenuePercentile as "average" | "75th" | "90th");
+                        setUseCustomIncome(cs.useCustomIncome);
+                        if (cs.customAnnualIncome) setCustomAnnualIncome(cs.customAnnualIncome);
                       }
                     } else {
                       // Fallback: re-analyze if no cached data (old searches)

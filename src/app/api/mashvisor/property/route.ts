@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { rateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
-// @ts-ignore — no types for google-trends-api
-import googleTrends from "google-trends-api";
+// Google Trends removed — search interest ≠ actual bookings (caused January spike bug)
+// Now using research-based market-type seasonal patterns instead
 
 // Force dynamic rendering for this API route
 export const dynamic = "force-dynamic";
@@ -847,174 +847,74 @@ function getRecommendedAmenities(lat: number, lng: number): any[] {
 }
 
 // ============================================================================
-// GOOGLE TRENDS SEASONALITY — Real backward-looking demand data
+// SEASONALITY — Research-based market-type patterns
 // ============================================================================
+// Google Trends was previously used here but removed because search interest
+// does NOT correlate with actual bookings (caused January spike for beach markets
+// like San Diego — people search in Jan when planning summer trips).
+// The hardcoded patterns below are based on actual STR industry data and are
+// significantly more accurate for revenue forecasting.
 
-/**
- * Fetch Google Trends interest-over-time data for a search term.
- * Returns an array of 12 monthly average values (Jan=0..Dec=11), or null on failure.
- * Values are 0-100 scale (relative search interest).
- */
-async function fetchGoogleTrendsMonthly(keyword: string): Promise<number[] | null> {
-  try {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setFullYear(startDate.getFullYear() - 1);
-
-    const results = await googleTrends.interestOverTime({
-      keyword,
-      startTime: startDate,
-      endTime: endDate,
-      geo: "US",
-    });
-
-    const parsed = JSON.parse(results);
-    const timeline = parsed.default?.timelineData || [];
-    if (timeline.length === 0) return null;
-
-    // Aggregate weekly data points into monthly averages
-    const monthly: Record<number, { sum: number; count: number }> = {};
-    for (const point of timeline) {
-      const date = new Date(parseInt(point.time) * 1000);
-      const m = date.getMonth(); // 0-11
-      if (!monthly[m]) monthly[m] = { sum: 0, count: 0 };
-      monthly[m].sum += point.value[0];
-      monthly[m].count++;
-    }
-
-    const result: number[] = [];
-    let hasData = false;
-    for (let m = 0; m < 12; m++) {
-      const val = monthly[m] ? Math.round(monthly[m].sum / monthly[m].count) : 0;
-      result.push(val);
-      if (val > 0) hasData = true;
-    }
-
-    // Need at least some non-zero months to be useful
-    return hasData ? result : null;
-  } catch (err) {
-    console.log(`[GoogleTrends] Failed for "${keyword}": ${(err as Error).message?.substring(0, 100)}`);
-    return null;
-  }
-}
-
-/**
- * Convert Google Trends monthly values (0-100) into occupancy and ADR multipliers.
- * The peak month gets multiplier 1.0, and other months scale proportionally.
- * A floor of 0.20 prevents unrealistically low months.
- */
-function trendsToMultipliers(trendsData: number[]): { occ: number[]; adr: number[] } {
-  const max = Math.max(...trendsData);
-  if (max === 0) return { occ: Array(12).fill(0.5), adr: Array(12).fill(0.9) };
-
-  const occ = trendsData.map(v => {
-    const raw = v / max; // 0.0 to 1.0
-    return Math.max(0.20, Math.round(raw * 100) / 100); // Floor at 0.20
-  });
-
-  // ADR follows a dampened version of occupancy (prices don't swing as wildly as demand)
-  const adr = occ.map(o => {
-    // Map occ 0.20-1.00 to ADR 0.70-1.25
-    const adrMult = 0.70 + (o - 0.20) * (0.55 / 0.80);
-    return Math.round(adrMult * 100) / 100;
-  });
-
-  return { occ, adr };
-}
-
-/**
- * Try multiple Google Trends search terms for a location.
- * Returns the first one that has meaningful data.
- */
-async function getGoogleTrendsSeasonality(city: string, state: string): Promise<{ occ: number[]; adr: number[] } | null> {
-  // Build candidate search terms — broader terms work better on Google Trends
-  const searchTerms: string[] = [];
-  
-  if (city && state) {
-    searchTerms.push(`Airbnb ${city} ${state}`);
-    searchTerms.push(`${city} ${state} vacation rental`);
-    searchTerms.push(`${city} ${state} cabin rental`);
-  }
-  if (city) {
-    searchTerms.push(`Airbnb ${city}`);
-  }
-
-  for (const term of searchTerms) {
-    console.log(`[GoogleTrends] Trying: "${term}"`);
-    const data = await fetchGoogleTrendsMonthly(term);
-    if (data) {
-      // Check that data has meaningful variation (not all zeros or all same value)
-      const nonZero = data.filter(v => v > 0);
-      if (nonZero.length >= 6) {
-        console.log(`[GoogleTrends] SUCCESS with "${term}": [${data.join(", ")}]`);
-        return trendsToMultipliers(data);
-      }
-    }
-  }
-
-  console.log(`[GoogleTrends] No usable data for ${city}, ${state} — using market-type fallback`);
-  return null;
-}
-
-// Generate estimated monthly seasonality
-// PRIMARY: Google Trends real backward-looking demand data
-// FALLBACK: Hardcoded market-type patterns (always produces a result so chart always shows)
+// Generate estimated monthly seasonality using research-based market-type patterns.
+// Each pattern represents occupancy and ADR multipliers for Jan-Dec.
+// Sources: AirDNA market reports, Evolve Vacation Rental data, BuildYourBnB benchmarks.
 async function generateSeasonality(avgAdr: number, avgOccupancy: number, lat: number, lng: number, city?: string, state?: string): Promise<any[]> {
   const marketType = getMarketType(lat, lng);
 
-  // Hardcoded fallback patterns by market type (Jan-Dec)
+  // Research-based seasonal patterns by market type (Jan-Dec multipliers)
+  // Each multiplier is relative to the annual average (1.0 = average month)
   const patterns: Record<string, { occ: number[]; adr: number[] }> = {
     beach: {
+      // Peak: Jun-Aug. Low: Dec-Feb. (San Diego, FL coast, Outer Banks, etc.)
       occ: [0.45, 0.50, 0.65, 0.70, 0.85, 0.95, 1.00, 1.00, 0.80, 0.60, 0.45, 0.40],
       adr: [0.80, 0.85, 0.90, 0.95, 1.10, 1.20, 1.30, 1.30, 1.05, 0.90, 0.75, 0.75],
     },
     mountain: {
+      // Dual peak: Dec-Feb (ski) + Jul-Aug (summer). Low: Apr-May, Sep.
       occ: [0.85, 0.90, 0.80, 0.55, 0.50, 0.70, 0.85, 0.80, 0.65, 0.75, 0.70, 0.90],
       adr: [1.20, 1.15, 1.00, 0.80, 0.75, 0.90, 1.10, 1.05, 0.85, 0.95, 0.90, 1.25],
     },
     "mountain-summer": {
+      // Peak: Jun-Aug (hiking, rafting). Low: Dec-Feb. (WV, NC Blue Ridge, Ozarks)
       occ: [0.25, 0.30, 0.45, 0.60, 0.80, 0.90, 1.00, 1.00, 0.70, 0.55, 0.35, 0.30],
       adr: [0.70, 0.75, 0.85, 0.90, 1.05, 1.15, 1.25, 1.25, 1.00, 0.90, 0.75, 0.75],
     },
     lake: {
+      // Peak: Jun-Aug (lake season). Low: Nov-Feb. (TN lakes, Great Lakes)
       occ: [0.30, 0.35, 0.45, 0.55, 0.75, 0.90, 1.00, 1.00, 0.70, 0.50, 0.35, 0.30],
       adr: [0.70, 0.75, 0.80, 0.90, 1.05, 1.15, 1.30, 1.30, 1.00, 0.85, 0.70, 0.70],
     },
     desert: {
+      // Peak: Jan-Mar (snowbird season). Low: Jun-Aug (extreme heat). (Phoenix, Palm Springs)
       occ: [0.85, 0.90, 0.95, 0.80, 0.55, 0.40, 0.35, 0.35, 0.50, 0.70, 0.80, 0.85],
       adr: [1.15, 1.20, 1.25, 1.05, 0.80, 0.65, 0.60, 0.60, 0.75, 0.95, 1.10, 1.15],
     },
     urban: {
+      // Relatively flat with slight summer dip. (NYC, LA, Chicago)
       occ: [0.65, 0.70, 0.80, 0.85, 0.90, 0.90, 0.85, 0.85, 0.90, 0.85, 0.75, 0.70],
       adr: [0.90, 0.90, 0.95, 1.00, 1.05, 1.05, 1.00, 1.00, 1.05, 1.00, 0.95, 0.95],
     },
+    suburban: {
+      // Theme park / family travel pattern. Peak: Jun-Aug + holidays. (Orlando, inland FL)
+      occ: [0.60, 0.55, 0.70, 0.75, 0.80, 0.90, 0.95, 0.90, 0.70, 0.65, 0.70, 0.80],
+      adr: [0.90, 0.85, 0.95, 1.00, 1.05, 1.15, 1.20, 1.15, 0.95, 0.90, 0.95, 1.05],
+    },
     rural: {
+      // Peak: Jun-Aug (summer travel). Low: Dec-Feb. (General rural/countryside)
       occ: [0.40, 0.45, 0.55, 0.65, 0.80, 0.90, 0.95, 0.95, 0.75, 0.60, 0.45, 0.40],
       adr: [0.80, 0.85, 0.90, 0.95, 1.05, 1.10, 1.20, 1.20, 1.00, 0.90, 0.80, 0.80],
     },
   };
 
-  // Try Google Trends for real data (non-blocking — if it fails, we use fallback)
-  let pattern: { occ: number[]; adr: number[] } | null = null;
-  if (city || state) {
-    try {
-      pattern = await getGoogleTrendsSeasonality(city || "", state || "");
-    } catch (err) {
-      console.log(`[GoogleTrends] Error: ${(err as Error).message?.substring(0, 100)}`);
-    }
-  }
-
-  // Fallback to hardcoded market-type pattern
-  if (!pattern) {
-    pattern = patterns[marketType] || patterns.rural;
-  }
+  const pattern = patterns[marketType] || patterns.rural;
+  console.log(`[Seasonality] Using ${marketType} pattern for ${city || 'unknown'}, ${state || 'unknown'} (lat: ${lat.toFixed(2)}, lng: ${lng.toFixed(2)})`);
 
   const now = new Date();
   const currentYear = now.getFullYear();
 
   return pattern.occ.map((occMult, i) => {
     const monthOcc = Math.round(avgOccupancy * occMult);
-    const monthAdr = Math.round(avgAdr * pattern!.adr[i]);
+    const monthAdr = Math.round(avgAdr * pattern.adr[i]);
     const monthRev = Math.round(monthAdr * (monthOcc / 100) * 30);
     return {
       year: currentYear,

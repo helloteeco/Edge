@@ -873,3 +873,21 @@
 - [x] Expand sync-scores to also sync STR data columns (ADR, occupancy, revenue, home value, etc.) for 723 missing cities
 - [x] Add monthly cron (1st of month) to auto-refresh city data from city-data.ts
 - [x] Investigate Airbnb explore_tabs API for city-level aggregate STR data feasibility
+
+## BUG: Shared/emailed deal analysis report shows raw HTML (April 2026)
+- [ ] Investigate share/email report system to understand why recipients see raw HTML source code
+- [ ] Fix report to render as a beautiful, properly formatted document
+- [ ] Ensure report reflects user-adjusted values (expenses, platform fee, etc.)
+- [ ] No existing features removed
+
+## BUG: Saved searches lose custom expense adjustments (April 2026)
+- [ ] Investigate how saved searches store and restore data
+- [ ] Fix saved searches to persist user-edited expense values (electric/gas, water, internet, etc.)
+- [ ] Ensure returning to a saved search restores the exact numbers the user had when they saved
+- [ ] No existing features removed
+
+## BUG: Seasonality chart inaccurate — January spike issue (April 2026)
+- [ ] Investigate seasonality calculation workflow and identify root cause of January spike
+- [ ] Fix seasonality monthly revenue distribution to be accurate across all calculator modes
+- [ ] Ensure fix works for all markets (San Diego, etc.) — no generic/hardcoded patterns
+- [ ] No existing features removed
