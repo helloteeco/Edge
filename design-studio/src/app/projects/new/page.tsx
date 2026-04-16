@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { createEmptyProject, saveProject, logActivity } from "@/lib/store";
-import type { DesignStyle } from "@/lib/types";
+import { createEmptyProject, saveProject, logActivity, generateId } from "@/lib/store";
+import { TEMPLATES } from "@/lib/project-templates";
+import type { DesignStyle, Room } from "@/lib/types";
 
 const STYLES: { value: DesignStyle; label: string }[] = [
   { value: "modern", label: "Modern" },
@@ -65,9 +66,60 @@ export default function NewProjectPage() {
           &larr; Back to Projects
         </button>
 
-        <h1 className="text-2xl font-bold text-brand-900 mb-8">
+        <h1 className="text-2xl font-bold text-brand-900 mb-4">
           New Design Project
         </h1>
+
+        {/* Templates */}
+        <div className="mb-8">
+          <p className="text-sm text-brand-600 mb-3">
+            Start from a template or create from scratch:
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => {
+                  const rooms: Room[] = tpl.rooms.map((r) => ({
+                    id: generateId(),
+                    ...r,
+                    selectedBedConfig: null,
+                    furniture: [],
+                    accentWall: null,
+                    notes: "",
+                  }));
+                  setProject((prev) => ({
+                    ...prev,
+                    name: prev.name || tpl.name,
+                    style: tpl.style,
+                    targetGuests: tpl.targetGuests,
+                    rooms,
+                    property: {
+                      ...prev.property,
+                      bedrooms: tpl.rooms.filter((r) =>
+                        ["primary-bedroom", "bedroom", "loft", "bonus-room"].includes(r.type)
+                      ).length,
+                      bathrooms: tpl.rooms.filter((r) => r.type === "bathroom").length,
+                      floors: Math.max(...tpl.rooms.map((r) => r.floor), 1),
+                    },
+                  }));
+                }}
+                className="card text-left hover:border-amber/40 transition group"
+              >
+                <h3 className="font-semibold text-brand-900 group-hover:text-amber-dark text-sm">
+                  {tpl.name}
+                </h3>
+                <p className="text-xs text-brand-600 mt-1">{tpl.description}</p>
+                <div className="mt-2 flex gap-2 text-[10px]">
+                  <span className="badge-neutral">{tpl.targetGuests} guests</span>
+                  <span className="badge-neutral capitalize">{tpl.style.replace(/-/g, " ")}</span>
+                  <span className="badge-neutral">{tpl.rooms.length} rooms</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <form onSubmit={handleCreate} className="space-y-8">
           {error && (
