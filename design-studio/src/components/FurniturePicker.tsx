@@ -8,6 +8,7 @@ import {
   getSubcategories,
   searchCatalog,
 } from "@/lib/furniture-catalog";
+import { suggestFurniture } from "@/lib/auto-suggest";
 import type { Project, FurnitureItem, SelectedFurniture } from "@/lib/types";
 
 interface Props {
@@ -165,9 +166,33 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
                 {currentRoom.furniture.length})
               </h3>
 
+              {/* Auto-Suggest */}
+              {currentRoom.furniture.length === 0 && (
+                <div className="mb-4 rounded-lg bg-amber/5 border border-amber/20 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-dark">
+                      Suggested for {currentRoom.type.replace(/-/g, " ")}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestFurniture(currentRoom, project.style).map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => addToRoom(item)}
+                        className="flex items-center gap-2 rounded-lg border border-amber/20 bg-white px-3 py-1.5 text-xs hover:border-amber/60 transition"
+                      >
+                        <span className="font-medium text-brand-900">{item.name}</span>
+                        <span className="text-brand-600">${item.price}</span>
+                        <span className="text-amber-dark font-medium">+ Add</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {currentRoom.furniture.length === 0 ? (
                 <p className="text-sm text-brand-600 py-4 text-center">
-                  No items added yet. Browse the catalog to add furniture.
+                  No items added yet. Use suggestions above or browse the catalog.
                 </p>
               ) : (
                 <div className="space-y-2">
