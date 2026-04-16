@@ -180,6 +180,7 @@ function PrintBriefContent() {
                       <th className="py-1 pr-3">Item</th>
                       <th className="py-1 pr-3">Vendor</th>
                       <th className="py-1 pr-3">Color / Material</th>
+                      <th className="py-1 pr-3">Dimensions</th>
                       <th className="py-1 pr-3 text-right">Qty</th>
                       <th className="py-1 text-right">Price</th>
                     </tr>
@@ -188,13 +189,20 @@ function PrintBriefContent() {
                     {room.furniture.map((f) => (
                       <tr key={f.item.id} className="border-b border-gray-50">
                         <td className="py-1.5 pr-3 font-medium">
-                          {f.item.name}
+                          {f.item.vendorUrl ? (
+                            <a href={f.item.vendorUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline print:text-black print:no-underline">
+                              {f.item.name}
+                            </a>
+                          ) : f.item.name}
                         </td>
                         <td className="py-1.5 pr-3 text-gray-600">
                           {f.item.vendor}
                         </td>
                         <td className="py-1.5 pr-3 text-gray-600">
                           {f.item.color} / {f.item.material}
+                        </td>
+                        <td className="py-1.5 pr-3 text-gray-500 text-xs">
+                          {f.item.widthIn}&quot;W &times; {f.item.depthIn}&quot;D &times; {f.item.heightIn}&quot;H
                         </td>
                         <td className="py-1.5 pr-3 text-right">{f.quantity}</td>
                         <td className="py-1.5 text-right">

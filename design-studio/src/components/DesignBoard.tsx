@@ -171,6 +171,41 @@ export default function DesignBoard({ project, onUpdate }: Props) {
     onUpdate();
   }
 
+  function clearAllFurniture() {
+    if (!confirm("Remove all furniture from this room?")) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const room = fresh.rooms.find((r) => r.id === selectedRoom);
+    if (!room) return;
+    room.furniture = [];
+    saveProject(fresh);
+    setSelectedPlaced(null);
+    onUpdate();
+  }
+
+  function copyFurnitureTo(targetRoomId: string) {
+    if (!currentRoom || currentRoom.furniture.length === 0) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const targetRoom = fresh.rooms.find((r) => r.id === targetRoomId);
+    if (!targetRoom) return;
+
+    for (const f of currentRoom.furniture) {
+      if (!targetRoom.furniture.find((tf) => tf.item.id === f.item.id)) {
+        targetRoom.furniture.push({
+          ...f,
+          roomId: targetRoomId,
+          x: 20 + Math.random() * 60,
+          y: 20 + Math.random() * 60,
+        } as PlacedItem);
+      }
+    }
+
+    saveProject(fresh);
+    logActivity(project.id, "furniture_added", `Copied furniture from ${currentRoom.name} to ${targetRoom.name}`);
+    onUpdate();
+  }
+
   function addAllSuggestions() {
     if (!currentRoom) return;
     const fresh = getProjectFromStore(project.id);
@@ -277,7 +312,7 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                     &middot; {(currentRoom.widthFt * currentRoom.lengthFt).toFixed(0)} sqft
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
                   {currentRoom.furniture.length === 0 && (
                     <button
                       onClick={addAllSuggestions}
@@ -285,6 +320,35 @@ export default function DesignBoard({ project, onUpdate }: Props) {
                     >
                       Auto-Furnish Room
                     </button>
+                  )}
+                  {currentRoom.furniture.length > 0 && (
+                    <>
+                      {/* Copy to another room */}
+                      <div className="relative group">
+                        <button className="text-xs text-brand-600 hover:text-brand-900">
+                          Copy to...
+                        </button>
+                        <div className="hidden group-hover:block absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border border-brand-900/10 bg-white shadow-lg py-1">
+                          {project.rooms
+                            .filter((r) => r.id !== selectedRoom)
+                            .map((r) => (
+                              <button
+                                key={r.id}
+                                onClick={() => copyFurnitureTo(r.id)}
+                                className="block w-full text-left px-3 py-1.5 text-xs text-brand-700 hover:bg-brand-900/5"
+                              >
+                                {r.name}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                      <button
+                        onClick={clearAllFurniture}
+                        className="text-xs text-red-400 hover:text-red-600"
+                      >
+                        Clear All
+                      </button>
+                    </>
                   )}
                   <span className="text-xs text-brand-600">
                     {currentRoom.furniture.length} items &middot; $
