@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { saveProject, generateId } from "@/lib/store";
+import { saveProject, getProject as getProjectFromStore } from "@/lib/store";
 import {
   CATALOG,
   getCategories,
@@ -60,7 +60,10 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
   );
 
   function addToRoom(item: FurnitureItem) {
-    const room = project.rooms.find((r) => r.id === selectedRoom);
+    // Always re-read project from store to avoid stale mutations
+    const freshProject = getProjectFromStore(project.id);
+    if (!freshProject) return;
+    const room = freshProject.rooms.find((r) => r.id === selectedRoom);
     if (!room) return;
 
     const existing = room.furniture.find((f) => f.item.id === item.id);
@@ -75,27 +78,57 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
       };
       room.furniture.push(selected);
     }
-    saveProject(project);
+    saveProject(freshProject);
     onUpdate();
   }
 
   function removeFromRoom(itemId: string) {
-    const room = project.rooms.find((r) => r.id === selectedRoom);
+    const freshProject = getProjectFromStore(project.id);
+    if (!freshProject) return;
+    const room = freshProject.rooms.find((r) => r.id === selectedRoom);
     if (!room) return;
     room.furniture = room.furniture.filter((f) => f.item.id !== itemId);
-    saveProject(project);
+    saveProject(freshProject);
     onUpdate();
   }
 
   function updateQuantity(itemId: string, qty: number) {
-    const room = project.rooms.find((r) => r.id === selectedRoom);
+    const freshProject = getProjectFromStore(project.id);
+    if (!freshProject) return;
+    const room = freshProject.rooms.find((r) => r.id === selectedRoom);
     if (!room) return;
     const furn = room.furniture.find((f) => f.item.id === itemId);
     if (furn) {
-      furn.quantity = Math.max(1, qty);
-      saveProject(project);
+      if (qty <= 0) {
+        room.furniture = room.furniture.filter((f) => f.item.id !== itemId);
+      } else {
+        furn.quantity = qty;
+      }
+      saveProject(freshProject);
       onUpdate();
     }
+  }
+
+  function addAllSuggestions() {
+    const freshProject = getProjectFromStore(project.id);
+    if (!freshProject) return;
+    const room = freshProject.rooms.find((r) => r.id === selectedRoom);
+    if (!room) return;
+
+    const suggestions = suggestFurniture(room, freshProject.style);
+    for (const item of suggestions) {
+      const existing = room.furniture.find((f) => f.item.id === item.id);
+      if (!existing) {
+        room.furniture.push({
+          item,
+          quantity: 1,
+          roomId: room.id,
+          notes: "",
+        });
+      }
+    }
+    saveProject(freshProject);
+    onUpdate();
   }
 
   if (project.rooms.length === 0) {
@@ -120,9 +153,14 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
               ${totalCost.toLocaleString()}
             </span>
             {project.budget > 0 && (
-              <span className="text-brand-600">
+              <span
+                className={
+                  totalCost > project.budget ? " text-red-500" : " text-brand-600"
+                }
+              >
                 {" "}
                 / ${project.budget.toLocaleString()} budget
+                {totalCost > project.budget && " (over budget!)"}
               </span>
             )}
           </p>
@@ -137,132 +175,145 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: Room Selector + Items */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Room Selector */}
-          <div className="flex flex-wrap gap-2">
-            {project.rooms.map((room) => (
-              <button
-                key={room.id}
-                onClick={() => setSelectedRoom(room.id)}
-                className={
-                  selectedRoom === room.id ? "tab-active" : "tab"
-                }
-              >
-                {room.name}
-                {room.furniture.length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-white/20 px-1.5 text-[10px]">
-                    {room.furniture.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Room's Current Furniture */}
-          {currentRoom && (
-            <div className="card">
-              <h3 className="font-semibold mb-3">
-                {currentRoom.name} — Items (
-                {currentRoom.furniture.length})
-              </h3>
-
-              {/* Auto-Suggest */}
-              {currentRoom.furniture.length === 0 && (
-                <div className="mb-4 rounded-lg bg-amber/5 border border-amber/20 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-dark">
-                      Suggested for {currentRoom.type.replace(/-/g, " ")}
+        <div className={showCatalog ? "lg:col-span-2" : "lg:col-span-3"}>
+          <div className="space-y-4">
+            {/* Room Selector */}
+            <div className="flex flex-wrap gap-2">
+              {project.rooms.map((room) => (
+                <button
+                  key={room.id}
+                  onClick={() => setSelectedRoom(room.id)}
+                  className={
+                    selectedRoom === room.id ? "tab-active" : "tab"
+                  }
+                >
+                  {room.name}
+                  {room.furniture.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-white/20 px-1.5 text-[10px]">
+                      {room.furniture.length}
                     </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestFurniture(currentRoom, project.style).map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => addToRoom(item)}
-                        className="flex items-center gap-2 rounded-lg border border-amber/20 bg-white px-3 py-1.5 text-xs hover:border-amber/60 transition"
-                      >
-                        <span className="font-medium text-brand-900">{item.name}</span>
-                        <span className="text-brand-600">${item.price}</span>
-                        <span className="text-amber-dark font-medium">+ Add</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                  )}
+                </button>
+              ))}
+            </div>
 
-              {currentRoom.furniture.length === 0 ? (
-                <p className="text-sm text-brand-600 py-4 text-center">
-                  No items added yet. Use suggestions above or browse the catalog.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {currentRoom.furniture.map((f) => (
-                    <div
-                      key={f.item.id}
-                      className="flex items-center justify-between rounded-lg border border-brand-900/5 bg-cream/50 px-4 py-3"
-                    >
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-brand-900">
-                          {f.item.name}
-                        </div>
-                        <div className="text-xs text-brand-600">
-                          {f.item.vendor} &middot; {f.item.color} &middot;{" "}
-                          {f.item.widthIn}&quot;W &times; {f.item.depthIn}
-                          &quot;D &times; {f.item.heightIn}&quot;H
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() =>
-                              updateQuantity(f.item.id, f.quantity - 1)
-                            }
-                            className="flex h-6 w-6 items-center justify-center rounded border border-brand-900/10 text-xs hover:bg-brand-900/5"
-                          >
-                            -
-                          </button>
-                          <span className="w-6 text-center text-sm font-medium">
-                            {f.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateQuantity(f.item.id, f.quantity + 1)
-                            }
-                            className="flex h-6 w-6 items-center justify-center rounded border border-brand-900/10 text-xs hover:bg-brand-900/5"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <span className="text-sm font-medium text-brand-900 w-20 text-right">
-                          ${(f.item.price * f.quantity).toLocaleString()}
-                        </span>
-                        <button
-                          onClick={() => removeFromRoom(f.item.id)}
-                          className="text-xs text-red-400 hover:text-red-600"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Room Total */}
-                  <div className="mt-2 flex justify-end border-t border-brand-900/5 pt-2 text-sm">
-                    <span className="text-brand-600">Room Total: </span>
-                    <span className="ml-2 font-semibold text-brand-900">
-                      $
+            {/* Room's Current Furniture */}
+            {currentRoom && (
+              <div className="card">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold">
+                    {currentRoom.name} — Items (
+                    {currentRoom.furniture.length})
+                  </h3>
+                  {currentRoom.furniture.length > 0 && (
+                    <span className="text-xs text-brand-600">
+                      Room total: $
                       {currentRoom.furniture
-                        .reduce(
-                          (s, f) => s + f.item.price * f.quantity,
-                          0
-                        )
+                        .reduce((s, f) => s + f.item.price * f.quantity, 0)
                         .toLocaleString()}
                     </span>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Auto-Suggest */}
+                {currentRoom.furniture.length === 0 && (
+                  <div className="mb-4 rounded-lg bg-amber/5 border border-amber/20 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-amber-dark">
+                        Suggested for {currentRoom.type.replace(/-/g, " ")}
+                      </span>
+                      <button
+                        onClick={addAllSuggestions}
+                        className="text-xs text-amber-dark hover:underline font-medium"
+                      >
+                        Add All Suggestions
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestFurniture(currentRoom, project.style).map(
+                        (item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => addToRoom(item)}
+                            className="flex items-center gap-2 rounded-lg border border-amber/20 bg-white px-3 py-1.5 text-xs hover:border-amber/60 transition"
+                          >
+                            <span className="font-medium text-brand-900">
+                              {item.name}
+                            </span>
+                            <span className="text-brand-600">
+                              ${item.price}
+                            </span>
+                            <span className="text-amber-dark font-medium">
+                              + Add
+                            </span>
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {currentRoom.furniture.length === 0 ? (
+                  <p className="text-sm text-brand-600 py-4 text-center">
+                    No items added yet. Use suggestions above or browse the
+                    catalog.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {currentRoom.furniture.map((f) => (
+                      <div
+                        key={f.item.id}
+                        className="flex items-center justify-between rounded-lg border border-brand-900/5 bg-cream/50 px-4 py-3"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-brand-900 truncate">
+                            {f.item.name}
+                          </div>
+                          <div className="text-xs text-brand-600">
+                            {f.item.vendor} &middot; {f.item.color} &middot;{" "}
+                            {f.item.widthIn}&quot;W &times; {f.item.depthIn}
+                            &quot;D &times; {f.item.heightIn}&quot;H
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() =>
+                                updateQuantity(f.item.id, f.quantity - 1)
+                              }
+                              className="flex h-6 w-6 items-center justify-center rounded border border-brand-900/10 text-xs hover:bg-brand-900/5"
+                            >
+                              -
+                            </button>
+                            <span className="w-6 text-center text-sm font-medium">
+                              {f.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                updateQuantity(f.item.id, f.quantity + 1)
+                              }
+                              className="flex h-6 w-6 items-center justify-center rounded border border-brand-900/10 text-xs hover:bg-brand-900/5"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <span className="text-sm font-medium text-brand-900 w-20 text-right">
+                            ${(f.item.price * f.quantity).toLocaleString()}
+                          </span>
+                          <button
+                            onClick={() => removeFromRoom(f.item.id)}
+                            className="text-xs text-red-400 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Catalog Browser */}
@@ -317,41 +368,61 @@ export default function FurniturePicker({ project, onUpdate }: Props) {
               </div>
             )}
 
+            {/* Item Count */}
+            <div className="text-xs text-brand-600 mb-2">
+              {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""}
+            </div>
+
             {/* Items */}
             <div className="space-y-2">
-              {filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-lg border border-brand-900/5 p-3 hover:border-amber/30 transition"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-brand-900 truncate">
-                        {item.name}
+              {filteredItems.map((item) => {
+                const isAdded = currentRoom?.furniture.some(
+                  (f) => f.item.id === item.id
+                );
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-lg border p-3 transition ${
+                      isAdded
+                        ? "border-amber/40 bg-amber/5"
+                        : "border-brand-900/5 hover:border-amber/30"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-brand-900 truncate">
+                          {item.name}
+                        </div>
+                        <div className="text-xs text-brand-600">
+                          {item.vendor} &middot; {item.color}
+                        </div>
+                        <div className="text-xs text-brand-600/60">
+                          {item.widthIn}&quot;W &times; {item.depthIn}&quot;D
+                          &times; {item.heightIn}&quot;H
+                        </div>
                       </div>
-                      <div className="text-xs text-brand-600">
-                        {item.vendor} &middot; {item.color}
+                      <div className="text-right ml-2">
+                        <div className="text-sm font-semibold text-brand-900">
+                          ${item.price}
+                        </div>
+                        {isAdded ? (
+                          <span className="mt-1 inline-block rounded bg-amber/20 px-2 py-0.5 text-[10px] font-semibold text-amber-dark">
+                            Added
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => addToRoom(item)}
+                            disabled={!selectedRoom}
+                            className="mt-1 rounded bg-amber/20 px-2 py-0.5 text-[10px] font-semibold text-amber-dark hover:bg-amber/40 transition disabled:opacity-40"
+                          >
+                            + Add
+                          </button>
+                        )}
                       </div>
-                      <div className="text-xs text-brand-600/60">
-                        {item.widthIn}&quot;W &times; {item.depthIn}&quot;D &times;{" "}
-                        {item.heightIn}&quot;H
-                      </div>
-                    </div>
-                    <div className="text-right ml-2">
-                      <div className="text-sm font-semibold text-brand-900">
-                        ${item.price}
-                      </div>
-                      <button
-                        onClick={() => addToRoom(item)}
-                        disabled={!selectedRoom}
-                        className="mt-1 rounded bg-amber/20 px-2 py-0.5 text-[10px] font-semibold text-amber-dark hover:bg-amber/40 transition disabled:opacity-40"
-                      >
-                        + Add
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {filteredItems.length === 0 && (
                 <p className="text-sm text-brand-600 text-center py-4">
                   No items found.

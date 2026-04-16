@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveProject, generateId } from "@/lib/store";
+import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import type { Project, MoodBoard, DesignStyle } from "@/lib/types";
 
 interface Props {
@@ -68,16 +68,20 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
 
   function createBoard(e: React.FormEvent) {
     e.preventDefault();
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
     const board: MoodBoard = {
       id: generateId(),
       name: form.name || `${form.style} Board`,
       style: form.style as DesignStyle,
-      colorPalette: form.colorPalette,
+      colorPalette: [...form.colorPalette],
       inspirationNotes: form.inspirationNotes,
       imageUrls: [],
     };
-    project.moodBoards.push(board);
-    saveProject(project);
+    if (!fresh.moodBoards) fresh.moodBoards = [];
+    fresh.moodBoards.push(board);
+    saveProject(fresh);
+    logActivity(project.id, "mood_board_created", `Created mood board: ${board.name}`);
     setShowForm(false);
     setForm({
       name: "",
@@ -90,8 +94,10 @@ export default function MoodBoardPanel({ project, onUpdate }: Props) {
 
   function deleteBoard(id: string) {
     if (!confirm("Delete this mood board?")) return;
-    project.moodBoards = project.moodBoards.filter((b) => b.id !== id);
-    saveProject(project);
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    fresh.moodBoards = (fresh.moodBoards || []).filter((b) => b.id !== id);
+    saveProject(fresh);
     onUpdate();
   }
 

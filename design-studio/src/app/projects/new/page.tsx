@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { createEmptyProject, saveProject } from "@/lib/store";
+import { createEmptyProject, saveProject, logActivity } from "@/lib/store";
 import type { DesignStyle } from "@/lib/types";
 
 const STYLES: { value: DesignStyle; label: string }[] = [
@@ -24,13 +24,17 @@ const STYLES: { value: DesignStyle; label: string }[] = [
 export default function NewProjectPage() {
   const router = useRouter();
   const [project, setProject] = useState(() => createEmptyProject());
+  const [error, setError] = useState("");
 
   function update(path: string, value: string | number) {
     setProject((prev) => {
-      const next = structuredClone(prev);
+      // Use JSON parse/stringify for safe deep clone (broader browser support)
+      const next = JSON.parse(JSON.stringify(prev));
       const keys = path.split(".");
+      if (keys.length === 0 || !keys[0]) return prev;
       let obj: Record<string, unknown> = next as unknown as Record<string, unknown>;
       for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]] || typeof obj[keys[i]] !== "object") return prev;
         obj = obj[keys[i]] as Record<string, unknown>;
       }
       obj[keys[keys.length - 1]] = value;
@@ -40,8 +44,13 @@ export default function NewProjectPage() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!project.name.trim()) return;
+    setError("");
+    if (!project.name.trim()) {
+      setError("Please enter a project name.");
+      return;
+    }
     saveProject(project);
+    logActivity(project.id, "created", `Created project: ${project.name}`);
     router.push(`/projects/${project.id}`);
   }
 
@@ -61,6 +70,12 @@ export default function NewProjectPage() {
         </h1>
 
         <form onSubmit={handleCreate} className="space-y-8">
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* Project Info */}
           <section className="card">
             <h2 className="text-lg font-semibold mb-4">Project Details</h2>

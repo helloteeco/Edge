@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveProject, generateId } from "@/lib/store";
+import { saveProject, generateId, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import type { Project, Room, RoomType } from "@/lib/types";
 
 const ROOM_TYPES: { value: RoomType; label: string }[] = [
@@ -88,6 +88,11 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 
   function handleSave() {
     if (!form.name.trim()) return;
+    // Validate dimensions
+    const width = Math.max(4, form.widthFt || 4);
+    const length = Math.max(4, form.lengthFt || 4);
+    const ceiling = Math.max(7, form.ceilingHeightFt || 8);
+    const floor = Math.max(1, form.floor || 1);
 
     const accentWall = form.accentWallEnabled
       ? {
@@ -98,22 +103,25 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       : null;
 
     const roomData = {
-      name: form.name,
+      name: form.name.trim(),
       type: form.type,
-      widthFt: form.widthFt,
-      lengthFt: form.lengthFt,
-      ceilingHeightFt: form.ceilingHeightFt,
-      floor: form.floor,
+      widthFt: width,
+      lengthFt: length,
+      ceilingHeightFt: ceiling,
+      floor,
       features: form.features,
       notes: form.notes,
       accentWall,
     };
 
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+
     if (editingRoom) {
-      const idx = project.rooms.findIndex((r) => r.id === editingRoom.id);
+      const idx = fresh.rooms.findIndex((r) => r.id === editingRoom.id);
       if (idx >= 0) {
-        project.rooms[idx] = {
-          ...project.rooms[idx],
+        fresh.rooms[idx] = {
+          ...fresh.rooms[idx],
           ...roomData,
         };
       }
@@ -124,9 +132,10 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
         selectedBedConfig: null,
         furniture: [],
       };
-      project.rooms.push(room);
+      fresh.rooms.push(room);
+      logActivity(project.id, "room_added", `Added room: ${roomData.name}`);
     }
-    saveProject(project);
+    saveProject(fresh);
     setShowForm(false);
     setForm(emptyForm());
     onUpdate();
@@ -134,8 +143,12 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 
   function handleDelete(roomId: string) {
     if (!confirm("Delete this room?")) return;
-    project.rooms = project.rooms.filter((r) => r.id !== roomId);
-    saveProject(project);
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const roomName = fresh.rooms.find((r) => r.id === roomId)?.name ?? "room";
+    fresh.rooms = fresh.rooms.filter((r) => r.id !== roomId);
+    saveProject(fresh);
+    logActivity(project.id, "room_deleted", `Removed room: ${roomName}`);
     onUpdate();
   }
 
@@ -149,12 +162,14 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
   }
 
   function quickAddRooms() {
-    const bedrooms = project.property.bedrooms || 3;
-    const bathrooms = project.property.bathrooms || 2;
-    const floors = project.property.floors || 1;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const bedrooms = Math.max(1, fresh.property.bedrooms || 3);
+    const bathrooms = Math.max(1, fresh.property.bathrooms || 2);
+    const floors = Math.max(1, fresh.property.floors || 1);
 
     // Primary bedroom
-    project.rooms.push({
+    fresh.rooms.push({
       id: generateId(),
       name: "Primary Bedroom",
       type: "primary-bedroom",
@@ -171,7 +186,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 
     // Additional bedrooms
     for (let i = 2; i <= bedrooms; i++) {
-      project.rooms.push({
+      fresh.rooms.push({
         id: generateId(),
         name: `Bedroom ${i}`,
         type: "bedroom",
@@ -188,7 +203,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
     }
 
     // Living room
-    project.rooms.push({
+    fresh.rooms.push({
       id: generateId(),
       name: "Living Room",
       type: "living-room",
@@ -204,7 +219,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
     });
 
     // Kitchen
-    project.rooms.push({
+    fresh.rooms.push({
       id: generateId(),
       name: "Kitchen",
       type: "kitchen",
@@ -220,7 +235,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
     });
 
     // Dining
-    project.rooms.push({
+    fresh.rooms.push({
       id: generateId(),
       name: "Dining Room",
       type: "dining-room",
@@ -237,7 +252,7 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
 
     // Bathrooms
     for (let i = 1; i <= Math.floor(bathrooms); i++) {
-      project.rooms.push({
+      fresh.rooms.push({
         id: generateId(),
         name: i === 1 ? "Primary Bathroom" : `Bathroom ${i}`,
         type: "bathroom",
@@ -253,7 +268,8 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       });
     }
 
-    saveProject(project);
+    saveProject(fresh);
+    logActivity(project.id, "room_added", `Quick setup: added ${fresh.rooms.length} rooms`);
     onUpdate();
   }
 

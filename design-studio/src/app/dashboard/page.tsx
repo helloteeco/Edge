@@ -79,10 +79,11 @@ export default function DashboardPage() {
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
-        p.name.toLowerCase().includes(q) ||
-        p.client.name.toLowerCase().includes(q) ||
-        p.property.city.toLowerCase().includes(q) ||
-        p.property.address.toLowerCase().includes(q)
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.client?.name || "").toLowerCase().includes(q) ||
+        (p.property?.city || "").toLowerCase().includes(q) ||
+        (p.property?.address || "").toLowerCase().includes(q) ||
+        (p.property?.state || "").toLowerCase().includes(q)
       );
     }
     return true;
@@ -263,7 +264,7 @@ function ProjectCard({
 
       <div className="mt-3 flex items-center justify-between text-xs text-brand-600/60">
         <span>
-          Updated {new Date(project.updatedAt).toLocaleDateString()}
+          Updated {formatDate(project.updatedAt)}
         </span>
         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
           <button
@@ -299,6 +300,16 @@ function Stat({ label, value }: { label: string; value: number }) {
       </div>
     </div>
   );
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "Unknown";
+    return d.toLocaleDateString();
+  } catch {
+    return "Unknown";
+  }
 }
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {

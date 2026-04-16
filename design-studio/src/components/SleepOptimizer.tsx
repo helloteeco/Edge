@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveProject } from "@/lib/store";
+import { saveProject, getProject as getProjectFromStore, logActivity } from "@/lib/store";
 import {
   optimizeSleeping,
   getConfigsForRoom,
@@ -32,36 +32,44 @@ export default function SleepOptimizer({ project, onUpdate }: Props) {
   );
 
   function runOptimizer() {
-    const opt = optimizeSleeping(project.rooms, project.targetGuests);
+    const target = project.targetGuests || 12;
+    const opt = optimizeSleeping(project.rooms, target);
     setResult(opt);
   }
 
   function applyAllRecommendations() {
     if (!result) return;
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
     for (const rr of result.roomResults) {
-      const room = project.rooms.find((r) => r.id === rr.roomId);
+      const room = fresh.rooms.find((r) => r.id === rr.roomId);
       if (room) {
         room.selectedBedConfig = rr.recommended;
       }
     }
-    saveProject(project);
+    saveProject(fresh);
+    logActivity(project.id, "sleep_optimized", `Applied optimizer: ${result.totalSleeps} guests`);
     onUpdate();
   }
 
   function applyOneConfig(roomId: string, config: BedConfiguration) {
-    const room = project.rooms.find((r) => r.id === roomId);
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const room = fresh.rooms.find((r) => r.id === roomId);
     if (room) {
       room.selectedBedConfig = config;
-      saveProject(project);
+      saveProject(fresh);
       onUpdate();
     }
   }
 
   function clearConfig(roomId: string) {
-    const room = project.rooms.find((r) => r.id === roomId);
+    const fresh = getProjectFromStore(project.id);
+    if (!fresh) return;
+    const room = fresh.rooms.find((r) => r.id === roomId);
     if (room) {
       room.selectedBedConfig = null;
-      saveProject(project);
+      saveProject(fresh);
       onUpdate();
     }
   }

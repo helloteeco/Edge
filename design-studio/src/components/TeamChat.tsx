@@ -21,34 +21,49 @@ export default function TeamChat({ projectId }: Props) {
   const [sending, setSending] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const profile = getProfile();
+  const mountedRef = useRef(true);
+  const profileRef = useRef(getProfile());
 
   useEffect(() => {
+    mountedRef.current = true;
+    const profile = getProfile();
+    profileRef.current = profile;
+
     if (!isConfigured() || !profile) return;
 
     // Load existing messages
-    dbGetMessages(projectId).then((msgs) => {
-      setMessages(msgs as ChatMessage[]);
-      scrollToBottom();
-    });
+    dbGetMessages(projectId)
+      .then((msgs) => {
+        if (mountedRef.current) {
+          setMessages(msgs as ChatMessage[]);
+          scrollToBottom();
+        }
+      })
+      .catch(console.error);
 
     // Load team members
     if (profile.companyId) {
-      dbGetTeamMembers(profile.companyId).then((members) => {
-        setOnlineMembers(members.map((m) => m.full_name));
-      });
+      dbGetTeamMembers(profile.companyId)
+        .then((members) => {
+          if (mountedRef.current) {
+            setOnlineMembers(members.map((m) => m.full_name ?? "Unknown"));
+          }
+        })
+        .catch(console.error);
     }
 
     // Subscribe to new messages
     const unsubscribe = subscribeToChat(projectId, (newMsg) => {
-      setMessages((prev) => [...prev, newMsg as unknown as ChatMessage]);
-      scrollToBottom();
+      if (mountedRef.current) {
+        setMessages((prev) => [...prev, newMsg as unknown as ChatMessage]);
+        scrollToBottom();
+      }
     });
 
     return () => {
+      mountedRef.current = false;
       unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   function scrollToBottom() {
@@ -59,6 +74,7 @@ export default function TeamChat({ projectId }: Props) {
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    const profile = profileRef.current;
     if (!input.trim() || !profile || sending) return;
 
     setSending(true);
@@ -84,6 +100,8 @@ export default function TeamChat({ projectId }: Props) {
       </div>
     );
   }
+
+  const profile = profileRef.current;
 
   if (!profile) {
     return (
