@@ -292,8 +292,18 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
           </button>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {project.rooms.map((room) => (
+        <div className="space-y-6">
+          {getFloors(project.rooms).map((floor) => {
+            const floorRooms = project.rooms.filter((r) => r.floor === floor);
+            return (
+              <div key={floor}>
+                {getFloors(project.rooms).length > 1 && (
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-2">
+                    Floor {floor} ({floorRooms.length} room{floorRooms.length !== 1 ? "s" : ""})
+                  </h3>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {floorRooms.map((room) => (
             <div
               key={room.id}
               className="card group cursor-pointer transition hover:border-amber/40"
@@ -359,6 +369,10 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
               )}
             </div>
           ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -603,4 +617,9 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       )}
     </div>
   );
+}
+
+function getFloors(rooms: Room[]): number[] {
+  const floors = Array.from(new Set(rooms.map((r) => r.floor)));
+  return floors.sort((a, b) => a - b);
 }

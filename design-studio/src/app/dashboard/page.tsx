@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ProjectStatus | "all">("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const user = getUser();
@@ -73,8 +74,19 @@ export default function DashboardPage() {
     setProjects(getProjects());
   }
 
-  const filtered =
-    filter === "all" ? projects : projects.filter((p) => p.status === filter);
+  const filtered = projects.filter((p) => {
+    if (filter !== "all" && p.status !== filter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.client.name.toLowerCase().includes(q) ||
+        p.property.city.toLowerCase().includes(q) ||
+        p.property.address.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   const profile = getProfile();
 
@@ -104,6 +116,18 @@ export default function DashboardPage() {
             + New Project
           </button>
         </div>
+
+        {/* Search + Filters */}
+        {projects.length > 0 && (
+          <div className="mb-4">
+            <input
+              className="input max-w-xs"
+              placeholder="Search projects..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
 
         {/* Status Filters */}
         {projects.length > 0 && (
