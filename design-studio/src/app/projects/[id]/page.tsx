@@ -8,19 +8,39 @@ import SleepOptimizer from "@/components/SleepOptimizer";
 import FurniturePicker from "@/components/FurniturePicker";
 import MoodBoardPanel from "@/components/MoodBoardPanel";
 import ExportPanel from "@/components/ExportPanel";
-import { getProject, saveProject, getUser } from "@/lib/store";
+import TeamChat from "@/components/TeamChat";
+import ScanViewer from "@/components/ScanViewer";
+import ActivityFeed from "@/components/ActivityFeed";
+import {
+  getProject,
+  saveProject,
+  getUser,
+  loadProjectFromDatabase,
+  logActivity,
+} from "@/lib/store";
+import { isConfigured, subscribeToProject } from "@/lib/supabase";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
 import type { Project, ProjectStatus } from "@/lib/types";
 
-type Tab = "overview" | "rooms" | "sleep" | "furniture" | "mood" | "export";
+type Tab =
+  | "overview"
+  | "scans"
+  | "rooms"
+  | "sleep"
+  | "furniture"
+  | "mood"
+  | "export"
+  | "chat";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "scans", label: "3D Scans" },
   { id: "rooms", label: "Rooms" },
   { id: "sleep", label: "Sleep Plan" },
   { id: "furniture", label: "Furniture" },
   { id: "mood", label: "Mood Board" },
   { id: "export", label: "Export" },
+  { id: "chat", label: "Team Chat" },
 ];
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -37,6 +57,7 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
+  const [loading, setLoading] = useState(true);
 
   const reload = useCallback(() => {
     setProject(getProject(projectId));
@@ -48,24 +69,57 @@ export default function ProjectDetailPage() {
       router.replace("/login");
       return;
     }
-    const p = getProject(projectId);
-    if (!p) {
-      router.replace("/dashboard");
-      return;
-    }
-    setProject(p);
-  }, [projectId, router]);
 
-  if (!project) return null;
+    async function load() {
+      if (isConfigured()) {
+        await loadProjectFromDatabase(projectId);
+      }
+      const p = getProject(projectId);
+      if (!p) {
+        router.replace("/dashboard");
+        return;
+      }
+      setProject(p);
+      setLoading(false);
+    }
+    load();
+
+    // Subscribe to realtime project updates from other team members
+    if (isConfigured()) {
+      const unsub = subscribeToProject(projectId, () => {
+        // Another user updated this project — reload from DB
+        loadProjectFromDatabase(projectId).then(() => reload());
+      });
+      return () => unsub();
+    }
+  }, [projectId, router, reload]);
+
+  if (loading || !project) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Navbar />
+        <main className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 w-1/3 rounded bg-brand-900/10" />
+            <div className="h-4 w-1/2 rounded bg-brand-900/5" />
+            <div className="grid grid-cols-4 gap-3 mt-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="card py-3 px-4">
+                  <div className="h-3 w-12 rounded bg-brand-900/10 mb-2" />
+                  <div className="h-5 w-8 rounded bg-brand-900/10" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const sleeping = getTotalSleeping(project.rooms);
-  const totalItems = project.rooms.reduce(
-    (s, r) => s + r.furniture.length,
-    0
-  );
+  const totalItems = project.rooms.reduce((s, r) => s + r.furniture.length, 0);
   const totalCost = project.rooms.reduce(
-    (s, r) =>
-      s + r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
+    (s, r) => s + r.furniture.reduce((fs, f) => fs + f.item.price * f.quantity, 0),
     0
   );
 
@@ -74,6 +128,7 @@ export default function ProjectDetailPage() {
     if (!p) return;
     p.status = status;
     saveProject(p);
+    logActivity(projectId, "status_changed", `Status → ${status}`);
     reload();
   }
 
@@ -103,9 +158,7 @@ export default function ProjectDetailPage() {
             <select
               className="select w-auto text-xs"
               value={project.status}
-              onChange={(e) =>
-                updateStatus(e.target.value as ProjectStatus)
-              }
+              onChange={(e) => updateStatus(e.target.value as ProjectStatus)}
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -128,17 +181,19 @@ export default function ProjectDetailPage() {
           <QuickStat
             label="Budget"
             value={`$${totalCost.toLocaleString()}`}
-            target={project.budget ? `$${project.budget.toLocaleString()}` : undefined}
+            target={
+              project.budget ? `$${project.budget.toLocaleString()}` : undefined
+            }
           />
         </div>
 
         {/* Tabs */}
-        <div className="mb-6 flex flex-wrap gap-1 rounded-xl bg-white border border-brand-900/10 p-1">
+        <div className="mb-6 flex flex-wrap gap-1 rounded-xl bg-white border border-brand-900/10 p-1 overflow-x-auto">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={tab === t.id ? "tab-active" : "tab"}
+              className={`shrink-0 ${tab === t.id ? "tab-active" : "tab"}`}
             >
               {t.label}
             </button>
@@ -147,22 +202,23 @@ export default function ProjectDetailPage() {
 
         {/* Tab Content */}
         <div className="animate-in">
-          {tab === "overview" && (
-            <OverviewTab project={project} />
-          )}
-          {tab === "rooms" && (
-            <RoomPlanner project={project} onUpdate={reload} />
-          )}
-          {tab === "sleep" && (
-            <SleepOptimizer project={project} onUpdate={reload} />
-          )}
-          {tab === "furniture" && (
-            <FurniturePicker project={project} onUpdate={reload} />
-          )}
-          {tab === "mood" && (
-            <MoodBoardPanel project={project} onUpdate={reload} />
-          )}
+          {tab === "overview" && <OverviewTab project={project} />}
+          {tab === "scans" && <ScanViewer property={project.property} />}
+          {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
+          {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
+          {tab === "furniture" && <FurniturePicker project={project} onUpdate={reload} />}
+          {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "export" && <ExportPanel project={project} />}
+          {tab === "chat" && (
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <TeamChat projectId={projectId} />
+              </div>
+              <div>
+                <ActivityFeed projectId={projectId} />
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
@@ -214,13 +270,12 @@ function OverviewTab({ project }: { project: Project }) {
             }
           />
           <Field
-            label="Bedrooms / Baths"
+            label="Layout"
             value={`${project.property.bedrooms} bd / ${project.property.bathrooms} ba`}
           />
           <Field label="Floors" value={project.property.floors || "—"} />
         </dl>
 
-        {/* Scan Links */}
         <div className="mt-4 pt-4 border-t border-brand-900/5 space-y-2">
           <ScanLink label="Matterport" url={project.property.matterportLink} />
           <ScanLink label="Polycam" url={project.property.polycamLink} />
@@ -256,11 +311,7 @@ function OverviewTab({ project }: { project: Project }) {
           <Field label="Target Guests" value={project.targetGuests} />
           <Field
             label="Budget"
-            value={
-              project.budget
-                ? `$${project.budget.toLocaleString()}`
-                : "Not set"
-            }
+            value={project.budget ? `$${project.budget.toLocaleString()}` : "Not set"}
           />
           <Field label="Status" value={project.status} />
         </dl>
@@ -279,21 +330,11 @@ function OverviewTab({ project }: { project: Project }) {
   );
 }
 
-function Field({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
-}) {
+function Field({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-wider text-brand-600">
-        {label}
-      </dt>
-      <dd className="font-medium text-brand-900">
-        {value || "—"}
-      </dd>
+      <dt className="text-[10px] uppercase tracking-wider text-brand-600">{label}</dt>
+      <dd className="font-medium text-brand-900">{value || "—"}</dd>
     </div>
   );
 }

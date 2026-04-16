@@ -99,7 +99,7 @@ export interface BedConfiguration {
   minLengthFt: number;
   minCeilingFt: number;
   description: string;
-  priority: number; // higher = preferred by optimizer
+  priority: number;
 }
 
 export interface AccentWall {
@@ -204,4 +204,32 @@ export interface ExportRow {
   color: string;
   material: string;
   notes: string;
+}
+
+// ── Chat types ──
+
+export interface ChatMessage {
+  id: string;
+  project_id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
+
+// ── Activity types ──
+
+export interface ActivityEntry {
+  id: string;
+  project_id: string;
+  user_id: string;
+  action: string;
+  details: string | null;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+  };
 }
