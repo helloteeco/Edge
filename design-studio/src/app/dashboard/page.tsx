@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import {
   getProjects,
   deleteProject,
+  saveProject,
+  generateId,
   getUser,
   loadFromDatabase,
   getProfile,
@@ -54,6 +56,20 @@ export default function DashboardPage() {
   function handleDelete(id: string) {
     if (!confirm("Delete this project? This cannot be undone.")) return;
     deleteProject(id);
+    setProjects(getProjects());
+  }
+
+  function handleDuplicate(project: Project) {
+    const now = new Date().toISOString();
+    const copy: Project = {
+      ...structuredClone(project),
+      id: generateId(),
+      name: `${project.name} (Copy)`,
+      status: "draft" as const,
+      createdAt: now,
+      updatedAt: now,
+    };
+    saveProject(copy);
     setProjects(getProjects());
   }
 
@@ -153,6 +169,7 @@ export default function DashboardPage() {
                 project={p}
                 onClick={() => router.push(`/projects/${p.id}`)}
                 onDelete={() => handleDelete(p.id)}
+                onDuplicate={() => handleDuplicate(p)}
               />
             ))}
           </div>
@@ -166,10 +183,12 @@ function ProjectCard({
   project,
   onClick,
   onDelete,
+  onDuplicate,
 }: {
   project: Project;
   onClick: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
 }) {
   const sleeping = getTotalSleeping(project.rooms);
   const totalFurniture = project.rooms.reduce(
@@ -222,15 +241,26 @@ function ProjectCard({
         <span>
           Updated {new Date(project.updatedAt).toLocaleDateString()}
         </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="text-red-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100"
-        >
-          Delete
-        </button>
+        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate();
+            }}
+            className="text-brand-600 hover:text-brand-900"
+          >
+            Duplicate
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="text-red-400 hover:text-red-600"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

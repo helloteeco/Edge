@@ -272,6 +272,70 @@ export default function ExportPanel({ project }: Props) {
         </div>
       </div>
 
+      {/* Cost Breakdown */}
+      {rows.length > 0 && (
+        <div className="card mb-8">
+          <h3 className="font-semibold mb-4">Cost Breakdown</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* By Category */}
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-2">
+                By Category
+              </h4>
+              <div className="space-y-1.5">
+                {getCategoryBreakdown(rows).map(({ category, total, pct }) => (
+                  <div key={category} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-brand-700 capitalize">
+                          {category.replace(/-/g, " ")}
+                        </span>
+                        <span className="text-brand-900 font-medium">
+                          ${total.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-brand-900/5">
+                        <div
+                          className="h-1.5 rounded-full bg-amber"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* By Room */}
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-2">
+                By Room
+              </h4>
+              <div className="space-y-1.5">
+                {getRoomBreakdown(project, totalCost).map(({ room, total, pct }) => (
+                  <div key={room} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-brand-700">{room}</span>
+                        <span className="text-brand-900 font-medium">
+                          ${total.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-brand-900/5">
+                        <div
+                          className="h-1.5 rounded-full bg-sage"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Preview Table */}
       <div className="card">
         <h3 className="font-semibold mb-4">
@@ -388,4 +452,36 @@ function slugify(s: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function getCategoryBreakdown(rows: ExportRow[]) {
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    map.set(row.category, (map.get(row.category) ?? 0) + row.totalPrice);
+  }
+  const total = rows.reduce((s, r) => s + r.totalPrice, 0);
+  return Array.from(map.entries())
+    .map(([category, catTotal]) => ({
+      category,
+      total: catTotal,
+      pct: total > 0 ? (catTotal / total) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+}
+
+function getRoomBreakdown(project: Project, totalCost: number) {
+  return project.rooms
+    .map((room) => {
+      const roomTotal = room.furniture.reduce(
+        (s, f) => s + f.item.price * f.quantity,
+        0
+      );
+      return {
+        room: room.name,
+        total: roomTotal,
+        pct: totalCost > 0 ? (roomTotal / totalCost) * 100 : 0,
+      };
+    })
+    .filter((r) => r.total > 0)
+    .sort((a, b) => b.total - a.total);
 }

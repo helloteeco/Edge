@@ -11,6 +11,7 @@ import ExportPanel from "@/components/ExportPanel";
 import TeamChat from "@/components/TeamChat";
 import ScanViewer from "@/components/ScanViewer";
 import ActivityFeed from "@/components/ActivityFeed";
+import AIRenderingPanel from "@/components/AIRenderingPanel";
 import {
   getProject,
   saveProject,
@@ -29,6 +30,7 @@ type Tab =
   | "sleep"
   | "furniture"
   | "mood"
+  | "render"
   | "export"
   | "chat";
 
@@ -39,6 +41,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "sleep", label: "Sleep Plan" },
   { id: "furniture", label: "Furniture" },
   { id: "mood", label: "Mood Board" },
+  { id: "render", label: "AI Renders" },
   { id: "export", label: "Export" },
   { id: "chat", label: "Team Chat" },
 ];
@@ -208,6 +211,7 @@ export default function ProjectDetailPage() {
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
           {tab === "furniture" && <FurniturePicker project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
+          {tab === "render" && <AIRenderingPanel project={project} />}
           {tab === "export" && <ExportPanel project={project} />}
           {tab === "chat" && (
             <div className="grid gap-6 lg:grid-cols-3">
