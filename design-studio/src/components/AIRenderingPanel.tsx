@@ -174,22 +174,44 @@ function generatePrompt(
     ? `featuring ${room.selectedBedConfig.name}`
     : "";
 
-  // Accent wall
+  // Accent wall — include hex color name for AI
   const accentInfo = room.accentWall
-    ? `with a ${room.accentWall.color} ${room.accentWall.treatment} accent wall`
+    ? `with a ${hexToColorName(room.accentWall.color)} ${room.accentWall.treatment} accent wall on the ${room.accentWall.wall} wall`
+    : "";
+
+  // Materials from furniture
+  const materials = Array.from(new Set(
+    room.furniture.map((f) => f.item.material).filter(Boolean)
+  )).slice(0, 4);
+  const materialStr = materials.length > 0
+    ? `Key materials: ${materials.join(", ")}.`
     : "";
 
   // Color palette from mood boards
-  const moodColors = project.moodBoards[0]?.colorPalette?.slice(0, 3) ?? [];
+  const moodBoard = project.moodBoards[0];
+  const moodColors = moodBoard?.colorPalette?.slice(0, 3) ?? [];
   const colorInfo =
     moodColors.length > 0
-      ? `Color palette: ${moodColors.join(", ")}.`
+      ? `Color scheme: ${moodColors.map(hexToColorName).join(", ")}.`
       : "";
+  const moodStyle = moodBoard?.inspirationNotes
+    ? `Design inspiration: ${moodBoard.inspirationNotes.slice(0, 100)}.`
+    : "";
 
-  // Features
+  // Features — more descriptive for AI
+  const featureDescriptions: Record<string, string> = {
+    "Window": "large windows with natural light",
+    "Vaulted Ceiling": "dramatic vaulted ceiling",
+    "Fireplace": "stone fireplace as focal point",
+    "Skylight": "skylight flooding room with light",
+    "Balcony": "private balcony access",
+    "Bay Window": "bay window seating nook",
+    "Built-in Shelving": "built-in shelving",
+    "En-suite": "en-suite bathroom",
+  };
   const featureStr =
     room.features.length > 0
-      ? `Room features: ${room.features.join(", ").toLowerCase()}.`
+      ? room.features.map(f => featureDescriptions[f] ?? f.toLowerCase()).join(", ") + "."
       : "";
 
   const furnStr =
@@ -202,7 +224,9 @@ function generatePrompt(
     bedInfo ? `${bedInfo}.` : "",
     accentInfo ? `${accentInfo}.` : "",
     furnStr,
+    materialStr,
     colorInfo,
+    moodStyle,
     featureStr,
     "Professional interior photography, natural lighting, warm and inviting atmosphere, high-end vacation rental staging, photorealistic.",
   ]
@@ -220,4 +244,35 @@ function formatStyle(style: string): string {
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
+
+function hexToColorName(hex: string): string {
+  // Convert common hex colors to descriptive names for AI prompts
+  const colors: Record<string, string> = {
+    "#f5f0eb": "warm cream", "#d4a574": "warm amber", "#8b7355": "mocha brown",
+    "#3d3022": "dark chocolate", "#1a1a2e": "deep navy", "#f0f7fa": "icy blue",
+    "#87ceeb": "sky blue", "#4a90a4": "ocean teal", "#2c5f6e": "deep teal",
+    "#f2f5f0": "sage white", "#a8b5a0": "soft sage", "#5a6b50": "forest green",
+    "#faf5ef": "warm linen", "#e8c9a8": "desert sand", "#c4956a": "terracotta",
+    "#ffffff": "pure white", "#d4d4d4": "light gray", "#737373": "medium gray",
+    "#404040": "charcoal", "#0a0a0a": "near black", "#fef3e2": "pale peach",
+    "#f4a261": "golden amber", "#e76f51": "burnt sienna", "#264653": "dark teal",
+    "#2a9d8f": "emerald teal", "#f8f4ff": "lavender white", "#c9b1ff": "soft lavender",
+    "#faf0e6": "antique linen", "#d4856c": "dusty rose", "#a0522d": "sienna",
+  };
+  const lower = hex.toLowerCase();
+  if (colors[lower]) return colors[lower];
+
+  // Parse hex and give a rough name
+  const r = parseInt(lower.slice(1, 3), 16);
+  const g = parseInt(lower.slice(3, 5), 16);
+  const b = parseInt(lower.slice(5, 7), 16);
+  if (isNaN(r)) return hex;
+
+  const brightness = (r + g + b) / 3;
+  if (brightness > 220) return "light neutral";
+  if (brightness > 180) return "warm neutral";
+  if (brightness > 120) return "muted tone";
+  if (brightness > 60) return "rich tone";
+  return "dark tone";
 }
