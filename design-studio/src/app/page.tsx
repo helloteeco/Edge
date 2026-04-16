@@ -101,11 +101,53 @@ export default function LandingPage() {
             Your entire workflow, <span className="text-amber">automated.</span>
           </h2>
 
+          {/* Hero feature: Design Board */}
+          <div className="mb-16 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber/20 text-xl">
+                🎨
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">Visual Design Board</h3>
+                <p className="text-sm text-white/60">
+                  Works like Spoak — no new learning curve
+                </p>
+              </div>
+            </div>
+            <p className="text-white/70 leading-relaxed mb-4">
+              A 2D room canvas where you see actual dimensions, place furniture
+              visually at real scale, and build out each room spatially. Features
+              like windows, closets, accent walls, and fireplaces are shown on
+              the canvas. Integrated catalog sidebar lets you search, filter, and
+              click-to-place items instantly.
+            </p>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="rounded-lg bg-white/5 p-3">
+                <div className="text-amber font-semibold">Visual Layout</div>
+                <div className="text-white/50 text-xs mt-1">
+                  See furniture at real scale in 2D room plans
+                </div>
+              </div>
+              <div className="rounded-lg bg-white/5 p-3">
+                <div className="text-amber font-semibold">Click to Place</div>
+                <div className="text-white/50 text-xs mt-1">
+                  Add items from catalog, position on canvas
+                </div>
+              </div>
+              <div className="rounded-lg bg-white/5 p-3">
+                <div className="text-amber font-semibold">Auto-Furnish</div>
+                <div className="text-white/50 text-xs mt-1">
+                  One click fills a room with smart suggestions
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {[
               {
-                title: "Scan Integration",
-                desc: "Link your Matterport or Polycam scan directly. Define rooms with real dimensions.",
+                title: "Matterport & Polycam",
+                desc: "Embed your 3D scans directly. View Matterport tours and Polycam models without leaving the app.",
                 icon: "📐",
               },
               {
@@ -114,24 +156,39 @@ export default function LandingPage() {
                 icon: "🛏️",
               },
               {
-                title: "Furniture Catalog",
-                desc: "Browse curated vacation rental furniture. Select items per room with quantities and pricing.",
+                title: "80+ Furniture Items",
+                desc: "Curated vacation rental catalog with smart auto-suggest per room type. Track budget in real-time.",
                 icon: "🪑",
+              },
+              {
+                title: "Team Chat",
+                desc: "Real-time messaging per project. Collaborate with your team and track who did what.",
+                icon: "💬",
+              },
+              {
+                title: "AI Rendering Prompts",
+                desc: "Auto-generates Midjourney and DALL-E prompts from your furniture selections and style choices.",
+                icon: "✨",
+              },
+              {
+                title: "One-Click Export",
+                desc: "Download furniture CSVs, sleep plans, design briefs, and print-friendly PDFs instantly.",
+                icon: "📊",
+              },
+              {
+                title: "Project Templates",
+                desc: "Start from pre-built cabin, beach house, or farmhouse templates. All rooms pre-configured.",
+                icon: "📋",
+              },
+              {
+                title: "Delivery Checklist",
+                desc: "Track progress across 7 steps. Know exactly when a project is ready to deliver.",
+                icon: "✅",
               },
               {
                 title: "Mood Boards",
                 desc: "Build visual mood boards with color palettes and style themes to share with clients.",
                 icon: "🎨",
-              },
-              {
-                title: "AI Renderings",
-                desc: "Generate photorealistic room renderings from your design selections. (Coming soon)",
-                icon: "✨",
-              },
-              {
-                title: "One-Click Export",
-                desc: "Export your complete furniture list as a spreadsheet with pricing, vendors, and dimensions.",
-                icon: "📊",
               },
             ].map((f) => (
               <div
