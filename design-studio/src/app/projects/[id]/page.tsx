@@ -254,6 +254,15 @@ function QuickStat({
 }
 
 function OverviewTab({ project }: { project: Project }) {
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notes, setNotes] = useState(project.notes);
+
+  function saveNotes() {
+    project.notes = notes;
+    saveProject(project);
+    setEditingNotes(false);
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       {/* Property */}
@@ -319,16 +328,41 @@ function OverviewTab({ project }: { project: Project }) {
           />
           <Field label="Status" value={project.status} />
         </dl>
-        {project.notes && (
-          <div className="mt-4 pt-4 border-t border-brand-900/5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-brand-600 mb-1">
-              Notes
+        <div className="mt-4 pt-4 border-t border-brand-900/5">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+              Project Notes
             </div>
-            <p className="text-sm text-brand-700 whitespace-pre-wrap">
-              {project.notes}
-            </p>
+            {!editingNotes ? (
+              <button
+                onClick={() => setEditingNotes(true)}
+                className="text-xs text-amber-dark hover:underline"
+              >
+                Edit
+              </button>
+            ) : (
+              <button
+                onClick={saveNotes}
+                className="text-xs text-amber-dark hover:underline font-medium"
+              >
+                Save
+              </button>
+            )}
           </div>
-        )}
+          {editingNotes ? (
+            <textarea
+              className="input min-h-[100px] resize-y"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add project notes, reminders, design decisions..."
+              autoFocus
+            />
+          ) : (
+            <p className="text-sm text-brand-700 whitespace-pre-wrap">
+              {project.notes || "No notes yet. Click Edit to add some."}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
