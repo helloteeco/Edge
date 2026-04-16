@@ -54,6 +54,95 @@ export type DesignStyle =
 
 export type ProjectStatus = "draft" | "in-progress" | "review" | "delivered";
 
+export type ProjectType = "furnishing" | "renovation" | "full";
+
+export type Trade =
+  | "general-contractor"
+  | "project-manager"
+  | "plumbing"
+  | "electrical"
+  | "tile-installer"
+  | "painter"
+  | "flooring"
+  | "cabinetry"
+  | "countertop-fabricator"
+  | "drywall"
+  | "hvac"
+  | "landscaper"
+  | "handyman"
+  | "lighting-specialist";
+
+export type ProjectRole =
+  | "lead-designer"
+  | "junior-designer"
+  | "project-manager"
+  | "purchaser"
+  | "installer"
+  | "admin";
+
+export interface Contractor {
+  id: string;
+  name: string;
+  company: string;
+  trade: Trade;
+  email: string;
+  phone: string;
+  website?: string;
+  /** Internal notes — rating, reliability, specialties */
+  notes: string;
+  /** Hourly or per-project rate info */
+  rateNotes?: string;
+  /** When added to the company's roster */
+  addedAt: string;
+}
+
+export interface ProjectAssignment {
+  /** Links to Contractor.id (for trades) or Profile.id (for design team) */
+  assigneeId: string;
+  /** Type of assignee */
+  assigneeType: "contractor" | "designer";
+  /** For designers: their role on this project */
+  role?: ProjectRole;
+  /** For contractors: their trade scope on this project */
+  trade?: Trade;
+  /** Specific rooms this person is responsible for (empty = all) */
+  scopedRoomIds: string[];
+  /** Specific finish categories they're handling (empty = all in their trade) */
+  scopedCategories?: string[];
+  /** Assignment notes */
+  notes: string;
+  /** Date assigned */
+  assignedAt: string;
+}
+
+export type FinishCategory =
+  | "flooring"
+  | "wall-tile"
+  | "floor-tile"
+  | "backsplash"
+  | "paint"
+  | "countertops"
+  | "cabinetry"
+  | "hardware"
+  | "plumbing-kitchen"
+  | "plumbing-bath"
+  | "shower-tub"
+  | "toilet"
+  | "lighting-fixtures"
+  | "appliances"
+  | "trim-molding"
+  | "doors-windows"
+  | "wall-treatment";
+
+export type UnitOfMeasure =
+  | "each"
+  | "sqft"
+  | "linear-ft"
+  | "gallon"
+  | "box"
+  | "roll"
+  | "set";
+
 export type WallTreatment =
   | "paint"
   | "wallpaper"
@@ -123,6 +212,81 @@ export interface FurnitureItem {
   color: string;
   material: string;
   style: DesignStyle;
+  /** Optional hospitality-grade flag for durability */
+  hospitalityGrade?: boolean;
+  /** Optional lead time in weeks */
+  leadTimeWeeks?: number;
+  /** Optional SKU / model number for POs */
+  sku?: string;
+}
+
+// ── Renovation / Finish Schedule ──
+
+export interface FinishItem {
+  id: string;
+  name: string;
+  category: FinishCategory;
+  subcategory: string;
+  /** Unit price */
+  price: number;
+  /** Unit of measurement (sqft, each, etc) */
+  unit: UnitOfMeasure;
+  vendor: string;
+  vendorUrl: string;
+  /** Manufacturer name */
+  manufacturer: string;
+  /** Product SKU / model number */
+  sku: string;
+  /** Finish/color */
+  color: string;
+  /** Material */
+  material: string;
+  /** Recommended waste allowance percentage (e.g. 10 for tile, 0 for fixtures) */
+  wasteAllowancePct: number;
+  /** Lead time in weeks */
+  leadTimeWeeks: number;
+  /** Installation notes */
+  installNotes: string;
+  /** Design style */
+  style: DesignStyle;
+  /** Room types this is appropriate for */
+  appropriateFor: RoomType[];
+  imageUrl: string;
+}
+
+export interface SelectedFinish {
+  item: FinishItem;
+  /** Quantity (in the unit of measurement) */
+  quantity: number;
+  /** Computed total including waste allowance */
+  totalWithWaste: number;
+  /** Room ID this is scoped to */
+  roomId: string;
+  /** Designer notes */
+  notes: string;
+  /** ID of contractor assigned to install this finish */
+  assignedContractorId?: string;
+  /** Order status tracking */
+  orderStatus?: "not-ordered" | "ordered" | "shipped" | "arrived" | "installed";
+  /** Date ordered */
+  orderedAt?: string;
+  /** Expected arrival */
+  expectedArrival?: string;
+}
+
+export interface RoomFinishes {
+  /** Which room these finishes belong to */
+  roomId: string;
+  /** All selected finishes for this room */
+  finishes: SelectedFinish[];
+  /** Paint color for walls */
+  wallPaint?: { name: string; hex: string; brand: string };
+  /** Paint color for trim */
+  trimPaint?: { name: string; hex: string; brand: string };
+  /** Paint color for ceiling */
+  ceilingPaint?: { name: string; hex: string; brand: string };
+  /** General renovation notes for this room */
+  renovationNotes: string;
 }
 
 export interface SelectedFurniture {
@@ -170,6 +334,25 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   notes: string;
+  /** Project type: furnishing only, renovation only, or full (both) */
+  projectType?: ProjectType;
+  /** Renovation budget, separate from furnishing budget */
+  renovationBudget?: number;
+  /** Room-by-room finish selections */
+  roomFinishes?: RoomFinishes[];
+  /** All assignments — designers and contractors on this project */
+  assignments?: ProjectAssignment[];
+  /** Legacy single contractor (kept for backwards compat) */
+  contractor?: {
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+  };
+  /** Project kickoff date */
+  kickoffDate?: string;
+  /** Target completion date */
+  targetCompletion?: string;
 }
 
 // ── Sleep optimizer types ──
