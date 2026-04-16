@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import RoomPlanner from "@/components/RoomPlanner";
 import SleepOptimizer from "@/components/SleepOptimizer";
 import FurniturePicker from "@/components/FurniturePicker";
+import DesignBoard from "@/components/DesignBoard";
 import MoodBoardPanel from "@/components/MoodBoardPanel";
 import ExportPanel from "@/components/ExportPanel";
 import TeamChat from "@/components/TeamChat";
@@ -29,6 +30,7 @@ type Tab =
   | "scans"
   | "rooms"
   | "sleep"
+  | "design"
   | "furniture"
   | "mood"
   | "render"
@@ -40,7 +42,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "scans", label: "3D Scans" },
   { id: "rooms", label: "Rooms" },
   { id: "sleep", label: "Sleep Plan" },
-  { id: "furniture", label: "Furniture" },
+  { id: "design", label: "Design Board" },
+  { id: "furniture", label: "Item List" },
   { id: "mood", label: "Mood Board" },
   { id: "render", label: "AI Renders" },
   { id: "export", label: "Export" },
@@ -210,6 +213,7 @@ export default function ProjectDetailPage() {
           {tab === "scans" && <ScanViewer property={project.property} />}
           {tab === "rooms" && <RoomPlanner project={project} onUpdate={reload} />}
           {tab === "sleep" && <SleepOptimizer project={project} onUpdate={reload} />}
+          {tab === "design" && <DesignBoard project={project} onUpdate={reload} />}
           {tab === "furniture" && <FurniturePicker project={project} onUpdate={reload} />}
           {tab === "mood" && <MoodBoardPanel project={project} onUpdate={reload} />}
           {tab === "render" && <AIRenderingPanel project={project} />}
