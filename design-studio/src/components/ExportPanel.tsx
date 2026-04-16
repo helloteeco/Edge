@@ -265,9 +265,15 @@ export default function ExportPanel({ project }: Props) {
           </p>
           <button
             onClick={downloadFullBrief}
-            className="btn-accent btn-sm w-full"
+            className="btn-accent btn-sm w-full mb-2"
           >
             Download Brief
+          </button>
+          <button
+            onClick={() => window.open(`/projects/print?id=${project.id}`, "_blank")}
+            className="btn-secondary btn-sm w-full"
+          >
+            Print-Friendly View
           </button>
         </div>
       </div>
