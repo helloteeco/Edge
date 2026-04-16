@@ -12,6 +12,7 @@ import TeamChat from "@/components/TeamChat";
 import ScanViewer from "@/components/ScanViewer";
 import ActivityFeed from "@/components/ActivityFeed";
 import AIRenderingPanel from "@/components/AIRenderingPanel";
+import ProjectChecklist from "@/components/ProjectChecklist";
 import {
   getProject,
   saveProject,
@@ -265,6 +266,11 @@ function OverviewTab({ project }: { project: Project }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      {/* Checklist */}
+      <div className="lg:col-span-2">
+        <ProjectChecklist project={project} />
+      </div>
+
       {/* Property */}
       <div className="card">
         <h2 className="text-lg font-semibold mb-4">Property</h2>
