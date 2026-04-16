@@ -2,6 +2,7 @@
 
 import type { Project, ExportRow } from "@/lib/types";
 import { getTotalSleeping } from "@/lib/sleep-optimizer";
+import { logActivity } from "@/lib/store";
 
 interface Props {
   project: Project;
@@ -75,6 +76,7 @@ export default function ExportPanel({ project }: Props) {
     a.download = `${slugify(project.name)}-furniture-list.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    logActivity(project.id, "exported", `Exported furniture list CSV (${rows.length} items)`);
   }
 
   function downloadSleepPlan() {
@@ -101,6 +103,7 @@ export default function ExportPanel({ project }: Props) {
     a.download = `${slugify(project.name)}-sleep-plan.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    logActivity(project.id, "exported", `Exported sleep plan CSV (${sleeping} guests)`);
   }
 
   function downloadFullBrief() {
@@ -212,6 +215,7 @@ export default function ExportPanel({ project }: Props) {
     a.href = url;
     a.download = `${slugify(project.name)}-design-brief.txt`;
     a.click();
+    logActivity(project.id, "exported", "Exported full design brief");
     URL.revokeObjectURL(url);
   }
 
