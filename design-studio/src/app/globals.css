@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-brand-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-amber/30;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-brand-900 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-800 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-brand-900/20 bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition-all hover:bg-parchment active:scale-[0.98];
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-semibold text-brand-900 transition-all hover:bg-amber-dark active:scale-[0.98];
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg bg-red-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-red-700 active:scale-[0.98];
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 text-xs;
+  }
+
+  .card {
+    @apply rounded-xl border border-brand-900/10 bg-white p-6 shadow-sm;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-brand-900/20 bg-white px-4 py-2.5 text-sm text-brand-900 placeholder-brand-600/50 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/20;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-brand-700;
+  }
+
+  .select {
+    @apply w-full appearance-none rounded-lg border border-brand-900/20 bg-white px-4 py-2.5 text-sm text-brand-900 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/20;
+  }
+
+  .tab {
+    @apply rounded-lg px-4 py-2 text-sm font-medium text-brand-600 transition-all hover:bg-parchment hover:text-brand-900;
+  }
+
+  .tab-active {
+    @apply rounded-lg bg-brand-900 px-4 py-2 text-sm font-medium text-white;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-emerald-100 text-emerald-800;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-light/50 text-amber-dark;
+  }
+
+  .badge-info {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+
+  .badge-neutral {
+    @apply badge bg-brand-900/10 text-brand-700;
+  }
+}
+
+/* Smooth page transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease-out;
+}
