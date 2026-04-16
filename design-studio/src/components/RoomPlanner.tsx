@@ -54,6 +54,10 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       floor: 1,
       features: [] as string[],
       notes: "",
+      accentWallEnabled: false,
+      accentWallColor: "#787060",
+      accentWallTreatment: "paint" as "paint" | "wallpaper" | "shiplap" | "stone" | "wood-panel" | "tile",
+      accentWallSide: "north" as "north" | "south" | "east" | "west",
     };
   }
 
@@ -72,6 +76,10 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
       lengthFt: room.lengthFt,
       ceilingHeightFt: room.ceilingHeightFt,
       floor: room.floor,
+      accentWallEnabled: !!room.accentWall,
+      accentWallColor: room.accentWall?.color ?? "#787060",
+      accentWallTreatment: room.accentWall?.treatment ?? "paint",
+      accentWallSide: room.accentWall?.wall ?? "north",
       features: [...room.features],
       notes: room.notes,
     });
@@ -81,21 +89,40 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
   function handleSave() {
     if (!form.name.trim()) return;
 
+    const accentWall = form.accentWallEnabled
+      ? {
+          color: form.accentWallColor,
+          treatment: form.accentWallTreatment,
+          wall: form.accentWallSide,
+        }
+      : null;
+
+    const roomData = {
+      name: form.name,
+      type: form.type,
+      widthFt: form.widthFt,
+      lengthFt: form.lengthFt,
+      ceilingHeightFt: form.ceilingHeightFt,
+      floor: form.floor,
+      features: form.features,
+      notes: form.notes,
+      accentWall,
+    };
+
     if (editingRoom) {
       const idx = project.rooms.findIndex((r) => r.id === editingRoom.id);
       if (idx >= 0) {
         project.rooms[idx] = {
           ...project.rooms[idx],
-          ...form,
+          ...roomData,
         };
       }
     } else {
       const room: Room = {
         id: generateId(),
-        ...form,
+        ...roomData,
         selectedBedConfig: null,
         furniture: [],
-        accentWall: null,
       };
       project.rooms.push(room);
     }
@@ -302,6 +329,18 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
                 </div>
               )}
 
+              {room.accentWall && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div
+                    className="h-3 w-3 rounded-full border border-brand-900/10"
+                    style={{ backgroundColor: room.accentWall.color }}
+                  />
+                  <span className="text-xs text-brand-600 capitalize">
+                    {room.accentWall.treatment} accent wall
+                  </span>
+                </div>
+              )}
+
               {room.furniture.length > 0 && (
                 <div className="text-xs text-brand-600 mt-1">
                   {room.furniture.length} furniture item
@@ -456,6 +495,83 @@ export default function RoomPlanner({ project, onUpdate }: Props) {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Accent Wall */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="accentWall"
+                    checked={form.accentWallEnabled}
+                    onChange={(e) =>
+                      setForm({ ...form, accentWallEnabled: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-brand-900/20 text-amber accent-amber"
+                  />
+                  <label htmlFor="accentWall" className="label mb-0">
+                    Accent Wall
+                  </label>
+                </div>
+                {form.accentWallEnabled && (
+                  <div className="grid grid-cols-3 gap-3 pl-6">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-brand-600">
+                        Color
+                      </label>
+                      <input
+                        type="color"
+                        className="h-9 w-full rounded border border-brand-900/20 cursor-pointer"
+                        value={form.accentWallColor}
+                        onChange={(e) =>
+                          setForm({ ...form, accentWallColor: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-brand-600">
+                        Treatment
+                      </label>
+                      <select
+                        className="select text-xs"
+                        value={form.accentWallTreatment}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            accentWallTreatment: e.target.value as typeof form.accentWallTreatment,
+                          })
+                        }
+                      >
+                        <option value="paint">Paint</option>
+                        <option value="wallpaper">Wallpaper</option>
+                        <option value="shiplap">Shiplap</option>
+                        <option value="stone">Stone</option>
+                        <option value="wood-panel">Wood Panel</option>
+                        <option value="tile">Tile</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-brand-600">
+                        Wall
+                      </label>
+                      <select
+                        className="select text-xs"
+                        value={form.accentWallSide}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            accentWallSide: e.target.value as typeof form.accentWallSide,
+                          })
+                        }
+                      >
+                        <option value="north">North</option>
+                        <option value="south">South</option>
+                        <option value="east">East</option>
+                        <option value="west">West</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
