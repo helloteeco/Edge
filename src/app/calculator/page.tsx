@@ -157,6 +157,7 @@ interface AnalysisResult {
   targetCoordinates?: { latitude: number; longitude: number };
   marketType?: string;
   dataSource?: string;
+  compsLimited?: boolean;
 }
 
 // ============================================================================
@@ -1125,6 +1126,7 @@ export default function CalculatorPage() {
                   targetCoordinates: data.targetCoordinates || undefined,
                   marketType: (data.marketType as string) || undefined,
                   dataSource: ((data as any).dataSource as string) || undefined,
+                  compsLimited: (data as any).compsLimited === true,
                 };
                 setResult(analysisResult);
                 userEditedExpenses.current = false;
@@ -1728,8 +1730,9 @@ export default function CalculatorPage() {
       targetCoordinates: data.targetCoordinates || undefined,
       marketType: (data.marketType as string) || undefined,
       dataSource: ((data as any).dataSource as string) || undefined,
+      compsLimited: (data as any).compsLimited === true,
     };
-    
+
     // NEVER reconstruct targetCoordinates from comp coordinates — they could be from a different market
     // Instead, geocode the actual address if coordinates are missing
     
@@ -2726,6 +2729,7 @@ export default function CalculatorPage() {
         targetCoordinates: targetCoordinates || undefined,
         marketType: (data.marketType as string) || undefined,
         dataSource: ((data as any).dataSource as string) || undefined,
+        compsLimited: (data as any).compsLimited === true,
       };
       setResult(analysisResult);
       userEditedExpenses.current = false;
@@ -5944,6 +5948,32 @@ Be specific, use the actual numbers, and help them think like a sophisticated ${
                 </div>
               </div>
             </div>
+
+            {/* Limited / missing comp notice — surfaces when the area has sparse STR coverage
+                so users understand why few/no comparable listings appear. Revenue numbers above
+                still use PriceLabs market data when available. */}
+            {(result.compsLimited || !result.comparables || result.comparables.length === 0) && (
+              <div className="rounded-2xl p-5 border-2" style={{ backgroundColor: '#fffbeb', borderColor: '#fbbf24' }}>
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl" aria-hidden="true">⚠️</div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-base" style={{ color: '#92400e' }}>
+                      {result.comparables && result.comparables.length > 0
+                        ? 'Limited comparable listings in this area'
+                        : 'No comparable listings found nearby'}
+                    </h4>
+                    <p className="text-sm mt-1" style={{ color: '#a16207' }}>
+                      {result.comparables && result.comparables.length > 0
+                        ? `We found ${result.comparables.length} ${result.bedrooms}BR-similar short-term rental${result.comparables.length === 1 ? '' : 's'} near this address. Smaller markets often have fewer active STR listings, so we're showing the best available below.`
+                        : `This market has very limited active short-term rental activity. Revenue estimate above is based on ${result.dataSource?.includes('pricelabs') ? 'PriceLabs licensed market data' : 'available market data'} — treat it as directional, not as a guaranteed projection.`}
+                    </p>
+                    <p className="text-xs mt-2" style={{ color: '#b45309' }}>
+                      Tip: try a nearby city or larger market to see deeper comp data.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Comparable Listings */}
             {result.comparables && result.comparables.length > 0 && (() => {
