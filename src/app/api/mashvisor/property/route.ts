@@ -1279,6 +1279,16 @@ export async function POST(request: NextRequest) {
         const dist = calcDistance(latitude, longitude, listing.latitude, listing.longitude);
         return { ...listing, occupancy: occ, annualRevenue: annualRev, monthlyRevenue: monthlyRev, distance: Math.round(dist * 10) / 10 };
       }).filter((l: any) => l.distance <= MAX_COMP_DIST);
+
+      // FALLBACK: If strict bedroom/distance filters removed everything but we
+      // still have raw listings within 50mi, surface the closest ones so the user
+      // sees the best-available comps rather than an empty section.
+      if (enriched.length === 0 && allEnrichedForClient.length > 0) {
+        enriched = [...allEnrichedForClient]
+          .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999))
+          .slice(0, 30);
+        console.log(`[Analyze] Strict filters removed all comps — surfacing ${enriched.length} closest listings as best-available`);
+      }
     }
 
     // =====================================================================
@@ -1442,9 +1452,13 @@ function buildResponse(params: {
   searchRadiusMiles: number;
 }) {
   const monthlyRevenue = Math.round(params.annualRevenue / 12);
+  // Flag when comp set is sparse (or empty) so the UI can show a clarifying notice.
+  // Threshold of 5 matches the existing "hasEnoughComps" confidence check on the frontend.
+  const compsLimited = (params.comparables?.length || 0) < 5;
 
   return {
     success: true,
+    compsLimited,
     dataSource: params.dataSource,
     searchRadiusMiles: params.searchRadiusMiles,
     bedroomsUsed: params.bedrooms,
