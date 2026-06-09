@@ -22,6 +22,7 @@ import {
 } from '@/components/Icons';
 import AuthHeader from '@/components/AuthHeader';
 import { StuckHelper } from '@/components/StuckHelper';
+import { PARTNER_LINKS, SPONSORED_DISCLOSURE } from '@/data/partner-links';
 
 // Types
 interface FundingMethod {
@@ -1373,7 +1374,7 @@ export default function FundingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="https://teeco.co/fund-your-financial-freedom"
+              href={PARTNER_LINKS.PREFERRED_LENDER}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -1386,6 +1387,7 @@ export default function FundingPage() {
               Get Matched with Our Lenders
               <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
             </a>
+            <p className="text-xs mt-2 opacity-60" style={{ color: 'rgba(255,255,255,0.6)' }}>{SPONSORED_DISCLOSURE}</p>
             <a
               href="https://www.zillow.com/homeloans/"
               target="_blank"

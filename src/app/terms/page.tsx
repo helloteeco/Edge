@@ -204,13 +204,26 @@ export default function TermsPage() {
             </p>
 
             <h2 className="text-xl font-semibold mb-4" style={{ color: "#2b2823" }}>
-              16. Affiliate Disclosure
+              16. Affiliate &amp; Advertising Disclosure
             </h2>
-            <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
+            <p className="mb-4 leading-relaxed" style={{ color: "#4a4640" }}>
               Some links within the Service may be affiliate links, meaning Teeco LLC may earn a commission if you make a purchase 
               or sign up for a service through those links, at no additional cost to you. Affiliate relationships do not influence 
               our analysis or the data presented in the Service. We only feature products and services we 
               believe may be useful to STR investors.
+            </p>
+            <p className="mb-4 leading-relaxed" style={{ color: "#4a4640" }}>
+              <strong>Paid Advertising Partnerships:</strong> Certain lenders, service providers, and financial institutions 
+              featured on the Service have paid advertising fees to be listed as preferred partners. These paid placements are 
+              clearly marked with a &quot;Sponsored partner&quot; label. Teeco LLC receives compensation from these partners 
+              in exchange for prominent placement and referral traffic. This compensation does not affect the market data, 
+              scores, or analytical tools provided by the Service.
+            </p>
+            <p className="mb-6 leading-relaxed" style={{ color: "#4a4640" }}>
+              <strong>No Endorsement:</strong> The inclusion of any lender, agent, or service provider — whether paid or unpaid — 
+              does not constitute an endorsement, guarantee, or recommendation by Teeco LLC. Users are encouraged to conduct 
+              their own due diligence, compare rates and terms from multiple providers, and consult with licensed professionals 
+              before making financial decisions. Teeco LLC is not a licensed lender, broker, or financial advisor.
             </p>
 
             <h2 className="text-xl font-semibold mb-4" style={{ color: "#2b2823" }}>
