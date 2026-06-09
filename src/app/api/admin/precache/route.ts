@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes for batch processing
 
-// Top 50 US STR markets with representative addresses
+// Top 100 US STR markets with representative addresses
 // These are central addresses in the most popular short-term rental markets
+// Used for precaching (1st & 15th monthly) and quarterly full refresh
 const TOP_MARKETS = [
-  // Florida
+  // Florida (12)
   { address: "100 Ocean Drive, Miami Beach, FL", market: "Miami Beach" },
   { address: "8600 International Drive, Orlando, FL", market: "Orlando" },
   { address: "500 S Atlantic Ave, Daytona Beach, FL", market: "Daytona Beach" },
@@ -16,18 +17,23 @@ const TOP_MARKETS = [
   { address: "200 E Las Olas Blvd, Fort Lauderdale, FL", market: "Fort Lauderdale" },
   { address: "1 Duval St, Key West, FL", market: "Key West" },
   { address: "100 N Tampa St, Tampa, FL", market: "Tampa" },
-  // Tennessee / Smoky Mountains
+  { address: "100 E Kissimmee Pkwy, Kissimmee, FL", market: "Kissimmee" },
+  { address: "100 S Palafox St, Pensacola, FL", market: "Pensacola" },
+  { address: "100 Scenic Gulf Dr, Miramar Beach, FL", market: "30A/Miramar Beach" },
+  // Tennessee / Smoky Mountains (4)
   { address: "100 The Island Dr, Pigeon Forge, TN", market: "Pigeon Forge" },
   { address: "321 Parkway, Gatlinburg, TN", market: "Gatlinburg" },
   { address: "200 Broadway, Nashville, TN", market: "Nashville" },
   { address: "100 Wears Valley Rd, Sevierville, TN", market: "Sevierville" },
-  // Texas
+  // Texas (7)
   { address: "500 Congress Ave, Austin, TX", market: "Austin" },
   { address: "300 Alamo Plaza, San Antonio, TX", market: "San Antonio" },
   { address: "100 Seawall Blvd, Galveston, TX", market: "Galveston" },
   { address: "100 Main St, Dallas, TX", market: "Dallas" },
   { address: "1000 Main St, Houston, TX", market: "Houston" },
-  // California
+  { address: "100 E Main St, Fredericksburg, TX", market: "Fredericksburg" },
+  { address: "100 Padre Blvd, South Padre Island, TX", market: "South Padre Island" },
+  // California (9)
   { address: "100 Santa Monica Blvd, Santa Monica, CA", market: "Santa Monica/LA" },
   { address: "100 Broadway, San Diego, CA", market: "San Diego" },
   { address: "1 Fishermans Wharf, San Francisco, CA", market: "San Francisco" },
@@ -35,39 +41,77 @@ const TOP_MARKETS = [
   { address: "100 W Anapamu St, Santa Barbara, CA", market: "Santa Barbara" },
   { address: "100 Cannery Row, Monterey, CA", market: "Monterey" },
   { address: "100 Village Dr, Big Bear Lake, CA", market: "Big Bear Lake" },
-  // Mountain / Ski
+  { address: "100 Main St, Lake Arrowhead, CA", market: "Lake Arrowhead" },
+  { address: "100 N Lake Blvd, Tahoe City, CA", market: "Lake Tahoe" },
+  // Mountain / Ski (8)
   { address: "100 E Meadow Dr, Vail, CO", market: "Vail" },
   { address: "100 E Main St, Breckenridge, CO", market: "Breckenridge" },
   { address: "100 E Cooper Ave, Aspen, CO", market: "Aspen" },
   { address: "100 N Cache St, Jackson, WY", market: "Jackson Hole" },
   { address: "100 Main St, Park City, UT", market: "Park City" },
   { address: "100 Canyon Blvd, Boulder, CO", market: "Boulder" },
-  // Southeast
+  { address: "100 E Colorado Ave, Telluride, CO", market: "Telluride" },
+  { address: "100 Mountain Village Blvd, Steamboat Springs, CO", market: "Steamboat Springs" },
+  // Southeast (10)
   { address: "100 E Bay St, Savannah, GA", market: "Savannah" },
   { address: "100 E Bay St, Charleston, SC", market: "Charleston" },
   { address: "100 N Lumina Ave, Wrightsville Beach, NC", market: "Wilmington/Wrightsville" },
   { address: "100 E Main St, Asheville, NC", market: "Asheville" },
   { address: "100 Gulf Shores Pkwy, Gulf Shores, AL", market: "Gulf Shores" },
   { address: "100 Poydras St, New Orleans, LA", market: "New Orleans" },
-  // Northeast
+  { address: "100 Ocean Blvd, Myrtle Beach, SC", market: "Myrtle Beach" },
+  { address: "100 Peachtree St, Atlanta, GA", market: "Atlanta" },
+  { address: "100 Perdido Beach Blvd, Orange Beach, AL", market: "Orange Beach" },
+  { address: "100 N Ocean Blvd, North Myrtle Beach, SC", market: "North Myrtle Beach" },
+  // Northeast (8)
   { address: "100 Commercial St, Provincetown, MA", market: "Cape Cod" },
   { address: "100 Thames St, Newport, RI", market: "Newport" },
   { address: "100 Main St, Lake Placid, NY", market: "Lake Placid" },
   { address: "100 Main St, Stowe, VT", market: "Stowe" },
-  // Southwest / Desert
+  { address: "100 Main St, Bar Harbor, ME", market: "Bar Harbor" },
+  { address: "100 Boardwalk, Atlantic City, NJ", market: "Atlantic City" },
+  { address: "100 Montauk Hwy, Montauk, NY", market: "Montauk" },
+  { address: "100 Ocean Ave, Long Branch, NJ", market: "Jersey Shore" },
+  // Southwest / Desert (5)
   { address: "100 E Route 66, Flagstaff, AZ", market: "Flagstaff" },
   { address: "100 N Central Ave, Phoenix, AZ", market: "Phoenix/Scottsdale" },
   { address: "100 E Main St, Sedona, AZ", market: "Sedona" },
-  // Pacific Northwest
+  { address: "100 E Tucson Blvd, Tucson, AZ", market: "Tucson" },
+  { address: "100 Las Vegas Blvd, Las Vegas, NV", market: "Las Vegas" },
+  // Pacific Northwest (5)
   { address: "100 Pike St, Seattle, WA", market: "Seattle" },
   { address: "100 SW Broadway, Portland, OR", market: "Portland" },
   { address: "100 NW Oregon Ave, Bend, OR", market: "Bend" },
-  // Hawaii
+  { address: "100 E Front St, Coeur d'Alene, ID", market: "Coeur d'Alene" },
+  { address: "100 Lakeshore Dr, Chelan, WA", market: "Lake Chelan" },
+  // Hawaii (3)
   { address: "100 Kaiulani Ave, Honolulu, HI", market: "Honolulu/Waikiki" },
   { address: "100 Banyan Dr, Hilo, HI", market: "Big Island" },
-  // Midwest / Other
+  { address: "100 Nohea Kai Dr, Lahaina, HI", market: "Maui" },
+  // Midwest (10)
   { address: "100 N Michigan Ave, Chicago, IL", market: "Chicago" },
   { address: "100 Wisconsin Dells Pkwy, Wisconsin Dells, WI", market: "Wisconsin Dells" },
+  { address: "100 W Huron St, Ann Arbor, MI", market: "Ann Arbor" },
+  { address: "100 E Front St, Traverse City, MI", market: "Traverse City" },
+  { address: "100 N Main St, Branson, MO", market: "Branson" },
+  { address: "100 Hennepin Ave, Minneapolis, MN", market: "Minneapolis" },
+  { address: "100 Vine St, Cincinnati, OH", market: "Cincinnati" },
+  { address: "100 E Market St, Indianapolis, IN", market: "Indianapolis" },
+  { address: "100 W Erie St, Cleveland, OH", market: "Cleveland" },
+  { address: "100 N Main St, Duluth, MN", market: "Duluth" },
+  // Mid-Atlantic (5)
+  { address: "100 E Pratt St, Baltimore, MD", market: "Baltimore" },
+  { address: "100 King St, Alexandria, VA", market: "Alexandria/DC" },
+  { address: "100 Atlantic Ave, Virginia Beach, VA", market: "Virginia Beach" },
+  { address: "100 Market St, Philadelphia, PA", market: "Philadelphia" },
+  { address: "100 Boardwalk, Ocean City, MD", market: "Ocean City" },
+  // Mountain West (6)
+  { address: "100 N Main St, Moab, UT", market: "Moab" },
+  { address: "100 Canyon Point Rd, Springdale, UT", market: "Zion/Springdale" },
+  { address: "100 N Montana Ave, Bozeman, MT", market: "Bozeman" },
+  { address: "100 Central Ave, Whitefish, MT", market: "Whitefish" },
+  { address: "100 E Main St, Red Lodge, MT", market: "Red Lodge/Yellowstone" },
+  { address: "100 W Broadway, West Yellowstone, MT", market: "West Yellowstone" },
 ];
 
 // Simple auth check - use a secret key to prevent unauthorized access

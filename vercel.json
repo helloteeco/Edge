@@ -8,6 +8,10 @@
       "schedule": "0 6 1,15 * *"
     },
     {
+      "path": "/api/admin/refresh-city-data",
+      "schedule": "0 8 2 * *"
+    },
+    {
       "path": "/api/admin/sync-scores",
       "schedule": "0 7 * * *"
     },
