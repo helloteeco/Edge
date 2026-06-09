@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     let skippedNoMatch = 0;
     const updates: Array<{ id: string; city: string; state: string; adr: number; occ: number; rev: number }> = [];
 
-    for (const [, market] of freshestByCity) {
+    for (const [, market] of Array.from(freshestByCity)) {
       const cityId = toCityId(market.city, market.state);
       
       // Sanity checks — don't write garbage data

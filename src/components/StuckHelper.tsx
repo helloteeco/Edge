@@ -70,7 +70,7 @@ const TAB_CONFIG: Record<
   {
     headline: string;
     stickingPoints: { label: string; question: string }[];
-    resources: { label: string; href: string; emoji: string }[];
+    resources: { label: string; href: string; emoji: string; disclosure?: string }[];
   }
 > = {
   map: {
@@ -312,6 +312,12 @@ const TAB_CONFIG: Record<
         emoji: "👥",
       },
       {
+        label: "Get pre-approved (Northpointe)",
+        href: "https://www.northpointe.com/home-lending/get-started/jesse-cronen/",
+        emoji: "🏦",
+        disclosure: "Paid Advertisement",
+      },
+      {
         label: "STR insurance (Proper)",
         href: "https://www.proper.insure",
         emoji: "🛡️",
@@ -343,6 +349,7 @@ TEECO SERVICES & AFFILIATES:
 - **Coaching Program** — 9 guided calls: Deal finding → Setup & Design → Live STR. Only ~3 hours/week once set up. Apply at teeco.co/before-after-photos
 - **Design & Setup Services** — Professional in-house STR design and furnishing. 20% discount for Teeco students. See teeco.co/before-after-photos
 - **Teeco Community (Circle)** — Private community of STR investors sharing deals, tips, and support
+- **Preferred Lender (Paid Advertisement)** — Jesse Cronen at Northpointe Bank specializes in investment property loans (DSCR, vacation home, conventional). Get started: https://www.northpointe.com/home-lending/get-started/jesse-cronen/ — Always disclose: "This is a paid advertising placement. Edge receives a flat advertising fee, not a per-lead or per-closing commission."
 - **Proper Insurance** (proper.insure) — STR-specific insurance and regulation guides by state
 - **STR Regulations** — Check rules at proper.insure/regulations/{state}
 - **Contact** — hello@teeco.co for any questions
@@ -632,21 +639,25 @@ export function StuckHelper({ tabName }: StuckHelperProps) {
                 {config.resources.map((r, i) => {
                   const isExternal = r.href.startsWith("http");
                   return (
-                    <a
-                      key={i}
-                      href={r.href}
-                      target={isExternal ? "_blank" : undefined}
-                      rel={isExternal ? "noopener noreferrer" : undefined}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      style={{
-                        backgroundColor: "#f5f0e8",
-                        color: "#2b2823",
-                        border: "1px solid #e5e3da",
-                      }}
-                    >
-                      <span>{r.emoji}</span>
-                      {r.label}
-                    </a>
+                    <span key={i} className="inline-flex flex-col items-start">
+                      <a
+                        href={r.href}
+                        target={isExternal ? "_blank" : undefined}
+                        rel={isExternal ? "noopener noreferrer" : undefined}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        style={{
+                          backgroundColor: "#f5f0e8",
+                          color: "#2b2823",
+                          border: "1px solid #e5e3da",
+                        }}
+                      >
+                        <span>{r.emoji}</span>
+                        {r.label}
+                      </a>
+                      {r.disclosure && (
+                        <span className="text-[9px] ml-3 mt-0.5" style={{ color: '#999' }}>{r.disclosure}</span>
+                      )}
+                    </span>
                   );
                 })}
               </div>
