@@ -215,7 +215,7 @@ export default function TermsPage() {
             <p className="mb-4 leading-relaxed" style={{ color: "#4a4640" }}>
               <strong>Paid Advertising Partnerships:</strong> Certain lenders, service providers, and financial institutions 
               featured on the Service have paid advertising fees to be listed as preferred partners. These paid placements are 
-              clearly marked with a &quot;Sponsored partner&quot; label. Teeco LLC receives compensation from these partners 
+              clearly marked with a &quot;Paid Advertisement&quot; label. Teeco LLC receives compensation from these partners 
               in exchange for prominent placement and referral traffic. This compensation does not affect the market data, 
               scores, or analytical tools provided by the Service.
             </p>

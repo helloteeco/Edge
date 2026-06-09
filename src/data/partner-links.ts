@@ -32,5 +32,5 @@ export const PARTNER_LINKS = {
 /** Display name for the preferred lender (shown in UI) */
 export const PREFERRED_LENDER_NAME = "Our Preferred Lender";
 
-/** Disclosure text shown near sponsored links (FTC compliance) */
-export const SPONSORED_DISCLOSURE = "Sponsored partner";
+/** Disclosure text shown near sponsored links (FTC/RESPA compliance) */
+export const SPONSORED_DISCLOSURE = "Paid Advertisement";
