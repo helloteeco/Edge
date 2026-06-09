@@ -1373,21 +1373,23 @@ export default function FundingPage() {
             Our network includes STR-friendly lenders, attorneys, and CPAs who can help you implement these strategies safely.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href={PARTNER_LINKS.PREFERRED_LENDER}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-              style={{ 
-                backgroundColor: '#22c55e', 
-                color: '#ffffff',
-                boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              Get Matched with Our Lenders
-              <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
-            </a>
-            <p className="text-xs mt-2 opacity-60" style={{ color: 'rgba(255,255,255,0.6)' }}>{SPONSORED_DISCLOSURE}</p>
+            <div className="flex flex-col items-center">
+              <a
+                href={PARTNER_LINKS.PREFERRED_LENDER}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ 
+                  backgroundColor: '#22c55e', 
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.2)'
+                }}
+              >
+                Get Matched with Our Lenders
+                <ArrowRightIcon className="w-4 h-4" color="#ffffff" />
+              </a>
+              <p className="text-xs mt-1.5" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px' }}>{SPONSORED_DISCLOSURE}</p>
+            </div>
             <a
               href="https://www.zillow.com/homeloans/"
               target="_blank"
