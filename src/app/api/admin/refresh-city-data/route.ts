@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
 /**
  * /api/admin/refresh-city-data
@@ -16,10 +14,7 @@ import path from "path";
  * without needing a redeploy.
  */
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 // Auth check
 function isAuthorized(request: NextRequest): boolean {
@@ -99,7 +94,7 @@ export async function GET(request: NextRequest) {
       if (market.avg_monthly_revenue < 200 || market.avg_monthly_revenue > 100000) continue;
 
       // Update in Supabase cities table
-      const { error: updateError, count } = await supabase
+      const { error: updateError } = await supabase
         .from("cities")
         .update({
           avg_adr: Math.round(market.avg_adr),
@@ -107,10 +102,9 @@ export async function GET(request: NextRequest) {
           str_monthly_revenue: Math.round(market.avg_monthly_revenue),
           updated_at: new Date().toISOString(),
         })
-        .eq("id", cityId)
-        .select("id", { count: "exact" });
+        .eq("id", cityId);
 
-      if (!updateError && count && count > 0) {
+      if (!updateError) {
         updatedInDb++;
         updates.push({
           id: cityId,
