@@ -72,8 +72,8 @@ export const stateData: Record<string, StateData> = {
   AL: {
     id: 'AL',
     name: 'Alabama',
-    appreciation: { oneYear: 0.2, fiveYear: 27.3, medianValue: 228634 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.2, fiveYear: 24.2, medianValue: 236705 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 157982, migrationRate: 31.44, topInbound: ['FL', 'GA', 'TN'], topOutbound: ['TX', 'FL', 'GA'] },
     rental: { shortTermMonthly: 1850, longTermMonthly: 1050, occupancyRate: 58, avgADR: 145 },
     strRegulation: {
@@ -95,8 +95,8 @@ export const stateData: Record<string, StateData> = {
   AK: {
     id: 'AK',
     name: 'Alaska',
-    appreciation: { oneYear: 3.7, fiveYear: 19.0, medianValue: 376253 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 4.9, fiveYear: 20.2, medianValue: 390107 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -8388, migrationRate: -11.44, topInbound: ['WA', 'CA', 'TX'], topOutbound: ['WA', 'TX', 'FL'] },
     rental: { shortTermMonthly: 2200, longTermMonthly: 1350, occupancyRate: 52, avgADR: 185 },
     strRegulation: {
@@ -118,8 +118,8 @@ export const stateData: Record<string, StateData> = {
   AZ: {
     id: 'AZ',
     name: 'Arizona',
-    appreciation: { oneYear: -2.6, fiveYear: 30.2, medianValue: 417540 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -1.6, fiveYear: 22.5, medianValue: 423746 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 411586, migrationRate: 57.50, topInbound: ['CA', 'WA', 'IL'], topOutbound: ['CA', 'TX', 'NV'] },
     rental: { shortTermMonthly: 2650, longTermMonthly: 1480, occupancyRate: 65, avgADR: 195 },
     strRegulation: {
@@ -141,8 +141,8 @@ export const stateData: Record<string, StateData> = {
   AR: {
     id: 'AR',
     name: 'Arkansas',
-    appreciation: { oneYear: 1.7, fiveYear: 30.0, medianValue: 215426 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.0, fiveYear: 27.6, medianValue: 222300 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 87377, migrationRate: 29.01, topInbound: ['TX', 'CA', 'OK'], topOutbound: ['TX', 'MO', 'OK'] },
     rental: { shortTermMonthly: 1650, longTermMonthly: 920, occupancyRate: 55, avgADR: 135 },
     strRegulation: {
@@ -164,8 +164,8 @@ export const stateData: Record<string, StateData> = {
   CA: {
     id: 'CA',
     name: 'California',
-    appreciation: { oneYear: -1.9, fiveYear: 26.3, medianValue: 756323 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -1.1, fiveYear: 21.3, medianValue: 776233 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -530886, migrationRate: -13.42, topInbound: ['NY', 'IL', 'TX'], topOutbound: ['TX', 'AZ', 'NV'] },
     rental: { shortTermMonthly: 3850, longTermMonthly: 2104, occupancyRate: 68, avgADR: 285 },
     strRegulation: {
@@ -187,8 +187,8 @@ export const stateData: Record<string, StateData> = {
   CO: {
     id: 'CO',
     name: 'Colorado',
-    appreciation: { oneYear: -2.5, fiveYear: 22.1, medianValue: 529284 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -2.4, fiveYear: 14.9, medianValue: 543271 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 114234, migrationRate: 19.78, topInbound: ['CA', 'TX', 'IL'], topOutbound: ['TX', 'AZ', 'FL'] },
     rental: { shortTermMonthly: 3200, longTermMonthly: 1750, occupancyRate: 62, avgADR: 245 },
     strRegulation: {
@@ -210,8 +210,8 @@ export const stateData: Record<string, StateData> = {
   CT: {
     id: 'CT',
     name: 'Connecticut',
-    appreciation: { oneYear: 4.4, fiveYear: 49.6, medianValue: 422919 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 4.8, fiveYear: 44.5, medianValue: 441466 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 70954, migrationRate: 19.67, topInbound: ['NY', 'MA', 'NJ'], topOutbound: ['FL', 'NC', 'SC'] },
     rental: { shortTermMonthly: 2450, longTermMonthly: 1520, occupancyRate: 60, avgADR: 195 },
     strRegulation: {
@@ -233,8 +233,8 @@ export const stateData: Record<string, StateData> = {
   DE: {
     id: 'DE',
     name: 'Delaware',
-    appreciation: { oneYear: 1.7, fiveYear: 32.2, medianValue: 396102 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.8, fiveYear: 26.6, medianValue: 405836 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 64105, migrationRate: 64.76, topInbound: ['PA', 'NJ', 'MD'], topOutbound: ['FL', 'PA', 'NC'] },
     rental: { shortTermMonthly: 2100, longTermMonthly: 1380, occupancyRate: 58, avgADR: 175 },
     strRegulation: {
@@ -256,8 +256,8 @@ export const stateData: Record<string, StateData> = {
   FL: {
     id: 'FL',
     name: 'Florida',
-    appreciation: { oneYear: -4.9, fiveYear: 36.6, medianValue: 370112 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -3.7, fiveYear: 30.9, medianValue: 376504 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 1931865, migrationRate: 89.69, topInbound: ['NY', 'NJ', 'CA'], topOutbound: ['GA', 'TX', 'NC'] },
     rental: { shortTermMonthly: 3100, longTermMonthly: 1680, occupancyRate: 72, avgADR: 225 },
     strRegulation: {
@@ -279,8 +279,8 @@ export const stateData: Record<string, StateData> = {
   GA: {
     id: 'GA',
     name: 'Georgia',
-    appreciation: { oneYear: -1.9, fiveYear: 38.3, medianValue: 325999 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -1.2, fiveYear: 31.4, medianValue: 333559 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 475697, migrationRate: 44.85, topInbound: ['FL', 'NY', 'CA'], topOutbound: ['FL', 'TX', 'NC'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1420, occupancyRate: 62, avgADR: 175 },
     strRegulation: {
@@ -302,8 +302,8 @@ export const stateData: Record<string, StateData> = {
   HI: {
     id: 'HI',
     name: 'Hawaii',
-    appreciation: { oneYear: -1.9, fiveYear: 26.6, medianValue: 820224 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -0.8, fiveYear: 22.5, medianValue: 830219 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -35000, migrationRate: -24.5, topInbound: ['CA', 'WA', 'TX'], topOutbound: ['CA', 'NV', 'WA'] },
     rental: { shortTermMonthly: 4500, longTermMonthly: 2200, occupancyRate: 75, avgADR: 350 },
     strRegulation: {
@@ -325,8 +325,8 @@ export const stateData: Record<string, StateData> = {
   ID: {
     id: 'ID',
     name: 'Idaho',
-    appreciation: { oneYear: 1.3, fiveYear: 31.5, medianValue: 462426 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.1, fiveYear: 18.3, medianValue: 477506 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 95000, migrationRate: 50.2, topInbound: ['CA', 'WA', 'OR'], topOutbound: ['WA', 'UT', 'AZ'] },
     rental: { shortTermMonthly: 2800, longTermMonthly: 1450, occupancyRate: 58, avgADR: 210 },
     strRegulation: {
@@ -348,8 +348,8 @@ export const stateData: Record<string, StateData> = {
   IL: {
     id: 'IL',
     name: 'Illinois',
-    appreciation: { oneYear: 4.4, fiveYear: 35.1, medianValue: 277483 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 4.9, fiveYear: 32.0, medianValue: 290210 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -340000, migrationRate: -26.8, topInbound: ['CA', 'NY', 'TX'], topOutbound: ['IN', 'WI', 'FL'] },
     rental: { shortTermMonthly: 2200, longTermMonthly: 1350, occupancyRate: 58, avgADR: 165 },
     strRegulation: {
@@ -371,8 +371,8 @@ export const stateData: Record<string, StateData> = {
   IN: {
     id: 'IN',
     name: 'Indiana',
-    appreciation: { oneYear: 2.8, fiveYear: 40.4, medianValue: 246174 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.0, fiveYear: 35.5, medianValue: 256584 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 45000, migrationRate: 6.7, topInbound: ['IL', 'CA', 'OH'], topOutbound: ['FL', 'TX', 'AZ'] },
     rental: { shortTermMonthly: 1650, longTermMonthly: 1050, occupancyRate: 52, avgADR: 125 },
     strRegulation: {
@@ -394,8 +394,8 @@ export const stateData: Record<string, StateData> = {
   IA: {
     id: 'IA',
     name: 'Iowa',
-    appreciation: { oneYear: 3.5, fiveYear: 32.4, medianValue: 224843 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.9, fiveYear: 30.6, medianValue: 234891 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -15000, migrationRate: -4.8, topInbound: ['IL', 'NE', 'MN'], topOutbound: ['TX', 'AZ', 'FL'] },
     rental: { shortTermMonthly: 1400, longTermMonthly: 950, occupancyRate: 48, avgADR: 110 },
     strRegulation: {
@@ -417,8 +417,8 @@ export const stateData: Record<string, StateData> = {
   KS: {
     id: 'KS',
     name: 'Kansas',
-    appreciation: { oneYear: 2.7, fiveYear: 39.9, medianValue: 235906 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.7, fiveYear: 36.3, medianValue: 246369 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -8000, migrationRate: -2.8, topInbound: ['TX', 'CA', 'MO'], topOutbound: ['TX', 'MO', 'CO'] },
     rental: { shortTermMonthly: 1500, longTermMonthly: 1000, occupancyRate: 50, avgADR: 115 },
     strRegulation: {
@@ -440,8 +440,8 @@ export const stateData: Record<string, StateData> = {
   KY: {
     id: 'KY',
     name: 'Kentucky',
-    appreciation: { oneYear: 1.7, fiveYear: 34.4, medianValue: 224468 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -0.3, fiveYear: 30.8, medianValue: 232231 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 65000, migrationRate: 14.5, topInbound: ['OH', 'IN', 'FL'], topOutbound: ['TN', 'IN', 'OH'] },
     rental: { shortTermMonthly: 1750, longTermMonthly: 1050, occupancyRate: 55, avgADR: 135 },
     strRegulation: {
@@ -463,8 +463,8 @@ export const stateData: Record<string, StateData> = {
   LA: {
     id: 'LA',
     name: 'Louisiana',
-    appreciation: { oneYear: -0.4, fiveYear: 2.9, medianValue: 206946 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.0, fiveYear: 2.9, medianValue: 214727 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -45000, migrationRate: -9.8, topInbound: ['TX', 'CA', 'FL'], topOutbound: ['TX', 'FL', 'GA'] },
     rental: { shortTermMonthly: 2200, longTermMonthly: 1100, occupancyRate: 62, avgADR: 175 },
     strRegulation: {
@@ -486,8 +486,8 @@ export const stateData: Record<string, StateData> = {
   ME: {
     id: 'ME',
     name: 'Maine',
-    appreciation: { oneYear: 0.3, fiveYear: 43.6, medianValue: 396211 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 0.7, fiveYear: 37.4, medianValue: 412608 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 28000, migrationRate: 20.5, topInbound: ['MA', 'NH', 'NY'], topOutbound: ['FL', 'NH', 'NC'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1350, occupancyRate: 58, avgADR: 195 },
     strRegulation: {
@@ -509,8 +509,8 @@ export const stateData: Record<string, StateData> = {
   MD: {
     id: 'MD',
     name: 'Maryland',
-    appreciation: { oneYear: 0.3, fiveYear: 22.7, medianValue: 420762 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 0.2, fiveYear: 18.1, medianValue: 431934 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -25000, migrationRate: -4.1, topInbound: ['VA', 'PA', 'NY'], topOutbound: ['VA', 'FL', 'PA'] },
     rental: { shortTermMonthly: 2300, longTermMonthly: 1650, occupancyRate: 60, avgADR: 185 },
     strRegulation: {
@@ -532,8 +532,8 @@ export const stateData: Record<string, StateData> = {
   MA: {
     id: 'MA',
     name: 'Massachusetts',
-    appreciation: { oneYear: 1.6, fiveYear: 35.7, medianValue: 638534 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.5, fiveYear: 30.3, medianValue: 661755 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -85000, migrationRate: -12.3, topInbound: ['NY', 'CT', 'CA'], topOutbound: ['NH', 'FL', 'RI'] },
     rental: { shortTermMonthly: 3200, longTermMonthly: 2100, occupancyRate: 65, avgADR: 245 },
     strRegulation: {
@@ -555,8 +555,8 @@ export const stateData: Record<string, StateData> = {
   MI: {
     id: 'MI',
     name: 'Michigan',
-    appreciation: { oneYear: 3.7, fiveYear: 34.9, medianValue: 250331 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 4.2, fiveYear: 30.1, medianValue: 263590 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 25000, migrationRate: 2.5, topInbound: ['IL', 'CA', 'OH'], topOutbound: ['FL', 'TX', 'AZ'] },
     rental: { shortTermMonthly: 2100, longTermMonthly: 1200, occupancyRate: 55, avgADR: 165 },
     strRegulation: {
@@ -578,8 +578,8 @@ export const stateData: Record<string, StateData> = {
   MN: {
     id: 'MN',
     name: 'Minnesota',
-    appreciation: { oneYear: 2.4, fiveYear: 23.6, medianValue: 335400 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.9, fiveYear: 20.0, medianValue: 350891 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -18000, migrationRate: -3.2, topInbound: ['WI', 'ND', 'IL'], topOutbound: ['FL', 'AZ', 'TX'] },
     rental: { shortTermMonthly: 2000, longTermMonthly: 1350, occupancyRate: 52, avgADR: 155 },
     strRegulation: {
@@ -601,8 +601,8 @@ export const stateData: Record<string, StateData> = {
   MS: {
     id: 'MS',
     name: 'Mississippi',
-    appreciation: { oneYear: 0.0, fiveYear: 20.3, medianValue: 186295 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.0, fiveYear: 18.8, medianValue: 194242 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -28000, migrationRate: -9.5, topInbound: ['TX', 'LA', 'TN'], topOutbound: ['TX', 'TN', 'FL'] },
     rental: { shortTermMonthly: 1400, longTermMonthly: 900, occupancyRate: 48, avgADR: 110 },
     strRegulation: {
@@ -624,8 +624,8 @@ export const stateData: Record<string, StateData> = {
   MO: {
     id: 'MO',
     name: 'Missouri',
-    appreciation: { oneYear: 2.2, fiveYear: 36.2, medianValue: 253654 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.8, fiveYear: 31.6, medianValue: 265398 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 35000, migrationRate: 5.7, topInbound: ['IL', 'KS', 'CA'], topOutbound: ['TX', 'FL', 'AZ'] },
     rental: { shortTermMonthly: 1800, longTermMonthly: 1100, occupancyRate: 55, avgADR: 140 },
     strRegulation: {
@@ -647,8 +647,8 @@ export const stateData: Record<string, StateData> = {
   MT: {
     id: 'MT',
     name: 'Montana',
-    appreciation: { oneYear: 0.9, fiveYear: 47.2, medianValue: 449640 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.3, fiveYear: 38.1, medianValue: 467919 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 32000, migrationRate: 29.5, topInbound: ['WA', 'CA', 'CO'], topOutbound: ['WA', 'ID', 'AZ'] },
     rental: { shortTermMonthly: 2800, longTermMonthly: 1400, occupancyRate: 58, avgADR: 215 },
     strRegulation: {
@@ -670,8 +670,8 @@ export const stateData: Record<string, StateData> = {
   NE: {
     id: 'NE',
     name: 'Nebraska',
-    appreciation: { oneYear: 3.1, fiveYear: 35.3, medianValue: 267297 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.4, fiveYear: 30.9, medianValue: 279080 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 5000, migrationRate: 2.6, topInbound: ['IA', 'CA', 'CO'], topOutbound: ['TX', 'CO', 'FL'] },
     rental: { shortTermMonthly: 1500, longTermMonthly: 1000, occupancyRate: 48, avgADR: 115 },
     strRegulation: {
@@ -693,8 +693,8 @@ export const stateData: Record<string, StateData> = {
   NV: {
     id: 'NV',
     name: 'Nevada',
-    appreciation: { oneYear: -1.8, fiveYear: 33.9, medianValue: 440161 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -2.0, fiveYear: 27.4, medianValue: 447225 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 185000, migrationRate: 59.2, topInbound: ['CA', 'AZ', 'WA'], topOutbound: ['CA', 'AZ', 'TX'] },
     rental: { shortTermMonthly: 2800, longTermMonthly: 1550, occupancyRate: 65, avgADR: 210 },
     strRegulation: {
@@ -716,8 +716,8 @@ export const stateData: Record<string, StateData> = {
   NH: {
     id: 'NH',
     name: 'New Hampshire',
-    appreciation: { oneYear: 2.7, fiveYear: 51.2, medianValue: 492203 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.7, fiveYear: 43.2, medianValue: 510709 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 22000, migrationRate: 16.2, topInbound: ['MA', 'NY', 'CT'], topOutbound: ['FL', 'ME', 'NC'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1550, occupancyRate: 58, avgADR: 195 },
     strRegulation: {
@@ -739,8 +739,8 @@ export const stateData: Record<string, StateData> = {
   NJ: {
     id: 'NJ',
     name: 'New Jersey',
-    appreciation: { oneYear: 3.2, fiveYear: 44.4, medianValue: 558805 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.4, fiveYear: 40.1, medianValue: 571373 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -95000, migrationRate: -10.4, topInbound: ['NY', 'PA', 'CA'], topOutbound: ['FL', 'PA', 'NC'] },
     rental: { shortTermMonthly: 3200, longTermMonthly: 1850, occupancyRate: 62, avgADR: 255 },
     strRegulation: {
@@ -762,8 +762,8 @@ export const stateData: Record<string, StateData> = {
   NM: {
     id: 'NM',
     name: 'New Mexico',
-    appreciation: { oneYear: 0.9, fiveYear: 37.6, medianValue: 307971 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.1, fiveYear: 32.5, medianValue: 317474 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 42000, migrationRate: 20.1, topInbound: ['CA', 'TX', 'AZ'], topOutbound: ['TX', 'AZ', 'CO'] },
     rental: { shortTermMonthly: 2100, longTermMonthly: 1150, occupancyRate: 58, avgADR: 165 },
     strRegulation: {
@@ -785,8 +785,8 @@ export const stateData: Record<string, StateData> = {
   NY: {
     id: 'NY',
     name: 'New York',
-    appreciation: { oneYear: 4.2, fiveYear: 34.4, medianValue: 498438 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 5.0, fiveYear: 31.7, medianValue: 510449 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -580000, migrationRate: -29.2, topInbound: ['NJ', 'CA', 'FL'], topOutbound: ['FL', 'NJ', 'PA'] },
     rental: { shortTermMonthly: 3500, longTermMonthly: 1950, occupancyRate: 68, avgADR: 275 },
     strRegulation: {
@@ -808,8 +808,8 @@ export const stateData: Record<string, StateData> = {
   NC: {
     id: 'NC',
     name: 'North Carolina',
-    appreciation: { oneYear: -0.7, fiveYear: 38.9, medianValue: 328611 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -0.2, fiveYear: 32.9, medianValue: 337273 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 485000, migrationRate: 46.5, topInbound: ['FL', 'NY', 'VA'], topOutbound: ['FL', 'SC', 'TX'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1380, occupancyRate: 62, avgADR: 185 },
     strRegulation: {
@@ -831,8 +831,8 @@ export const stateData: Record<string, StateData> = {
   ND: {
     id: 'ND',
     name: 'North Dakota',
-    appreciation: { oneYear: 5.0, fiveYear: 21.4, medianValue: 275220 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 5.5, fiveYear: 22.0, medianValue: 286406 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -5000, migrationRate: -6.5, topInbound: ['MN', 'MT', 'SD'], topOutbound: ['MN', 'TX', 'AZ'] },
     rental: { shortTermMonthly: 1400, longTermMonthly: 950, occupancyRate: 42, avgADR: 105 },
     strRegulation: {
@@ -854,8 +854,8 @@ export const stateData: Record<string, StateData> = {
   OH: {
     id: 'OH',
     name: 'Ohio',
-    appreciation: { oneYear: 3.4, fiveYear: 38.0, medianValue: 234035 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 3.6, fiveYear: 34.0, medianValue: 244844 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -45000, migrationRate: -3.9, topInbound: ['CA', 'NY', 'FL'], topOutbound: ['FL', 'TX', 'NC'] },
     rental: { shortTermMonthly: 1800, longTermMonthly: 1150, occupancyRate: 52, avgADR: 140 },
     strRegulation: {
@@ -877,8 +877,8 @@ export const stateData: Record<string, StateData> = {
   OK: {
     id: 'OK',
     name: 'Oklahoma',
-    appreciation: { oneYear: 1.6, fiveYear: 35.4, medianValue: 214159 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.2, fiveYear: 31.6, medianValue: 221765 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 45000, migrationRate: 11.4, topInbound: ['TX', 'CA', 'KS'], topOutbound: ['TX', 'AR', 'CO'] },
     rental: { shortTermMonthly: 1500, longTermMonthly: 950, occupancyRate: 50, avgADR: 115 },
     strRegulation: {
@@ -900,8 +900,8 @@ export const stateData: Record<string, StateData> = {
   OR: {
     id: 'OR',
     name: 'Oregon',
-    appreciation: { oneYear: -0.9, fiveYear: 21.5, medianValue: 487541 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -0.7, fiveYear: 14.5, medianValue: 501661 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 85000, migrationRate: 20.4, topInbound: ['CA', 'WA', 'ID'], topOutbound: ['WA', 'ID', 'TX'] },
     rental: { shortTermMonthly: 2600, longTermMonthly: 1550, occupancyRate: 60, avgADR: 195 },
     strRegulation: {
@@ -923,8 +923,8 @@ export const stateData: Record<string, StateData> = {
   PA: {
     id: 'PA',
     name: 'Pennsylvania',
-    appreciation: { oneYear: 2.5, fiveYear: 30.8, medianValue: 275824 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.4, fiveYear: 26.5, medianValue: 286387 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: -65000, migrationRate: -5.1, topInbound: ['NY', 'NJ', 'CA'], topOutbound: ['FL', 'NJ', 'NC'] },
     rental: { shortTermMonthly: 2100, longTermMonthly: 1350, occupancyRate: 55, avgADR: 165 },
     strRegulation: {
@@ -946,8 +946,8 @@ export const stateData: Record<string, StateData> = {
   RI: {
     id: 'RI',
     name: 'Rhode Island',
-    appreciation: { oneYear: 2.8, fiveYear: 46.0, medianValue: 486411 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.9, fiveYear: 39.4, medianValue: 504793 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 8000, migrationRate: 7.4, topInbound: ['MA', 'CT', 'NY'], topOutbound: ['FL', 'MA', 'NC'] },
     rental: { shortTermMonthly: 2800, longTermMonthly: 1650, occupancyRate: 60, avgADR: 225 },
     strRegulation: {
@@ -969,8 +969,8 @@ export const stateData: Record<string, StateData> = {
   SC: {
     id: 'SC',
     name: 'South Carolina',
-    appreciation: { oneYear: -0.3, fiveYear: 37.6, medianValue: 298316 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 0.4, fiveYear: 33.4, medianValue: 305174 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 385000, migrationRate: 75.2, topInbound: ['NC', 'FL', 'NY'], topOutbound: ['NC', 'FL', 'GA'] },
     rental: { shortTermMonthly: 2600, longTermMonthly: 1350, occupancyRate: 65, avgADR: 195 },
     strRegulation: {
@@ -992,8 +992,8 @@ export const stateData: Record<string, StateData> = {
   SD: {
     id: 'SD',
     name: 'South Dakota',
-    appreciation: { oneYear: 2.4, fiveYear: 36.2, medianValue: 307422 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 2.8, fiveYear: 32.7, medianValue: 319255 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 18000, migrationRate: 20.4, topInbound: ['MN', 'NE', 'CA'], topOutbound: ['MN', 'CO', 'AZ'] },
     rental: { shortTermMonthly: 1800, longTermMonthly: 1050, occupancyRate: 52, avgADR: 145 },
     strRegulation: {
@@ -1015,8 +1015,8 @@ export const stateData: Record<string, StateData> = {
   TN: {
     id: 'TN',
     name: 'Tennessee',
-    appreciation: { oneYear: -0.1, fiveYear: 40.0, medianValue: 324926 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 0.3, fiveYear: 34.7, medianValue: 334075 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 425000, migrationRate: 61.8, topInbound: ['CA', 'FL', 'TX'], topOutbound: ['FL', 'TX', 'GA'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1350, occupancyRate: 65, avgADR: 185 },
     strRegulation: {
@@ -1038,8 +1038,8 @@ export const stateData: Record<string, StateData> = {
   TX: {
     id: 'TX',
     name: 'Texas',
-    appreciation: { oneYear: -2.4, fiveYear: 25.3, medianValue: 294807 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -2.0, fiveYear: 19.7, medianValue: 302187 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 1285000, migrationRate: 44.2, topInbound: ['CA', 'FL', 'IL'], topOutbound: ['CA', 'FL', 'CO'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1450, occupancyRate: 62, avgADR: 180 },
     strRegulation: {
@@ -1061,8 +1061,8 @@ export const stateData: Record<string, StateData> = {
   UT: {
     id: 'UT',
     name: 'Utah',
-    appreciation: { oneYear: 2.0, fiveYear: 34.2, medianValue: 527752 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.6, fiveYear: 25.2, medianValue: 540993 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 125000, migrationRate: 38.2, topInbound: ['CA', 'ID', 'AZ'], topOutbound: ['ID', 'AZ', 'TX'] },
     rental: { shortTermMonthly: 2800, longTermMonthly: 1550, occupancyRate: 62, avgADR: 215 },
     strRegulation: {
@@ -1084,8 +1084,8 @@ export const stateData: Record<string, StateData> = {
   VT: {
     id: 'VT',
     name: 'Vermont',
-    appreciation: { oneYear: -0.5, fiveYear: 31.5, medianValue: 383267 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.6, fiveYear: 28.0, medianValue: 394227 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 12000, migrationRate: 18.8, topInbound: ['NY', 'MA', 'NH'], topOutbound: ['FL', 'NH', 'NC'] },
     rental: { shortTermMonthly: 2600, longTermMonthly: 1450, occupancyRate: 58, avgADR: 205 },
     strRegulation: {
@@ -1107,8 +1107,8 @@ export const stateData: Record<string, StateData> = {
   VA: {
     id: 'VA',
     name: 'Virginia',
-    appreciation: { oneYear: 1.6, fiveYear: 32.1, medianValue: 401888 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.7, fiveYear: 27.8, medianValue: 414320 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 185000, migrationRate: 21.5, topInbound: ['MD', 'NY', 'CA'], topOutbound: ['NC', 'FL', 'TX'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1550, occupancyRate: 60, avgADR: 185 },
     strRegulation: {
@@ -1130,8 +1130,8 @@ export const stateData: Record<string, StateData> = {
   WA: {
     id: 'WA',
     name: 'Washington',
-    appreciation: { oneYear: -0.5, fiveYear: 27.7, medianValue: 585669 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: -0.6, fiveYear: 19.8, medianValue: 604087 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 185000, migrationRate: 24.2, topInbound: ['CA', 'OR', 'TX'], topOutbound: ['OR', 'ID', 'TX'] },
     rental: { shortTermMonthly: 2800, longTermMonthly: 1750, occupancyRate: 62, avgADR: 215 },
     strRegulation: {
@@ -1153,8 +1153,8 @@ export const stateData: Record<string, StateData> = {
   WV: {
     id: 'WV',
     name: 'West Virginia',
-    appreciation: { oneYear: 0.7, fiveYear: 28.5, medianValue: 168318 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.5, fiveYear: 24.5, medianValue: 174876 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 15000, migrationRate: 8.4, topInbound: ['VA', 'OH', 'PA'], topOutbound: ['VA', 'OH', 'FL'] },
     rental: { shortTermMonthly: 1600, longTermMonthly: 850, occupancyRate: 52, avgADR: 125 },
     strRegulation: {
@@ -1176,8 +1176,8 @@ export const stateData: Record<string, StateData> = {
   WI: {
     id: 'WI',
     name: 'Wisconsin',
-    appreciation: { oneYear: 4.9, fiveYear: 40.3, medianValue: 318447 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 5.4, fiveYear: 38.0, medianValue: 333909 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 25000, migrationRate: 4.3, topInbound: ['IL', 'MN', 'CA'], topOutbound: ['FL', 'AZ', 'TX'] },
     rental: { shortTermMonthly: 2000, longTermMonthly: 1150, occupancyRate: 55, avgADR: 155 },
     strRegulation: {
@@ -1199,8 +1199,8 @@ export const stateData: Record<string, StateData> = {
   WY: {
     id: 'WY',
     name: 'Wyoming',
-    appreciation: { oneYear: 1.5, fiveYear: 30.9, medianValue: 352902 },
-    mortgageRates: { thirtyYear: 6.11, fifteenYear: 5.5, trend: 'stable' },
+    appreciation: { oneYear: 1.4, fiveYear: 28.3, medianValue: 363685 },
+    mortgageRates: { thirtyYear: 6.48, fifteenYear: 5.79, trend: 'stable' },
     migration: { netMigration: 12000, migrationRate: 20.8, topInbound: ['CO', 'CA', 'TX'], topOutbound: ['CO', 'MT', 'ID'] },
     rental: { shortTermMonthly: 2400, longTermMonthly: 1200, occupancyRate: 55, avgADR: 185 },
     strRegulation: {

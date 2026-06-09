@@ -156,14 +156,22 @@ def fetch_freddie():
     fifteen_yr = None
     date = None
     
+    # Parse from the end to get the latest data
+    # CSV format: date,pmms30,pmms30p,pmms15,pmms15p,...
+    # Fields may be quoted with "" or contain spaces
     for line in reversed(lines):
-        parts = line.strip().split(',')
-        if len(parts) >= 4 and parts[1]:
+        # Strip quotes from each field
+        parts = [p.strip().strip('"') for p in line.strip().split(',')]
+        if len(parts) >= 4:
             try:
-                thirty_yr = float(parts[1])
-                fifteen_yr = float(parts[3]) if parts[3] else None
-                date = parts[0]
-                break
+                # parts[0] = date, parts[1] = 30yr rate, parts[3] = 15yr rate
+                val30 = parts[1].strip()
+                val15 = parts[3].strip()
+                if val30 and val30 != 'pmms30':  # skip header
+                    thirty_yr = float(val30)
+                    fifteen_yr = float(val15) if val15 else None
+                    date = parts[0]
+                    break
             except ValueError:
                 continue
     

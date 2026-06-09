@@ -13312,4 +13312,4 @@ export const basicCityData: Record<string, BasicCityData[]> = {
 };
 
 // Total cities: 13196
-// Last updated: March 2026
+// Last updated: June 2026
