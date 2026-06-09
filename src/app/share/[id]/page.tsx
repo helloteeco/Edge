@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { DATA_LAST_UPDATED } from '@/data/helpers';
 
 interface AnalysisData {
   address: string;
@@ -221,7 +222,7 @@ export default function SharePage() {
             <p className="text-xs text-gray-500 uppercase">Peak Month</p>
           </div>
         </div>
-        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated Feb 2026</p>
+        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated {DATA_LAST_UPDATED}</p>
 
         {/* Investment Analysis */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">

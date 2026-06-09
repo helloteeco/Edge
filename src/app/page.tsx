@@ -774,7 +774,7 @@ export default function HomePage() {
                       Stay compliant with local laws. Interactive guide covering permits, taxes, and restrictions in all 50 states.
                     </p>
                     <div className="mt-3 flex items-center gap-2">
-                      <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>Updated Jan 2026</span>
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>Updated {DATA_LAST_UPDATED}</span>
                       <span className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>via Proper Insurance</span>
                     </div>
                   </div>

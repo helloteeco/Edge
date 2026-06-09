@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getCitiesByState, getStateByCode, getAllStates } from "@/data/helpers";
+import { getCitiesByState, getStateByCode, getAllStates, DATA_LAST_UPDATED } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
 import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 
@@ -474,7 +474,7 @@ export default function StatePage({ params }: { params: { id: string } }) {
             )
           ))}
         </div>
-        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated Feb 2026</p>
+        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated {DATA_LAST_UPDATED}</p>
 
         {/* Sort & Filter */}
         <div 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getCityById, getCitiesByState, getStateByCode, getAllCities } from "@/data/helpers";
+import { getCityById, getCitiesByState, getStateByCode, getAllCities, DATA_LAST_UPDATED } from "@/data/helpers";
 import AuthHeader from "@/components/AuthHeader";
 import { DoubleTapSave, FloatingActionPill } from "@/components/DoubleTapSave";
 import RegulationCard from "@/components/RegulationCard";
@@ -591,7 +591,7 @@ export default function CityPage({ params }: { params: { id: string } }) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated Feb 2026</p>
+        <p className="text-[10px] mb-4 text-right" style={{ color: '#9e9a8f' }}>Market estimates · Updated {DATA_LAST_UPDATED}</p>
 
         {/* Income by Property Size */}
         <div 
