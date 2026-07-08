@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 interface DashboardData {
-  users: { count: number; data: Array<{ email: string; created_at: string; last_login_at: string; credits_used?: number; credits_limit?: number; is_unlimited?: boolean }> };
+  users: { count: number; data: Array<{ email: string; created_at: string; last_login_at: string; credits_used?: number; credits_limit?: number; is_unlimited?: boolean; is_admin?: boolean }> };
   quizLeads: { count: number; data: Array<{ id: number; email: string; quiz_answers: Record<string, string>; recommended_methods: string[]; created_at: string }> };
   coachingLeads: { count: number; data: Array<{ id: number; email: string; budget: string; timeline: string; experience: string; qualified: boolean; source: string; created_at: string }> };
   savedProperties: { count: number };
@@ -100,26 +100,116 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [creditEmail, setCreditEmail] = useState("");
   const [creditAmount, setCreditAmount] = useState("");
-  const [creditAction, setCreditAction] = useState<"add" | "set">("add");
+  const [creditAction, setCreditAction] = useState<"add" | "set" | "upgrade_unlimited" | "remove_unlimited" | "make_admin" | "remove_admin">("add");
   const [creditMsg, setCreditMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [creditLoading, setCreditLoading] = useState(false);
 
   const handleManageCredits = async () => {
-    if (!creditEmail.trim() || !creditAmount.trim()) return;
-    const amt = parseInt(creditAmount);
-    if (isNaN(amt) || amt < 0 || amt > 10000) { setCreditMsg({ type: "error", text: "Invalid amount (0-10000)" }); return; }
+    if (!creditEmail.trim()) return;
+    // For upgrade/remove unlimited and admin actions, amount is not needed
+    const needsAmount = creditAction === "add" || creditAction === "set";
+    if (needsAmount && !creditAmount.trim()) return;
+    const amt = needsAmount ? parseInt(creditAmount) : 0;
+    if (needsAmount && (isNaN(amt) || amt < 0 || amt > 10000)) { setCreditMsg({ type: "error", text: "Invalid amount (0-10000)" }); return; }
     setCreditLoading(true);
     setCreditMsg(null);
+    try {
+      const actionMap: Record<string, string> = { add: "add_credits", set: "set_credits", upgrade_unlimited: "upgrade_unlimited", remove_unlimited: "remove_unlimited", make_admin: "make_admin", remove_admin: "remove_admin" };
+      const res = await fetch("/api/admin/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action: actionMap[creditAction], email: creditEmail.trim(), amount: amt }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        if (creditAction === "upgrade_unlimited") {
+          setCreditMsg({ type: "success", text: `\u2705 Upgraded ${creditEmail} to UNLIMITED credits` });
+        } else if (creditAction === "remove_unlimited") {
+          setCreditMsg({ type: "success", text: `Removed unlimited from ${creditEmail}` });
+        } else if (creditAction === "make_admin") {
+          setCreditMsg({ type: "success", text: `\ud83d\udc51 ${creditEmail} is now an ADMIN (unlimited credits + can manage others)` });
+        } else if (creditAction === "remove_admin") {
+          setCreditMsg({ type: "success", text: `Removed admin from ${creditEmail}` });
+        } else {
+          setCreditMsg({ type: "success", text: `${creditAction === "add" ? "Added" : "Set"} ${amt} credits for ${creditEmail}. Remaining: ${result.credits_remaining}` });
+        }
+        setCreditAmount("");
+        fetchData(password);
+      } else {
+        setCreditMsg({ type: "error", text: result.error || "Failed" });
+      }
+    } catch { setCreditMsg({ type: "error", text: "Request failed" }); }
+    setCreditLoading(false);
+  };
+
+  const handleQuickUpgrade = async (userEmail: string) => {
+    setCreditLoading(true);
     try {
       const res = await fetch("/api/admin/dashboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, action: creditAction === "add" ? "add_credits" : "set_credits", email: creditEmail.trim(), amount: amt }),
+        body: JSON.stringify({ password, action: "upgrade_unlimited", email: userEmail }),
       });
       const result = await res.json();
       if (result.success) {
-        setCreditMsg({ type: "success", text: `${creditAction === "add" ? "Added" : "Set"} ${amt} credits for ${creditEmail}. Remaining: ${result.credits_remaining}` });
-        setCreditAmount("");
+        setCreditMsg({ type: "success", text: `✅ Upgraded ${userEmail} to UNLIMITED` });
+        fetchData(password);
+      } else {
+        setCreditMsg({ type: "error", text: result.error || "Failed" });
+      }
+    } catch { setCreditMsg({ type: "error", text: "Request failed" }); }
+    setCreditLoading(false);
+  };
+
+  const handleQuickRemoveUnlimited = async (userEmail: string) => {
+    setCreditLoading(true);
+    try {
+      const res = await fetch("/api/admin/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action: "remove_unlimited", email: userEmail }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCreditMsg({ type: "success", text: `Removed unlimited from ${userEmail}` });
+        fetchData(password);
+      } else {
+        setCreditMsg({ type: "error", text: result.error || "Failed" });
+      }
+    } catch { setCreditMsg({ type: "error", text: "Request failed" }); }
+    setCreditLoading(false);
+  };
+
+  const handleQuickMakeAdmin = async (userEmail: string) => {
+    setCreditLoading(true);
+    try {
+      const res = await fetch("/api/admin/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action: "make_admin", email: userEmail }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCreditMsg({ type: "success", text: `\ud83d\udc51 ${userEmail} is now an Admin` });
+        fetchData(password);
+      } else {
+        setCreditMsg({ type: "error", text: result.error || "Failed" });
+      }
+    } catch { setCreditMsg({ type: "error", text: "Request failed" }); }
+    setCreditLoading(false);
+  };
+
+  const handleQuickRemoveAdmin = async (userEmail: string) => {
+    setCreditLoading(true);
+    try {
+      const res = await fetch("/api/admin/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action: "remove_admin", email: userEmail }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCreditMsg({ type: "success", text: `Removed admin from ${userEmail}` });
         fetchData(password);
       } else {
         setCreditMsg({ type: "error", text: result.error || "Failed" });
@@ -814,16 +904,20 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="text-xs block mb-1" style={{ color: '#787060' }}>Action</label>
-                  <select value={creditAction} onChange={(e) => setCreditAction(e.target.value as "add" | "set")} className="px-3 py-2 rounded-lg text-sm focus:outline-none" style={{ backgroundColor: '#f5f5f0', border: '1px solid #d8d6cd', color: '#2b2823' }}>
+                  <select value={creditAction} onChange={(e) => setCreditAction(e.target.value as "add" | "set" | "upgrade_unlimited" | "remove_unlimited" | "make_admin" | "remove_admin")} className="px-3 py-2 rounded-lg text-sm focus:outline-none" style={{ backgroundColor: '#f5f5f0', border: '1px solid #d8d6cd', color: '#2b2823' }}>
                     <option value="add">Add Credits</option>
                     <option value="set">Set Remaining To</option>
+                    <option value="upgrade_unlimited">⚡ Upgrade to Unlimited</option>
+                    <option value="remove_unlimited">Remove Unlimited</option>
+                    <option value="make_admin">👑 Make Admin</option>
+                    <option value="remove_admin">Remove Admin</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-xs block mb-1" style={{ color: '#787060' }}>Amount</label>
                   <input type="number" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="25" min="0" max="10000" className="px-3 py-2 rounded-lg text-sm w-24 focus:outline-none focus:ring-2" style={{ backgroundColor: '#f5f5f0', border: '1px solid #d8d6cd', color: '#2b2823' }} />
                 </div>
-                <button onClick={handleManageCredits} disabled={creditLoading || !creditEmail.trim() || !creditAmount.trim()} className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
+                <button onClick={handleManageCredits} disabled={creditLoading || !creditEmail.trim() || ((creditAction === "add" || creditAction === "set") && !creditAmount.trim())} className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50" style={{ backgroundColor: '#2b2823', color: '#fff' }}>
                   {creditLoading ? "..." : "Apply"}
                 </button>
               </div>
@@ -846,9 +940,9 @@ export default function AdminDashboard() {
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Email</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Credits Used</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Credits Limit</th>
-                    <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Unlimited</th>
-                    <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Signed Up</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Remaining</th>
+                    <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Status</th>
+                    <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Signed Up</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Last Login</th>
                     <th className="text-left p-3 font-medium" style={{ color: '#787060' }}>Actions</th>
                   </tr>
@@ -861,16 +955,22 @@ export default function AdminDashboard() {
                       <td className="p-3" style={{ color: '#787060' }}>{user.credits_limit ?? 3}</td>
                       <td className="p-3 font-medium" style={{ color: '#16a34a' }}>{(user.credits_limit ?? 3) - (user.credits_used ?? 0)}</td>
                       <td className="p-3">
-                        {user.is_unlimited ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>Yes</span>
-                        ) : (
-                          <span className="text-xs" style={{ color: '#9a9488' }}>No</span>
-                        )}
+                        <div className="flex gap-1 flex-wrap">
+                          {user.is_admin && <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>👑 Admin</span>}
+                          {user.is_unlimited && <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>⚡ Unlimited</span>}
+                          {!user.is_admin && !user.is_unlimited && <span className="text-xs" style={{ color: '#9a9488' }}>Standard</span>}
+                        </div>
                       </td>
                       <td className="p-3 whitespace-nowrap" style={{ color: '#9a9488' }}>{fmt(user.created_at)}</td>
                       <td className="p-3 whitespace-nowrap" style={{ color: '#9a9488' }}>{fmt(user.last_login_at)}</td>
                       <td className="p-3">
-                        <button onClick={() => { setCreditEmail(user.email); setCreditAction("add"); setCreditAmount("25"); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#f0ede8', color: '#2b2823', border: '1px solid #d8d6cd' }}>+ Credits</button>
+                        <div className="flex gap-1 flex-wrap">
+                          <button onClick={() => { setCreditEmail(user.email); setCreditAction("add"); setCreditAmount("25"); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#f0ede8', color: '#2b2823', border: '1px solid #d8d6cd' }}>+ Credits</button>
+                          {!user.is_unlimited && <button onClick={() => handleQuickUpgrade(user.email)} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>⚡ Unlimited</button>}
+                          {user.is_unlimited && !user.is_admin && <button onClick={() => handleQuickRemoveUnlimited(user.email)} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }}>Remove ⚡</button>}
+                          {!user.is_admin && <button onClick={() => handleQuickMakeAdmin(user.email)} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>👑 Admin</button>}
+                          {user.is_admin && <button onClick={() => handleQuickRemoveAdmin(user.email)} className="px-2 py-1 rounded text-xs font-medium transition-colors" style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }}>Remove 👑</button>}
+                        </div>
                       </td>
                     </tr>
                   ))}

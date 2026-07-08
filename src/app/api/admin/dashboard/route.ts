@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDashboardData, addCredits, getUserCredits } from "@/lib/supabase";
+import { getAdminDashboardData, addCredits, getUserCredits, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +80,78 @@ export async function POST(request: NextRequest) {
         new_limit: result.new_limit,
         credits_remaining: amount,
       });
+    }
+
+    // Upgrade account to unlimited credits
+    if (action === "upgrade_unlimited") {
+      if (!email) {
+        return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
+      const { error } = await supabase
+        .from("users")
+        .update({ is_unlimited: true })
+        .eq("email", normalizedEmail);
+      if (error) {
+        console.error("Error upgrading to unlimited:", error);
+        return NextResponse.json({ error: "Failed to upgrade. User may not exist." }, { status: 400 });
+      }
+      console.log(`[Admin] Upgraded ${normalizedEmail} to unlimited credits`);
+      return NextResponse.json({ success: true, email: normalizedEmail, is_unlimited: true });
+    }
+
+    // Remove unlimited status from account
+    if (action === "remove_unlimited") {
+      if (!email) {
+        return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
+      const { error } = await supabase
+        .from("users")
+        .update({ is_unlimited: false })
+        .eq("email", normalizedEmail);
+      if (error) {
+        console.error("Error removing unlimited:", error);
+        return NextResponse.json({ error: "Failed to remove unlimited. User may not exist." }, { status: 400 });
+      }
+      console.log(`[Admin] Removed unlimited from ${normalizedEmail}`);
+      return NextResponse.json({ success: true, email: normalizedEmail, is_unlimited: false });
+    }
+
+    // Make user an admin (also grants unlimited credits)
+    if (action === "make_admin") {
+      if (!email) {
+        return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
+      const { error } = await supabase
+        .from("users")
+        .update({ is_admin: true, is_unlimited: true })
+        .eq("email", normalizedEmail);
+      if (error) {
+        console.error("Error making admin:", error);
+        return NextResponse.json({ error: "Failed to make admin. User may not exist." }, { status: 400 });
+      }
+      console.log(`[Admin] Made ${normalizedEmail} an admin`);
+      return NextResponse.json({ success: true, email: normalizedEmail, is_admin: true, is_unlimited: true });
+    }
+
+    // Remove admin status from account
+    if (action === "remove_admin") {
+      if (!email) {
+        return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      }
+      const normalizedEmail = email.toLowerCase().trim();
+      const { error } = await supabase
+        .from("users")
+        .update({ is_admin: false })
+        .eq("email", normalizedEmail);
+      if (error) {
+        console.error("Error removing admin:", error);
+        return NextResponse.json({ error: "Failed to remove admin. User may not exist." }, { status: 400 });
+      }
+      console.log(`[Admin] Removed admin from ${normalizedEmail}`);
+      return NextResponse.json({ success: true, email: normalizedEmail, is_admin: false });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
