@@ -9,13 +9,25 @@ export const dynamic = "force-dynamic";
 
 async function verifyAdminUser(email: string): Promise<boolean> {
   const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await supabase
-    .from("users")
-    .select("is_admin")
-    .eq("email", normalizedEmail)
-    .single();
-  if (error || !data) return false;
-  return data.is_admin === true;
+  
+  // First check: environment variable list of admin emails (always works, no DB column needed)
+  const defaultAdmins = "jeff@teeco.co,stephanie@teeco.co";
+  const adminEmails = (process.env.ADMIN_EMAILS || defaultAdmins).split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (adminEmails.includes(normalizedEmail)) return true;
+  
+  // Second check: database is_admin column (if it exists)
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("is_admin")
+      .eq("email", normalizedEmail)
+      .single();
+    if (!error && data && data.is_admin === true) return true;
+  } catch {
+    // Column might not exist yet, that's fine
+  }
+  
+  return false;
 }
 
 export async function POST(request: NextRequest) {
@@ -117,10 +129,10 @@ export async function POST(request: NextRequest) {
       if (!credits) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
-      // Also get admin/unlimited status
+      const targetIsAdmin = await verifyAdminUser(normalizedTarget);
       const { data: userData } = await supabase
         .from("users")
-        .select("is_admin, is_unlimited")
+        .select("is_unlimited")
         .eq("email", normalizedTarget)
         .single();
       return NextResponse.json({
@@ -129,7 +141,7 @@ export async function POST(request: NextRequest) {
         credits_used: credits.credits_used,
         credits_limit: credits.credits_limit,
         credits_remaining: credits.credits_remaining,
-        is_admin: userData?.is_admin ?? false,
+        is_admin: targetIsAdmin,
         is_unlimited: userData?.is_unlimited ?? false,
       });
     }
