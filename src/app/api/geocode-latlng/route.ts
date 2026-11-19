@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const GEOAPIFY_API_KEY = "6dc94b0b19644c79b3de0a187f0996f0";
+const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || "";
 
 /**
  * GET /api/geocode-latlng?address=62+Gatehouse+Ln,+Nettie,+WV,+USA
@@ -63,6 +63,7 @@ function buildFallbackQueries(address: string): string[] {
 }
 
 async function tryGeoapify(query: string): Promise<{ lat: number; lng: number } | null> {
+  if (!GEOAPIFY_API_KEY) return null;
   try {
     const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&filter=countrycode:us&format=json&limit=1&apiKey=${GEOAPIFY_API_KEY}`;
     const response = await fetch(url, {

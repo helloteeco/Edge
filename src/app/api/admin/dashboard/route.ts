@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDashboardData, addCredits, getUserCredits, supabase } from "@/lib/supabase";
+import { rejectUnlessAdminPassword } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 
 export async function GET(request: NextRequest) {
   try {
     const password = request.nextUrl.searchParams.get("password");
-
-    if (password !== ADMIN_PASSWORD) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const denied = rejectUnlessAdminPassword(password);
+    if (denied) return denied;
 
     const data = await getAdminDashboardData();
 
@@ -36,9 +30,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { password, action, email, amount } = body;
 
-    if (password !== ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = rejectUnlessAdminPassword(password);
+    if (denied) return denied;
 
     if (action === "add_credits") {
       if (!email || !amount || amount <= 0 || amount > 10000) {

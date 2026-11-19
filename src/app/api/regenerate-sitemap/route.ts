@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllCities, getAllStates } from '@/data/helpers';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabase';
+import { rejectUnlessAdminPassword } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
 
 const baseUrl = 'https://edge.teeco.co';
 
@@ -34,19 +32,17 @@ function wrapUrlset(entries: string[]): string {
  * The /api/sitemap route always returns the latest dynamic content.
  */
 export async function GET(request: NextRequest) {
-  // Auth check
   const authHeader = request.headers.get('authorization');
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (adminPassword && authHeader !== `Bearer ${adminPassword}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
+  const denied = rejectUnlessAdminPassword(token);
+  if (denied) return denied;
 
   const now = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
   // Fetch blog posts
   let blogEntries: string[] = [];
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getSupabaseClient();
     const { data: posts } = await supabase
       .from('blog_posts')
       .select('slug, published_at')

@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 // Google Places API key - you need to enable Places API in Google Cloud Console
-const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || "";
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_API_KEY || "";
 
 // Fallback to Geoapify if no Google API key
-const GEOAPIFY_API_KEY = "6dc94b0b19644c79b3de0a187f0996f0";
+const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || "";
 
 // State abbreviations mapping
 const stateAbbreviations: Record<string, string> = {
@@ -135,6 +135,7 @@ async function fetchGooglePlaces(query: string) {
 
 // Geoapify Autocomplete
 async function fetchGeoapify(query: string) {
+  if (!GEOAPIFY_API_KEY) return { suggestions: [] };
   try {
     const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&filter=countrycode:us&format=json&limit=5&type=amenity,street,housenumber&apiKey=${GEOAPIFY_API_KEY}`;
 

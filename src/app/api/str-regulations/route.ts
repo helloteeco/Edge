@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { rejectUnlessAdminApiKey } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const supabaseUrl = "https://izyfqnavncdcdwkldlih.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0";
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -229,11 +226,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { cities, adminKey } = body;
 
-    // Require admin key for batch operations
-    const expectedKey = process.env.ADMIN_API_KEY || "teeco-admin-2026";
-    if (adminKey !== expectedKey) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = rejectUnlessAdminApiKey(adminKey);
+    if (denied) return denied;
 
     if (!Array.isArray(cities) || cities.length === 0) {
       return NextResponse.json({ error: "cities array required" }, { status: 400 });

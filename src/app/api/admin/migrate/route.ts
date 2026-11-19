@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { rejectUnlessAdminPassword } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +10,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const password = request.nextUrl.searchParams.get("password");
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
-
-  if (password !== ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = rejectUnlessAdminPassword(password);
+  if (denied) return denied;
 
   const results: string[] = [];
 

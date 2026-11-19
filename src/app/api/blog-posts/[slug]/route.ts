@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { adminPasswordMatches } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +16,13 @@ export async function GET(
     const url = new URL(request.url);
     const preview = url.searchParams.get("preview") === "true";
     const password = url.searchParams.get("password");
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 
     let query = supabase
       .from("blog_posts")
       .select("*")
       .eq("slug", slug);
 
-    if (preview && password === ADMIN_PASSWORD) {
+    if (preview && adminPasswordMatches(password)) {
       // Admin preview: allow drafts
       query = query.in("status", ["published", "draft"]);
     } else {

@@ -17,7 +17,7 @@ export const maxDuration = 60;
 // Direct Airbnb API — PRIMARY data source (replaced Apify for speed + reliability)
 // Uses Airbnb's own explore_tabs endpoint: 2-5 seconds vs 30-120s with Apify
 // Same data, no middleman, no per-search cost
-const AIRBNB_API_KEY = "d306zoyjsyarp7ifhu67rjxn52tv0t20"; // Public Airbnb web client key
+const AIRBNB_API_KEY = process.env.AIRBNB_API_KEY || "";
 const AIRBNB_API_BASE = "https://www.airbnb.com/api/v2/explore_tabs";
 
 // Cache duration: 60 days — aggressive caching to minimize API calls
@@ -267,6 +267,7 @@ async function fetchAirbnbPage(
   offset: number = 0,
   radiusMiles: number = 15,
 ): Promise<any[]> {
+  if (!AIRBNB_API_KEY) return [];
   // Use bounding box search (search_by_map=true) instead of query-based search
   // This constrains results to a geographic area rather than Airbnb's market regions
   const bbox = getBoundingBox(lat, lng, radiusMiles);
@@ -341,6 +342,9 @@ async function fetchAirbnbDirect(
   city?: string,
   state?: string,
 ): Promise<{ success: boolean; listings: any[]; searchRadiusMiles: number; error?: string }> {
+  if (!AIRBNB_API_KEY) {
+    return { success: false, listings: [], searchRadiusMiles: 0, error: "Airbnb API key is not configured" };
+  }
   try {
     const today = new Date();
     const checkin = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -391,6 +395,7 @@ async function fetchAirbnbByCity(
   checkin: string,
   checkout: string,
 ): Promise<any[]> {
+  if (!AIRBNB_API_KEY) return [];
   const params = new URLSearchParams({
     _format: "for_explore_search_web",
     currency: "USD",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rejectUnlessAdminPassword } from '@/lib/admin-auth';
 
 /**
  * IndexNow API route — Notifies search engines (Bing, Yandex, Naver, Seznam)
@@ -15,12 +16,10 @@ const HOST = 'https://edge.teeco.co';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify internal call (simple auth check)
     const authHeader = request.headers.get('authorization');
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    if (adminPassword && authHeader !== `Bearer ${adminPassword}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
+    const denied = rejectUnlessAdminPassword(token);
+    if (denied) return denied;
 
     const body = await request.json();
     const urls: string[] = body.urls || [];

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizePrecache } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes for batch processing
@@ -114,39 +115,9 @@ const TOP_MARKETS = [
   { address: "100 W Broadway, West Yellowstone, MT", market: "West Yellowstone" },
 ];
 
-// Simple auth check - use a secret key to prevent unauthorized access
-const ADMIN_SECRET = process.env.PRECACHE_SECRET || process.env.ADMIN_API_KEY || "teeco-precache-2026";
-
-function isAuthorized(request: NextRequest): boolean {
-  // Vercel Cron jobs send Authorization: Bearer <CRON_SECRET>
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
-
-  const secret = request.nextUrl.searchParams.get("secret")
-    || request.headers.get("x-api-key")
-    || authHeader?.replace("Bearer ", "");
-  
-  if (!secret) return false;
-  
-  // Check against admin secret
-  if (secret === ADMIN_SECRET) return true;
-  
-  // Also check against PRICELABS_API_KEY
-  const plKey = process.env.PRICELABS_API_KEY;
-  if (plKey && secret === plKey) return true;
-  
-  return false;
-}
-
 export async function POST(request: NextRequest) {
-  // Auth check
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
+  const denied = authorizePrecache(request);
+  if (denied) return denied;
 
   const body = await request.json().catch(() => ({}));
   const bedrooms = body.bedrooms || 3;
@@ -241,12 +212,8 @@ export async function POST(request: NextRequest) {
 // Use ?batch=0 for first 5, ?batch=1 for next 5, etc.
 // Without batch param, processes first 5 markets (cron will cycle through all)
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
+  const denied = authorizePrecache(request);
+  if (denied) return denied;
 
   const batchParam = request.nextUrl.searchParams.get("batch");
   const listOnly = request.nextUrl.searchParams.get("list");

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { getAdminPassword } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 
 /**
  * GET-based one-click approve endpoint for email links.
@@ -14,8 +13,13 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 export async function GET(request: NextRequest) {
   const password = request.nextUrl.searchParams.get("password");
   const postId = request.nextUrl.searchParams.get("post_id");
+  const adminPassword = getAdminPassword();
 
-  if (password !== ADMIN_PASSWORD) {
+  if (!adminPassword) {
+    return NextResponse.json({ error: "Admin authentication is not configured" }, { status: 500 });
+  }
+
+  if (password !== adminPassword) {
     const url = new URL("/blog/review", request.nextUrl.origin);
     url.searchParams.set("error", "unauthorized");
     return NextResponse.redirect(url);
@@ -76,7 +80,7 @@ export async function GET(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ADMIN_PASSWORD}`,
+        'Authorization': `Bearer ${adminPassword}`,
       },
       body: JSON.stringify({ urls: [blogUrl, `${request.nextUrl.origin}/blog`, `${request.nextUrl.origin}/sitemap.xml`] }),
     }).catch(() => {}); // Non-blocking

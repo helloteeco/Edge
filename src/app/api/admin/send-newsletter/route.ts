@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { authorizeCronOrPassword } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -14,19 +15,8 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
  */
 async function handleSendNewsletter(request: NextRequest) {
   try {
-    // Auth check
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-    const password = request.nextUrl.searchParams.get("password");
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
-
-    const isAuthed =
-      (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-      password === ADMIN_PASSWORD;
-
-    if (!isAuthed) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = authorizeCronOrPassword(request);
+    if (denied) return denied;
 
     if (!RESEND_API_KEY) {
       return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 500 });

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { authorizeCronOrPassword, getAdminPassword, rejectUnlessAdminPassword } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Admin email recipients - comma-separated in env var, defaults to jeff@teeco.co
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "jeff@teeco.co,stephanie@teeco.co")
@@ -17,10 +17,8 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "jeff@teeco.co,stephanie@teeco
  */
 
 export async function GET(request: NextRequest) {
-  const password = request.nextUrl.searchParams.get("password");
-  if (password !== ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = rejectUnlessAdminPassword(request.nextUrl.searchParams.get("password"));
+  if (denied) return denied;
 
   const status = request.nextUrl.searchParams.get("status") || "draft";
 
@@ -39,17 +37,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const password = request.nextUrl.searchParams.get("password");
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-
-    const isAuthed =
-      (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-      password === ADMIN_PASSWORD;
-
-    if (!isAuthed) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = authorizeCronOrPassword(request);
+    if (denied) return denied;
+    const adminPassword = getAdminPassword();
 
     const body = await request.json();
     const { action, post_id } = body;
@@ -100,7 +90,7 @@ export async function POST(request: NextRequest) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${ADMIN_PASSWORD}`,
+              'Authorization': `Bearer ${adminPassword ?? ""}`,
             },
             body: JSON.stringify({ urls: [`${baseUrl}/blog/${data.slug}`, `${baseUrl}/blog`, `${baseUrl}/sitemap.xml`] }),
           }).catch(() => {});
@@ -161,9 +151,12 @@ export async function POST(request: NextRequest) {
 
       // Call the generate-blog endpoint to create a fresh article for the same city
       const baseUrl = request.nextUrl.origin;
+      const cronSecret = process.env.CRON_SECRET?.trim();
+      const forwardHeaders: Record<string, string> = {};
+      if (cronSecret) forwardHeaders.Authorization = `Bearer ${cronSecret}`;
       const genRes = await fetch(
-        `${baseUrl}/api/admin/generate-blog?password=${ADMIN_PASSWORD}&city_id=${cityId}`,
-        { method: "GET" }
+        `${baseUrl}/api/admin/generate-blog?password=${encodeURIComponent(adminPassword ?? "")}&city_id=${cityId}`,
+        { method: "GET", headers: forwardHeaders }
       );
 
       if (!genRes.ok) {
@@ -190,6 +183,10 @@ export async function POST(request: NextRequest) {
  * Send review notification emails for new draft posts
  */
 async function sendReviewNotifications() {
+  const adminPassword = getAdminPassword();
+  if (!adminPassword) {
+    return NextResponse.json({ error: "Admin authentication is not configured" }, { status: 500 });
+  }
   if (!RESEND_API_KEY) {
     return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
   }
@@ -224,19 +221,19 @@ async function sendReviewNotifications() {
         <div style="margin-top: 16px;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
             <td style="padding-right: 8px;">
-              <a href="https://edge.teeco.co/blog/${post.slug}?preview=true&password=${ADMIN_PASSWORD}" 
+              <a href="https://edge.teeco.co/blog/${post.slug}?preview=true&password=${adminPassword}" 
                  style="display: inline-block; padding: 10px 18px; background: #2b2823; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
                 Preview Post
               </a>
             </td>
             <td style="padding-right: 8px;">
-              <a href="https://edge.teeco.co/api/admin/quick-approve?password=${ADMIN_PASSWORD}&post_id=${post.id}" 
+              <a href="https://edge.teeco.co/api/admin/quick-approve?password=${adminPassword}&post_id=${post.id}" 
                  style="display: inline-block; padding: 10px 18px; background: #22c55e; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600;">
                 ✅ Approve & Publish
               </a>
             </td>
             <td>
-              <a href="https://edge.teeco.co/blog/review?password=${ADMIN_PASSWORD}" 
+              <a href="https://edge.teeco.co/blog/review?password=${adminPassword}" 
                  style="display: inline-block; padding: 10px 18px; background: #ffffff; color: #787060; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid #e5e3da;">
                 View Dashboard
               </a>
@@ -288,11 +285,11 @@ async function sendReviewNotifications() {
         </div>
         <h2 style="margin: 0 0 14px 0; font-size: 16px; color: #2b2823; font-family: Georgia, serif;">Quick Links</h2>
         <div style="border: 1px solid #e5e3da; border-radius: 12px; background: #ffffff; overflow: hidden;">
-          <a href="https://edge.teeco.co/blog/review?password=${ADMIN_PASSWORD}" style="display: block; padding: 14px 18px; text-decoration: none; border-bottom: 1px solid #f0efe9;">
+          <a href="https://edge.teeco.co/blog/review?password=${adminPassword}" style="display: block; padding: 14px 18px; text-decoration: none; border-bottom: 1px solid #f0efe9;">
             <span style="font-size: 14px; font-weight: 600; color: #2b2823;">Blog Review Dashboard</span><br/>
             <span style="font-size: 12px; color: #9a9488;">Approve, reject, or delete blog posts</span>
           </a>
-          <a href="https://edge.teeco.co/admin/dashboard?password=${ADMIN_PASSWORD}" style="display: block; padding: 14px 18px; text-decoration: none; border-bottom: 1px solid #f0efe9;">
+          <a href="https://edge.teeco.co/admin/dashboard?password=${adminPassword}" style="display: block; padding: 14px 18px; text-decoration: none; border-bottom: 1px solid #f0efe9;">
             <span style="font-size: 14px; font-weight: 600; color: #2b2823;">Data &amp; Analytics Dashboard</span><br/>
             <span style="font-size: 12px; color: #9a9488;">User signups, engagement, and platform metrics</span>
           </a>

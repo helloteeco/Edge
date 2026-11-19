@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Force dynamic rendering for this API route
 export const dynamic = "force-dynamic";
 
-const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY || "20f866598emsh7e1f8d0058d2271p1adc56jsn8653832f1320";
+const MASHVISOR_API_KEY = process.env.MASHVISOR_API_KEY;
 const MASHVISOR_HOST = "mashvisor-api.p.rapidapi.com";
 
 export async function GET(request: NextRequest) {
@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
         { error: "City and state are required" },
         { status: 400 }
       );
+    }
+
+    if (!MASHVISOR_API_KEY) {
+      return NextResponse.json({ error: "Mashvisor is not configured" }, { status: 500 });
     }
 
     // Get top neighborhoods in the city

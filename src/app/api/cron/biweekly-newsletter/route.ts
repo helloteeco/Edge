@@ -10,18 +10,24 @@ export const maxDuration = 120;
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!cronSecret && !adminPassword) {
+      return NextResponse.json({ error: "Admin authentication is not configured" }, { status: 500 });
+    }
 
     const baseUrl = request.nextUrl.origin;
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
+    const forwardHeaders: Record<string, string> = {};
+    if (cronSecret) forwardHeaders.Authorization = `Bearer ${cronSecret}`;
+    const passwordQuery = adminPassword ? `?password=${encodeURIComponent(adminPassword)}` : "";
 
-    const res = await fetch(`${baseUrl}/api/admin/send-newsletter?password=${ADMIN_PASSWORD}`, {
+    const res = await fetch(`${baseUrl}/api/admin/send-newsletter${passwordQuery}`, {
       method: "POST",
-      headers: cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {},
+      headers: forwardHeaders,
     });
 
     const data = await res.json();

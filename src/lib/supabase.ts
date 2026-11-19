@@ -1,12 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
-// Use service_role key for server-side operations (bypasses RLS); fall back to anon key for safety
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
+function readSupabaseUrl(): string | undefined {
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+  return url || undefined;
+}
 
-// Create Supabase client (server-side only — never expose to browser)
-export const supabase = createClient(supabaseUrl, supabaseKey);
+function readSupabaseKey(): string | undefined {
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+  return key || undefined;
+}
+
+let cachedClient: SupabaseClient | null = null;
+
+/** Server-side Supabase client. Throws when URL or key env vars are missing. */
+export function getSupabaseClient(): SupabaseClient {
+  if (cachedClient) return cachedClient;
+  const url = readSupabaseUrl();
+  const key = readSupabaseKey();
+  if (!url || !key) {
+    throw new Error(
+      "Supabase is not configured. Set SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
+  cachedClient = createClient(url, key);
+  return cachedClient;
+}
+
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    const client = getSupabaseClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
 
 // Types
 export interface User {

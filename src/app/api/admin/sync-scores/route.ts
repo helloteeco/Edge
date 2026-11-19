@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getAllCities } from '@/data/helpers';
+import { authorizeCronOrPassword } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -23,19 +24,8 @@ export const maxDuration = 60;
  */
 async function syncData(request: NextRequest) {
   try {
-    // Auth check — supports both CRON_SECRET (Bearer) and ADMIN_PASSWORD (query param)
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-    const password = request.nextUrl.searchParams.get('password');
-    const adminPassword = process.env.ADMIN_PASSWORD || 'teeco-edge-2026';
-    const isAuthed = 
-      !cronSecret ||
-      authHeader === `Bearer ${cronSecret}` ||
-      password === adminPassword;
-    
-    if (!isAuthed) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const denied = authorizeCronOrPassword(request);
+    if (denied) return denied;
 
     const cities = getAllCities();
     let updated = 0;

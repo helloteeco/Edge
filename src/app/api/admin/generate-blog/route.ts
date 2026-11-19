@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { authorizeCronOrPassword } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 
 // State abbreviation to full name mapping
 const STATE_NAMES: Record<string, string> = {
@@ -292,19 +292,9 @@ Respond in this exact JSON format:
  */
 async function handleGenerate(request: NextRequest) {
   try {
-    // Auth check
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
     const url = new URL(request.url);
-    const password = url.searchParams.get("password");
-
-    const isAuthed =
-      (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-      password === ADMIN_PASSWORD;
-
-    if (!isAuthed) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = authorizeCronOrPassword(request);
+    if (denied) return denied;
 
     // Optional: specify a city ID to write about
     const forceCityId = url.searchParams.get("city_id");

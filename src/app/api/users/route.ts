@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllUsers, getUserCount, getSavedProperties } from "@/lib/supabase";
+import { rejectUnlessAdminApiKey } from "@/lib/admin-auth";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
 
-// Admin API key - in production, use environment variable
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "teeco-admin-2026";
-
 export async function GET(request: NextRequest) {
   try {
-    // Check for admin API key
-    const apiKey = request.headers.get("x-api-key");
-    
-    if (apiKey !== ADMIN_API_KEY) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const denied = rejectUnlessAdminApiKey(request.headers.get("x-api-key"));
+    if (denied) return denied;
 
     const format = request.nextUrl.searchParams.get("format");
     
