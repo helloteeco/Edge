@@ -15,19 +15,25 @@ export async function GET(request: NextRequest) {
   try {
     // Auth check
     const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!cronSecret && !adminPassword) {
+      return NextResponse.json({ error: "Admin authentication is not configured" }, { status: 500 });
+    }
 
     const baseUrl = request.nextUrl.origin;
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
+    const forwardHeaders: Record<string, string> = {};
+    if (cronSecret) forwardHeaders.Authorization = `Bearer ${cronSecret}`;
+    const passwordQuery = adminPassword ? `?password=${encodeURIComponent(adminPassword)}` : "";
 
     // Step 1: Generate blog post
-    const generateRes = await fetch(`${baseUrl}/api/admin/generate-blog?password=${ADMIN_PASSWORD}`, {
+    const generateRes = await fetch(`${baseUrl}/api/admin/generate-blog${passwordQuery}`, {
       method: "POST",
-      headers: cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {},
+      headers: forwardHeaders,
     });
 
     const generateData = await generateRes.json();
@@ -42,11 +48,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 2: Send review notification
-    const notifyRes = await fetch(`${baseUrl}/api/admin/blog-review?password=${ADMIN_PASSWORD}`, {
+    const notifyRes = await fetch(`${baseUrl}/api/admin/blog-review${passwordQuery}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {}),
+        ...forwardHeaders,
       },
       body: JSON.stringify({ action: "notify-review" }),
     });

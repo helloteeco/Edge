@@ -5,7 +5,7 @@
 - Takes: listing ID, month, year, count (months)
 - Returns: array of calendar days with availability and price
 - **No auth required** — public endpoint, same as explore_tabs we already use
-- Uses the same public API key we already have (`d306zoyjsyarp7ifhu67rjxn52tv0t20`)
+- Uses the same public API key we already have (`AIRBNB_API_KEY`)
 - This would give REAL booked/available dates per listing
 
 ## Option 2: Apify Scraper ($10/mo)

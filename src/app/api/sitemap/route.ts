@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllCities, getAllStates } from '@/data/helpers';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
 
 const baseUrl = 'https://edge.teeco.co';
 const CITIES_PER_SITEMAP = 500;
@@ -78,7 +75,7 @@ export async function GET(request: NextRequest) {
     entries.push(buildUrlEntry(`${baseUrl}/blog/best-airbnb-markets-under-300k`, '0.8', 'monthly', now));
 
     try {
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = getSupabaseClient();
       const { data: posts } = await supabase
         .from('blog_posts')
         .select('slug, published_at')
@@ -136,7 +133,7 @@ export async function GET(request: NextRequest) {
 
     // Blog
     try {
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = getSupabaseClient();
       const { data: posts } = await supabase
         .from('blog_posts')
         .select('slug, published_at')

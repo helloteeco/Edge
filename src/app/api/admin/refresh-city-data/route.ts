@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { authorizePrecache } from "@/lib/admin-auth";
 
 /**
  * /api/admin/refresh-city-data
@@ -15,20 +16,6 @@ import { supabase } from "@/lib/supabase";
  */
 
 
-
-// Auth check
-function isAuthorized(request: NextRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
-  
-  const secret = request.nextUrl.searchParams.get("secret")
-    || request.headers.get("x-api-key")
-    || authHeader?.replace("Bearer ", "");
-  
-  const adminSecret = process.env.ADMIN_API_KEY || process.env.PRECACHE_SECRET || "teeco-precache-2026";
-  return secret === adminSecret;
-}
 
 // Map market_data city/state to city-data.ts city IDs
 function toCityId(city: string, state: string): string {
@@ -49,9 +36,8 @@ interface CachedMarket {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = authorizePrecache(request);
+  if (denied) return denied;
 
   try {
     // Step 1: Fetch all non-expired market_data entries grouped by city

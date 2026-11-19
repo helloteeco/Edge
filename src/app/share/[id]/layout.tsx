@@ -1,10 +1,5 @@
 import { Metadata } from 'next';
-import { createClient } from '@supabase/supabase-js';
-
-// Use the same hardcoded fallback values as /api/share/route.ts
-// This ensures OG meta tags work even without env vars on Vercel
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://izyfqnavncdcdwkldlih.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eWZxbmF2bmNkY2R3a2xkbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI2NzAsImV4cCI6MjA4NTYyODY3MH0.aPzW5ZcbUP6PEJwxK3sEBtNc2SaZj5kDeyUNIAcn6n0';
+import { getSupabaseClient } from '@/lib/supabase';
 
 type Props = {
   params: { id: string };
@@ -15,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const shareId = params.id;
   
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getSupabaseClient();
     
     const { data } = await supabase
       .from('shared_analyses')

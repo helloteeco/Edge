@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { adminPasswordMatches } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,6 @@ export async function GET(request: NextRequest) {
     // Also allow preview mode for admin
     const preview = url.searchParams.get("preview") === "true";
     const password = url.searchParams.get("password");
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "teeco-edge-2026";
 
     let query = supabase
       .from("blog_posts")
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .order("published_at", { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1);
 
-    if (preview && password === ADMIN_PASSWORD) {
+    if (preview && adminPasswordMatches(password)) {
       // Admin preview: show drafts too
       query = query.in("status", ["published", "draft"]);
     } else {
